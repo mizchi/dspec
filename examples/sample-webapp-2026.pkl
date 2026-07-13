@@ -121,10 +121,10 @@ model: d.Model = new {
       }
       reviewStatus = "approved"
       implementedBy {
-        d.codeRef("../sample-webapp-2026/apps/api/src/app.ts", "app")
-        d.modelRef("../sample-webapp-2026/playwright.config.ts")
-        d.modelRef("../sample-webapp-2026/flaker.toml")
-        d.modelRef("../sample-webapp-2026/vrt.config.json")
+        d.codeRef("fixtures/sample-webapp-2026/apps/api/src/app.ts", "app")
+        d.modelRef("fixtures/sample-webapp-2026/playwright.config.ts")
+        d.modelRef("fixtures/sample-webapp-2026/flaker.toml")
+        d.modelRef("fixtures/sample-webapp-2026/vrt.config.json")
       }
     }
     new d.Rule {
@@ -152,11 +152,11 @@ model: d.Model = new {
       reviewStatus = "approved"
       implementedBy {
         d.codeRef(
-          "../sample-webapp-2026/packages/contracts/src/index.ts",
+          "fixtures/sample-webapp-2026/packages/contracts/src/index.ts",
           "dashboardSnapshotSchema",
         )
-        d.codeRef("../sample-webapp-2026/packages/contracts/src/index.ts", "serviceDetailSchema")
-        d.modelRef("../sample-webapp-2026/apps/api/src/app.ts")
+        d.codeRef("fixtures/sample-webapp-2026/packages/contracts/src/index.ts", "serviceDetailSchema")
+        d.modelRef("fixtures/sample-webapp-2026/apps/api/src/app.ts")
       }
     }
     new d.Rule {
@@ -179,8 +179,8 @@ model: d.Model = new {
       }
       reviewStatus = "approved"
       implementedBy {
-        d.modelRef("../sample-webapp-2026/.github/workflows/ci.yml")
-        d.modelRef("../sample-webapp-2026/.github/workflows/weekly-review.yml")
+        d.modelRef("fixtures/sample-webapp-2026/.github/workflows/ci.yml")
+        d.modelRef("fixtures/sample-webapp-2026/.github/workflows/weekly-review.yml")
       }
     }
     new d.Rule {
@@ -203,8 +203,8 @@ model: d.Model = new {
       }
       reviewStatus = "approved"
       implementedBy {
-        d.modelRef("../sample-webapp-2026/apps/dashboard/src/App.tsx")
-        d.modelRef("../sample-webapp-2026/apps/api/src/app.ts")
+        d.modelRef("fixtures/sample-webapp-2026/apps/dashboard/src/App.tsx")
+        d.modelRef("fixtures/sample-webapp-2026/apps/api/src/app.ts")
       }
     }
   }

@@ -60,7 +60,7 @@
   "errors": [],
   "passed": 7,
   "profile": {
-    "appRoot": "../sample-webapp-2026",
+    "appRoot": "fixtures/sample-webapp-2026",
     "id": "sample-webapp-2026",
     "modelPath": "examples/sample-webapp-2026.pkl",
     "observedFacts": "fixtures/reports/import-real-app-sample-webapp.json"

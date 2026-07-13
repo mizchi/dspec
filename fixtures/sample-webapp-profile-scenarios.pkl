@@ -3,7 +3,7 @@ import "../dspec/Schema.pkl" as d
 profile: d.AppProfile = new {
   id = "sample-webapp-2026-scenarios"
   modelPath = "examples/sample-webapp-2026.pkl"
-  appRoot = "../sample-webapp-2026"
+  appRoot = "fixtures/sample-webapp-2026"
   observedFacts = "fixtures/reports/import-real-app-sample-webapp.json"
   gates {
     "check"

@@ -212,6 +212,6 @@
   "suite": {
     "digest": "sha256:ff1721783aa7a46b35981237c1ee80da7b78c0a8c9a73f1480800c08fb85eb49",
     "id": "spec-reading-eval-suite",
-    "inputDigest": "sha256:b3a7e68029c97f85fd60a80558aa622f3b157b391e2faa2a71c1bd0d582d9fcc"
+    "inputDigest": "sha256:7833865ec59973ff7011732e6654ec712a4528facf874a008830b8d3a0cc29a3"
   }
 }

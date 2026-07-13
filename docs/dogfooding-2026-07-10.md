@@ -32,12 +32,12 @@ node src/cli.mjs domain-coverage --json examples/sample-webapp-2026.pkl
 node src/cli.mjs domain-coverage --json fixtures/domain-coverage-orphan.pkl
 node src/cli.mjs check examples/sample-webapp-2026.pkl
 node src/cli.mjs drift examples/sample-webapp-2026.pkl
-node src/cli.mjs import-real-app --json ../sample-webapp-2026
+node src/cli.mjs import-real-app --json fixtures/sample-webapp-2026
 node src/cli.mjs reconcile-real-app --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json
 node src/cli.mjs reverse-coverage --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json
-node src/cli.mjs scaffold-app-profile --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026
-node src/cli.mjs scaffold-app-profile --diff fixtures/sample-webapp-profile.pkl --json --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026
-node src/cli.mjs scaffold-app-profile --apply fixtures/sample-webapp-profile.pkl --json --dry-run --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026
+node src/cli.mjs scaffold-app-profile --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl fixtures/sample-webapp-2026
+node src/cli.mjs scaffold-app-profile --diff fixtures/sample-webapp-profile.pkl --json --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl fixtures/sample-webapp-2026
+node src/cli.mjs scaffold-app-profile --apply fixtures/sample-webapp-profile.pkl --json --dry-run --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl fixtures/sample-webapp-2026
 node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile.pkl
 node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile-scenarios.pkl
 node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile-extended-scenarios.pkl

@@ -1688,11 +1688,11 @@ Nix devShell は dspec 実行基盤と形式 backend ツールを提供する
 - check: node test/cli.test.mjs#dogfoods a real app model
 - implementation: runtime Taskfile.pkl
 - implementation: model examples/sample-webapp-2026.pkl
-- implementation: model ../sample-webapp-2026/apps/api/src/app.ts
-- implementation: model ../sample-webapp-2026/packages/contracts/src/index.ts
-- implementation: model ../sample-webapp-2026/.github/workflows/ci.yml
-- implementation: model ../sample-webapp-2026/.github/workflows/weekly-review.yml
-- implementation: model ../sample-webapp-2026/flaker.toml
+- implementation: model fixtures/sample-webapp-2026/apps/api/src/app.ts
+- implementation: model fixtures/sample-webapp-2026/packages/contracts/src/index.ts
+- implementation: model fixtures/sample-webapp-2026/.github/workflows/ci.yml
+- implementation: model fixtures/sample-webapp-2026/.github/workflows/weekly-review.yml
+- implementation: model fixtures/sample-webapp-2026/flaker.toml
 - implementation: model fixtures/reports/import-real-app-sample-webapp.json
 - implementation: model fixtures/reports/reconcile-real-app-sample-webapp.json
 - implementation: model fixtures/reports/reverse-coverage-sample-webapp.json
@@ -1767,11 +1767,11 @@ real app importer は実装 artifact から観測済み app facts を決定的�
 - implementation: code src/cli.mjs#parseWorkflowYaml
 - implementation: code src/cli.mjs#emitRealAppPkl
 - implementation: model fixtures/reports/import-real-app-sample-webapp.json
-- implementation: model ../sample-webapp-2026/apps/api/src/app.ts
-- implementation: model ../sample-webapp-2026/packages/contracts/src/index.ts
-- implementation: model ../sample-webapp-2026/.github/workflows/ci.yml
-- implementation: model ../sample-webapp-2026/flaker.toml
-- implementation: model ../sample-webapp-2026/vrt.config.json
+- implementation: model fixtures/sample-webapp-2026/apps/api/src/app.ts
+- implementation: model fixtures/sample-webapp-2026/packages/contracts/src/index.ts
+- implementation: model fixtures/sample-webapp-2026/.github/workflows/ci.yml
+- implementation: model fixtures/sample-webapp-2026/flaker.toml
+- implementation: model fixtures/sample-webapp-2026/vrt.config.json
 
 #### Review
 

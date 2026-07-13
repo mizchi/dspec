@@ -407,7 +407,7 @@ describe("dspec CLI", () => {
   });
 
   it("imports real app artifacts as observed facts", () => {
-    const result = run(["import-real-app", "--json", "../sample-webapp-2026"]);
+    const result = run(["import-real-app", "--json", "fixtures/sample-webapp-2026"]);
 
     assert.equal(result.status, 0, result.stderr);
     const imported = JSON.parse(result.stdout);
@@ -429,7 +429,7 @@ describe("dspec CLI", () => {
   });
 
   it("imports real app artifacts as a Pkl fragment", () => {
-    const result = run(["import-real-app", "--pkl", "../sample-webapp-2026"]);
+    const result = run(["import-real-app", "--pkl", "fixtures/sample-webapp-2026"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /new d\.CloudNode \{/);
@@ -442,13 +442,13 @@ describe("dspec CLI", () => {
 
   it("keeps real app import fixture in sync", () => {
     assertReportFixture(
-      ["import-real-app", "--json", "../sample-webapp-2026"],
+      ["import-real-app", "--json", "fixtures/sample-webapp-2026"],
       "fixtures/reports/import-real-app-sample-webapp.json",
     );
   });
 
   it("reconciles a real app model with imported facts", () => {
-    const imported = run(["import-real-app", "--json", "../sample-webapp-2026"]);
+    const imported = run(["import-real-app", "--json", "fixtures/sample-webapp-2026"]);
     assert.equal(imported.status, 0, imported.stderr);
 
     const dir = mkdtempSync(join(tmpdir(), "dspec-real-app-observed-"));
@@ -481,7 +481,7 @@ describe("dspec CLI", () => {
   });
 
   it("reports real app reconciliation drift", () => {
-    const imported = run(["import-real-app", "--json", "../sample-webapp-2026"]);
+    const imported = run(["import-real-app", "--json", "fixtures/sample-webapp-2026"]);
     assert.equal(imported.status, 0, imported.stderr);
 
     const observed = JSON.parse(imported.stdout);
@@ -513,7 +513,7 @@ describe("dspec CLI", () => {
   });
 
   it("reports reverse coverage for observed real app facts", () => {
-    const imported = run(["import-real-app", "--json", "../sample-webapp-2026"]);
+    const imported = run(["import-real-app", "--json", "fixtures/sample-webapp-2026"]);
     assert.equal(imported.status, 0, imported.stderr);
 
     const dir = mkdtempSync(join(tmpdir(), "dspec-reverse-coverage-"));
@@ -546,7 +546,7 @@ describe("dspec CLI", () => {
   });
 
   it("reports unmodeled observed real app facts", () => {
-    const imported = run(["import-real-app", "--json", "../sample-webapp-2026"]);
+    const imported = run(["import-real-app", "--json", "fixtures/sample-webapp-2026"]);
     assert.equal(imported.status, 0, imported.stderr);
 
     const observed = JSON.parse(imported.stdout);
@@ -586,7 +586,7 @@ describe("dspec CLI", () => {
   });
 
   it("renders real app drift suggestions for CLI readers", () => {
-    const imported = run(["import-real-app", "--json", "../sample-webapp-2026"]);
+    const imported = run(["import-real-app", "--json", "fixtures/sample-webapp-2026"]);
     assert.equal(imported.status, 0, imported.stderr);
 
     const observed = JSON.parse(imported.stdout);
@@ -680,7 +680,7 @@ describe("dspec CLI", () => {
       "--observed-facts",
       "fixtures/reports/import-real-app-sample-webapp.json",
       "examples/sample-webapp-2026.pkl",
-      "../sample-webapp-2026",
+      "fixtures/sample-webapp-2026",
     ]);
 
     assert.equal(result.status, 0, result.stderr);
@@ -701,7 +701,7 @@ describe("dspec CLI", () => {
         "--observed-facts",
         "fixtures/reports/import-real-app-sample-webapp.json",
         "examples/sample-webapp-2026.pkl",
-        "../sample-webapp-2026",
+        "fixtures/sample-webapp-2026",
       ]);
       assert.equal(scaffold.status, 0, scaffold.stderr);
       writeFileSync(profilePath, scaffold.stdout);
@@ -726,7 +726,7 @@ describe("dspec CLI", () => {
       "--observed-facts",
       "fixtures/reports/import-real-app-sample-webapp.json",
       "examples/sample-webapp-2026.pkl",
-      "../sample-webapp-2026",
+      "fixtures/sample-webapp-2026",
     ]);
 
     assert.equal(result.status, 0, result.stderr);
@@ -745,7 +745,7 @@ describe("dspec CLI", () => {
 profile: d.AppProfile = new {
   id = "sample-webapp-2026"
   modelPath = "examples/sample-webapp-2026.pkl"
-  appRoot = "../sample-webapp-2026"
+  appRoot = "fixtures/sample-webapp-2026"
   observedFacts = "fixtures/reports/stale-import-real-app.json"
   gates {
     "check"
@@ -761,7 +761,7 @@ profile: d.AppProfile = new {
         "--observed-facts",
         "fixtures/reports/import-real-app-sample-webapp.json",
         "examples/sample-webapp-2026.pkl",
-        "../sample-webapp-2026",
+        "fixtures/sample-webapp-2026",
       ]);
 
       assert.notEqual(result.status, 0);
@@ -784,7 +784,7 @@ profile: d.AppProfile = new {
 profile: d.AppProfile = new {
   id = "sample-webapp-2026"
   modelPath = "examples/sample-webapp-2026.pkl"
-  appRoot = "../sample-webapp-2026"
+  appRoot = "fixtures/sample-webapp-2026"
   observedFacts = "fixtures/reports/stale-import-real-app.json"
   gates {
     "check"
@@ -802,7 +802,7 @@ profile: d.AppProfile = new {
         "--observed-facts",
         "fixtures/reports/import-real-app-sample-webapp.json",
         "examples/sample-webapp-2026.pkl",
-        "../sample-webapp-2026",
+        "fixtures/sample-webapp-2026",
       ]);
 
       assert.notEqual(preview.status, 0);
@@ -819,7 +819,7 @@ profile: d.AppProfile = new {
         "--observed-facts",
         "fixtures/reports/import-real-app-sample-webapp.json",
         "examples/sample-webapp-2026.pkl",
-        "../sample-webapp-2026",
+        "fixtures/sample-webapp-2026",
       ]);
 
       assert.equal(applied.status, 0, applied.stderr);
@@ -845,7 +845,7 @@ profile: d.AppProfile = new {
         "--observed-facts",
         "fixtures/reports/import-real-app-sample-webapp.json",
         "examples/sample-webapp-2026.pkl",
-        "../sample-webapp-2026",
+        "fixtures/sample-webapp-2026",
       ],
       "fixtures/reports/scaffold-app-profile-diff.json",
     );
@@ -1635,7 +1635,7 @@ profile: d.AppProfile = new {
 profile: d.AppProfile = new {
   id = "sample-webapp-2026"
   modelPath = "examples/sample-webapp-2026.pkl"
-  appRoot = "../sample-webapp-2026"
+  appRoot = "fixtures/sample-webapp-2026"
   observedFacts = "${observedPath}"
   gates {
     "observed-fixture"
@@ -1671,7 +1671,7 @@ profile: d.AppProfile = new {
 profile: d.AppProfile = new {
   id = "sample-webapp-2026"
   modelPath = "examples/sample-webapp-2026.pkl"
-  appRoot = "../sample-webapp-2026"
+  appRoot = "fixtures/sample-webapp-2026"
   observedFacts = "${observedPath}"
   gates {
     "observed-fixture"
@@ -2974,7 +2974,7 @@ profile: d.AppProfile = new {
     assert.match(source, /runtime-collector-fixture/);
     assert.match(source, /sample-webapp-2026\.pkl/);
     assert.match(source, /domain-coverage --json examples\/sample-webapp-2026\.pkl/);
-    assert.match(source, /import-real-app --json \.\.\/sample-webapp-2026/);
+    assert.match(source, /import-real-app --json fixtures\/sample-webapp-2026/);
     assert.match(source, /reconcile-real-app --json examples\/sample-webapp-2026\.pkl/);
     assert.match(source, /reverse-coverage --json examples\/sample-webapp-2026\.pkl/);
     assert.match(source, /check-app-profile --json fixtures\/sample-webapp-profile\.pkl/);

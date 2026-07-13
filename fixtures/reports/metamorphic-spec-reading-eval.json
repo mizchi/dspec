@@ -3,9 +3,9 @@
   "eval": {
     "digest": "sha256:c2263f0884360c637669186463a459086c1764a2bcee23460d7460874491f2c2",
     "id": "sample-webapp-reading-eval",
-    "inputDigest": "sha256:f0eb0ef2f42f32dde5158f7b42311d93a4615957b22ef383f1536269e6d2a563",
+    "inputDigest": "sha256:7805ad70baa19ec93b7655922b66361066bc91af7ff19a02700fcd8c063bb8d5",
     "locale": "ja",
-    "modelDigest": "sha256:fe644ba08d2937b107f320dd334d54bf9a3beba06bec5383f5248c8817e4145a",
+    "modelDigest": "sha256:f7b387c80b3fe8f8352fb03f1051765061bc9154f5d7f972b7fe27a60c1a19c4",
     "modelPath": "../examples/sample-webapp-2026.pkl",
     "rubricVersion": "spec-reading-rubric-v1"
   },

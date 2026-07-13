@@ -39,7 +39,7 @@
         "threshold": 0.07
       }
     },
-    "root": "../sample-webapp-2026",
+    "root": "fixtures/sample-webapp-2026",
     "routes": [
       {
         "method": "GET",

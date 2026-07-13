@@ -1,7 +1,7 @@
 # App Profile Evaluation sample-webapp-2026-extended-scenarios
 
 - modelPath: `examples/sample-webapp-2026.pkl`
-- appRoot: `../sample-webapp-2026`
+- appRoot: `fixtures/sample-webapp-2026`
 - status: `pass`
 - passed: `13/13`
 

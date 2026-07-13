@@ -1,0 +1,185 @@
+name: weekly-review
+
+on:
+  schedule:
+    - cron: "23 1 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: weekly-review
+  cancel-in-progress: false
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      FLAKER_DIR: ${{ github.workspace }}/.tools/flaker
+      VRT_DIR: ${{ github.workspace }}/.tools/vrt
+    steps:
+      - name: Checkout app
+        uses: actions/checkout@v6
+
+      - name: Checkout flaker
+        uses: actions/checkout@v6
+        with:
+          repository: mizchi/flaker
+          path: .tools/flaker
+
+      - name: Checkout vrt
+        uses: actions/checkout@v6
+        with:
+          repository: mizchi/vrt
+          path: .tools/vrt
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install app dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install flaker dependencies
+        run: pnpm --dir "$FLAKER_DIR" install --frozen-lockfile
+
+      - name: Install vrt dependencies
+        run: pnpm --dir "$VRT_DIR" install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install vrt Playwright browsers
+        run: pnpm --dir "$VRT_DIR" exec playwright install --with-deps chromium
+
+      - name: Prepare artifact directory
+        run: mkdir -p .artifacts
+
+      - name: Typecheck
+        id: typecheck
+        run: pnpm typecheck
+        continue-on-error: true
+
+      - name: Unit tests
+        id: unit
+        run: pnpm test
+        continue-on-error: true
+
+      - name: Playwright E2E
+        id: e2e
+        run: pnpm test:e2e
+        continue-on-error: true
+
+      - name: flaker scheduled profile
+        id: flaker_run
+        run: pnpm flaker:run:scheduled
+        continue-on-error: true
+
+      - name: flaker review markdown
+        id: flaker_review
+        if: always()
+        run: pnpm flaker:eval:markdown > .artifacts/flaker-review.md
+        continue-on-error: true
+
+      - name: VRT snapshot
+        id: vrt
+        if: always()
+        run: pnpm vrt:snapshot:ci
+        continue-on-error: true
+
+      - name: Build weekly review issue body
+        if: always()
+        env:
+          TYPECHECK_OUTCOME: ${{ steps.typecheck.outcome }}
+          UNIT_OUTCOME: ${{ steps.unit.outcome }}
+          E2E_OUTCOME: ${{ steps.e2e.outcome }}
+          FLAKER_RUN_OUTCOME: ${{ steps.flaker_run.outcome }}
+          VRT_OUTCOME: ${{ steps.vrt.outcome }}
+        run: pnpm report:weekly-review
+
+      - name: Ensure review labels
+        if: always()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const labels = [
+              {
+                name: "weekly-review",
+                color: "0e8a16",
+                description: "Automated weekly quality review issues",
+              },
+              {
+                name: "quality",
+                color: "1d76db",
+                description: "Quality tracking and maintenance work",
+              },
+            ];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.getLabel({
+                  ...context.repo,
+                  name: label.name,
+                });
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                await github.rest.issues.createLabel({
+                  ...context.repo,
+                  ...label,
+                });
+              }
+            }
+
+      - name: Create or update weekly review issue
+        if: always()
+        uses: actions/github-script@v8
+        env:
+          WEEKLY_REVIEW_TITLE_PATH: .artifacts/weekly-review-title.txt
+          WEEKLY_REVIEW_BODY_PATH: .artifacts/weekly-review.md
+        with:
+          script: |
+            const fs = await import("node:fs/promises");
+
+            const title = (await fs.readFile(process.env.WEEKLY_REVIEW_TITLE_PATH, "utf-8")).trim();
+            const body = await fs.readFile(process.env.WEEKLY_REVIEW_BODY_PATH, "utf-8");
+            const openIssues = await github.paginate(github.rest.issues.listForRepo, {
+              ...context.repo,
+              state: "open",
+              labels: "weekly-review",
+              per_page: 100,
+            });
+
+            const existing = openIssues.find((issue) => !issue.pull_request && issue.title === title);
+
+            if (existing) {
+              await github.rest.issues.update({
+                ...context.repo,
+                issue_number: existing.number,
+                title,
+                body,
+              });
+              core.notice(`Updated weekly review issue #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                ...context.repo,
+                title,
+                body,
+                labels: ["weekly-review", "quality"],
+              });
+              core.notice(`Created weekly review issue #${created.data.number}`);
+            }
+
+      - name: Upload weekly review artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: weekly-review-artifacts
+          path: |
+            .artifacts
+            playwright-report
+            vrt/dashboard
