@@ -1,0 +1,32 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "i18n-contract-glossary-mismatch"
+  name = d.text("i18n glossary mismatch fixture", "i18n glossary mismatch fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  i18n = new d.I18nContract {
+    requiredLocales {
+      "ja"
+      "en"
+    }
+    glossary {
+      new d.I18nGlossaryEntry {
+        term = "term.product"
+        labels {
+          ["ja"] = "商品"
+          ["en"] = "Item"
+        }
+      }
+    }
+  }
+
+  vocabulary {
+    d.term("term.product", "entity", "商品", "Product")
+  }
+}

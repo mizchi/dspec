@@ -1,0 +1,36 @@
+import "../dspec/Schema.pkl" as d
+import "db-model.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "db-model-mapping-missing-table-mention"
+  patterns = new d.PatternCatalog {
+    db = (base.model.patterns.db) {
+      migrations {
+        new d.DbMigration {
+          id = "v2-add-payments-with-opaque-mapping"
+          text = base.model.name
+          fromTables {
+            "orders"
+          }
+          toTables {
+            "orders"
+            "payments"
+          }
+          preserves {
+            "paid-order-has-payment"
+          }
+          mappings {
+            new d.DbMapping {
+              id = "opaque-mapping"
+              sourceExpr = "status == paid"
+              targetExpr = "exists order_id == id"
+              invariants {
+                "paid-order-has-payment"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

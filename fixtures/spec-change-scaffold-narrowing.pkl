@@ -1,0 +1,21 @@
+import "../dspec/Schema.pkl" as d
+
+review: d.SpecChangeReview = new {
+  id = "compat-fixture-0.1.0-to-0.2.0"
+  beforeModelPath = "fixtures/compat-before.pkl"
+  afterModelPath = "fixtures/compat-narrowing-after.pkl"
+  expectedCompatibility = "narrowing"
+  allowedCompatibility {
+    "compatible"
+    "narrowing"
+  }
+  requiredSteps {
+    "check-before"
+    "check-after"
+    "impact"
+    "compatibility"
+    "breaking-policy"
+    "evidence-ref"
+    "coverage-after"
+  }
+}

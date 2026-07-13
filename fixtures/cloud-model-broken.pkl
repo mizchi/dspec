@@ -1,0 +1,39 @@
+import "../dspec/Schema.pkl" as d
+import "cloud-model.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "cloud-model-broken"
+  patterns = new d.PatternCatalog {
+    cloud = (base.model.patterns.cloud) {
+      flows {
+        new d.CloudFlow {
+          id = "internet-to-db"
+          from = "internet"
+          to = "orders-db"
+          action = "read"
+          tenantPropagated = true
+        }
+        new d.CloudFlow {
+          id = "web-to-db-without-policy"
+          from = "web"
+          to = "orders-db"
+          action = "read"
+          tenantPropagated = true
+        }
+        new d.CloudFlow {
+          id = "api-to-db-without-tenant"
+          from = "api"
+          to = "orders-db"
+          action = "read"
+        }
+        new d.CloudFlow {
+          id = "api-to-jobs-without-idempotency"
+          from = "api"
+          to = "jobs"
+          action = "publish"
+          tenantPropagated = true
+        }
+      }
+    }
+  }
+}

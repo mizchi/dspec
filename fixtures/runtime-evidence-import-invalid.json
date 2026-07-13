@@ -1,0 +1,11 @@
+{
+  "prometheus": {
+    "telemetry": [
+      {
+        "observedPercent": 101,
+        "service": "checkout-api",
+        "signal": "checkout-availability-signal"
+      }
+    ]
+  }
+}

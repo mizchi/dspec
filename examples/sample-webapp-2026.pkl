@@ -1,0 +1,542 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+local function clause(clauseExpr: String): d.Clause = new {
+  expr = clauseExpr
+}
+
+model: d.Model = new {
+  id = "sample-webapp-2026"
+  name = text("sample-webapp-2026 仕様", "sample-webapp-2026 spec")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    d.term("node.public-client", "actor", "public client", "public client")
+    d.term("node.dashboard", "entity", "React dashboard", "React dashboard")
+    d.term("node.api", "entity", "Hono API", "Hono API")
+    d.term("node.contracts", "entity", "shared Zod contracts", "shared Zod contracts")
+    d.term("node.github-actions", "entity", "GitHub Actions", "GitHub Actions")
+    d.term("node.flaker", "entity", "flaker runner", "flaker runner")
+    d.term("node.vrt", "entity", "VRT runner", "VRT runner")
+    d.term(
+      "flow.public-to-dashboard",
+      "relation",
+      "public client to dashboard",
+      "public client to dashboard",
+    )
+    d.term("flow.dashboard-to-api", "relation", "dashboard to API", "dashboard to API")
+    d.term("flow.api-to-contracts", "relation", "API to contracts", "API to contracts")
+    d.term(
+      "flow.github-actions-to-flaker",
+      "relation",
+      "GitHub Actions to flaker",
+      "GitHub Actions to flaker",
+    )
+    d.term(
+      "flow.github-actions-to-vrt",
+      "relation",
+      "GitHub Actions to VRT",
+      "GitHub Actions to VRT",
+    )
+    d.term("data.dashboard-snapshot", "entity", "dashboard snapshot", "dashboard snapshot")
+    d.term("data.incident", "entity", "incident", "incident")
+    d.term("data.service-detail", "entity", "service detail", "service detail")
+    d.term("store.api-memory", "entity", "API in-memory data", "API in-memory data")
+    d.term("store.dashboard-cache", "entity", "dashboard cache", "dashboard cache")
+    d.term(
+      "store.github-actions-artifacts",
+      "entity",
+      "GitHub Actions artifacts",
+      "GitHub Actions artifacts",
+    )
+    d.term("store.flaker-duckdb", "entity", "flaker DuckDB", "flaker DuckDB")
+    d.term(
+      "flow.api-to-dashboard-data",
+      "relation",
+      "API to dashboard data",
+      "API to dashboard data",
+    )
+    d.term("flow.ci-to-flaker-data", "relation", "CI to flaker data", "CI to flaker data")
+    d.term("service.api", "entity", "API service", "API service")
+    d.term("service.dashboard", "entity", "dashboard service", "dashboard service")
+    d.term("release.step.ci", "action", "CI workflow", "CI workflow")
+    d.term(
+      "release.step.weekly-review",
+      "action",
+      "weekly review workflow",
+      "weekly review workflow",
+    )
+    d.term(
+      "dependency.dashboard-to-api",
+      "relation",
+      "dashboard runtime API dependency",
+      "dashboard runtime API dependency",
+    )
+    d.term(
+      "slo.dashboard-availability",
+      "quantity",
+      "dashboard availability",
+      "dashboard availability",
+    )
+  }
+
+  rules {
+    new d.Rule {
+      id = "SAMPLE-CLOUD-TOPOLOGY"
+      kind = "invariant"
+      text =
+        text(
+          "dashboard/API/contracts と CI runner の疎通は明示された topology に従う",
+          "Dashboard/API/contracts and CI runner connectivity follows explicit topology",
+        )
+      terms {
+        "node.public-client"
+        "node.dashboard"
+        "node.api"
+        "node.contracts"
+        "node.github-actions"
+        "node.flaker"
+        "node.vrt"
+        "flow.public-to-dashboard"
+        "flow.dashboard-to-api"
+        "flow.api-to-contracts"
+        "flow.github-actions-to-flaker"
+        "flow.github-actions-to-vrt"
+      }
+      must {
+        clause("public-client -> dashboard -> api -> contracts")
+        clause("github-actions -> flaker && github-actions -> vrt")
+      }
+      reviewStatus = "approved"
+      implementedBy {
+        d.codeRef("../sample-webapp-2026/apps/api/src/app.ts", "app")
+        d.modelRef("../sample-webapp-2026/playwright.config.ts")
+        d.modelRef("../sample-webapp-2026/flaker.toml")
+        d.modelRef("../sample-webapp-2026/vrt.config.json")
+      }
+    }
+    new d.Rule {
+      id = "SAMPLE-DATA-CONTRACT"
+      kind = "invariant"
+      text =
+        text(
+          "dashboard が読むデータ shape は contracts package と API schema に接地する",
+          "Dashboard data shapes are grounded in the contracts package and API schema",
+        )
+      terms {
+        "data.dashboard-snapshot"
+        "data.incident"
+        "data.service-detail"
+        "store.api-memory"
+        "store.dashboard-cache"
+        "store.github-actions-artifacts"
+        "store.flaker-duckdb"
+        "flow.api-to-dashboard-data"
+        "flow.ci-to-flaker-data"
+      }
+      must {
+        clause("dashboardSnapshotSchema && serviceDetailSchema")
+      }
+      reviewStatus = "approved"
+      implementedBy {
+        d.codeRef(
+          "../sample-webapp-2026/packages/contracts/src/index.ts",
+          "dashboardSnapshotSchema",
+        )
+        d.codeRef("../sample-webapp-2026/packages/contracts/src/index.ts", "serviceDetailSchema")
+        d.modelRef("../sample-webapp-2026/apps/api/src/app.ts")
+      }
+    }
+    new d.Rule {
+      id = "SAMPLE-RELEASE-SAFETY"
+      kind = "obligation"
+      text =
+        text(
+          "API と dashboard の release は CI と weekly review で継続検査される",
+          "API and dashboard releases are continuously checked by CI and weekly review",
+        )
+      terms {
+        "service.api"
+        "service.dashboard"
+        "release.step.ci"
+        "release.step.weekly-review"
+      }
+      must {
+        clause("ci runs typecheck, unit, e2e, and vrt")
+        clause("weekly-review aggregates quality signals")
+      }
+      reviewStatus = "approved"
+      implementedBy {
+        d.modelRef("../sample-webapp-2026/.github/workflows/ci.yml")
+        d.modelRef("../sample-webapp-2026/.github/workflows/weekly-review.yml")
+      }
+    }
+    new d.Rule {
+      id = "SAMPLE-RUNTIME-SAFETY"
+      kind = "obligation"
+      text =
+        text(
+          "dashboard は API dependency と availability SLO を runtime model として持つ",
+          "The dashboard owns the API dependency and availability SLO as runtime model facts",
+        )
+      terms {
+        "service.api"
+        "service.dashboard"
+        "dependency.dashboard-to-api"
+        "slo.dashboard-availability"
+      }
+      must {
+        clause("dashboard dependency has timeout and retry contract")
+        clause("dashboard availability has alert and telemetry evidence")
+      }
+      reviewStatus = "approved"
+      implementedBy {
+        d.modelRef("../sample-webapp-2026/apps/dashboard/src/App.tsx")
+        d.modelRef("../sample-webapp-2026/apps/api/src/app.ts")
+      }
+    }
+  }
+
+  patterns = new d.PatternCatalog {
+    cloud = new d.CloudModel {
+      zones {
+        new d.CloudZone {
+          id = "public"
+          exposure = "public"
+        }
+        new d.CloudZone {
+          id = "private"
+          exposure = "private"
+        }
+        new d.CloudZone {
+          id = "ci"
+          exposure = "private"
+        }
+      }
+      nodes {
+        new d.CloudNode {
+          id = "public-client"
+          kind = "internet"
+          zone = "public"
+        }
+        new d.CloudNode {
+          id = "dashboard"
+          kind = "service"
+          zone = "public"
+        }
+        new d.CloudNode {
+          id = "api"
+          kind = "service"
+          zone = "private"
+        }
+        new d.CloudNode {
+          id = "contracts"
+          kind = "service"
+          zone = "private"
+        }
+        new d.CloudNode {
+          id = "github-actions"
+          kind = "service"
+          zone = "ci"
+        }
+        new d.CloudNode {
+          id = "flaker"
+          kind = "service"
+          zone = "ci"
+        }
+        new d.CloudNode {
+          id = "vrt"
+          kind = "service"
+          zone = "ci"
+        }
+      }
+      flows {
+        new d.CloudFlow {
+          id = "public-to-dashboard"
+          from = "public-client"
+          to = "dashboard"
+          action = "request"
+        }
+        new d.CloudFlow {
+          id = "dashboard-to-api"
+          from = "dashboard"
+          to = "api"
+          action = "request"
+        }
+        new d.CloudFlow {
+          id = "api-to-contracts"
+          from = "api"
+          to = "contracts"
+          action = "validate"
+        }
+        new d.CloudFlow {
+          id = "github-actions-to-flaker"
+          from = "github-actions"
+          to = "flaker"
+          action = "run"
+        }
+        new d.CloudFlow {
+          id = "github-actions-to-vrt"
+          from = "github-actions"
+          to = "vrt"
+          action = "snapshot"
+        }
+      }
+    }
+    data = new d.DataModel {
+      policies {
+        new d.DataPolicy {
+          id = "public-policy"
+          classification = "public"
+          maxRetentionDays = 365
+        }
+        new d.DataPolicy {
+          id = "operational-policy"
+          classification = "internal"
+          maxRetentionDays = 90
+        }
+      }
+      datasets {
+        new d.DataSet {
+          id = "dashboard-snapshot"
+          classification = "public"
+          retentionDays = 30
+        }
+        new d.DataSet {
+          id = "incident"
+          classification = "internal"
+          retentionDays = 90
+        }
+        new d.DataSet {
+          id = "service-detail"
+          classification = "internal"
+          retentionDays = 90
+        }
+      }
+      stores {
+        new d.DataStore {
+          id = "api-memory"
+          region = "local"
+          encrypted = true
+          deletionSupported = true
+        }
+        new d.DataStore {
+          id = "dashboard-cache"
+          region = "local"
+          encrypted = true
+          deletionSupported = true
+        }
+        new d.DataStore {
+          id = "github-actions-artifacts"
+          region = "local"
+          encrypted = true
+          deletionSupported = true
+        }
+        new d.DataStore {
+          id = "flaker-duckdb"
+          region = "local"
+          encrypted = true
+          deletionSupported = true
+        }
+      }
+      flows {
+        new d.DataFlow {
+          id = "api-to-dashboard-data"
+          dataset = "dashboard-snapshot"
+          from = "api-memory"
+          to = "dashboard-cache"
+          purpose = "operator-dashboard"
+        }
+        new d.DataFlow {
+          id = "ci-to-flaker-data"
+          dataset = "incident"
+          from = "github-actions-artifacts"
+          to = "flaker-duckdb"
+          purpose = "quality-signal"
+          legalBasis = "operational-need"
+        }
+      }
+    }
+    release = new d.ReleaseModel {
+      services {
+        new d.ReleaseService {
+          id = "api"
+          critical = true
+        }
+        new d.ReleaseService {
+          id = "dashboard"
+          critical = true
+        }
+      }
+      environments {
+        new d.ReleaseEnvironment {
+          id = "ci"
+          production = false
+        }
+      }
+      gates {
+        new d.ReleaseGate {
+          id = "typecheck"
+          kind = "test"
+        }
+        new d.ReleaseGate {
+          id = "unit"
+          kind = "test"
+        }
+        new d.ReleaseGate {
+          id = "e2e"
+          kind = "test"
+        }
+        new d.ReleaseGate {
+          id = "vrt"
+          kind = "test"
+        }
+      }
+      rollbacks {
+        new d.ReleaseRollback {
+          id = "manual-revert"
+          service = "dashboard"
+          tested = true
+        }
+        new d.ReleaseRollback {
+          id = "api-manual-revert"
+          service = "api"
+          tested = true
+        }
+      }
+      steps {
+        new d.ReleaseStep {
+          id = "ci"
+          service = "dashboard"
+          environment = "ci"
+          strategy = "rolling"
+          trafficPercent = 0
+          rollback = "manual-revert"
+          gates {
+            "typecheck"
+            "unit"
+            "e2e"
+            "vrt"
+          }
+        }
+        new d.ReleaseStep {
+          id = "weekly-review"
+          service = "api"
+          environment = "ci"
+          strategy = "rolling"
+          trafficPercent = 0
+          rollback = "api-manual-revert"
+          gates {
+            "unit"
+            "e2e"
+          }
+        }
+      }
+    }
+    runtime = new d.RuntimeModel {
+      services {
+        new d.RuntimeService {
+          id = "api"
+          critical = true
+        }
+        new d.RuntimeService {
+          id = "dashboard"
+          critical = true
+        }
+      }
+      dependencies {
+        new d.RuntimeDependency {
+          id = "dashboard-to-api"
+          service = "dashboard"
+          target = "api"
+          kind = "http"
+          timeoutMs = 2000
+          retryable = true
+          idempotent = true
+        }
+      }
+      signals {
+        new d.RuntimeSignal {
+          id = "dashboard-availability-signal"
+          service = "dashboard"
+          kind = "metric"
+          indicator = "availability"
+        }
+      }
+      runbooks {
+        new d.RuntimeRunbook {
+          id = "dashboard-runbook"
+          service = "dashboard"
+          tested = true
+        }
+      }
+      alerts {
+        new d.RuntimeAlert {
+          id = "dashboard-availability-page"
+          service = "dashboard"
+          signal = "dashboard-availability-signal"
+          severity = "page"
+          runbook = "dashboard-runbook"
+        }
+      }
+      slos {
+        new d.RuntimeSlo {
+          id = "dashboard-availability"
+          service = "dashboard"
+          indicator = "availability"
+          targetPercent = 99
+          window = "30d"
+        }
+      }
+      telemetry {
+        new d.RuntimeTelemetryWindow {
+          id = "dashboard-availability-30d"
+          service = "dashboard"
+          signal = "dashboard-availability-signal"
+          slo = "dashboard-availability"
+          observedPercent = 100
+          source = "sample-webapp-2026:e2e"
+        }
+      }
+      alertPolicies {
+        new d.RuntimeAlertPolicy {
+          id = "dashboard-availability-policy"
+          alert = "dashboard-availability-page"
+          enabled = true
+          source = "sample-webapp-2026:weekly-review"
+        }
+      }
+      runbookExecutions {
+        new d.RuntimeRunbookExecution {
+          id = "dashboard-runbook-weekly"
+          runbook = "dashboard-runbook"
+          status = "pass"
+          executedAt = "2026-07-10"
+          source = "sample-webapp-2026:weekly-review"
+        }
+      }
+      dependencyTraces {
+        new d.RuntimeDependencyTrace {
+          id = "dashboard-to-api-e2e"
+          dependency = "dashboard-to-api"
+          observedLatencyMs = 120
+          timedOut = false
+          idempotencyKeyObserved = true
+          source = "sample-webapp-2026:e2e"
+        }
+      }
+    }
+  }
+}

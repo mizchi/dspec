@@ -1,0 +1,21 @@
+import "../dspec/Schema.pkl" as d
+import "db-model.pkl" as base
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    db = (base.model.patterns.db) {
+      migrations {
+        new d.DbMigration {
+          id = "bad-migration"
+          text = base.model.name
+          fromTables {
+            "orders"
+          }
+          toTables {
+            "missing_table"
+          }
+        }
+      }
+    }
+  }
+}

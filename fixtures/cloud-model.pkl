@@ -1,0 +1,189 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "cloud-model-fixture"
+  name = text("Cloud topology fixture", "Cloud topology fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    new d.Term {
+      id = "node.api"
+      kind = "entity"
+      text = text("API service", "API service")
+    }
+    new d.Term {
+      id = "node.orders-db"
+      kind = "entity"
+      text = text("orders database", "orders database")
+    }
+  }
+
+  rules {
+    new d.Rule {
+      id = "CLOUD-PRIVATE-DB"
+      kind = "invariant"
+      text =
+        text(
+          "DB は public internet から直接到達できない",
+          "DB is not directly reachable from the public internet",
+        )
+      terms {
+        "node.api"
+        "node.orders-db"
+      }
+      mustNot {
+        new d.Clause {
+          expr = "internet -> orders-db"
+        }
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#accepts Cloud topology pattern"
+        }
+      }
+    }
+  }
+
+  patterns = new d.PatternCatalog {
+    cloud = new d.CloudModel {
+      zones {
+        new d.CloudZone {
+          id = "public"
+          exposure = "public"
+          text = text("public edge", "public edge")
+        }
+        new d.CloudZone {
+          id = "private"
+          exposure = "private"
+          text = text("private network", "private network")
+        }
+        new d.CloudZone {
+          id = "restricted"
+          exposure = "restricted"
+          text = text("restricted secrets", "restricted secrets")
+        }
+      }
+      nodes {
+        new d.CloudNode {
+          id = "internet"
+          kind = "internet"
+          zone = "public"
+          text = text("public internet", "public internet")
+        }
+        new d.CloudNode {
+          id = "web"
+          kind = "service"
+          zone = "public"
+          tenantScoped = true
+          text = text("web frontend", "web frontend")
+        }
+        new d.CloudNode {
+          id = "api"
+          kind = "service"
+          zone = "private"
+          tenantScoped = true
+          text = text("API service", "API service")
+        }
+        new d.CloudNode {
+          id = "orders-db"
+          kind = "database"
+          zone = "private"
+          tenantScoped = true
+          text = text("orders database", "orders database")
+        }
+        new d.CloudNode {
+          id = "jobs"
+          kind = "queue"
+          zone = "private"
+          tenantScoped = true
+          text = text("jobs queue", "jobs queue")
+        }
+        new d.CloudNode {
+          id = "payment-secret"
+          kind = "secret"
+          zone = "restricted"
+          text = text("payment secret", "payment secret")
+        }
+      }
+      policies {
+        new d.CloudPolicy {
+          id = "api-db-policy"
+          principal = "api"
+          resource = "orders-db"
+          actions {
+            "read"
+            "write"
+          }
+        }
+        new d.CloudPolicy {
+          id = "api-jobs-policy"
+          principal = "api"
+          resource = "jobs"
+          actions {
+            "publish"
+          }
+        }
+        new d.CloudPolicy {
+          id = "api-secret-policy"
+          principal = "api"
+          resource = "payment-secret"
+          actions {
+            "read"
+          }
+        }
+      }
+      flows {
+        new d.CloudFlow {
+          id = "internet-to-web"
+          from = "internet"
+          to = "web"
+          action = "request"
+          tenantPropagated = true
+        }
+        new d.CloudFlow {
+          id = "web-to-api"
+          from = "web"
+          to = "api"
+          action = "request"
+          tenantPropagated = true
+        }
+        new d.CloudFlow {
+          id = "api-to-db"
+          from = "api"
+          to = "orders-db"
+          action = "read"
+          tenantPropagated = true
+        }
+        new d.CloudFlow {
+          id = "api-to-jobs"
+          from = "api"
+          to = "jobs"
+          action = "publish"
+          tenantPropagated = true
+          idempotencyKey = "request.id"
+        }
+        new d.CloudFlow {
+          id = "api-to-secret"
+          from = "api"
+          to = "payment-secret"
+          action = "read"
+        }
+      }
+    }
+  }
+}

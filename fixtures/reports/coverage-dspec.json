@@ -1,0 +1,10 @@
+{
+  "covered": 65,
+  "errors": [],
+  "model": {
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "status": "pass",
+  "total": 65
+}

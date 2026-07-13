@@ -1,0 +1,43 @@
+import "../dspec/domains/Rbac.pkl" as rbac
+import "../dspec/domains/Tenant.pkl" as tenant
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "domain-pack-fixture"
+  name = d.text("Domain pack fixture", "Domain pack fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    rbac.actor("actor.user", "ユーザー", "user")
+    rbac.role("role.admin", "管理者", "administrator")
+    rbac.action("action.delete", "削除", "delete")
+    rbac.resource("resource.document", "ドキュメント", "document")
+    tenant.scope("tenant.workspace", "ワークスペース", "workspace")
+  }
+
+  rules {
+    rbac.onlyRoleCan(
+      "DOMAIN-RBAC-DELETE-ADMIN-ONLY",
+      "role.admin",
+      "action.delete",
+      "resource.document",
+      "test/cli.test.mjs#accepts domain preset packs",
+      "src/authz.ts",
+      "canDeleteDocument",
+    )
+    tenant.noCrossTenantAccess(
+      "DOMAIN-TENANT-NO-CROSS-WORKSPACE",
+      "actor.user",
+      "resource.document",
+      "tenant.workspace",
+      "test/cli.test.mjs#accepts domain preset packs",
+      "src/authz.ts",
+      "canReadDocument",
+    )
+  }
+}

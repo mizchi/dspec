@@ -1,0 +1,145 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "release-model-fixture"
+  name = text("Release safety fixture", "Release safety fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    new d.Term {
+      id = "service.checkout-api"
+      kind = "entity"
+      text = text("checkout API", "checkout API")
+    }
+    new d.Term {
+      id = "env.production"
+      kind = "state"
+      text = text("production environment", "production environment")
+    }
+  }
+
+  rules {
+    new d.Rule {
+      id = "RELEASE-PROD-SAFE"
+      kind = "invariant"
+      text =
+        text(
+          "本番リリースは health gate、rollback、migration 互換性で保護される",
+          "Production releases are protected by health gates, rollback, and migration compatibility",
+        )
+      terms {
+        "service.checkout-api"
+        "env.production"
+      }
+      must {
+        new d.Clause {
+          expr = "production release has safety gates"
+        }
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#accepts Release safety pattern"
+        }
+      }
+    }
+  }
+
+  patterns = new d.PatternCatalog {
+    release = new d.ReleaseModel {
+      services {
+        new d.ReleaseService {
+          id = "checkout-api"
+          critical = true
+          text = text("checkout API", "checkout API")
+        }
+      }
+      environments {
+        new d.ReleaseEnvironment {
+          id = "staging"
+          production = false
+          text = text("staging", "staging")
+        }
+        new d.ReleaseEnvironment {
+          id = "production"
+          production = true
+          text = text("production", "production")
+        }
+      }
+      gates {
+        new d.ReleaseGate {
+          id = "unit-tests"
+          kind = "test"
+          text = text("unit tests", "unit tests")
+        }
+        new d.ReleaseGate {
+          id = "prod-approval"
+          kind = "approval"
+          text = text("production approval", "production approval")
+        }
+        new d.ReleaseGate {
+          id = "prod-health"
+          kind = "health"
+          text = text("production health check", "production health check")
+        }
+      }
+      rollbacks {
+        new d.ReleaseRollback {
+          id = "checkout-api-rollback"
+          service = "checkout-api"
+          tested = true
+          text = text("checkout API rollback", "checkout API rollback")
+        }
+      }
+      migrations {
+        new d.ReleaseMigration {
+          id = "add-payment-status"
+          service = "checkout-api"
+          backwardsCompatible = true
+          text = text("add payment status", "add payment status")
+        }
+      }
+      steps {
+        new d.ReleaseStep {
+          id = "staging-deploy"
+          service = "checkout-api"
+          environment = "staging"
+          strategy = "rolling"
+          trafficPercent = 100
+          rollback = "checkout-api-rollback"
+          gates {
+            "unit-tests"
+          }
+        }
+        new d.ReleaseStep {
+          id = "prod-canary"
+          service = "checkout-api"
+          environment = "production"
+          strategy = "canary"
+          trafficPercent = 10
+          rollback = "checkout-api-rollback"
+          migration = "add-payment-status"
+          gates {
+            "unit-tests"
+            "prod-approval"
+            "prod-health"
+          }
+        }
+      }
+    }
+  }
+}

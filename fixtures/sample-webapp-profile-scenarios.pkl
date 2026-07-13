@@ -1,0 +1,35 @@
+import "../dspec/Schema.pkl" as d
+
+profile: d.AppProfile = new {
+  id = "sample-webapp-2026-scenarios"
+  modelPath = "examples/sample-webapp-2026.pkl"
+  appRoot = "../sample-webapp-2026"
+  observedFacts = "fixtures/reports/import-real-app-sample-webapp.json"
+  gates {
+    "check"
+    "drift"
+    "domain-coverage"
+    "import-real-app"
+    "observed-fixture"
+    "reconcile-real-app"
+    "reverse-coverage"
+  }
+  scenarios {
+    new d.AppProfileScenario {
+      id = "baseline"
+      kind = "baseline-no-drift"
+    }
+    new d.AppProfileScenario {
+      id = "ci-missing-vrt"
+      kind = "remove-release-gate"
+      step = "ci"
+      gate = "vrt"
+    }
+    new d.AppProfileScenario {
+      id = "ci-add-security"
+      kind = "add-observed-release-gate"
+      workflow = "ci"
+      gate = "security"
+    }
+  }
+}

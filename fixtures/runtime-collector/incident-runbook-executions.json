@@ -1,0 +1,11 @@
+{
+  "runbook_executions": [
+    {
+      "executed_at": "2026-07-08",
+      "id": "checkout-page-runbook-2026-07-08",
+      "runbook": "checkout-page-runbook",
+      "source": "incident-drill:checkout-page-runbook-2026-07-08",
+      "status": "pass"
+    }
+  ]
+}

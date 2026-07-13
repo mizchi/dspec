@@ -1,0 +1,44 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "i18n-contract-fixture"
+  name = d.text("i18n contract fixture", "i18n contract fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  i18n = new d.I18nContract {
+    requiredLocales {
+      "ja"
+      "en"
+    }
+    glossary {
+      new d.I18nGlossaryEntry {
+        term = "term.product"
+        labels {
+          ["ja"] = "商品"
+          ["en"] = "Product"
+        }
+      }
+    }
+  }
+
+  vocabulary {
+    d.term("term.product", "entity", "商品", "Product")
+  }
+
+  rules {
+    new d.Rule {
+      id = "I18N-CONTRACT-COVERED"
+      kind = "invariant"
+      text =
+        d.text("i18n 契約は locale と glossary を検査する", "The i18n contract checks locales and glossary")
+      must {
+        d.clause("i18n.requiredLocales.covered", "必須 locale が揃う", "required locales are covered")
+      }
+    }
+  }
+}

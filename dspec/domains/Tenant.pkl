@@ -1,0 +1,89 @@
+/// Tenant isolation domain authoring helpers.
+///
+/// This module keeps tenant-specific wording and predicates in a preset pack,
+/// while still emitting the stable `d.Rule` Core IR.
+@ModuleInfo { minPklVersion = "0.31.0" }
+module dspec.domains.Tenant
+
+import "../Schema.pkl" as d
+
+function scope(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "entity"
+  text = d.text(jaText, enText)
+  world = "closed"
+}
+
+function scopedResource(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "entity"
+  text = d.text(jaText, enText)
+}
+
+function noCrossTenantAccess(
+  ruleId: d.Identifier,
+  actorId: d.Identifier,
+  resourceId: d.Identifier,
+  scopeId: d.Identifier,
+  checkRef: String,
+  implPath: String,
+  implSymbol: String,
+): d.Rule = new {
+  id = ruleId
+  kind = "invariant"
+  text =
+    d.text(
+      "\(actorId) は別 \(scopeId) の \(resourceId) にアクセスできない",
+      "\(actorId) cannot access \(resourceId) in another \(scopeId)",
+    )
+  terms {
+    actorId
+    resourceId
+    scopeId
+  }
+  must {
+    new d.Clause {
+      expr = "sameTenantScope(\(actorId), \(resourceId), \(scopeId))"
+      ast = new d.ExprAst {
+        op = "atom"
+        name = "sameTenantScope"
+        args {
+          actorId
+          resourceId
+          scopeId
+        }
+      }
+      text =
+        d.text(
+          "\(actorId) と \(resourceId) は同じ \(scopeId) に属する",
+          "\(actorId) and \(resourceId) belong to the same \(scopeId)",
+        )
+    }
+  }
+  mustNot {
+    new d.Clause {
+      expr = "crossTenantAccess(\(actorId), \(resourceId), \(scopeId))"
+      ast = new d.ExprAst {
+        op = "atom"
+        name = "crossTenantAccess"
+        args {
+          actorId
+          resourceId
+          scopeId
+        }
+      }
+      text =
+        d.text(
+          "\(actorId) が別 \(scopeId) の \(resourceId) にアクセスする",
+          "\(actorId) accesses \(resourceId) in another \(scopeId)",
+        )
+    }
+  }
+  reviewStatus = "approved"
+  checks {
+    d.nodeCheck(checkRef)
+  }
+  implementedBy {
+    d.codeRef(implPath, implSymbol)
+  }
+}

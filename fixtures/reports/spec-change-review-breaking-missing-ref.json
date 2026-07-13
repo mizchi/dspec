@@ -1,0 +1,165 @@
+{
+  "classification": "breaking",
+  "errors": [
+    "evidence-ref: missing markdown evidence anchor: docs/dogfooding-2026-07-10.md#missing-spec-change-review-anchor"
+  ],
+  "model": {
+    "after": {
+      "id": "compat-fixture",
+      "version": "1.0.0"
+    },
+    "before": {
+      "id": "compat-fixture",
+      "version": "0.1.0"
+    }
+  },
+  "passed": 6,
+  "review": {
+    "afterModelPath": "fixtures/compat-breaking-after.pkl",
+    "allowedCompatibility": [
+      "breaking"
+    ],
+    "beforeModelPath": "fixtures/compat-before.pkl",
+    "breakingRequires": [
+      "migration-plan",
+      "deprecation-plan",
+      "rollout-plan",
+      "owner-approval"
+    ],
+    "evidence": [
+      {
+        "kind": "migration-plan",
+        "ref": "docs/dogfooding-2026-07-10.md#missing-spec-change-review-anchor"
+      },
+      {
+        "kind": "deprecation-plan",
+        "ref": "docs/dogfooding-2026-07-10.md#spec-change-review"
+      },
+      {
+        "kind": "rollout-plan",
+        "ref": "docs/dogfooding-2026-07-10.md#spec-change-review"
+      },
+      {
+        "kind": "owner-approval",
+        "ref": "docs/dogfooding-2026-07-10.md#spec-change-review"
+      }
+    ],
+    "expectedCompatibility": "breaking",
+    "id": "spec-change-review-breaking-missing-ref",
+    "requiredSteps": [
+      "check-before",
+      "check-after",
+      "impact",
+      "compatibility",
+      "breaking-policy",
+      "evidence-ref",
+      "coverage-after"
+    ]
+  },
+  "status": "fail",
+  "steps": [
+    {
+      "errors": [],
+      "id": "check-before",
+      "model": {
+        "id": "compat-fixture",
+        "version": "0.1.0"
+      },
+      "status": "pass",
+      "summary": "compat-fixture@0.1.0: 2 terms, 1 rules"
+    },
+    {
+      "errors": [],
+      "id": "check-after",
+      "model": {
+        "id": "compat-fixture",
+        "version": "1.0.0"
+      },
+      "status": "pass",
+      "summary": "compat-fixture@1.0.0: 2 terms, 0 rules"
+    },
+    {
+      "changes": 1,
+      "errors": [],
+      "id": "impact",
+      "impacts": 1,
+      "status": "pass",
+      "summary": "1 changes, 1 impacts"
+    },
+    {
+      "classification": "breaking",
+      "decisions": 1,
+      "errors": [],
+      "id": "compatibility",
+      "status": "pass",
+      "summary": "breaking: 1 decisions"
+    },
+    {
+      "errors": [],
+      "id": "breaking-policy",
+      "missingEvidence": [],
+      "presentEvidence": [
+        "deprecation-plan",
+        "migration-plan",
+        "owner-approval",
+        "rollout-plan"
+      ],
+      "requiredEvidence": [
+        "migration-plan",
+        "deprecation-plan",
+        "rollout-plan",
+        "owner-approval"
+      ],
+      "status": "pass",
+      "summary": "breaking evidence 4/4"
+    },
+    {
+      "errors": [
+        "missing markdown evidence anchor: docs/dogfooding-2026-07-10.md#missing-spec-change-review-anchor"
+      ],
+      "id": "evidence-ref",
+      "refs": [
+        {
+          "anchor": "missing-spec-change-review-anchor",
+          "kind": "migration-plan",
+          "path": "docs/dogfooding-2026-07-10.md",
+          "reason": "missing markdown evidence anchor",
+          "ref": "docs/dogfooding-2026-07-10.md#missing-spec-change-review-anchor",
+          "status": "fail"
+        },
+        {
+          "anchor": "spec-change-review",
+          "kind": "deprecation-plan",
+          "path": "docs/dogfooding-2026-07-10.md",
+          "ref": "docs/dogfooding-2026-07-10.md#spec-change-review",
+          "status": "pass"
+        },
+        {
+          "anchor": "spec-change-review",
+          "kind": "rollout-plan",
+          "path": "docs/dogfooding-2026-07-10.md",
+          "ref": "docs/dogfooding-2026-07-10.md#spec-change-review",
+          "status": "pass"
+        },
+        {
+          "anchor": "spec-change-review",
+          "kind": "owner-approval",
+          "path": "docs/dogfooding-2026-07-10.md",
+          "ref": "docs/dogfooding-2026-07-10.md#spec-change-review",
+          "status": "pass"
+        }
+      ],
+      "status": "fail",
+      "summary": "3/4 evidence refs"
+    },
+    {
+      "covered": 0,
+      "errors": [],
+      "id": "coverage-after",
+      "status": "pass",
+      "summary": "0/0 approved rules",
+      "total": 0
+    }
+  ],
+  "total": 7
+}

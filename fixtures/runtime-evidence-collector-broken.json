@@ -1,0 +1,52 @@
+{
+  "sources": [
+    {
+      "expects": {
+        "id": "checkout-availability-30d",
+        "observedPercentAtLeast": 99,
+        "service": "checkout-api",
+        "signal": "checkout-availability-signal",
+        "slo": "checkout-availability"
+      },
+      "kind": "telemetry",
+      "path": "runtime-collector-broken/prometheus-availability.json",
+      "provider": "prometheus",
+      "source": "file"
+    },
+    {
+      "expects": {
+        "alert": "checkout-availability-page",
+        "enabled": true,
+        "id": "checkout-availability-pagerduty"
+      },
+      "kind": "alertPolicies",
+      "path": "runtime-collector-broken/pagerduty-alert-policies.json",
+      "provider": "pagerduty",
+      "source": "file"
+    },
+    {
+      "expects": {
+        "id": "checkout-page-runbook-2026-07-08",
+        "runbook": "checkout-page-runbook",
+        "status": "pass"
+      },
+      "kind": "runbookExecutions",
+      "path": "runtime-collector-broken/incident-runbook-executions.json",
+      "provider": "incident",
+      "source": "file"
+    },
+    {
+      "expects": {
+        "dependency": "checkout-api-to-payments",
+        "id": "checkout-api-to-payments-p95",
+        "idempotencyKeyObserved": true,
+        "observedLatencyMsAtMost": 2000,
+        "timedOut": false
+      },
+      "kind": "dependencyTraces",
+      "path": "runtime-collector-broken/otel-dependency-traces.json",
+      "provider": "otel",
+      "source": "file"
+    }
+  ]
+}

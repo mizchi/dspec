@@ -1,0 +1,60 @@
+{
+  "errors": [],
+  "evaluations": [
+    {
+      "errors": [],
+      "eval": {
+        "digest": "sha256:c2263f0884360c637669186463a459086c1764a2bcee23460d7460874491f2c2",
+        "id": "sample-webapp-reading-eval",
+        "inputDigest": "sha256:f0eb0ef2f42f32dde5158f7b42311d93a4615957b22ef383f1536269e6d2a563",
+        "locale": "ja",
+        "modelDigest": "sha256:fe644ba08d2937b107f320dd334d54bf9a3beba06bec5383f5248c8817e4145a",
+        "modelPath": "../examples/sample-webapp-2026.pkl",
+        "rubricVersion": "spec-reading-rubric-v1"
+      },
+      "file": "spec-reading-eval-sample-webapp.pkl",
+      "status": "pass",
+      "summary": {
+        "cases": 7,
+        "contradicted": 3,
+        "entailed": 3,
+        "notSupported": 1
+      }
+    },
+    {
+      "errors": [],
+      "eval": {
+        "digest": "sha256:03239bab9817b35acc34ca1cf004dfb1ea38806993ab670249110e2779ceec59",
+        "id": "holdout-runtime-reading-eval",
+        "inputDigest": "sha256:d91f809a032fea3591561c20c7b96c2107951126ae9aa402cc2592dcc8ddca81",
+        "locale": "ja",
+        "modelDigest": "sha256:05fefd4b0cdb352e5fe77f8726c12ff42c7a84ddf0782eba18fbdff1c0ced560",
+        "modelPath": "runtime-model.pkl",
+        "rubricVersion": "spec-reading-rubric-v1"
+      },
+      "file": "spec-reading-eval-holdout-runtime.pkl",
+      "status": "pass",
+      "summary": {
+        "cases": 3,
+        "contradicted": 1,
+        "entailed": 1,
+        "notSupported": 1
+      }
+    }
+  ],
+  "passed": 2,
+  "status": "pass",
+  "suite": {
+    "digest": "sha256:ff1721783aa7a46b35981237c1ee80da7b78c0a8c9a73f1480800c08fb85eb49",
+    "id": "spec-reading-eval-suite",
+    "inputDigest": "sha256:b3a7e68029c97f85fd60a80558aa622f3b157b391e2faa2a71c1bd0d582d9fcc"
+  },
+  "summary": {
+    "cases": 10,
+    "contradicted": 4,
+    "entailed": 4,
+    "evaluations": 2,
+    "notSupported": 2
+  },
+  "total": 2
+}

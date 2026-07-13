@@ -1,0 +1,76 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "holdout-mixed-model"
+  name = text("holdout mixed 仕様", "holdout mixed spec")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+  vocabulary {
+    d.term("route.orders", "relation", "orders API route", "orders API route")
+    d.term("schema.order-envelope", "entity", "order envelope schema", "order envelope schema")
+    d.term("workflow.ship", "action", "ship workflow", "ship workflow")
+  }
+  rules {
+    new d.Rule {
+      id = "HOLDOUT-MIXED-SURFACE"
+      kind = "invariant"
+      text =
+        text(
+          "orders route, order schema, and ship workflow are observable",
+          "orders route, order schema, and ship workflow are observable",
+        )
+      terms {
+        "route.orders"
+        "schema.order-envelope"
+        "workflow.ship"
+      }
+      must {
+        d.clause("route(/api/orders)", "/api/orders route が存在する", "/api/orders route exists")
+        d.clause(
+          "contractSchema(orderEnvelopeSchema)",
+          "orderEnvelopeSchema が存在する",
+          "orderEnvelopeSchema exists",
+        )
+        d.clause("releaseStep(ship)", "ship workflow が存在する", "ship workflow exists")
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#scores generated app profile mutations on holdout fixtures")
+      }
+    }
+  }
+  patterns = new d.PatternCatalog {
+    release = new d.ReleaseModel {
+      services {
+        new d.ReleaseService {
+          id = "api"
+        }
+      }
+      environments {
+        new d.ReleaseEnvironment {
+          id = "ci"
+        }
+      }
+      steps {
+        new d.ReleaseStep {
+          id = "ship"
+          service = "api"
+          environment = "ci"
+          strategy = "direct"
+        }
+      }
+    }
+  }
+}

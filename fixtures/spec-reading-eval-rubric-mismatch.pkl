@@ -1,0 +1,20 @@
+import "../dspec/Schema.pkl" as d
+
+specReadingEval: d.SpecReadingEvaluation = new {
+  id = "rubric-mismatch-reading-eval"
+  modelPath = "../examples/sample-webapp-2026.pkl"
+  locale = "ja"
+  rubricVersion = "spec-reading-rubric-v0"
+  cases {
+    new d.SpecReadingCase {
+      id = "owner-claim"
+      claim =
+        d.text(
+          "dashboard availability SLO の owner は team-observability である",
+          "The dashboard availability SLO owner is team-observability",
+        )
+      expected = "not-supported"
+      evidenceDigest = "sha256:37517e5f3dc66819"
+    }
+  }
+}

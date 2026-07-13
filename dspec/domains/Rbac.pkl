@@ -1,0 +1,152 @@
+/// RBAC domain authoring helpers.
+///
+/// This module is intentionally a preset pack over the stable Core IR:
+/// helpers return `d.Term` and `d.Rule`, not a separate RBAC schema.
+@ModuleInfo { minPklVersion = "0.31.0" }
+module dspec.domains.Rbac
+
+import "../Schema.pkl" as d
+
+function actor(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "actor"
+  text = d.text(jaText, enText)
+}
+
+function role(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "role"
+  text = d.text(jaText, enText)
+  world = "closed"
+}
+
+function action(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "action"
+  text = d.text(jaText, enText)
+}
+
+function resource(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "entity"
+  text = d.text(jaText, enText)
+}
+
+function roleCan(
+  ruleId: d.Identifier,
+  roleId: d.Identifier,
+  actionId: d.Identifier,
+  resourceId: d.Identifier,
+  checkRef: String,
+  implPath: String,
+  implSymbol: String,
+): d.Rule = new {
+  id = ruleId
+  kind = "permission"
+  text =
+    d.text(
+      "\(roleId) は \(resourceId) に \(actionId) を実行できる",
+      "\(roleId) can perform \(actionId) on \(resourceId)",
+    )
+  terms {
+    roleId
+    actionId
+    resourceId
+  }
+  `when` {
+    new d.Clause {
+      expr = "hasRole(\(roleId))"
+      ast = new d.ExprAst {
+        op = "atom"
+        name = "hasRole"
+        args {
+          roleId
+        }
+      }
+      text = d.text("\(roleId) を持つ", "has role \(roleId)")
+    }
+  }
+  must {
+    new d.Clause {
+      expr = "allow(\(actionId), \(resourceId))"
+      ast = new d.ExprAst {
+        op = "atom"
+        name = "allow"
+        args {
+          actionId
+          resourceId
+        }
+      }
+      text = d.text("\(actionId) が \(resourceId) に許可される", "\(actionId) is allowed on \(resourceId)")
+    }
+  }
+  reviewStatus = "approved"
+  checks {
+    d.nodeCheck(checkRef)
+  }
+  implementedBy {
+    d.codeRef(implPath, implSymbol)
+  }
+}
+
+function onlyRoleCan(
+  ruleId: d.Identifier,
+  roleId: d.Identifier,
+  actionId: d.Identifier,
+  resourceId: d.Identifier,
+  checkRef: String,
+  implPath: String,
+  implSymbol: String,
+): d.Rule = new {
+  id = ruleId
+  kind = "prohibition"
+  text =
+    d.text(
+      "\(roleId) 以外は \(resourceId) に \(actionId) を実行できない",
+      "Only \(roleId) can perform \(actionId) on \(resourceId)",
+    )
+  terms {
+    roleId
+    actionId
+    resourceId
+  }
+  `when` {
+    new d.Clause {
+      expr = "not(hasRole(\(roleId)))"
+      ast = new d.ExprAst {
+        op = "not"
+        children {
+          new d.ExprAst {
+            op = "atom"
+            name = "hasRole"
+            args {
+              roleId
+            }
+          }
+        }
+      }
+      text = d.text("\(roleId) を持たない", "does not have role \(roleId)")
+    }
+  }
+  mustNot {
+    new d.Clause {
+      expr = "allow(\(actionId), \(resourceId))"
+      ast = new d.ExprAst {
+        op = "atom"
+        name = "allow"
+        args {
+          actionId
+          resourceId
+        }
+      }
+      text = d.text("\(actionId) が \(resourceId) に許可される", "\(actionId) is allowed on \(resourceId)")
+    }
+  }
+  reviewStatus = "approved"
+  checks {
+    d.nodeCheck(checkRef)
+  }
+  implementedBy {
+    d.codeRef(implPath, implSymbol)
+  }
+}

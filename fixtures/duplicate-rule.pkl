@@ -1,0 +1,21 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/rbac.pkl" as base
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  rules = new {
+    ...base.model.rules
+    new d.Rule {
+      id = "RBAC-ALLOW"
+      kind = "permission"
+      text = text("重複したルール", "duplicated rule")
+    }
+  }
+}

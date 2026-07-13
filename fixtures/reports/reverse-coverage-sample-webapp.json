@@ -1,0 +1,345 @@
+{
+  "covered": 33,
+  "elements": [
+    {
+      "candidates": [
+        "cloud.flow.api-to-contracts",
+        "flow.api-to-contracts"
+      ],
+      "coveredByModel": true,
+      "id": "api-to-contracts",
+      "kind": "cloud.flow",
+      "path": "observed.domain.cloud.flows[0]"
+    },
+    {
+      "candidates": [
+        "cloud.flow.dashboard-to-api",
+        "flow.dashboard-to-api"
+      ],
+      "coveredByModel": true,
+      "id": "dashboard-to-api",
+      "kind": "cloud.flow",
+      "path": "observed.domain.cloud.flows[1]"
+    },
+    {
+      "candidates": [
+        "cloud.flow.github-actions-to-flaker",
+        "flow.github-actions-to-flaker"
+      ],
+      "coveredByModel": true,
+      "id": "github-actions-to-flaker",
+      "kind": "cloud.flow",
+      "path": "observed.domain.cloud.flows[2]"
+    },
+    {
+      "candidates": [
+        "cloud.flow.github-actions-to-vrt",
+        "flow.github-actions-to-vrt"
+      ],
+      "coveredByModel": true,
+      "id": "github-actions-to-vrt",
+      "kind": "cloud.flow",
+      "path": "observed.domain.cloud.flows[3]"
+    },
+    {
+      "candidates": [
+        "cloud.flow.public-to-dashboard",
+        "flow.public-to-dashboard"
+      ],
+      "coveredByModel": true,
+      "id": "public-to-dashboard",
+      "kind": "cloud.flow",
+      "path": "observed.domain.cloud.flows[4]"
+    },
+    {
+      "candidates": [
+        "cloud.node.api",
+        "node.api"
+      ],
+      "coveredByModel": true,
+      "id": "api",
+      "kind": "cloud.node",
+      "path": "observed.domain.cloud.nodes[0]"
+    },
+    {
+      "candidates": [
+        "cloud.node.contracts",
+        "node.contracts"
+      ],
+      "coveredByModel": true,
+      "id": "contracts",
+      "kind": "cloud.node",
+      "path": "observed.domain.cloud.nodes[1]"
+    },
+    {
+      "candidates": [
+        "cloud.node.dashboard",
+        "node.dashboard"
+      ],
+      "coveredByModel": true,
+      "id": "dashboard",
+      "kind": "cloud.node",
+      "path": "observed.domain.cloud.nodes[2]"
+    },
+    {
+      "candidates": [
+        "cloud.node.flaker",
+        "node.flaker"
+      ],
+      "coveredByModel": true,
+      "id": "flaker",
+      "kind": "cloud.node",
+      "path": "observed.domain.cloud.nodes[3]"
+    },
+    {
+      "candidates": [
+        "cloud.node.github-actions",
+        "node.github-actions"
+      ],
+      "coveredByModel": true,
+      "id": "github-actions",
+      "kind": "cloud.node",
+      "path": "observed.domain.cloud.nodes[4]"
+    },
+    {
+      "candidates": [
+        "cloud.node.public-client",
+        "node.public-client"
+      ],
+      "coveredByModel": true,
+      "id": "public-client",
+      "kind": "cloud.node",
+      "path": "observed.domain.cloud.nodes[5]"
+    },
+    {
+      "candidates": [
+        "cloud.node.vrt",
+        "node.vrt"
+      ],
+      "coveredByModel": true,
+      "id": "vrt",
+      "kind": "cloud.node",
+      "path": "observed.domain.cloud.nodes[6]"
+    },
+    {
+      "candidates": [
+        "data.dashboard-snapshot",
+        "data.dataset.dashboard-snapshot",
+        "dataset.dashboard-snapshot"
+      ],
+      "coveredByModel": true,
+      "id": "dashboard-snapshot",
+      "kind": "data.dataset",
+      "path": "observed.domain.data.datasets[0]"
+    },
+    {
+      "candidates": [
+        "data.dataset.incident",
+        "data.incident",
+        "dataset.incident"
+      ],
+      "coveredByModel": true,
+      "id": "incident",
+      "kind": "data.dataset",
+      "path": "observed.domain.data.datasets[1]"
+    },
+    {
+      "candidates": [
+        "data.dataset.service-detail",
+        "data.service-detail",
+        "dataset.service-detail"
+      ],
+      "coveredByModel": true,
+      "id": "service-detail",
+      "kind": "data.dataset",
+      "path": "observed.domain.data.datasets[2]"
+    },
+    {
+      "candidates": [
+        "data.flow.api-to-dashboard-data",
+        "flow.api-to-dashboard-data"
+      ],
+      "coveredByModel": true,
+      "id": "api-to-dashboard-data",
+      "kind": "data.flow",
+      "path": "observed.domain.data.flows[0]"
+    },
+    {
+      "candidates": [
+        "data.flow.ci-to-flaker-data",
+        "flow.ci-to-flaker-data"
+      ],
+      "coveredByModel": true,
+      "id": "ci-to-flaker-data",
+      "kind": "data.flow",
+      "path": "observed.domain.data.flows[1]"
+    },
+    {
+      "candidates": [
+        "data.store.api-memory",
+        "store.api-memory"
+      ],
+      "coveredByModel": true,
+      "id": "api-memory",
+      "kind": "data.store",
+      "path": "observed.domain.data.stores[0]"
+    },
+    {
+      "candidates": [
+        "data.store.dashboard-cache",
+        "store.dashboard-cache"
+      ],
+      "coveredByModel": true,
+      "id": "dashboard-cache",
+      "kind": "data.store",
+      "path": "observed.domain.data.stores[1]"
+    },
+    {
+      "candidates": [
+        "data.store.flaker-duckdb",
+        "store.flaker-duckdb"
+      ],
+      "coveredByModel": true,
+      "id": "flaker-duckdb",
+      "kind": "data.store",
+      "path": "observed.domain.data.stores[2]"
+    },
+    {
+      "candidates": [
+        "data.store.github-actions-artifacts",
+        "store.github-actions-artifacts"
+      ],
+      "coveredByModel": true,
+      "id": "github-actions-artifacts",
+      "kind": "data.store",
+      "path": "observed.domain.data.stores[3]"
+    },
+    {
+      "candidates": [
+        "release.gate.e2e"
+      ],
+      "coveredByModel": true,
+      "id": "e2e",
+      "kind": "release.gate",
+      "path": "observed.domain.release.gates[0]"
+    },
+    {
+      "candidates": [
+        "release.gate.typecheck"
+      ],
+      "coveredByModel": true,
+      "id": "typecheck",
+      "kind": "release.gate",
+      "path": "observed.domain.release.gates[1]"
+    },
+    {
+      "candidates": [
+        "release.gate.unit"
+      ],
+      "coveredByModel": true,
+      "id": "unit",
+      "kind": "release.gate",
+      "path": "observed.domain.release.gates[2]"
+    },
+    {
+      "candidates": [
+        "release.gate.vrt"
+      ],
+      "coveredByModel": true,
+      "id": "vrt",
+      "kind": "release.gate",
+      "path": "observed.domain.release.gates[3]"
+    },
+    {
+      "candidates": [
+        "release.service.api",
+        "service.api"
+      ],
+      "coveredByModel": true,
+      "id": "api",
+      "kind": "release.service",
+      "path": "observed.domain.release.services[0]"
+    },
+    {
+      "candidates": [
+        "release.service.dashboard",
+        "service.dashboard"
+      ],
+      "coveredByModel": true,
+      "id": "dashboard",
+      "kind": "release.service",
+      "path": "observed.domain.release.services[1]"
+    },
+    {
+      "candidates": [
+        "release.step.ci",
+        "step.ci"
+      ],
+      "coveredByModel": true,
+      "id": "ci",
+      "kind": "release.step",
+      "path": "observed.domain.release.steps[0]"
+    },
+    {
+      "candidates": [
+        "release.step.weekly-review",
+        "step.weekly-review"
+      ],
+      "coveredByModel": true,
+      "id": "weekly-review",
+      "kind": "release.step",
+      "path": "observed.domain.release.steps[1]"
+    },
+    {
+      "candidates": [
+        "dependency.dashboard-to-api",
+        "runtime.dependency.dashboard-to-api"
+      ],
+      "coveredByModel": true,
+      "id": "dashboard-to-api",
+      "kind": "runtime.dependency",
+      "path": "observed.domain.runtime.dependencies[0]"
+    },
+    {
+      "candidates": [
+        "runtime.service.api",
+        "service.api"
+      ],
+      "coveredByModel": true,
+      "id": "api",
+      "kind": "runtime.service",
+      "path": "observed.domain.runtime.services[0]"
+    },
+    {
+      "candidates": [
+        "runtime.service.dashboard",
+        "service.dashboard"
+      ],
+      "coveredByModel": true,
+      "id": "dashboard",
+      "kind": "runtime.service",
+      "path": "observed.domain.runtime.services[1]"
+    },
+    {
+      "candidates": [
+        "runtime.slo.dashboard-availability",
+        "slo.dashboard-availability"
+      ],
+      "coveredByModel": true,
+      "id": "dashboard-availability",
+      "kind": "runtime.slo",
+      "path": "observed.domain.runtime.slos[0]"
+    }
+  ],
+  "errors": [],
+  "model": {
+    "id": "sample-webapp-2026",
+    "version": "0.1.0"
+  },
+  "observed": {
+    "id": "sample-webapp-2026"
+  },
+  "status": "pass",
+  "total": 33,
+  "uncovered": []
+}

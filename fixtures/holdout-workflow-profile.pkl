@@ -1,0 +1,10 @@
+import "../dspec/Schema.pkl" as d
+
+profile: d.AppProfile = new {
+  id = "holdout-workflow-profile"
+  modelPath = "fixtures/holdout-workflow-model.pkl"
+  appRoot = "fixtures/holdout-workflow-app"
+  requiredScenarioCategories {
+    "workflow"
+  }
+}

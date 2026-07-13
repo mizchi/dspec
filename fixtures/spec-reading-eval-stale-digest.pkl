@@ -1,0 +1,23 @@
+import "../dspec/Schema.pkl" as d
+
+specReadingEval: d.SpecReadingEvaluation = new {
+  id = "sample-webapp-reading-eval-stale-digest"
+  modelPath = "../examples/sample-webapp-2026.pkl"
+  locale = "ja"
+  cases {
+    new d.SpecReadingCase {
+      id = "cloud-topology-stale-digest"
+      claim =
+        d.text(
+          "dashboard/API/contracts と CI runner の疎通は明示された topology に従う",
+          "Dashboard/API/contracts and CI runner connectivity follows explicit topology",
+        )
+      expected = "entailed"
+      evidenceDigest = "sha256:stale"
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:SAMPLE-CLOUD-TOPOLOGY" }
+        new d.SpecReadingEvidence { ref = "clause:SAMPLE-CLOUD-TOPOLOGY#must[0]" }
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "spans": [
+    {
+      "attributes": {
+        "dspec.dependency": "checkout-api-to-payments",
+        "http.request.header.idempotency-key.present": true
+      },
+      "duration_ms": 120,
+      "name": "checkout-api-to-payments",
+      "span_id": "checkout-api-to-payments-p95",
+      "status": {
+        "code": "OK"
+      }
+    }
+  ]
+}

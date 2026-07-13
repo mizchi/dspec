@@ -1,0 +1,24 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/rbac.pkl" as base
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  rules = new {
+    ...base.model.rules
+    new d.Rule {
+      id = "RBAC-UNKNOWN-TERM"
+      kind = "invariant"
+      text = text("存在しない term を参照する", "references an unknown term")
+      terms {
+        "missing.term"
+      }
+    }
+  }
+}

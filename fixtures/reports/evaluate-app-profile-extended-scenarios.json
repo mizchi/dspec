@@ -1,0 +1,209 @@
+{
+  "errors": [],
+  "passed": 13,
+  "profile": {
+    "appRoot": "../sample-webapp-2026",
+    "id": "sample-webapp-2026-extended-scenarios",
+    "modelPath": "examples/sample-webapp-2026.pkl",
+    "observedFacts": "fixtures/reports/import-real-app-sample-webapp.json"
+  },
+  "scenarios": [
+    {
+      "actual": "pass",
+      "checks": 7,
+      "errors": [],
+      "expected": "pass",
+      "guard": "false-positive",
+      "id": "baseline",
+      "kind": "baseline-no-drift",
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed release gate: ci -> vrt"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "release-gate-missing-vrt",
+      "kind": "remove-release-gate",
+      "mutation": {
+        "removedGate": "vrt",
+        "step": "ci"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: release.gate security at observed.domain.release.gates[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "release-gate-add-security",
+      "kind": "add-observed-release-gate",
+      "mutation": {
+        "addedGate": "security",
+        "workflow": "ci"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed route: /api/dashboard"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "route-missing-dashboard",
+      "kind": "remove-route",
+      "mutation": {
+        "removedRoute": "/api/dashboard"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed route: /api/admin"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "route-add-admin",
+      "kind": "add-observed-route",
+      "mutation": {
+        "addedRoute": "/api/admin"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed data dataset: dashboard-snapshot",
+        "missing observed data flow: api-to-dashboard-data"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "schema-missing-dashboard-snapshot",
+      "kind": "remove-contract-schema",
+      "mutation": {
+        "removedSchema": "dashboardSnapshotSchema"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed contract schema: auditLogSchema"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "schema-add-audit-log",
+      "kind": "add-observed-contract-schema",
+      "mutation": {
+        "addedSchema": "auditLogSchema"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed release step: weekly-review",
+        "missing observed release gate: weekly-review -> unit",
+        "missing observed release gate: weekly-review -> e2e"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "workflow-missing-weekly-review",
+      "kind": "remove-workflow",
+      "mutation": {
+        "removedWorkflow": "weekly-review"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: release.step nightly at observed.domain.release.steps[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "workflow-add-nightly",
+      "kind": "add-observed-workflow",
+      "mutation": {
+        "addedWorkflow": "nightly"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed data store: flaker-duckdb"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "store-missing-flaker-duckdb",
+      "kind": "remove-data-store",
+      "mutation": {
+        "removedStore": "flaker-duckdb"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: data.store audit-log at observed.domain.data.stores[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "store-add-audit-log",
+      "kind": "add-observed-data-store",
+      "mutation": {
+        "addedStore": "audit-log"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed runtime dependency: dashboard-to-api"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "dependency-missing-dashboard-api",
+      "kind": "remove-runtime-dependency",
+      "mutation": {
+        "removedDependency": "dashboard-to-api"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: runtime.dependency worker-to-api at observed.domain.runtime.dependencies[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "dependency-add-worker-api",
+      "kind": "add-observed-runtime-dependency",
+      "mutation": {
+        "addedDependency": "worker-to-api"
+      },
+      "status": "pass"
+    }
+  ],
+  "status": "pass",
+  "total": 13
+}

@@ -1,0 +1,100 @@
+{
+  "errors": [],
+  "eval": {
+    "digest": "sha256:c2263f0884360c637669186463a459086c1764a2bcee23460d7460874491f2c2",
+    "id": "sample-webapp-reading-eval",
+    "inputDigest": "sha256:f0eb0ef2f42f32dde5158f7b42311d93a4615957b22ef383f1536269e6d2a563",
+    "locale": "ja",
+    "modelDigest": "sha256:fe644ba08d2937b107f320dd334d54bf9a3beba06bec5383f5248c8817e4145a",
+    "modelPath": "../examples/sample-webapp-2026.pkl",
+    "rubricVersion": "spec-reading-rubric-v1"
+  },
+  "negativeControls": [
+    {
+      "errors": [],
+      "expectedFailure": true,
+      "id": "flipped-label",
+      "score": {
+        "accuracy": 0.8571428571428571,
+        "correct": 6,
+        "total": 7
+      },
+      "status": "pass"
+    }
+  ],
+  "promptChecks": [
+    {
+      "errors": [],
+      "id": "prompt-default",
+      "leaks": [],
+      "locale": "ja",
+      "status": "pass"
+    },
+    {
+      "errors": [],
+      "id": "prompt-en",
+      "leaks": [],
+      "locale": "en",
+      "status": "pass"
+    }
+  ],
+  "status": "pass",
+  "variants": [
+    {
+      "errors": [],
+      "evidenceScore": {
+        "correct": 7,
+        "total": 7
+      },
+      "id": "gold-order",
+      "score": {
+        "accuracy": 1,
+        "correct": 7,
+        "total": 7
+      },
+      "status": "pass"
+    },
+    {
+      "errors": [],
+      "evidenceScore": {
+        "correct": 7,
+        "total": 7
+      },
+      "id": "reversed-answer-order",
+      "score": {
+        "accuracy": 1,
+        "correct": 7,
+        "total": 7
+      },
+      "status": "pass"
+    },
+    {
+      "errors": [],
+      "evidenceScore": {
+        "correct": 7,
+        "total": 7
+      },
+      "id": "reversed-evidence-order",
+      "score": {
+        "accuracy": 1,
+        "correct": 7,
+        "total": 7
+      },
+      "status": "pass"
+    },
+    {
+      "errors": [],
+      "evidenceScore": {
+        "correct": 7,
+        "total": 7
+      },
+      "id": "noisy-rationale",
+      "score": {
+        "accuracy": 1,
+        "correct": 7,
+        "total": 7
+      },
+      "status": "pass"
+    }
+  ]
+}

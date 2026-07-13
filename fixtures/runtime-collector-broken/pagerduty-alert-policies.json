@@ -1,0 +1,10 @@
+{
+  "alert_policies": [
+    {
+      "alert": "checkout-availability-page",
+      "enabled": false,
+      "id": "checkout-availability-pagerduty",
+      "html_url": "https://pagerduty.example/policies/checkout-availability-page"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "holdout-schema-model"
+  name = text("holdout schema 仕様", "holdout schema spec")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+  vocabulary {
+    d.term(
+      "schema.invoice-envelope",
+      "entity",
+      "invoice envelope schema",
+      "invoice envelope schema",
+    )
+  }
+  rules {
+    new d.Rule {
+      id = "HOLDOUT-SCHEMA-INVOICE"
+      kind = "invariant"
+      text = text("invoice envelope schema is observable", "invoice envelope schema is observable")
+      terms {
+        "schema.invoice-envelope"
+      }
+      must {
+        d.clause(
+          "contractSchema(invoiceEnvelopeSchema)",
+          "invoiceEnvelopeSchema が contracts package に存在する",
+          "invoiceEnvelopeSchema exists in the contracts package",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#scores generated app profile mutations on holdout fixtures")
+      }
+    }
+  }
+}

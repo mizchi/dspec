@@ -1,0 +1,164 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "runtime-model-fixture"
+  name = text("Runtime safety fixture", "Runtime safety fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    new d.Term {
+      id = "service.checkout-api"
+      kind = "entity"
+      text = text("checkout API", "checkout API")
+    }
+    new d.Term {
+      id = "slo.checkout-availability"
+      kind = "quantity"
+      text = text("checkout availability SLO", "checkout availability SLO")
+    }
+  }
+
+  rules {
+    new d.Rule {
+      id = "RUNTIME-CRITICAL-OBSERVED"
+      kind = "invariant"
+      text =
+        text(
+          "critical service は SLO・page alert・runbook・timeout/retry 契約で運用される",
+          "Critical services are operated with SLO, page alert, runbook, timeout, and retry contracts",
+        )
+      terms {
+        "service.checkout-api"
+        "slo.checkout-availability"
+      }
+      must {
+        new d.Clause {
+          expr = "critical runtime has operational support"
+        }
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#accepts Runtime safety pattern"
+        }
+      }
+    }
+  }
+
+  patterns = new d.PatternCatalog {
+    runtime = new d.RuntimeModel {
+      services {
+        new d.RuntimeService {
+          id = "checkout-api"
+          critical = true
+          text = text("checkout API", "checkout API")
+        }
+      }
+      dependencies {
+        new d.RuntimeDependency {
+          id = "checkout-api-to-payments"
+          service = "checkout-api"
+          target = "payments-api"
+          kind = "http"
+          timeoutMs = 2000
+          retryable = true
+          idempotent = true
+          text = text("payments API dependency", "payments API dependency")
+        }
+      }
+      signals {
+        new d.RuntimeSignal {
+          id = "checkout-availability-signal"
+          service = "checkout-api"
+          kind = "metric"
+          indicator = "availability"
+          text = text("checkout availability metric", "checkout availability metric")
+        }
+      }
+      runbooks {
+        new d.RuntimeRunbook {
+          id = "checkout-page-runbook"
+          service = "checkout-api"
+          tested = true
+          text = text("checkout page runbook", "checkout page runbook")
+        }
+      }
+      alerts {
+        new d.RuntimeAlert {
+          id = "checkout-availability-page"
+          service = "checkout-api"
+          signal = "checkout-availability-signal"
+          severity = "page"
+          runbook = "checkout-page-runbook"
+          text = text("checkout availability page", "checkout availability page")
+        }
+      }
+      slos {
+        new d.RuntimeSlo {
+          id = "checkout-availability"
+          service = "checkout-api"
+          indicator = "availability"
+          targetPercent = 99
+          window = "30d"
+          text = text("checkout availability SLO", "checkout availability SLO")
+        }
+      }
+      telemetry {
+        new d.RuntimeTelemetryWindow {
+          id = "checkout-availability-30d"
+          service = "checkout-api"
+          signal = "checkout-availability-signal"
+          slo = "checkout-availability"
+          observedPercent = 100
+          source = "prometheus:checkout_availability:30d"
+          text = text("checkout availability 30d telemetry", "checkout availability 30d telemetry")
+        }
+      }
+      alertPolicies {
+        new d.RuntimeAlertPolicy {
+          id = "checkout-availability-pagerduty"
+          alert = "checkout-availability-page"
+          enabled = true
+          source = "pagerduty:checkout-availability-page"
+          text =
+            text("checkout availability PagerDuty policy", "checkout availability PagerDuty policy")
+        }
+      }
+      runbookExecutions {
+        new d.RuntimeRunbookExecution {
+          id = "checkout-page-runbook-2026-07-08"
+          runbook = "checkout-page-runbook"
+          status = "pass"
+          executedAt = "2026-07-08"
+          source = "incident-drill:checkout-page-runbook-2026-07-08"
+          text = text("checkout page runbook drill", "checkout page runbook drill")
+        }
+      }
+      dependencyTraces {
+        new d.RuntimeDependencyTrace {
+          id = "checkout-api-to-payments-p95"
+          dependency = "checkout-api-to-payments"
+          observedLatencyMs = 120
+          timedOut = false
+          idempotencyKeyObserved = true
+          source = "otel:checkout-api-to-payments:p95"
+          text = text("payments API trace sample", "payments API trace sample")
+        }
+      }
+    }
+  }
+}

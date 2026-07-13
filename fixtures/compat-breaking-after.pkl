@@ -1,0 +1,19 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "compat-fixture"
+  name = d.text("Compatibility fixture", "Compatibility fixture")
+  version = "1.0.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    d.term("actor.user", "actor", "ユーザー", "User")
+    d.term("action.view", "action", "閲覧", "View")
+  }
+
+  rules {}
+}

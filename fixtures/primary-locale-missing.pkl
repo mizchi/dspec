@@ -1,0 +1,9 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/rbac.pkl" as base
+
+model: d.Model = (base.model) {
+  primaryLocale = "ja"
+  locales = new {
+    "en"
+  }
+}

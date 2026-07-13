@@ -1,0 +1,46 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "typed-ast-contradiction"
+  name = d.text("Typed AST contradiction fixture", "Typed AST contradiction fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  rules {
+    new d.Rule {
+      id = "TYPED-AST-CONTRADICTION"
+      kind = "invariant"
+      text = d.text("typed AST の矛盾を検出する", "detect typed AST contradictions")
+      must {
+        new d.Clause {
+          expr = "allowViaMust"
+          ast = new d.ExprAst {
+            op = "atom"
+            name = "allow"
+            args {
+              "action.view"
+              "screen.admin"
+            }
+          }
+        }
+      }
+      mustNot {
+        new d.Clause {
+          expr = "denyViaMustNot"
+          ast = new d.ExprAst {
+            op = "atom"
+            name = "allow"
+            args {
+              "action.view"
+              "screen.admin"
+            }
+          }
+        }
+      }
+    }
+  }
+}

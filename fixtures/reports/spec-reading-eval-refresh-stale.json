@@ -1,0 +1,41 @@
+{
+  "apply": false,
+  "cases": [
+    {
+      "actual": "sha256:1e6d39337b2ced7a",
+      "errors": [],
+      "evidence": [
+        "rule:SAMPLE-CLOUD-TOPOLOGY",
+        "clause:SAMPLE-CLOUD-TOPOLOGY#must[0]"
+      ],
+      "expected": "sha256:stale",
+      "id": "cloud-topology-stale-digest",
+      "stale": true,
+      "status": "pass"
+    }
+  ],
+  "errors": [],
+  "eval": {
+    "digest": "sha256:6f6feef194ce51d52c93e3611d02db99659242080ee0edf5b814687d85870289",
+    "id": "sample-webapp-reading-eval-stale-digest",
+    "inputDigest": "sha256:82bf927c899f41b6e2c549e38361858f072376f6c9b44e249d6c65c2c53af090",
+    "locale": "ja",
+    "modelDigest": "sha256:fe644ba08d2937b107f320dd334d54bf9a3beba06bec5383f5248c8817e4145a",
+    "modelPath": "../examples/sample-webapp-2026.pkl",
+    "rubricVersion": "spec-reading-rubric-v1"
+  },
+  "status": "pass",
+  "total": 1,
+  "updated": 1,
+  "updates": [
+    {
+      "actual": "sha256:1e6d39337b2ced7a",
+      "evidence": [
+        "rule:SAMPLE-CLOUD-TOPOLOGY",
+        "clause:SAMPLE-CLOUD-TOPOLOGY#must[0]"
+      ],
+      "expected": "sha256:stale",
+      "id": "cloud-topology-stale-digest"
+    }
+  ]
+}

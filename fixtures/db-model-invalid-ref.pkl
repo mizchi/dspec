@@ -1,0 +1,18 @@
+import "../dspec/Schema.pkl" as d
+import "db-model.pkl" as base
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    db = (base.model.patterns.db) {
+      transactions {
+        new d.DbTransaction {
+          id = "bad-transaction"
+          text = base.model.name
+          writes {
+            "missing_table"
+          }
+        }
+      }
+    }
+  }
+}

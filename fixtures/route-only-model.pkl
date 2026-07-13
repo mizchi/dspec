@@ -1,0 +1,40 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "route-only-model"
+  name = text("route-only 仕様", "route-only spec")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+  vocabulary {
+    d.term("route.ping", "relation", "ping API route", "ping API route")
+  }
+  rules {
+    new d.Rule {
+      id = "ROUTE-ONLY-PING"
+      kind = "invariant"
+      text = text("/api/ping route is observable", "/api/ping route is observable")
+      terms {
+        "route.ping"
+      }
+      must {
+        d.clause("route(/api/ping)", "/api/ping route が存在する", "/api/ping route exists")
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#scopes app profile scenario coverage to required categories")
+      }
+    }
+  }
+}

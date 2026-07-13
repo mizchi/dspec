@@ -1,0 +1,70 @@
+import "../dspec/Schema.pkl" as d
+import "release-model.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "release-model-broken"
+  patterns = new d.PatternCatalog {
+    release = (base.model.patterns.release) {
+      rollbacks {
+        new d.ReleaseRollback {
+          id = "untested-rollback"
+          service = "checkout-api"
+          tested = false
+        }
+      }
+      migrations {
+        new d.ReleaseMigration {
+          id = "breaking-payment-migration"
+          service = "checkout-api"
+          backwardsCompatible = false
+        }
+      }
+      steps {
+        new d.ReleaseStep {
+          id = "prod-without-health"
+          service = "checkout-api"
+          environment = "production"
+          strategy = "canary"
+          trafficPercent = 10
+          rollback = "checkout-api-rollback"
+          gates {
+            "unit-tests"
+          }
+        }
+        new d.ReleaseStep {
+          id = "prod-without-rollback"
+          service = "checkout-api"
+          environment = "production"
+          strategy = "canary"
+          trafficPercent = 20
+          gates {
+            "prod-health"
+          }
+        }
+        new d.ReleaseStep {
+          id = "prod-untested-rollback"
+          service = "checkout-api"
+          environment = "production"
+          strategy = "canary"
+          trafficPercent = 20
+          rollback = "untested-rollback"
+          gates {
+            "prod-health"
+          }
+        }
+        new d.ReleaseStep {
+          id = "prod-breaking-migration"
+          service = "checkout-api"
+          environment = "production"
+          strategy = "rolling"
+          trafficPercent = 100
+          rollback = "checkout-api-rollback"
+          migration = "breaking-payment-migration"
+          gates {
+            "prod-health"
+          }
+        }
+      }
+    }
+  }
+}

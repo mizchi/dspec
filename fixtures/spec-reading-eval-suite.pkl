@@ -1,0 +1,35 @@
+import "../dspec/Schema.pkl" as d
+
+specReadingEvalSuite: d.SpecReadingEvaluationSuite = new {
+  id = "spec-reading-eval-suite"
+  evaluations {
+    "spec-reading-eval-sample-webapp.pkl"
+    "spec-reading-eval-holdout-runtime.pkl"
+  }
+  minEvaluations = 2
+  minCases = 10
+  requiredEvidenceKinds {
+    "rule"
+    "term"
+    "clause"
+  }
+  requiredModelKinds {
+    "cloud"
+    "data"
+    "release"
+    "runtime"
+  }
+  requiredTags {
+    "cloud"
+    "data"
+    "release"
+    "runtime"
+    "near-miss"
+    "value-mismatch"
+    "missing-owner"
+  }
+  requiredParaphraseLocales {
+    "ja"
+    "en"
+  }
+}

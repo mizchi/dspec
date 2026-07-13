@@ -1,0 +1,192 @@
+import "../dspec/Schema.pkl" as d
+
+specReadingEval: d.SpecReadingEvaluation = new {
+  id = "sample-webapp-reading-eval"
+  modelPath = "../examples/sample-webapp-2026.pkl"
+  locale = "ja"
+  rubricVersion = "spec-reading-rubric-v1"
+  cases {
+    new d.SpecReadingCase {
+      id = "cloud-topology"
+      claim =
+        d.text(
+          "dashboard/API/contracts と CI runner の疎通は明示された topology に従う",
+          "Dashboard/API/contracts and CI runner connectivity follows explicit topology",
+        )
+      paraphrases {
+        ["ja"] {
+          "dashboard から API/contracts/CI runner への通信経路は topology として読める"
+        }
+        ["en"] {
+          "The dashboard, API, contracts, and CI runner communicate through the modeled topology"
+        }
+      }
+      expected = "entailed"
+      evidenceDigest = "sha256:1e6d39337b2ced7a"
+      tags {
+        "cloud"
+        "topology"
+      }
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:SAMPLE-CLOUD-TOPOLOGY" }
+        new d.SpecReadingEvidence { ref = "clause:SAMPLE-CLOUD-TOPOLOGY#must[0]" }
+      }
+    }
+    new d.SpecReadingCase {
+      id = "runtime-slo"
+      claim =
+        d.text(
+          "dashboard は API dependency と availability SLO を runtime model として持つ",
+          "The dashboard owns the API dependency and availability SLO as runtime model facts",
+        )
+      paraphrases {
+        ["ja"] {
+          "dashboard の API 依存と availability SLO は runtime model に含まれる"
+        }
+        ["en"] {
+          "The runtime model records the dashboard API dependency and availability SLO"
+        }
+      }
+      expected = "entailed"
+      evidenceDigest = "sha256:f8fd2b1bb5af2513"
+      tags {
+        "runtime"
+        "slo"
+      }
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:SAMPLE-RUNTIME-SAFETY" }
+        new d.SpecReadingEvidence { ref = "term:slo.dashboard-availability" }
+      }
+    }
+    new d.SpecReadingCase {
+      id = "ci-weekly-review"
+      claim =
+        d.text(
+          "API と dashboard の release は CI と weekly review で継続検査される",
+          "API and dashboard releases are continuously checked by CI and weekly review",
+        )
+      paraphrases {
+        ["ja"] {
+          "API/dashboard の release safety は CI と weekly review で確認される"
+        }
+        ["en"] {
+          "CI and weekly review continuously check API and dashboard release safety"
+        }
+      }
+      expected = "entailed"
+      evidenceDigest = "sha256:270a523dd9718a2e"
+      tags {
+        "release"
+        "ci"
+      }
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:SAMPLE-RELEASE-SAFETY" }
+        new d.SpecReadingEvidence { ref = "clause:SAMPLE-RELEASE-SAFETY#must[1]" }
+      }
+    }
+    new d.SpecReadingCase {
+      id = "database-primary-store"
+      claim =
+        d.text(
+          "sample-webapp は永続 database を仕様上の主要 store として持つ",
+          "sample-webapp owns a persistent database as a primary store in the spec",
+        )
+      paraphrases {
+        ["ja"] {
+          "仕様上の primary store は永続 DB である"
+        }
+        ["en"] {
+          "The modeled primary store is a persistent database"
+        }
+      }
+      expected = "contradicted"
+      evidenceDigest = "sha256:f26c07d19f35d220"
+      tags {
+        "data"
+        "near-miss"
+        "value-mismatch"
+      }
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:SAMPLE-DATA-CONTRACT" }
+        new d.SpecReadingEvidence { ref = "term:store.api-memory" }
+      }
+    }
+    new d.SpecReadingCase {
+      id = "payment-release-gate"
+      claim =
+        d.text(
+          "sample-webapp の仕様は payment workflow を release gate として要求する",
+          "The sample-webapp spec requires a payment workflow as a release gate",
+        )
+      paraphrases {
+        ["ja"] {
+          "release gate には payment workflow が含まれる"
+        }
+        ["en"] {
+          "A payment workflow is required as part of the release gate"
+        }
+      }
+      expected = "contradicted"
+      evidenceDigest = "sha256:c78f0abd9a1be9e9"
+      tags {
+        "release"
+        "near-miss"
+        "missing-workflow"
+      }
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:SAMPLE-RELEASE-SAFETY" }
+        new d.SpecReadingEvidence { ref = "term:release.step.ci" }
+      }
+    }
+    new d.SpecReadingCase {
+      id = "latency-budget"
+      claim =
+        d.text(
+          "dashboard-to-api dependency の timeout は 200ms である",
+          "The dashboard-to-api dependency timeout is 200ms",
+        )
+      paraphrases {
+        ["ja"] {
+          "dashboard-to-api の timeoutMs は 200 と読める"
+        }
+        ["en"] {
+          "The dashboard-to-api timeoutMs value is 200"
+        }
+      }
+      expected = "contradicted"
+      evidenceDigest = "sha256:d387cf65d7016f3f"
+      tags {
+        "runtime"
+        "near-miss"
+        "value-mismatch"
+      }
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:SAMPLE-RUNTIME-SAFETY" }
+        new d.SpecReadingEvidence { ref = "term:dependency.dashboard-to-api" }
+      }
+    }
+    new d.SpecReadingCase {
+      id = "slo-owner"
+      claim =
+        d.text(
+          "dashboard availability SLO の owner は team-observability である",
+          "The dashboard availability SLO owner is team-observability",
+        )
+      paraphrases {
+        ["ja"] {
+          "dashboard availability SLO の担当チームは team-observability と明記されている"
+        }
+        ["en"] {
+          "The dashboard availability SLO explicitly belongs to team-observability"
+        }
+      }
+      expected = "not-supported"
+      evidenceDigest = "sha256:37517e5f3dc66819"
+      tags {
+        "runtime"
+        "near-miss"
+        "missing-owner"
+      }
+    }
+  }
+}

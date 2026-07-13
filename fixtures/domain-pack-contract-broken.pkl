@@ -1,0 +1,26 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "domain-pack-contract-broken"
+  name = d.text("Domain pack contract broken fixture", "Domain pack contract broken fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  domainPacks {
+    new d.DomainPack {
+      id = "bad"
+      path = "dspec/domains/Rbac.pkl"
+      helpers {
+        new d.DomainPackHelper {
+          id = "bad.ruleHelper"
+          symbol = "onlyRoleCan"
+          returns = "rule"
+        }
+      }
+    }
+  }
+}

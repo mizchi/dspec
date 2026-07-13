@@ -1,0 +1,164 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "db-model-fixture"
+  name = text("DB model fixture", "DB model fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    new d.Term {
+      id = "table.orders"
+      kind = "entity"
+      text = text("orders table", "orders table")
+    }
+    new d.Term {
+      id = "table.payments"
+      kind = "entity"
+      text = text("payments table", "payments table")
+    }
+  }
+
+  rules {
+    new d.Rule {
+      id = "DB-PAID-ORDER-HAS-PAYMENT"
+      kind = "invariant"
+      text = text("paid order は payment を持つ", "paid orders have payments")
+      terms {
+        "table.orders"
+        "table.payments"
+      }
+      must {
+        new d.Clause {
+          expr = "paid(order) -> exists(payment.order_id == order.id)"
+        }
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#accepts DB model pattern"
+        }
+      }
+    }
+  }
+
+  patterns = new d.PatternCatalog {
+    db = new d.DbModel {
+      tables {
+        new d.DbTable {
+          id = "orders"
+          text = text("注文", "orders")
+          primaryKey {
+            "id"
+          }
+          tenantColumn = "tenant_id"
+          columns {
+            new d.DbColumn {
+              id = "id"
+              type = "id"
+            }
+            new d.DbColumn {
+              id = "tenant_id"
+              type = "id"
+            }
+            new d.DbColumn {
+              id = "status"
+              type = "string"
+            }
+          }
+        }
+        new d.DbTable {
+          id = "payments"
+          text = text("支払い", "payments")
+          primaryKey {
+            "id"
+          }
+          tenantColumn = "tenant_id"
+          columns {
+            new d.DbColumn {
+              id = "id"
+              type = "id"
+            }
+            new d.DbColumn {
+              id = "tenant_id"
+              type = "id"
+            }
+            new d.DbColumn {
+              id = "order_id"
+              type = "id"
+              references = "orders.id"
+            }
+          }
+        }
+      }
+      invariants {
+        new d.DbInvariant {
+          id = "paid-order-has-payment"
+          text = text("paid order は payment を持つ", "paid orders have payments")
+          expr = "orders.status == paid -> exists payments.order_id == orders.id"
+          tables {
+            "orders"
+            "payments"
+          }
+        }
+      }
+      transactions {
+        new d.DbTransaction {
+          id = "pay-order"
+          text = text("order を paid にする", "mark an order as paid")
+          reads {
+            "orders"
+          }
+          writes {
+            "orders"
+            "payments"
+          }
+          preserves {
+            "paid-order-has-payment"
+          }
+          idempotencyKey = "payments.order_id"
+        }
+      }
+      migrations {
+        new d.DbMigration {
+          id = "v2-add-payments"
+          text = text("paid orders から payments を構築する", "build payments from paid orders")
+          fromTables {
+            "orders"
+          }
+          toTables {
+            "orders"
+            "payments"
+          }
+          preserves {
+            "paid-order-has-payment"
+          }
+          mappings {
+            new d.DbMapping {
+              id = "paid-orders-create-payments"
+              text = text("paid orders は payments に移される", "paid orders are mapped to payments")
+              sourceExpr = "orders.status == paid"
+              targetExpr = "exists payments.order_id == orders.id"
+              invariants {
+                "paid-order-has-payment"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

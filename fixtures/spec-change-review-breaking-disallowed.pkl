@@ -1,0 +1,19 @@
+import "../dspec/Schema.pkl" as d
+
+review: d.SpecChangeReview = new {
+  id = "spec-change-review-breaking-disallowed"
+  beforeModelPath = "fixtures/compat-before.pkl"
+  afterModelPath = "fixtures/compat-breaking-after.pkl"
+  expectedCompatibility = "breaking"
+  allowedCompatibility {
+    "compatible"
+    "narrowing"
+  }
+  requiredSteps {
+    "check-before"
+    "check-after"
+    "impact"
+    "compatibility"
+    "coverage-after"
+  }
+}

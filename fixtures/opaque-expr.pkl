@@ -1,0 +1,26 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/rbac.pkl" as base
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  rules = new {
+    ...base.model.rules
+    new d.Rule {
+      id = "RBAC-OPAQUE-EXPR"
+      kind = "example"
+      text = text("CLI は expr の構文を解釈しない", "the CLI does not parse expr syntax")
+      must {
+        new d.Clause {
+          expr = "∀user. role(user) ⇒ allow(user, admin-screen)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "impact-fixture"
+  name = d.text("Impact fixture", "Impact fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    d.term("actor.user", "actor", "ユーザー", "User")
+    d.term("action.view", "action", "閲覧", "View")
+  }
+
+  rules {
+    new d.Rule {
+      id = "IMPACT-ALLOW"
+      kind = "permission"
+      text = d.text("ユーザーは表示できる", "Users may view")
+      terms {
+        "actor.user"
+        "action.view"
+      }
+      must {
+        d.clause("allow(actor.user, action.view)", "ユーザーに閲覧を許可する", "Users are allowed to view")
+      }
+      reviewStatus = "approved"
+      implementedBy {
+        d.codeRef("src/cli.mjs", "validate")
+      }
+    }
+  }
+}

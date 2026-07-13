@@ -1,0 +1,25 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/rbac.pkl" as base
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  rules = new {
+    ...base.model.rules
+    new d.Rule {
+      id = "RBAC-APPROVED-WITHOUT-TARGET"
+      kind = "invariant"
+      text = text("検証先のない approved rule", "approved rule without a verification target")
+      terms {
+        "screen.admin"
+      }
+      reviewStatus = "approved"
+    }
+  }
+}

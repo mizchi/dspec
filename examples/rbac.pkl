@@ -1,0 +1,113 @@
+import "../dspec/domains/Rbac.pkl" as rbac
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "app-rbac"
+  name = d.text("RBAC 仕様", "RBAC specification")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    (rbac.role("role.admin", "管理者", "administrator")) {
+      aliases {
+        ["ja"] = new { "admin"; "管理者" }
+        ["en"] = new { "admin"; "administrator" }
+      }
+    }
+    rbac.action("action.view", "閲覧", "view")
+    (rbac.resource("screen.admin", "管理画面", "admin screen")) {
+      aliases {
+        ["ja"] = new { "管理画面"; "admin" }
+        ["en"] = new { "admin"; "admin screen" }
+      }
+    }
+    d.term("audit.access_log", "event", "アクセス監査ログ", "access audit log")
+  }
+
+  rules {
+    (
+      rbac.roleCan(
+        "RBAC-ALLOW",
+        "role.admin",
+        "action.view",
+        "screen.admin",
+        "tests/admin.spec.ts#admin-can-view",
+        "src/rbac.ts",
+        "canViewAdminScreen",
+      )
+    ) {
+      text = d.text("管理者は管理画面を閲覧できる", "Administrators can view the admin screen")
+      checks = new {
+        d.linkedCheck("playwright", "tests/admin.spec.ts#admin-can-view")
+        d.generatedCheck("rego", "policy/rbac.rego#allow_admin")
+      }
+    }
+
+    (
+      rbac.onlyRoleCan(
+        "RBAC-DENY",
+        "role.admin",
+        "action.view",
+        "screen.admin",
+        "tests/admin.spec.ts#non-admin-is-denied",
+        "src/rbac.ts",
+        "canViewAdminScreen",
+      )
+    ) {
+      text = d.text("非管理者は管理画面を閲覧できない", "Non-administrators cannot view the admin screen")
+      checks = new {
+        d.linkedCheck("playwright", "tests/admin.spec.ts#non-admin-is-denied")
+      }
+    }
+
+    new d.Rule {
+      id = "RBAC-AUDIT"
+      kind = "obligation"
+      text =
+        d.text(
+          "管理画面へのアクセス試行は監査ログに残す",
+          "Admin screen access attempts are written to the audit log",
+        )
+      terms {
+        "screen.admin"
+        "audit.access_log"
+      }
+      `when` {
+        d.clause(
+          #"screen == "admin""#,
+          "管理画面へのアクセスが試行される",
+          "access to the admin screen is attempted",
+        )
+      }
+      must {
+        d.clause("audit.log.exists", "アクセス監査ログが作成される", "an access audit log entry exists")
+      }
+      reviewStatus = "review"
+      checks {
+        new d.CheckTarget {
+          backend = "runtime"
+          ref = "logs/admin-access"
+          mode = "manual"
+        }
+      }
+    }
+  }
+
+  decisions {
+    new d.Decision {
+      id = "ADR-0001"
+      date = "2026-07-07"
+      summary =
+        d.text(
+          "仕様のマスターを Pkl モデルとして管理する",
+          "The source of truth for specs is a Pkl model",
+        )
+      rationale =
+        "Natural-language documents are rendered views. The Pkl model owns stable ids, terms, and links to verification artifacts."
+    }
+  }
+}

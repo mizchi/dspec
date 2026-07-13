@@ -1,0 +1,37 @@
+{
+  "artifacts": {
+    "alloy": {
+      "bytes": 28807,
+      "sha256": "0797eec79cddd3eea9f9d23eca066c8f08334f3226bc84972222217d1564a71d"
+    },
+    "lean": {
+      "bytes": 45267,
+      "sha256": "06c793e280009feb757dc18b191bf1d3c4703d9cd0eeb69387434715f2ead290"
+    },
+    "markdown": {
+      "bytes": 118713,
+      "sha256": "2fe85ac22d03fbbaa5fffc07f6f0c9d13adf366bfbb03393ac7f7666b1ac39ea"
+    },
+    "quickcheck": {
+      "bytes": 123986,
+      "sha256": "5ed14c707185450710d96cf4e2a394676c3fc0df20d868234e536b83b1cbadcf"
+    },
+    "sourceMap": {
+      "bytes": 1114778,
+      "sha256": "e9b104efe0668a26219bed2ac64f878f0600528fa92edd859a6ec44954940305"
+    },
+    "tla": {
+      "bytes": 47471,
+      "sha256": "261314f4f6623afc3dae4bbb734e30bbab71fe941d4f6a0c247826ebf811d156"
+    },
+    "tlaCfg": {
+      "bytes": 1111,
+      "sha256": "5edd670237ed3bebd2cbe8b65ced901a128f32cc9e211534c63f7a8c42475aa5"
+    }
+  },
+  "locale": "ja",
+  "model": {
+    "id": "dspec-self",
+    "version": "0.1.0"
+  }
+}

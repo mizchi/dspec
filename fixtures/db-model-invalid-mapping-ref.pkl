@@ -1,0 +1,34 @@
+import "../dspec/Schema.pkl" as d
+import "db-model.pkl" as base
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    db = (base.model.patterns.db) {
+      migrations {
+        new d.DbMigration {
+          id = "bad-mapping-ref"
+          text = base.model.name
+          fromTables {
+            "orders"
+          }
+          toTables {
+            "payments"
+          }
+          preserves {
+            "paid-order-has-payment"
+          }
+          mappings {
+            new d.DbMapping {
+              id = "bad-mapping"
+              sourceExpr = "orders.status == paid"
+              targetExpr = "exists payments.order_id == orders.id"
+              invariants {
+                "missing-invariant"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

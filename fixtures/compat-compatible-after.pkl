@@ -1,0 +1,39 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "compat-fixture"
+  name = d.text("Compatibility fixture", "Compatibility fixture")
+  version = "0.1.1"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    d.term("actor.user", "actor", "利用者", "End user")
+    d.term("action.view", "action", "画面閲覧", "Screen view")
+  }
+
+  rules {
+    new d.Rule {
+      id = "COMPAT-ALLOW-VIEW"
+      kind = "permission"
+      text = d.text("ユーザーは閲覧できる", "Users may view")
+      terms {
+        "actor.user"
+        "action.view"
+      }
+      must {
+        d.clause("allow(actor.user, action.view)", "ユーザーに閲覧を許可する", "Users are allowed to view")
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#classifies spec compatibility changes")
+      }
+      implementedBy {
+        d.codeRef("src/cli.mjs", "validate")
+      }
+    }
+  }
+}

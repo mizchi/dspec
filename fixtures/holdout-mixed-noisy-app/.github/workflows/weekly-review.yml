@@ -1,0 +1,6 @@
+name: audit
+jobs:
+  observe:
+    steps:
+      - name: Collect audit facts
+        run: echo audit

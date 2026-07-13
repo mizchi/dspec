@@ -1,0 +1,12 @@
+{
+  "covered": 0,
+  "errors": [
+    "approved rule has no automated check target: COVERAGE-MISSING-CHECK"
+  ],
+  "model": {
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "status": "fail",
+  "total": 1
+}

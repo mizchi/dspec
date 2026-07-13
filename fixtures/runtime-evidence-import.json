@@ -1,0 +1,47 @@
+{
+  "incident": {
+    "runbookExecutions": [
+      {
+        "executedAt": "2026-07-08",
+        "id": "checkout-page-runbook-2026-07-08",
+        "runbook": "checkout-page-runbook",
+        "source": "incident-drill:checkout-page-runbook-2026-07-08",
+        "status": "pass"
+      }
+    ]
+  },
+  "otel": {
+    "dependencyTraces": [
+      {
+        "dependency": "checkout-api-to-payments",
+        "id": "checkout-api-to-payments-p95",
+        "idempotencyKeyObserved": true,
+        "observedLatencyMs": 120,
+        "source": "otel:checkout-api-to-payments:p95",
+        "timedOut": false
+      }
+    ]
+  },
+  "pagerduty": {
+    "alertPolicies": [
+      {
+        "alert": "checkout-availability-page",
+        "enabled": true,
+        "id": "checkout-availability-pagerduty",
+        "source": "pagerduty:checkout-availability-page"
+      }
+    ]
+  },
+  "prometheus": {
+    "telemetry": [
+      {
+        "id": "checkout-availability-30d",
+        "observedPercent": 100,
+        "service": "checkout-api",
+        "signal": "checkout-availability-signal",
+        "slo": "checkout-availability",
+        "source": "prometheus:checkout_availability:30d"
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+name: check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  nix-check:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@v17
+      - name: Check devShell tools
+        run: nix develop path:$PWD -c pkf run devshell:tools
+      - name: Check required formal tools
+        run: nix develop path:$PWD -c pkf run devshell:formal
+      - name: Run project checks
+        run: nix develop path:$PWD -c pkf run check

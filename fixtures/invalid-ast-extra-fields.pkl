@@ -1,0 +1,34 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/dspec.pkl" as base
+
+model: d.Model = (base.model) {
+  rules = new {
+    new d.Rule {
+      id = "INVALID-AST-EXTRA-FIELDS"
+      kind = "invariant"
+      text = base.model.name
+      must {
+        new d.Clause {
+          expr = "has.extra.child"
+          ast = new d.ExprAst {
+            op = "atom"
+            name = "hasExtraChild"
+            children {
+              new d.ExprAst {
+                op = "atom"
+                name = "unexpectedChild"
+              }
+            }
+          }
+        }
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#rejects expr ast fields outside operator semantics"
+        }
+      }
+    }
+  }
+}

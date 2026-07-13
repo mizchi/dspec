@@ -1,0 +1,40 @@
+{
+  "sources": [
+    {
+      "expects": {
+        "asOf": "2026-07-10",
+        "freshWithinDays": 1,
+        "id": "checkout-availability-30d",
+        "observedPercentAtLeast": 99,
+        "service": "checkout-api",
+        "signal": "checkout-availability-signal",
+        "slo": "checkout-availability"
+      },
+      "kind": "telemetry",
+      "payload": {
+        "data": {
+          "result": [
+            {
+              "metric": {
+                "__name__": "checkout_availability_ratio",
+                "evidence_id": "checkout-availability-30d",
+                "observed_at": "2026-07-07",
+                "service": "checkout-api",
+                "signal": "checkout-availability-signal",
+                "slo": "checkout-availability"
+              },
+              "value": [
+                1783382400,
+                "1"
+              ]
+            }
+          ],
+          "resultType": "vector"
+        },
+        "status": "success"
+      },
+      "provider": "prometheus",
+      "source": "inline"
+    }
+  ]
+}

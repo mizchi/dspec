@@ -1,0 +1,13 @@
+{
+  "errors": [],
+  "model": {
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "status": "pass",
+  "summary": {
+    "decisions": 2,
+    "rules": 67,
+    "terms": 100
+  }
+}

@@ -1,0 +1,364 @@
+amends "package://pkg.pkl-lang.org/github.com/mizchi/pkfire/pkfire@0.11.0#/Taskfile.pkl"
+
+local pklSources: Listing<String> = new {
+  "Taskfile.pkl"
+  "dspec/**/*.pkl"
+  "examples/**/*.pkl"
+  "fixtures/**/*.pkl"
+}
+
+local jsonFixtures: Listing<String> = new {
+  "fixtures/**/*.json"
+}
+
+local markdownFixtures: Listing<String> = new {
+  "fixtures/**/*.md"
+}
+
+local sqlFixtures: Listing<String> = new {
+  "fixtures/**/*.sql"
+}
+
+local jsSources: Listing<String> = new {
+  "package.json"
+  "scripts/**/*.mjs"
+  "src/**/*.mjs"
+  "test/**/*.mjs"
+}
+
+local reviewArtifacts: Listing<String> = new {
+  "generated/dspec.md"
+  "generated/source-map.json"
+  "generated/manifest.json"
+}
+
+local nixSources: Listing<String> = new {
+  "flake.nix"
+  "flake.lock"
+  ".envrc"
+}
+
+local ciSources: Listing<String> = new {
+  ".github/workflows/*.yml"
+}
+
+local schema: Task = new {
+  name = "schema"
+  description = "Evaluate Pkl schema examples"
+  cmd = "pkl eval examples/*.pkl fixtures/*.pkl >/dev/null"
+  inputs = pklSources
+}
+
+local test: Task = new {
+  name = "test"
+  description = "Run Node unit tests"
+  cmd = "pnpm test"
+  inputs = new {
+    ...pklSources
+    ...jsonFixtures
+    ...markdownFixtures
+    ...sqlFixtures
+    ...jsSources
+    ...reviewArtifacts
+    ...nixSources
+    ...ciSources
+  }
+  deps { schema }
+}
+
+local drift: Task = new {
+  name = "drift"
+  description = "Check implementation and test references in the self model"
+  cmd = "node src/cli.mjs drift examples/dspec.pkl"
+  inputs = new {
+    ...pklSources
+    ...sqlFixtures
+    ...jsSources
+    ...reviewArtifacts
+    ...nixSources
+    ...ciSources
+  }
+  deps { schema }
+}
+
+local coverage: Task = new {
+  name = "coverage"
+  description = "Check approved-rule coverage in the self model"
+  cmd = "node src/cli.mjs coverage examples/dspec.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+    ...nixSources
+    ...ciSources
+  }
+  deps { drift }
+}
+
+local domainCoverage: Task = new {
+  name = "domain-coverage"
+  description = "Check domain model element coverage in the real app dogfood model"
+  cmd = "node src/cli.mjs domain-coverage examples/sample-webapp-2026.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+  }
+  deps { coverage }
+}
+
+local realAppReconcile: Task = new {
+  name = "real-app:reconcile"
+  description =
+    "Import, reconcile, reverse-cover, scaffold, evaluate, and profile-check the real app dogfood model"
+  cmd =
+    "node src/cli.mjs import-real-app --json ../sample-webapp-2026 >/dev/null && node src/cli.mjs import-real-app --pkl ../sample-webapp-2026 >/dev/null && node src/cli.mjs reconcile-real-app examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json && node src/cli.mjs reverse-coverage examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json && node src/cli.mjs scaffold-app-profile --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026 >/dev/null && node src/cli.mjs scaffold-app-profile --diff fixtures/sample-webapp-profile.pkl --json --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026 >/dev/null && node src/cli.mjs scaffold-app-profile --apply fixtures/sample-webapp-profile.pkl --json --dry-run --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026 >/dev/null && node src/cli.mjs evaluate-app-profile fixtures/sample-webapp-profile.pkl && node src/cli.mjs evaluate-app-profile fixtures/sample-webapp-profile-scenarios.pkl && node src/cli.mjs evaluate-app-profile fixtures/sample-webapp-profile-extended-scenarios.pkl && node src/cli.mjs coverage-app-profile-scenarios fixtures/sample-webapp-profile-extended-scenarios.pkl && node src/cli.mjs score-app-profile-mutations fixtures/sample-webapp-profile-extended-scenarios.pkl && node src/cli.mjs evaluate-app-profile --markdown fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs check-app-profile fixtures/sample-webapp-profile.pkl && node src/cli.mjs check-app-profile-suite fixtures/sample-webapp-profile-suite.pkl && node src/cli.mjs evaluate-app-profile-suite fixtures/sample-webapp-profile-suite.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsonFixtures
+    ...jsSources
+  }
+  deps { domainCoverage }
+  cache = false
+}
+
+local appProfileRefresh: Task = new {
+  name = "app-profile:refresh"
+  description = "Refresh observed facts for the real app profile"
+  cmd = "node src/cli.mjs check-app-profile --fix fixtures/sample-webapp-profile.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsonFixtures
+    ...jsSources
+  }
+  cache = false
+}
+
+local emitSmoke: Task = new {
+  name = "emit:smoke"
+  description = "Smoke-test deterministic generators"
+  cmd =
+    "node src/cli.mjs emit markdown --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit quickcheck examples/dspec.pkl >/dev/null && node src/cli.mjs emit alloy examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla-cfg examples/dspec.pkl >/dev/null && node src/cli.mjs emit lean examples/dspec.pkl >/dev/null && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit generated-manifest --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit runtime-collector examples/dspec.pkl >/dev/null && node src/cli.mjs emit runtime-collector-fixture examples/dspec.pkl >/dev/null && node src/cli.mjs import-db-schema --json fixtures/db-schema.sql >/dev/null && node src/cli.mjs check-sql-queries --json fixtures/db-model.pkl fixtures/db-queries.sql >/dev/null && node src/cli.mjs import-real-app --json ../sample-webapp-2026 >/dev/null && node src/cli.mjs import-real-app --pkl ../sample-webapp-2026 >/dev/null"
+  inputs = new {
+    ...pklSources
+    ...sqlFixtures
+    ...jsSources
+    ...nixSources
+  }
+  deps { coverage }
+}
+
+local markdownReview: Task = new {
+  name = "markdown:review"
+  description = "Check generated Markdown review artifact"
+  cmd =
+    "node src/cli.mjs emit markdown --locale ja examples/dspec.pkl | diff -u generated/dspec.md -"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+    ...reviewArtifacts
+  }
+  deps { coverage }
+}
+
+local sourceMapReview: Task = new {
+  name = "source-map:review"
+  description = "Check generated source-map review artifact"
+  cmd =
+    "node src/cli.mjs emit source-map --locale ja examples/dspec.pkl | diff -u generated/source-map.json -"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+    ...reviewArtifacts
+  }
+  deps { coverage }
+}
+
+local generatedManifestReview: Task = new {
+  name = "generated-manifest:review"
+  description = "Check generated artifact manifest"
+  cmd =
+    "node src/cli.mjs emit generated-manifest --locale ja examples/dspec.pkl | diff -u generated/manifest.json -"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+    ...reviewArtifacts
+  }
+  deps { coverage }
+}
+
+local reportFixturesReview: Task = new {
+  name = "report-fixtures:review"
+  description = "Check report compatibility fixtures"
+  cmd =
+    "node src/cli.mjs check --json examples/dspec.pkl | diff -u fixtures/reports/check-dspec.json - && node src/cli.mjs drift --json examples/dspec.pkl | diff -u fixtures/reports/drift-dspec.json - && node src/cli.mjs coverage --json examples/dspec.pkl | diff -u fixtures/reports/coverage-dspec.json - && node src/cli.mjs domain-coverage --json examples/sample-webapp-2026.pkl | diff -u fixtures/reports/domain-coverage-sample-webapp.json - && node src/cli.mjs import-real-app --json ../sample-webapp-2026 | diff -u fixtures/reports/import-real-app-sample-webapp.json - && node src/cli.mjs reconcile-real-app --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json | diff -u fixtures/reports/reconcile-real-app-sample-webapp.json - && node src/cli.mjs reverse-coverage --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json | diff -u fixtures/reports/reverse-coverage-sample-webapp.json - && node src/cli.mjs scaffold-app-profile --diff fixtures/sample-webapp-profile.pkl --json --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026 | diff -u fixtures/reports/scaffold-app-profile-diff.json - && node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile.pkl | diff -u fixtures/reports/evaluate-app-profile-sample-webapp.json - && node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile-scenarios.pkl | diff -u fixtures/reports/evaluate-app-profile-scenarios.json - && node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile-extended-scenarios.pkl | diff -u fixtures/reports/evaluate-app-profile-extended-scenarios.json - && node src/cli.mjs evaluate-app-profile --markdown fixtures/sample-webapp-profile-extended-scenarios.pkl | diff -u fixtures/reports/evaluate-app-profile-extended-scenarios.md - && node src/cli.mjs coverage-app-profile-scenarios --json fixtures/sample-webapp-profile-extended-scenarios.pkl | diff -u fixtures/reports/coverage-app-profile-scenarios.json - && node src/cli.mjs score-app-profile-mutations --json fixtures/sample-webapp-profile-extended-scenarios.pkl | diff -u fixtures/reports/score-app-profile-mutations.json - && node src/cli.mjs replay-app-profile-changes --json fixtures/app-change-replay-corpus.pkl | diff -u fixtures/reports/replay-app-profile-changes.json - && node src/cli.mjs spec-reading-eval --json fixtures/spec-reading-eval-sample-webapp.pkl | diff -u fixtures/reports/spec-reading-eval-sample-webapp.json - && node src/cli.mjs spec-reading-eval --json --refresh-digests fixtures/spec-reading-eval-stale-digest.pkl | diff -u fixtures/reports/spec-reading-eval-refresh-stale.json - && node src/cli.mjs spec-reading-eval-suite --json fixtures/spec-reading-eval-suite.pkl | diff -u fixtures/reports/spec-reading-eval-suite.json - && (node src/cli.mjs spec-reading-eval --json fixtures/spec-reading-eval-stale-digest.pkl 2>/dev/null || true) | diff -u fixtures/reports/spec-reading-eval-stale-digest.json - && node src/cli.mjs spec-reading-eval --markdown --score fixtures/spec-reading-eval-answers.json fixtures/spec-reading-eval-sample-webapp.pkl | diff -u fixtures/reports/spec-reading-eval-score.md - && node src/cli.mjs check-app-profile --json fixtures/sample-webapp-profile.pkl | diff -u fixtures/reports/check-app-profile-sample-webapp.json - && node src/cli.mjs check-app-profile-suite --json fixtures/sample-webapp-profile-suite.pkl | diff -u fixtures/reports/check-app-profile-suite.json - && node src/cli.mjs evaluate-app-profile-suite --json fixtures/sample-webapp-profile-suite.pkl | diff -u fixtures/reports/evaluate-app-profile-suite.json - && node src/cli.mjs check-app-profile --json fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl | diff -u fixtures/reports/check-app-profile-scale.json - && (node src/cli.mjs domain-coverage --json fixtures/domain-coverage-orphan.pkl 2>/dev/null || true) | diff -u fixtures/reports/domain-coverage-orphan.json - && node src/cli.mjs impact --json fixtures/impact-before.pkl fixtures/impact-after.pkl | diff -u fixtures/reports/impact.json - && node src/cli.mjs spec-change compat --json fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl | diff -u fixtures/reports/spec-compat-narrowing.json - && node src/cli.mjs spec-change scaffold fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl | diff -u fixtures/spec-change-scaffold-narrowing.pkl - && node src/cli.mjs spec-change review --json fixtures/spec-change-review.pkl | diff -u fixtures/reports/spec-change-review.json - && node src/cli.mjs spec-change review --json fixtures/spec-change-review-breaking-approved.pkl | diff -u fixtures/reports/spec-change-review-breaking-approved.json - && (node src/cli.mjs spec-change review --json fixtures/spec-change-review-breaking-missing-evidence.pkl 2>/dev/null || true) | diff -u fixtures/reports/spec-change-review-breaking-missing-evidence.json - && (node src/cli.mjs spec-change review --json fixtures/spec-change-review-breaking-missing-ref.pkl 2>/dev/null || true) | diff -u fixtures/reports/spec-change-review-breaking-missing-ref.json - && (node src/cli.mjs coverage --json fixtures/coverage-missing-check.pkl 2>/dev/null || true) | diff -u fixtures/reports/coverage-missing-check.json - && node src/cli.mjs verify-generated --json fixtures/typed-ast.pkl | node scripts/project-verify-generated-fixture.mjs | diff -u fixtures/reports/verify-generated-typed-ast.json - && (node src/cli.mjs normalize-counterexamples --json --locale ja fixtures/coverage-missing-check.pkl 2>/dev/null || true) | node scripts/project-normalize-counterexamples-fixture.mjs | diff -u fixtures/reports/normalize-counterexamples-coverage-missing-check.json -"
+  inputs = new {
+    ...pklSources
+    ...jsonFixtures
+    ...markdownFixtures
+    ...sqlFixtures
+    ...jsSources
+  }
+  deps { coverage }
+}
+
+local specReadingReportFixturesReview: Task = new {
+  name = "spec-reading:report-fixtures"
+  description = "Check spec-reading report compatibility fixtures"
+  cmd =
+    "node src/cli.mjs coverage-spec-reading-eval-suite --json fixtures/spec-reading-eval-suite.pkl | diff -u fixtures/reports/coverage-spec-reading-eval-suite.json - && node src/cli.mjs metamorphic-spec-reading-eval --json fixtures/spec-reading-eval-sample-webapp.pkl | diff -u fixtures/reports/metamorphic-spec-reading-eval.json -"
+  inputs = new {
+    ...pklSources
+    ...jsonFixtures
+    ...jsSources
+  }
+  deps { coverage }
+}
+
+local specReadingDogfood: Task = new {
+  name = "spec-reading:dogfood"
+  description = "Run spec-reading coverage, metamorphic, and file-relative path gates"
+  cmd =
+    "node src/cli.mjs coverage-spec-reading-eval-suite --json fixtures/spec-reading-eval-suite.pkl >/dev/null && (node src/cli.mjs coverage-spec-reading-eval-suite --json fixtures/spec-reading-eval-suite-undercovered.pkl >/dev/null 2>/dev/null && exit 1 || true) && node src/cli.mjs metamorphic-spec-reading-eval --json fixtures/spec-reading-eval-sample-webapp.pkl >/dev/null && (cd /tmp && node $OLDPWD/src/cli.mjs spec-reading-eval --json $OLDPWD/fixtures/spec-reading-eval-sample-webapp.pkl >/dev/null) && (cd /tmp && node $OLDPWD/src/cli.mjs spec-reading-eval-suite --json $OLDPWD/fixtures/spec-reading-eval-suite.pkl >/dev/null)"
+  inputs = new {
+    ...pklSources
+    ...jsonFixtures
+    ...jsSources
+  }
+  deps { schema }
+  cache = false
+}
+
+local generatedVerify: Task = new {
+  name = "generated:verify"
+  description = "Run generated QuickCheck output and compile generated Lean output"
+  cmd = "node src/cli.mjs verify-generated examples/dspec.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+    ...nixSources
+  }
+  deps { coverage }
+}
+
+local devshellCheck: Task = new {
+  name = "devshell:check"
+  description = "Run the full project check inside the Nix devShell"
+  cmd = "nix develop path:$PWD -c pkf run check"
+  inputs = new {
+    ...pklSources
+    ...jsonFixtures
+    ...markdownFixtures
+    ...sqlFixtures
+    ...jsSources
+    ...reviewArtifacts
+    ...nixSources
+    ...ciSources
+  }
+  cache = false
+}
+
+local devshellTools: Task = new {
+  name = "devshell:tools"
+  description = "Check required devShell tools and reject host-tool leakage"
+  cmd = "node src/cli.mjs devshell-smoke --json --strict --require-store-path >/dev/null"
+  inputs = new {
+    ...jsSources
+    ...nixSources
+  }
+  cache = false
+}
+
+local devshellFormal: Task = new {
+  name = "devshell:formal"
+  description = "Require generated TLA+/Alloy backend tools inside the devShell"
+  cmd = "node src/cli.mjs verify-generated --require-formal-tools fixtures/typed-ast.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+    ...nixSources
+  }
+  cache = false
+}
+
+local dogfood: Task = new {
+  name = "dogfood"
+  description = "Run self-spec dogfooding evaluation gates"
+  cmd =
+    "node src/cli.mjs check examples/dspec.pkl && node src/cli.mjs check --json examples/dspec.pkl >/dev/null && node src/cli.mjs drift examples/dspec.pkl && node src/cli.mjs drift --json examples/dspec.pkl >/dev/null && node src/cli.mjs coverage examples/dspec.pkl && node src/cli.mjs coverage --json examples/dspec.pkl >/dev/null && node src/cli.mjs check examples/sample-webapp-2026.pkl >/dev/null && node src/cli.mjs drift examples/sample-webapp-2026.pkl >/dev/null && node src/cli.mjs domain-coverage --json examples/sample-webapp-2026.pkl >/dev/null && node src/cli.mjs import-real-app --json ../sample-webapp-2026 >/dev/null && node src/cli.mjs reconcile-real-app --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json >/dev/null && node src/cli.mjs reverse-coverage --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json >/dev/null && node src/cli.mjs scaffold-app-profile --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026 >/dev/null && node src/cli.mjs scaffold-app-profile --diff fixtures/sample-webapp-profile.pkl --json --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026 >/dev/null && node src/cli.mjs scaffold-app-profile --apply fixtures/sample-webapp-profile.pkl --json --dry-run --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl ../sample-webapp-2026 >/dev/null && node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile.pkl >/dev/null && node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile-scenarios.pkl >/dev/null && node src/cli.mjs evaluate-app-profile --json fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs evaluate-app-profile --markdown fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs coverage-app-profile-scenarios --json fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs score-app-profile-mutations --json fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs score-app-profile-mutations --json fixtures/holdout-schema-profile.pkl >/dev/null && node src/cli.mjs score-app-profile-mutations --json fixtures/holdout-workflow-profile.pkl >/dev/null && node src/cli.mjs score-app-profile-mutations --json fixtures/holdout-mixed-profile.pkl >/dev/null && node src/cli.mjs score-app-profile-mutations --json fixtures/holdout-mixed-shuffled-profile.pkl >/dev/null && node src/cli.mjs score-app-profile-mutations --json fixtures/holdout-mixed-noisy-profile.pkl >/dev/null && node src/cli.mjs replay-app-profile-changes --json fixtures/app-change-replay-corpus.pkl >/dev/null && node src/cli.mjs spec-reading-eval --json fixtures/spec-reading-eval-sample-webapp.pkl >/dev/null && node src/cli.mjs spec-reading-eval --json fixtures/spec-reading-eval-holdout-runtime.pkl >/dev/null && node src/cli.mjs spec-reading-eval-suite --json fixtures/spec-reading-eval-suite.pkl >/dev/null && node src/cli.mjs spec-reading-eval --prompt fixtures/spec-reading-eval-sample-webapp.pkl >/dev/null && node src/cli.mjs spec-reading-eval --prompt --locale en fixtures/spec-reading-eval-sample-webapp.pkl >/dev/null && node src/cli.mjs spec-reading-eval --json --refresh-digests fixtures/spec-reading-eval-stale-digest.pkl >/dev/null && node src/cli.mjs spec-reading-eval --json --score fixtures/spec-reading-eval-answers.json --write-run /tmp/dspec-spec-reading-run.json fixtures/spec-reading-eval-sample-webapp.pkl >/dev/null && node src/cli.mjs spec-reading-eval --markdown --score fixtures/spec-reading-eval-answers.json fixtures/spec-reading-eval-sample-webapp.pkl >/dev/null && (node src/cli.mjs spec-reading-eval --json fixtures/spec-reading-eval-stale-digest.pkl >/dev/null 2>/dev/null && exit 1 || true) && (node src/cli.mjs spec-reading-eval --json fixtures/spec-reading-eval-rubric-mismatch.pkl >/dev/null 2>/dev/null && exit 1 || true) && node src/cli.mjs check-app-profile --json fixtures/sample-webapp-profile.pkl >/dev/null && node src/cli.mjs check-app-profile-suite --json fixtures/sample-webapp-profile-suite.pkl >/dev/null && node src/cli.mjs evaluate-app-profile-suite --json fixtures/sample-webapp-profile-suite.pkl >/dev/null && node src/cli.mjs check-app-profile --json fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl fixtures/sample-webapp-profile.pkl >/dev/null && node src/cli.mjs impact --json fixtures/impact-before.pkl fixtures/impact-after.pkl >/dev/null && node src/cli.mjs spec-change compat --json fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl >/dev/null && node src/cli.mjs spec-change scaffold fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl >/dev/null && node src/cli.mjs spec-change scaffold --json fixtures/compat-before.pkl fixtures/compat-breaking-after.pkl >/dev/null && node src/cli.mjs spec-change --help >/dev/null && node src/cli.mjs spec-change scaffold --help >/dev/null && node src/cli.mjs spec-change scaffold --output /tmp/dspec-spec-change-review.pkl fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl >/dev/null && (cd /tmp && node $OLDPWD/src/cli.mjs spec-change review --json /tmp/dspec-spec-change-review.pkl >/dev/null) && node src/cli.mjs spec-change review --json fixtures/spec-change-review.pkl >/dev/null && node src/cli.mjs spec-change review --json fixtures/spec-change-review-breaking-approved.pkl >/dev/null && node src/cli.mjs verify-generated --json examples/dspec.pkl >/dev/null && node src/cli.mjs import-db-schema --json fixtures/db-schema.sql >/dev/null && node src/cli.mjs check-sql-queries --json fixtures/db-model.pkl fixtures/db-queries.sql >/dev/null && node src/cli.mjs emit runtime-collector-fixture fixtures/runtime-model.pkl | node src/cli.mjs verify-runtime-evidence --json /dev/stdin >/dev/null"
+  inputs = new {
+    ...pklSources
+    ...jsonFixtures
+    ...sqlFixtures
+    ...jsSources
+    ...reviewArtifacts
+    ...nixSources
+    ...ciSources
+  }
+  deps {
+    generatedVerify
+    specReadingDogfood
+  }
+  cache = false
+}
+
+local check: Task = new {
+  name = "check"
+  description = "Run all prototype checks"
+  deps {
+    test
+    domainCoverage
+    realAppReconcile
+    emitSmoke
+    markdownReview
+    sourceMapReview
+    generatedManifestReview
+    reportFixturesReview
+    specReadingReportFixturesReview
+    generatedVerify
+    dogfood
+  }
+  cache = false
+}
+
+local render: Task = new {
+  name = "render"
+  description = "Render the RBAC example in Japanese"
+  cmd = "node src/cli.mjs render --locale ja examples/rbac.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+  }
+  deps { schema }
+  cache = false
+}
+
+local default: Task = new {
+  name = "default"
+  description = "Default task"
+  deps { check }
+  cache = false
+}
+
+tasks {
+  default
+  schema
+  test
+  drift
+  coverage
+  domainCoverage
+  realAppReconcile
+  appProfileRefresh
+  emitSmoke
+  markdownReview
+  sourceMapReview
+  generatedManifestReview
+  reportFixturesReview
+  specReadingReportFixturesReview
+  generatedVerify
+  devshellCheck
+  devshellTools
+  devshellFormal
+  specReadingDogfood
+  dogfood
+  check
+  render
+}

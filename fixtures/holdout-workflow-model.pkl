@@ -1,0 +1,62 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "holdout-workflow-model"
+  name = text("holdout workflow 仕様", "holdout workflow spec")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+  vocabulary {
+    d.term("workflow.ship", "action", "ship workflow", "ship workflow")
+  }
+  rules {
+    new d.Rule {
+      id = "HOLDOUT-WORKFLOW-SHIP"
+      kind = "obligation"
+      text = text("ship workflow is observable", "ship workflow is observable")
+      terms {
+        "workflow.ship"
+      }
+      must {
+        d.clause("releaseStep(ship)", "ship workflow が存在する", "ship workflow exists")
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#scores generated app profile mutations on holdout fixtures")
+      }
+    }
+  }
+  patterns = new d.PatternCatalog {
+    release = new d.ReleaseModel {
+      services {
+        new d.ReleaseService {
+          id = "billing"
+        }
+      }
+      environments {
+        new d.ReleaseEnvironment {
+          id = "ci"
+        }
+      }
+      steps {
+        new d.ReleaseStep {
+          id = "ship"
+          service = "billing"
+          environment = "ci"
+          strategy = "direct"
+        }
+      }
+    }
+  }
+}
