@@ -1,0 +1,38 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "coverage-clause-covered"
+  name = d.text("Clause coverage covered fixture", "Clause coverage covered fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  rules {
+    new d.Rule {
+      id = "CLAUSE-COVERED"
+      kind = "invariant"
+      text = d.text("clause coverage は全 clause を支える", "clause coverage supports every clause")
+      coverage = "clause"
+      must {
+        d.clause("domainPack.expandsToCoreIr", "Core IR に展開される", "expands to Core IR")
+      }
+      mustNot {
+        d.clause("domainPack.hasPrivateSemantics", "独自意味論を持たない", "does not own private semantics")
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#reports clause-level coverage"
+          covers {
+            "must[0]"
+            "mustNot[0]"
+          }
+        }
+      }
+    }
+  }
+}

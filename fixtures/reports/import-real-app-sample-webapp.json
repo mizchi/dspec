@@ -1,0 +1,172 @@
+{
+  "app": {
+    "contracts": {
+      "path": "packages/contracts/src/index.ts",
+      "schemas": [
+        "dashboardFilterSchema",
+        "dashboardSnapshotSchema",
+        "deploymentPointSchema",
+        "healthResponseSchema",
+        "incidentSchema",
+        "incidentSeveritySchema",
+        "metricStatusSchema",
+        "recommendationSchema",
+        "serviceCardSchema",
+        "serviceDetailSchema",
+        "summaryMetricSchema"
+      ]
+    },
+    "id": "sample-webapp-2026",
+    "quality": {
+      "flaker": {
+        "path": "flaker.toml",
+        "profiles": [
+          "ci",
+          "local",
+          "scheduled"
+        ],
+        "repo": "mizchi/sample-webapp-2026",
+        "storage": ".flaker/data.duckdb"
+      },
+      "vrt": {
+        "outputDir": "vrt/dashboard",
+        "path": "vrt.config.json",
+        "routes": [
+          "/",
+          "/critical",
+          "/services/payments"
+        ],
+        "threshold": 0.07
+      }
+    },
+    "root": "fixtures/sample-webapp-2026",
+    "routes": [
+      {
+        "method": "GET",
+        "path": "/api/dashboard",
+        "source": "apps/api/src/app.ts"
+      },
+      {
+        "method": "GET",
+        "path": "/api/health",
+        "source": "apps/api/src/app.ts"
+      },
+      {
+        "method": "GET",
+        "path": "/api/services/:serviceId",
+        "source": "apps/api/src/app.ts"
+      }
+    ],
+    "scripts": [
+      "build",
+      "dev",
+      "dev:api",
+      "dev:dashboard",
+      "flaker",
+      "flaker:collect:local",
+      "flaker:eval:markdown",
+      "flaker:run:actrun",
+      "flaker:run:local",
+      "flaker:run:scheduled",
+      "preview",
+      "report:nightly-context",
+      "report:weekly-review",
+      "serve:api",
+      "serve:dashboard",
+      "start",
+      "test",
+      "test:e2e",
+      "test:e2e:update",
+      "test:watch",
+      "typecheck",
+      "vrt",
+      "vrt:approve",
+      "vrt:snapshot",
+      "vrt:snapshot:ci"
+    ],
+    "workflows": [
+      {
+        "artifacts": [
+          "quality-artifacts"
+        ],
+        "gates": [
+          "e2e",
+          "flaker",
+          "typecheck",
+          "unit",
+          "vrt"
+        ],
+        "id": "ci",
+        "jobs": [
+          "verify"
+        ],
+        "path": ".github/workflows/ci.yml",
+        "repositories": [
+          "mizchi/flaker",
+          "mizchi/vrt"
+        ],
+        "steps": [
+          "Checkout app",
+          "Checkout flaker",
+          "Checkout vrt",
+          "Enable corepack",
+          "Install Playwright browsers",
+          "Install app dependencies",
+          "Install flaker dependencies",
+          "Install vrt Playwright browsers",
+          "Install vrt dependencies",
+          "Playwright E2E",
+          "Setup Node",
+          "Typecheck",
+          "Unit tests",
+          "Upload quality artifacts",
+          "VRT snapshot"
+        ]
+      },
+      {
+        "artifacts": [
+          "weekly-review-artifacts"
+        ],
+        "gates": [
+          "e2e",
+          "flaker",
+          "typecheck",
+          "unit",
+          "vrt"
+        ],
+        "id": "weekly-review",
+        "jobs": [
+          "review"
+        ],
+        "path": ".github/workflows/weekly-review.yml",
+        "repositories": [
+          "mizchi/flaker",
+          "mizchi/vrt"
+        ],
+        "steps": [
+          "Build weekly review issue body",
+          "Checkout app",
+          "Checkout flaker",
+          "Checkout vrt",
+          "Create or update weekly review issue",
+          "Enable corepack",
+          "Ensure review labels",
+          "Install Playwright browsers",
+          "Install app dependencies",
+          "Install flaker dependencies",
+          "Install vrt Playwright browsers",
+          "Install vrt dependencies",
+          "Playwright E2E",
+          "Prepare artifact directory",
+          "Setup Node",
+          "Typecheck",
+          "Unit tests",
+          "Upload weekly review artifacts",
+          "VRT snapshot",
+          "flaker review markdown",
+          "flaker scheduled profile"
+        ]
+      }
+    ]
+  }
+}

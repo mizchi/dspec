@@ -1,0 +1,48 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/dspec.pkl" as base
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  id = "typed-ast-fixture"
+  name = text("Typed AST fixture", "Typed AST fixture")
+  rules = new {
+    new d.Rule {
+      id = "TYPED-AST-PRESERVED"
+      kind = "invariant"
+      text = text("typed AST が projection に保存される", "typed AST is preserved in projections")
+      must {
+        new d.Clause {
+          expr = "approved.hasAutomatedCheck(rule)"
+          ast = new d.ExprAst {
+            op = "atom"
+            name = "approvedHasAutomatedCheck"
+            args {
+              "rule"
+            }
+          }
+        }
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#emits typed Clause.ast into backend projections"
+        }
+      }
+      implementedBy {
+        new d.ImplementationRef {
+          kind = "code"
+          path = "src/cli.mjs"
+          symbol = "exprToLean"
+        }
+      }
+    }
+  }
+}

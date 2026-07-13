@@ -1,0 +1,31 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/rbac.pkl" as base
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  rules = new {
+    ...base.model.rules
+    new d.Rule {
+      id = "RBAC-CONTRADICTION"
+      kind = "invariant"
+      text = text("同じ expr を肯定と否定に置く", "places the same expr in both positive and negative claims")
+      must {
+        new d.Clause {
+          expr = "same.expr"
+        }
+      }
+      mustNot {
+        new d.Clause {
+          expr = "same.expr"
+        }
+      }
+    }
+  }
+}

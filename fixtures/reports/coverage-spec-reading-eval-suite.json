@@ -1,0 +1,217 @@
+{
+  "coverage": {
+    "cases": 10,
+    "evaluations": 2,
+    "evidenceKinds": {
+      "clause": 2,
+      "rule": 8,
+      "term": 5
+    },
+    "labels": {
+      "contradicted": 4,
+      "entailed": 4,
+      "not-supported": 2
+    },
+    "modelKinds": {
+      "cloud": 1,
+      "data": 1,
+      "release": 1,
+      "runtime": 2
+    },
+    "paraphraseLocales": {
+      "en": 7,
+      "ja": 7
+    },
+    "tags": {
+      "alert": 1,
+      "ci": 1,
+      "cloud": 1,
+      "data": 1,
+      "missing-owner": 2,
+      "missing-workflow": 1,
+      "near-miss": 6,
+      "release": 2,
+      "runtime": 6,
+      "slo": 2,
+      "topology": 1,
+      "value-mismatch": 3
+    }
+  },
+  "errors": [],
+  "requirements": [
+    {
+      "actual": 2,
+      "errors": [],
+      "id": "",
+      "kind": "minEvaluations",
+      "required": 2,
+      "status": "pass"
+    },
+    {
+      "actual": 10,
+      "errors": [],
+      "id": "",
+      "kind": "minCases",
+      "required": 10,
+      "status": "pass"
+    },
+    {
+      "actual": 4,
+      "errors": [],
+      "id": "entailed",
+      "kind": "label",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 4,
+      "errors": [],
+      "id": "contradicted",
+      "kind": "label",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 2,
+      "errors": [],
+      "id": "not-supported",
+      "kind": "label",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 8,
+      "errors": [],
+      "id": "rule",
+      "kind": "evidenceKind",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 5,
+      "errors": [],
+      "id": "term",
+      "kind": "evidenceKind",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 2,
+      "errors": [],
+      "id": "clause",
+      "kind": "evidenceKind",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 1,
+      "errors": [],
+      "id": "cloud",
+      "kind": "modelKind",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 1,
+      "errors": [],
+      "id": "data",
+      "kind": "modelKind",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 1,
+      "errors": [],
+      "id": "release",
+      "kind": "modelKind",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 2,
+      "errors": [],
+      "id": "runtime",
+      "kind": "modelKind",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 1,
+      "errors": [],
+      "id": "cloud",
+      "kind": "tag",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 1,
+      "errors": [],
+      "id": "data",
+      "kind": "tag",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 2,
+      "errors": [],
+      "id": "release",
+      "kind": "tag",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 6,
+      "errors": [],
+      "id": "runtime",
+      "kind": "tag",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 6,
+      "errors": [],
+      "id": "near-miss",
+      "kind": "tag",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 3,
+      "errors": [],
+      "id": "value-mismatch",
+      "kind": "tag",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 2,
+      "errors": [],
+      "id": "missing-owner",
+      "kind": "tag",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 7,
+      "errors": [],
+      "id": "ja",
+      "kind": "paraphraseLocale",
+      "required": 1,
+      "status": "pass"
+    },
+    {
+      "actual": 7,
+      "errors": [],
+      "id": "en",
+      "kind": "paraphraseLocale",
+      "required": 1,
+      "status": "pass"
+    }
+  ],
+  "status": "pass",
+  "suite": {
+    "digest": "sha256:ff1721783aa7a46b35981237c1ee80da7b78c0a8c9a73f1480800c08fb85eb49",
+    "id": "spec-reading-eval-suite",
+    "inputDigest": "sha256:7833865ec59973ff7011732e6654ec712a4528facf874a008830b8d3a0cc29a3"
+  }
+}

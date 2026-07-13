@@ -1,0 +1,8 @@
+name: ship
+jobs:
+  verify:
+    steps:
+      - name: Prepare order release notes
+        run: echo notes
+      - name: Checkout
+        run: echo checkout

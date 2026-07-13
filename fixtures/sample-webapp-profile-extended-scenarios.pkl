@@ -1,0 +1,85 @@
+import "../dspec/Schema.pkl" as d
+
+profile: d.AppProfile = new {
+  id = "sample-webapp-2026-extended-scenarios"
+  modelPath = "examples/sample-webapp-2026.pkl"
+  appRoot = "fixtures/sample-webapp-2026"
+  observedFacts = "fixtures/reports/import-real-app-sample-webapp.json"
+  gates {
+    "check"
+    "drift"
+    "domain-coverage"
+    "import-real-app"
+    "observed-fixture"
+    "reconcile-real-app"
+    "reverse-coverage"
+  }
+  scenarios {
+    new d.AppProfileScenario {
+      id = "baseline"
+      kind = "baseline-no-drift"
+    }
+    new d.AppProfileScenario {
+      id = "release-gate-missing-vrt"
+      kind = "remove-release-gate"
+      step = "ci"
+      gate = "vrt"
+    }
+    new d.AppProfileScenario {
+      id = "release-gate-add-security"
+      kind = "add-observed-release-gate"
+      workflow = "ci"
+      gate = "security"
+    }
+    new d.AppProfileScenario {
+      id = "route-missing-dashboard"
+      kind = "remove-route"
+      route = "/api/dashboard"
+    }
+    new d.AppProfileScenario {
+      id = "route-add-admin"
+      kind = "add-observed-route"
+      route = "/api/admin"
+    }
+    new d.AppProfileScenario {
+      id = "schema-missing-dashboard-snapshot"
+      kind = "remove-contract-schema"
+      schema = "dashboardSnapshotSchema"
+    }
+    new d.AppProfileScenario {
+      id = "schema-add-audit-log"
+      kind = "add-observed-contract-schema"
+      schema = "auditLogSchema"
+    }
+    new d.AppProfileScenario {
+      id = "workflow-missing-weekly-review"
+      kind = "remove-workflow"
+      workflow = "weekly-review"
+    }
+    new d.AppProfileScenario {
+      id = "workflow-add-nightly"
+      kind = "add-observed-workflow"
+      workflow = "nightly"
+    }
+    new d.AppProfileScenario {
+      id = "store-missing-flaker-duckdb"
+      kind = "remove-data-store"
+      store = "flaker-duckdb"
+    }
+    new d.AppProfileScenario {
+      id = "store-add-audit-log"
+      kind = "add-observed-data-store"
+      store = "audit-log"
+    }
+    new d.AppProfileScenario {
+      id = "dependency-missing-dashboard-api"
+      kind = "remove-runtime-dependency"
+      dependency = "dashboard-to-api"
+    }
+    new d.AppProfileScenario {
+      id = "dependency-add-worker-api"
+      kind = "add-observed-runtime-dependency"
+      dependency = "worker-to-api"
+    }
+  }
+}

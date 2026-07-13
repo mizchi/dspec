@@ -1,0 +1,541 @@
+{
+  "changed": {
+    "rules": [
+      {
+        "change": "added",
+        "id": "IMPACT-AUDIT"
+      }
+    ],
+    "terms": [
+      {
+        "change": "modified",
+        "id": "action.view"
+      }
+    ]
+  },
+  "errors": [],
+  "impacts": [
+    {
+      "affectedRules": [
+        "IMPACT-ALLOW",
+        "IMPACT-AUDIT"
+      ],
+      "change": "modified",
+      "generated": [
+        {
+          "artifact": "markdown",
+          "generated": "markdown.term.action.view",
+          "source": {
+            "kind": "term",
+            "path": "model.vocabulary[1]",
+            "termId": "action.view"
+          }
+        },
+        {
+          "artifact": "alloy",
+          "generated": "alloy.sig.R_IMPACT_ALLOW",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "alloy",
+          "generated": "alloy.sig.R_IMPACT_AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.checks.IMPACT_ALLOW",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.checks.IMPACT_AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.clauseExprs.IMPACT_ALLOW",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.clauseExprs.IMPACT_ALLOW.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[0].must[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.clauseExprs.IMPACT_AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.clauseExprs.IMPACT_AUDIT.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[1].must[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.RuleId.IMPACT_ALLOW",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.RuleId.IMPACT_AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-ALLOW",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-ALLOW.implementedBy[0]",
+          "source": {
+            "index": 0,
+            "kind": "implementationRef",
+            "path": "model.rules[0].implementedBy[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-ALLOW.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[0].must[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-AUDIT.implementedBy[0]",
+          "source": {
+            "index": 0,
+            "kind": "implementationRef",
+            "path": "model.rules[1].implementedBy[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-AUDIT.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[1].must[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.approvedRuleIds.IMPACT-ALLOW",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.approvedRuleIds.IMPACT-AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rule.IMPACT-ALLOW",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rule.IMPACT-AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rules.IMPACT-ALLOW.implementedBy[0]",
+          "source": {
+            "index": 0,
+            "kind": "implementationRef",
+            "path": "model.rules[0].implementedBy[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rules.IMPACT-ALLOW.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[0].must[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rules.IMPACT-AUDIT.implementedBy[0]",
+          "source": {
+            "index": 0,
+            "kind": "implementationRef",
+            "path": "model.rules[1].implementedBy[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rules.IMPACT-AUDIT.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[1].must[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.ActiveApprovedRules.IMPACT-ALLOW",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.ActiveApprovedRules.IMPACT-AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.Checks[IMPACT-ALLOW]",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.Checks[IMPACT-AUDIT]",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.RuleClauses[IMPACT-ALLOW]",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.RuleClauses[IMPACT-ALLOW].must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[0].must[0]",
+            "ruleId": "IMPACT-ALLOW"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.RuleClauses[IMPACT-AUDIT]",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.RuleClauses[IMPACT-AUDIT].must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[1].must[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        }
+      ],
+      "id": "action.view",
+      "implementationRefs": [
+        {
+          "kind": "code",
+          "path": "src/cli.mjs",
+          "symbol": "validate"
+        },
+        {
+          "kind": "code",
+          "path": "src/cli.mjs",
+          "symbol": "validateCoverage"
+        }
+      ],
+      "kind": "term"
+    },
+    {
+      "affectedRules": [
+        "IMPACT-AUDIT"
+      ],
+      "change": "added",
+      "generated": [
+        {
+          "artifact": "alloy",
+          "generated": "alloy.sig.R_IMPACT_AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.checks.IMPACT_AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.clauseExprs.IMPACT_AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.clauseExprs.IMPACT_AUDIT.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[1].must[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "lean",
+          "generated": "lean.RuleId.IMPACT_AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-AUDIT.implementedBy[0]",
+          "source": {
+            "index": 0,
+            "kind": "implementationRef",
+            "path": "model.rules[1].implementedBy[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "markdown",
+          "generated": "markdown.rule.IMPACT-AUDIT.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[1].must[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.approvedRuleIds.IMPACT-AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rule.IMPACT-AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rules.IMPACT-AUDIT.implementedBy[0]",
+          "source": {
+            "index": 0,
+            "kind": "implementationRef",
+            "path": "model.rules[1].implementedBy[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "quickcheck",
+          "generated": "quickcheck.rules.IMPACT-AUDIT.must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[1].must[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.ActiveApprovedRules.IMPACT-AUDIT",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.Checks[IMPACT-AUDIT]",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.RuleClauses[IMPACT-AUDIT]",
+          "source": {
+            "kind": "rule",
+            "path": "model.rules[1]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        },
+        {
+          "artifact": "tla",
+          "generated": "tla.RuleClauses[IMPACT-AUDIT].must[0]",
+          "source": {
+            "field": "must",
+            "index": 0,
+            "kind": "clause",
+            "path": "model.rules[1].must[0]",
+            "ruleId": "IMPACT-AUDIT"
+          }
+        }
+      ],
+      "id": "IMPACT-AUDIT",
+      "implementationRefs": [
+        {
+          "kind": "code",
+          "path": "src/cli.mjs",
+          "symbol": "validateCoverage"
+        }
+      ],
+      "kind": "rule"
+    }
+  ],
+  "model": {
+    "after": {
+      "id": "impact-fixture",
+      "version": "0.1.1"
+    },
+    "before": {
+      "id": "impact-fixture",
+      "version": "0.1.0"
+    }
+  },
+  "status": "pass"
+}

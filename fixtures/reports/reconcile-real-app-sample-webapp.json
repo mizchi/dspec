@@ -1,0 +1,249 @@
+{
+  "checks": [
+    {
+      "id": "public-client",
+      "kind": "cloud node",
+      "path": "model.patterns.cloud.nodes[0]",
+      "status": "pass"
+    },
+    {
+      "id": "dashboard",
+      "kind": "cloud node",
+      "path": "model.patterns.cloud.nodes[1]",
+      "status": "pass"
+    },
+    {
+      "id": "api",
+      "kind": "cloud node",
+      "path": "model.patterns.cloud.nodes[2]",
+      "status": "pass"
+    },
+    {
+      "id": "contracts",
+      "kind": "cloud node",
+      "path": "model.patterns.cloud.nodes[3]",
+      "status": "pass"
+    },
+    {
+      "id": "github-actions",
+      "kind": "cloud node",
+      "path": "model.patterns.cloud.nodes[4]",
+      "status": "pass"
+    },
+    {
+      "id": "flaker",
+      "kind": "cloud node",
+      "path": "model.patterns.cloud.nodes[5]",
+      "status": "pass"
+    },
+    {
+      "id": "vrt",
+      "kind": "cloud node",
+      "path": "model.patterns.cloud.nodes[6]",
+      "status": "pass"
+    },
+    {
+      "id": "public-to-dashboard",
+      "kind": "cloud flow",
+      "path": "model.patterns.cloud.flows[0]",
+      "status": "pass"
+    },
+    {
+      "id": "dashboard-to-api",
+      "kind": "cloud flow",
+      "path": "model.patterns.cloud.flows[1]",
+      "status": "pass"
+    },
+    {
+      "id": "api-to-contracts",
+      "kind": "cloud flow",
+      "path": "model.patterns.cloud.flows[2]",
+      "status": "pass"
+    },
+    {
+      "id": "github-actions-to-flaker",
+      "kind": "cloud flow",
+      "path": "model.patterns.cloud.flows[3]",
+      "status": "pass"
+    },
+    {
+      "id": "github-actions-to-vrt",
+      "kind": "cloud flow",
+      "path": "model.patterns.cloud.flows[4]",
+      "status": "pass"
+    },
+    {
+      "id": "dashboard-snapshot",
+      "kind": "data dataset",
+      "path": "model.patterns.data.datasets[0]",
+      "status": "pass"
+    },
+    {
+      "id": "incident",
+      "kind": "data dataset",
+      "path": "model.patterns.data.datasets[1]",
+      "status": "pass"
+    },
+    {
+      "id": "service-detail",
+      "kind": "data dataset",
+      "path": "model.patterns.data.datasets[2]",
+      "status": "pass"
+    },
+    {
+      "id": "api-memory",
+      "kind": "data store",
+      "path": "model.patterns.data.stores[0]",
+      "status": "pass"
+    },
+    {
+      "id": "dashboard-cache",
+      "kind": "data store",
+      "path": "model.patterns.data.stores[1]",
+      "status": "pass"
+    },
+    {
+      "id": "github-actions-artifacts",
+      "kind": "data store",
+      "path": "model.patterns.data.stores[2]",
+      "status": "pass"
+    },
+    {
+      "id": "flaker-duckdb",
+      "kind": "data store",
+      "path": "model.patterns.data.stores[3]",
+      "status": "pass"
+    },
+    {
+      "id": "api-to-dashboard-data",
+      "kind": "data flow",
+      "path": "model.patterns.data.flows[0]",
+      "status": "pass"
+    },
+    {
+      "id": "ci-to-flaker-data",
+      "kind": "data flow",
+      "path": "model.patterns.data.flows[1]",
+      "status": "pass"
+    },
+    {
+      "id": "api",
+      "kind": "release service",
+      "path": "model.patterns.release.services[0]",
+      "status": "pass"
+    },
+    {
+      "id": "dashboard",
+      "kind": "release service",
+      "path": "model.patterns.release.services[1]",
+      "status": "pass"
+    },
+    {
+      "id": "typecheck",
+      "kind": "release gate",
+      "path": "model.patterns.release.gates[0]",
+      "status": "pass"
+    },
+    {
+      "id": "unit",
+      "kind": "release gate",
+      "path": "model.patterns.release.gates[1]",
+      "status": "pass"
+    },
+    {
+      "id": "e2e",
+      "kind": "release gate",
+      "path": "model.patterns.release.gates[2]",
+      "status": "pass"
+    },
+    {
+      "id": "vrt",
+      "kind": "release gate",
+      "path": "model.patterns.release.gates[3]",
+      "status": "pass"
+    },
+    {
+      "id": "ci",
+      "kind": "release step",
+      "path": "model.patterns.release.steps[0]",
+      "status": "pass"
+    },
+    {
+      "id": "ci.typecheck",
+      "kind": "release step gate",
+      "path": "model.patterns.release.steps[0].gates",
+      "status": "pass"
+    },
+    {
+      "id": "ci.unit",
+      "kind": "release step gate",
+      "path": "model.patterns.release.steps[0].gates",
+      "status": "pass"
+    },
+    {
+      "id": "ci.e2e",
+      "kind": "release step gate",
+      "path": "model.patterns.release.steps[0].gates",
+      "status": "pass"
+    },
+    {
+      "id": "ci.vrt",
+      "kind": "release step gate",
+      "path": "model.patterns.release.steps[0].gates",
+      "status": "pass"
+    },
+    {
+      "id": "weekly-review",
+      "kind": "release step",
+      "path": "model.patterns.release.steps[1]",
+      "status": "pass"
+    },
+    {
+      "id": "weekly-review.unit",
+      "kind": "release step gate",
+      "path": "model.patterns.release.steps[1].gates",
+      "status": "pass"
+    },
+    {
+      "id": "weekly-review.e2e",
+      "kind": "release step gate",
+      "path": "model.patterns.release.steps[1].gates",
+      "status": "pass"
+    },
+    {
+      "id": "api",
+      "kind": "runtime service",
+      "path": "model.patterns.runtime.services[0]",
+      "status": "pass"
+    },
+    {
+      "id": "dashboard",
+      "kind": "runtime service",
+      "path": "model.patterns.runtime.services[1]",
+      "status": "pass"
+    },
+    {
+      "id": "dashboard-to-api",
+      "kind": "runtime dependency",
+      "path": "model.patterns.runtime.dependencies[0]",
+      "status": "pass"
+    },
+    {
+      "id": "dashboard-availability",
+      "kind": "runtime slo",
+      "path": "model.patterns.runtime.slos[0]",
+      "status": "pass"
+    }
+  ],
+  "covered": 39,
+  "errors": [],
+  "model": {
+    "id": "sample-webapp-2026",
+    "version": "0.1.0"
+  },
+  "observed": {
+    "id": "sample-webapp-2026"
+  },
+  "status": "pass",
+  "total": 39
+}

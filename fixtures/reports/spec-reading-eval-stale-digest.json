@@ -1,0 +1,63 @@
+{
+  "cases": [
+    {
+      "claim": "dashboard/API/contracts と CI runner の疎通は明示された topology に従う",
+      "errors": [
+        "stale evidence digest: expected sha256:stale, actual sha256:1e6d39337b2ced7a"
+      ],
+      "evidence": [
+        "rule:SAMPLE-CLOUD-TOPOLOGY",
+        "clause:SAMPLE-CLOUD-TOPOLOGY#must[0]"
+      ],
+      "expected": "entailed",
+      "goldEvidenceDigest": {
+        "actual": "sha256:1e6d39337b2ced7a",
+        "expected": "sha256:stale",
+        "status": "fail"
+      },
+      "id": "cloud-topology-stale-digest",
+      "paraphrases": [],
+      "status": "fail"
+    }
+  ],
+  "errors": [
+    "cloud-topology-stale-digest: stale evidence digest: expected sha256:stale, actual sha256:1e6d39337b2ced7a"
+  ],
+  "eval": {
+    "digest": "sha256:6f6feef194ce51d52c93e3611d02db99659242080ee0edf5b814687d85870289",
+    "id": "sample-webapp-reading-eval-stale-digest",
+    "inputDigest": "sha256:437dad86a97bdaa03c5c1d7e063b0c66838474690f09640d37b9f462ea14c549",
+    "locale": "ja",
+    "modelDigest": "sha256:f7b387c80b3fe8f8352fb03f1051765061bc9154f5d7f972b7fe27a60c1a19c4",
+    "modelPath": "../examples/sample-webapp-2026.pkl",
+    "rubricVersion": "spec-reading-rubric-v1"
+  },
+  "i18n": {
+    "casesWithParaphrases": 0,
+    "locale": "ja"
+  },
+  "rubric": {
+    "labels": [
+      {
+        "description": "Use when the claim follows from explicit terms, rules, clauses, values, or closed-world lists in the spec.",
+        "label": "entailed"
+      },
+      {
+        "description": "Use when an explicit value differs, a rule forbids the claim, or a closed modeled list excludes the claim.",
+        "label": "contradicted"
+      },
+      {
+        "description": "Use when a nearby concept exists but the required value, actor, owner, condition, or relationship is not stated.",
+        "label": "not-supported"
+      }
+    ],
+    "version": "spec-reading-rubric-v1"
+  },
+  "status": "fail",
+  "summary": {
+    "cases": 1,
+    "contradicted": 0,
+    "entailed": 1,
+    "notSupported": 0
+  }
+}

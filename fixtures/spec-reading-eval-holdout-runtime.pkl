@@ -1,0 +1,62 @@
+import "../dspec/Schema.pkl" as d
+
+specReadingEval: d.SpecReadingEvaluation = new {
+  id = "holdout-runtime-reading-eval"
+  modelPath = "runtime-model.pkl"
+  locale = "ja"
+  rubricVersion = "spec-reading-rubric-v1"
+  cases {
+    new d.SpecReadingCase {
+      id = "checkout-runtime"
+      claim =
+        d.text(
+          "checkout API は availability SLO と page alert を持つ",
+          "checkout API has an availability SLO and page alert",
+        )
+      expected = "entailed"
+      evidenceDigest = "sha256:452fbe467fca13ce"
+      tags {
+        "runtime"
+        "slo"
+        "alert"
+      }
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:RUNTIME-CRITICAL-OBSERVED" }
+        new d.SpecReadingEvidence { ref = "term:slo.checkout-availability" }
+      }
+    }
+    new d.SpecReadingCase {
+      id = "checkout-timeout"
+      claim =
+        d.text(
+          "checkout-api-to-payments dependency の timeout は 500ms である",
+          "The checkout-api-to-payments dependency timeout is 500ms",
+        )
+      expected = "contradicted"
+      evidenceDigest = "sha256:4575c01b53890bba"
+      tags {
+        "runtime"
+        "near-miss"
+        "value-mismatch"
+      }
+      evidence {
+        new d.SpecReadingEvidence { ref = "rule:RUNTIME-CRITICAL-OBSERVED" }
+      }
+    }
+    new d.SpecReadingCase {
+      id = "checkout-owner"
+      claim =
+        d.text(
+          "checkout API の owner は team-checkout である",
+          "The checkout API owner is team-checkout",
+        )
+      expected = "not-supported"
+      evidenceDigest = "sha256:37517e5f3dc66819"
+      tags {
+        "runtime"
+        "near-miss"
+        "missing-owner"
+      }
+    }
+  }
+}

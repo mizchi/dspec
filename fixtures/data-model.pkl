@@ -1,0 +1,132 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "data-model-fixture"
+  name = text("Data governance fixture", "Data governance fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    new d.Term {
+      id = "data.customer-profile"
+      kind = "entity"
+      text = text("customer profile data", "customer profile data")
+    }
+    new d.Term {
+      id = "store.orders-db"
+      kind = "entity"
+      text = text("orders database", "orders database")
+    }
+  }
+
+  rules {
+    new d.Rule {
+      id = "DATA-PERSONAL-GOVERNED"
+      kind = "invariant"
+      text =
+        text(
+          "個人データは暗号化・削除対応・越境根拠・保持期限で管理される",
+          "Personal data is governed by encryption, deletion support, transfer basis, and retention limits",
+        )
+      terms {
+        "data.customer-profile"
+        "store.orders-db"
+      }
+      must {
+        new d.Clause {
+          expr = "personal data has governance evidence"
+        }
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#accepts Data governance pattern"
+        }
+      }
+    }
+  }
+
+  patterns = new d.PatternCatalog {
+    data = new d.DataModel {
+      policies {
+        new d.DataPolicy {
+          id = "personal-policy"
+          classification = "personal"
+          maxRetentionDays = 365
+        }
+        new d.DataPolicy {
+          id = "confidential-policy"
+          classification = "confidential"
+          maxRetentionDays = 730
+        }
+      }
+      datasets {
+        new d.DataSet {
+          id = "customer-profile"
+          classification = "personal"
+          residency = "jp"
+          retentionDays = 180
+          text = text("customer profile", "customer profile")
+        }
+        new d.DataSet {
+          id = "invoice-ledger"
+          classification = "confidential"
+          residency = "jp"
+          retentionDays = 365
+          text = text("invoice ledger", "invoice ledger")
+        }
+      }
+      stores {
+        new d.DataStore {
+          id = "orders-db"
+          region = "jp"
+          encrypted = true
+          deletionSupported = true
+          text = text("orders database", "orders database")
+        }
+        new d.DataStore {
+          id = "analytics-warehouse"
+          region = "us"
+          encrypted = true
+          deletionSupported = true
+          text = text("analytics warehouse", "analytics warehouse")
+        }
+      }
+      placements {
+        new d.DataPlacement {
+          id = "customer-profile-primary"
+          dataset = "customer-profile"
+          store = "orders-db"
+        }
+        new d.DataPlacement {
+          id = "invoice-ledger-primary"
+          dataset = "invoice-ledger"
+          store = "orders-db"
+        }
+      }
+      flows {
+        new d.DataFlow {
+          id = "customer-profile-to-analytics"
+          dataset = "customer-profile"
+          from = "orders-db"
+          to = "analytics-warehouse"
+          purpose = "analytics"
+          legalBasis = "user-consent"
+        }
+      }
+    }
+  }
+}

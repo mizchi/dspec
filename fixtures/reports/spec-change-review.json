@@ -1,0 +1,105 @@
+{
+  "classification": "narrowing",
+  "errors": [],
+  "model": {
+    "after": {
+      "id": "compat-fixture",
+      "version": "0.2.0"
+    },
+    "before": {
+      "id": "compat-fixture",
+      "version": "0.1.0"
+    }
+  },
+  "passed": 7,
+  "review": {
+    "afterModelPath": "fixtures/compat-narrowing-after.pkl",
+    "allowedCompatibility": [
+      "compatible",
+      "narrowing"
+    ],
+    "beforeModelPath": "fixtures/compat-before.pkl",
+    "breakingRequires": [],
+    "evidence": [],
+    "expectedCompatibility": "narrowing",
+    "id": "spec-change-review-narrowing",
+    "requiredSteps": [
+      "check-before",
+      "check-after",
+      "impact",
+      "compatibility",
+      "breaking-policy",
+      "evidence-ref",
+      "coverage-after"
+    ]
+  },
+  "status": "pass",
+  "steps": [
+    {
+      "errors": [],
+      "id": "check-before",
+      "model": {
+        "id": "compat-fixture",
+        "version": "0.1.0"
+      },
+      "status": "pass",
+      "summary": "compat-fixture@0.1.0: 2 terms, 1 rules"
+    },
+    {
+      "errors": [],
+      "id": "check-after",
+      "model": {
+        "id": "compat-fixture",
+        "version": "0.2.0"
+      },
+      "status": "pass",
+      "summary": "compat-fixture@0.2.0: 2 terms, 2 rules"
+    },
+    {
+      "changes": 1,
+      "errors": [],
+      "id": "impact",
+      "impacts": 1,
+      "status": "pass",
+      "summary": "1 changes, 1 impacts"
+    },
+    {
+      "classification": "narrowing",
+      "decisions": 1,
+      "errors": [],
+      "id": "compatibility",
+      "status": "pass",
+      "summary": "narrowing: 1 decisions"
+    },
+    {
+      "errors": [],
+      "id": "breaking-policy",
+      "missingEvidence": [],
+      "presentEvidence": [],
+      "requiredEvidence": [
+        "migration-plan",
+        "deprecation-plan",
+        "rollout-plan",
+        "owner-approval"
+      ],
+      "status": "pass",
+      "summary": "not breaking"
+    },
+    {
+      "errors": [],
+      "id": "evidence-ref",
+      "refs": [],
+      "status": "pass",
+      "summary": "0/0 evidence refs"
+    },
+    {
+      "covered": 2,
+      "errors": [],
+      "id": "coverage-after",
+      "status": "pass",
+      "summary": "2/2 approved rules",
+      "total": 2
+    }
+  ],
+  "total": 7
+}

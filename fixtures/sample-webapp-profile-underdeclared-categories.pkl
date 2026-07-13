@@ -1,0 +1,30 @@
+import "../dspec/Schema.pkl" as d
+
+profile: d.AppProfile = new {
+  id = "sample-webapp-2026-underdeclared-categories"
+  modelPath = "examples/sample-webapp-2026.pkl"
+  appRoot = "fixtures/sample-webapp-2026"
+  observedFacts = "fixtures/reports/import-real-app-sample-webapp.json"
+  gates {
+    "check"
+  }
+  requiredScenarioCategories {
+    "route"
+  }
+  scenarios {
+    new d.AppProfileScenario {
+      id = "baseline"
+      kind = "baseline-no-drift"
+    }
+    new d.AppProfileScenario {
+      id = "route-missing-dashboard"
+      kind = "remove-route"
+      route = "/api/dashboard"
+    }
+    new d.AppProfileScenario {
+      id = "route-add-admin"
+      kind = "add-observed-route"
+      route = "/api/admin"
+    }
+  }
+}

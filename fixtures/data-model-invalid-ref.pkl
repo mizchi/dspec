@@ -1,0 +1,16 @@
+import "../dspec/Schema.pkl" as d
+import "data-model.pkl" as base
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    data = (base.model.patterns.data) {
+      placements {
+        new d.DataPlacement {
+          id = "orphan-placement"
+          dataset = "missing-dataset"
+          store = "orders-db"
+        }
+      }
+    }
+  }
+}

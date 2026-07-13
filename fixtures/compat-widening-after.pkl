@@ -1,0 +1,59 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "compat-fixture"
+  name = d.text("Compatibility fixture", "Compatibility fixture")
+  version = "0.2.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    d.term("actor.user", "actor", "ユーザー", "User")
+    d.term("action.view", "action", "閲覧", "View")
+    d.term("action.export", "action", "エクスポート", "Export")
+  }
+
+  rules {
+    new d.Rule {
+      id = "COMPAT-ALLOW-VIEW"
+      kind = "permission"
+      text = d.text("ユーザーは閲覧できる", "Users may view")
+      terms {
+        "actor.user"
+        "action.view"
+      }
+      must {
+        d.clause("allow(actor.user, action.view)", "ユーザーに閲覧を許可する", "Users are allowed to view")
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#classifies spec compatibility changes")
+      }
+      implementedBy {
+        d.codeRef("src/cli.mjs", "validate")
+      }
+    }
+    new d.Rule {
+      id = "COMPAT-ALLOW-EXPORT"
+      kind = "permission"
+      text = d.text("ユーザーはエクスポートできる", "Users may export")
+      terms {
+        "actor.user"
+        "action.export"
+      }
+      must {
+        d.clause("allow(actor.user, action.export)", "ユーザーにエクスポートを許可する", "Users are allowed to export")
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#classifies spec compatibility changes")
+      }
+      implementedBy {
+        d.codeRef("src/cli.mjs", "validate")
+      }
+    }
+  }
+}

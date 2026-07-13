@@ -1,0 +1,9 @@
+import "../dspec/Schema.pkl" as d
+
+suite: d.AppProfileSuite = new {
+  id = "sample-webapp-suite"
+  profiles {
+    "fixtures/sample-webapp-profile.pkl"
+    "fixtures/sample-webapp-profile-scenarios.pkl"
+  }
+}

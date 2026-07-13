@@ -1,0 +1,172 @@
+{
+  "cases": [
+    {
+      "claim": "dashboard/API/contracts と CI runner の疎通は明示された topology に従う",
+      "errors": [],
+      "evidence": [
+        "rule:SAMPLE-CLOUD-TOPOLOGY",
+        "clause:SAMPLE-CLOUD-TOPOLOGY#must[0]"
+      ],
+      "expected": "entailed",
+      "goldEvidenceDigest": {
+        "actual": "sha256:1e6d39337b2ced7a",
+        "expected": "sha256:1e6d39337b2ced7a",
+        "status": "pass"
+      },
+      "id": "cloud-topology",
+      "paraphrases": [
+        "dashboard から API/contracts/CI runner への通信経路は topology として読める"
+      ],
+      "status": "pass"
+    },
+    {
+      "claim": "dashboard は API dependency と availability SLO を runtime model として持つ",
+      "errors": [],
+      "evidence": [
+        "rule:SAMPLE-RUNTIME-SAFETY",
+        "term:slo.dashboard-availability"
+      ],
+      "expected": "entailed",
+      "goldEvidenceDigest": {
+        "actual": "sha256:f8fd2b1bb5af2513",
+        "expected": "sha256:f8fd2b1bb5af2513",
+        "status": "pass"
+      },
+      "id": "runtime-slo",
+      "paraphrases": [
+        "dashboard の API 依存と availability SLO は runtime model に含まれる"
+      ],
+      "status": "pass"
+    },
+    {
+      "claim": "API と dashboard の release は CI と weekly review で継続検査される",
+      "errors": [],
+      "evidence": [
+        "rule:SAMPLE-RELEASE-SAFETY",
+        "clause:SAMPLE-RELEASE-SAFETY#must[1]"
+      ],
+      "expected": "entailed",
+      "goldEvidenceDigest": {
+        "actual": "sha256:270a523dd9718a2e",
+        "expected": "sha256:270a523dd9718a2e",
+        "status": "pass"
+      },
+      "id": "ci-weekly-review",
+      "paraphrases": [
+        "API/dashboard の release safety は CI と weekly review で確認される"
+      ],
+      "status": "pass"
+    },
+    {
+      "claim": "sample-webapp は永続 database を仕様上の主要 store として持つ",
+      "errors": [],
+      "evidence": [
+        "rule:SAMPLE-DATA-CONTRACT",
+        "term:store.api-memory"
+      ],
+      "expected": "contradicted",
+      "goldEvidenceDigest": {
+        "actual": "sha256:f26c07d19f35d220",
+        "expected": "sha256:f26c07d19f35d220",
+        "status": "pass"
+      },
+      "id": "database-primary-store",
+      "paraphrases": [
+        "仕様上の primary store は永続 DB である"
+      ],
+      "status": "pass"
+    },
+    {
+      "claim": "sample-webapp の仕様は payment workflow を release gate として要求する",
+      "errors": [],
+      "evidence": [
+        "rule:SAMPLE-RELEASE-SAFETY",
+        "term:release.step.ci"
+      ],
+      "expected": "contradicted",
+      "goldEvidenceDigest": {
+        "actual": "sha256:c78f0abd9a1be9e9",
+        "expected": "sha256:c78f0abd9a1be9e9",
+        "status": "pass"
+      },
+      "id": "payment-release-gate",
+      "paraphrases": [
+        "release gate には payment workflow が含まれる"
+      ],
+      "status": "pass"
+    },
+    {
+      "claim": "dashboard-to-api dependency の timeout は 200ms である",
+      "errors": [],
+      "evidence": [
+        "rule:SAMPLE-RUNTIME-SAFETY",
+        "term:dependency.dashboard-to-api"
+      ],
+      "expected": "contradicted",
+      "goldEvidenceDigest": {
+        "actual": "sha256:d387cf65d7016f3f",
+        "expected": "sha256:d387cf65d7016f3f",
+        "status": "pass"
+      },
+      "id": "latency-budget",
+      "paraphrases": [
+        "dashboard-to-api の timeoutMs は 200 と読める"
+      ],
+      "status": "pass"
+    },
+    {
+      "claim": "dashboard availability SLO の owner は team-observability である",
+      "errors": [],
+      "evidence": [],
+      "expected": "not-supported",
+      "goldEvidenceDigest": {
+        "actual": "sha256:37517e5f3dc66819",
+        "expected": "sha256:37517e5f3dc66819",
+        "status": "pass"
+      },
+      "id": "slo-owner",
+      "paraphrases": [
+        "dashboard availability SLO の担当チームは team-observability と明記されている"
+      ],
+      "status": "pass"
+    }
+  ],
+  "errors": [],
+  "eval": {
+    "digest": "sha256:c2263f0884360c637669186463a459086c1764a2bcee23460d7460874491f2c2",
+    "id": "sample-webapp-reading-eval",
+    "inputDigest": "sha256:7805ad70baa19ec93b7655922b66361066bc91af7ff19a02700fcd8c063bb8d5",
+    "locale": "ja",
+    "modelDigest": "sha256:f7b387c80b3fe8f8352fb03f1051765061bc9154f5d7f972b7fe27a60c1a19c4",
+    "modelPath": "../examples/sample-webapp-2026.pkl",
+    "rubricVersion": "spec-reading-rubric-v1"
+  },
+  "i18n": {
+    "casesWithParaphrases": 7,
+    "locale": "ja"
+  },
+  "rubric": {
+    "labels": [
+      {
+        "description": "Use when the claim follows from explicit terms, rules, clauses, values, or closed-world lists in the spec.",
+        "label": "entailed"
+      },
+      {
+        "description": "Use when an explicit value differs, a rule forbids the claim, or a closed modeled list excludes the claim.",
+        "label": "contradicted"
+      },
+      {
+        "description": "Use when a nearby concept exists but the required value, actor, owner, condition, or relationship is not stated.",
+        "label": "not-supported"
+      }
+    ],
+    "version": "spec-reading-rubric-v1"
+  },
+  "status": "pass",
+  "summary": {
+    "cases": 7,
+    "contradicted": 3,
+    "entailed": 3,
+    "notSupported": 1
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "errors": [],
+  "passed": 3,
+  "profile": {
+    "appRoot": "fixtures/sample-webapp-2026",
+    "id": "sample-webapp-2026-scenarios",
+    "modelPath": "examples/sample-webapp-2026.pkl",
+    "observedFacts": "fixtures/reports/import-real-app-sample-webapp.json"
+  },
+  "scenarios": [
+    {
+      "actual": "pass",
+      "checks": 7,
+      "errors": [],
+      "expected": "pass",
+      "guard": "false-positive",
+      "id": "baseline",
+      "kind": "baseline-no-drift",
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed release gate: ci -> vrt"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "ci-missing-vrt",
+      "kind": "remove-release-gate",
+      "mutation": {
+        "removedGate": "vrt",
+        "step": "ci"
+      },
+      "status": "pass"
+    },
+    {
+      "actual": "fail",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: release.gate security at observed.domain.release.gates[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "ci-add-security",
+      "kind": "add-observed-release-gate",
+      "mutation": {
+        "addedGate": "security",
+        "workflow": "ci"
+      },
+      "status": "pass"
+    }
+  ],
+  "status": "pass",
+  "total": 3
+}

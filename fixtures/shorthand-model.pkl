@@ -1,0 +1,38 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "shorthand-fixture"
+  name = d.text("Shorthand fixture", "Shorthand fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    d.term("artifact.shorthand", "action", "authoring shorthand", "authoring shorthand")
+  }
+
+  rules {
+    new d.Rule {
+      id = "SHORTHAND-CHECKED"
+      kind = "obligation"
+      text = d.text("shorthand は仕様記述の冗長性を下げる", "Shorthand reduces spec authoring noise")
+      terms {
+        "artifact.shorthand"
+      }
+      must {
+        d.clause("shorthand.available", "shorthand が使える", "shorthand is available")
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#accepts shorthand authoring helpers")
+      }
+      implementedBy {
+        d.codeRef("dspec/Schema.pkl", "term")
+        d.codeRef("dspec/Schema.pkl", "nodeCheck")
+      }
+    }
+  }
+}

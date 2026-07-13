@@ -1,0 +1,155 @@
+{
+  "errors": [],
+  "passed": 2,
+  "profiles": [
+    {
+      "checks": [
+        {
+          "errors": [],
+          "id": "check",
+          "status": "pass",
+          "summary": {
+            "decisions": 0,
+            "rules": 4,
+            "terms": 27
+          }
+        },
+        {
+          "errors": [],
+          "id": "drift",
+          "references": 11,
+          "status": "pass"
+        },
+        {
+          "covered": 29,
+          "errors": [],
+          "id": "domain-coverage",
+          "status": "pass",
+          "total": 29
+        },
+        {
+          "errors": [],
+          "facts": {
+            "routes": 3,
+            "schemas": 11,
+            "workflows": 2
+          },
+          "id": "import-real-app",
+          "observed": {
+            "id": "sample-webapp-2026"
+          },
+          "status": "pass"
+        },
+        {
+          "errors": [],
+          "id": "observed-fixture",
+          "path": "fixtures/reports/import-real-app-sample-webapp.json",
+          "status": "pass"
+        },
+        {
+          "covered": 39,
+          "errors": [],
+          "id": "reconcile-real-app",
+          "status": "pass",
+          "total": 39
+        },
+        {
+          "covered": 33,
+          "errors": [],
+          "id": "reverse-coverage",
+          "status": "pass",
+          "total": 33
+        }
+      ],
+      "errors": [],
+      "passed": 7,
+      "profile": {
+        "appRoot": "fixtures/sample-webapp-2026",
+        "id": "sample-webapp-2026",
+        "modelPath": "examples/sample-webapp-2026.pkl",
+        "observedFacts": "fixtures/reports/import-real-app-sample-webapp.json"
+      },
+      "status": "pass",
+      "total": 7
+    },
+    {
+      "checks": [
+        {
+          "errors": [],
+          "id": "check",
+          "status": "pass",
+          "summary": {
+            "decisions": 0,
+            "rules": 4,
+            "terms": 27
+          }
+        },
+        {
+          "errors": [],
+          "id": "drift",
+          "references": 11,
+          "status": "pass"
+        },
+        {
+          "covered": 29,
+          "errors": [],
+          "id": "domain-coverage",
+          "status": "pass",
+          "total": 29
+        },
+        {
+          "errors": [],
+          "facts": {
+            "routes": 3,
+            "schemas": 11,
+            "workflows": 2
+          },
+          "id": "import-real-app",
+          "observed": {
+            "id": "sample-webapp-2026"
+          },
+          "status": "pass"
+        },
+        {
+          "errors": [],
+          "id": "observed-fixture",
+          "path": "fixtures/reports/import-real-app-sample-webapp.json",
+          "status": "pass"
+        },
+        {
+          "covered": 39,
+          "errors": [],
+          "id": "reconcile-real-app",
+          "status": "pass",
+          "total": 39
+        },
+        {
+          "covered": 33,
+          "errors": [],
+          "id": "reverse-coverage",
+          "status": "pass",
+          "total": 33
+        }
+      ],
+      "errors": [],
+      "passed": 7,
+      "profile": {
+        "appRoot": "fixtures/sample-webapp-2026",
+        "id": "sample-webapp-2026-scenarios",
+        "modelPath": "examples/sample-webapp-2026.pkl",
+        "observedFacts": "fixtures/reports/import-real-app-sample-webapp.json"
+      },
+      "status": "pass",
+      "total": 7
+    }
+  ],
+  "status": "pass",
+  "suite": {
+    "id": "sample-webapp-suite",
+    "profiles": [
+      "fixtures/sample-webapp-profile.pkl",
+      "fixtures/sample-webapp-profile-scenarios.pkl"
+    ]
+  },
+  "total": 2
+}

@@ -1,0 +1,26 @@
+import "../dspec/Schema.pkl" as d
+import "db-model.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "db-model-migration-missing-mapping"
+  patterns = new d.PatternCatalog {
+    db = (base.model.patterns.db) {
+      migrations {
+        new d.DbMigration {
+          id = "v2-add-payments-without-mapping"
+          text = base.model.name
+          fromTables {
+            "orders"
+          }
+          toTables {
+            "orders"
+            "payments"
+          }
+          preserves {
+            "paid-order-has-payment"
+          }
+        }
+      }
+    }
+  }
+}

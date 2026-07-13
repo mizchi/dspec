@@ -1,0 +1,39 @@
+{
+  "changed": {
+    "domain": [],
+    "rules": [
+      {
+        "change": "added",
+        "id": "COMPAT-AUDIT-VIEW"
+      }
+    ],
+    "terms": []
+  },
+  "classification": "narrowing",
+  "decisions": [
+    {
+      "change": "rule:COMPAT-AUDIT-VIEW:added",
+      "classification": "narrowing",
+      "reason": "added approved obligation rule"
+    }
+  ],
+  "errors": [],
+  "model": {
+    "after": {
+      "id": "compat-fixture",
+      "version": "0.2.0"
+    },
+    "before": {
+      "id": "compat-fixture",
+      "version": "0.1.0"
+    }
+  },
+  "status": "pass",
+  "summary": {
+    "breaking": 0,
+    "compatible": 0,
+    "narrowing": 1,
+    "unknown": 0,
+    "widening": 0
+  }
+}

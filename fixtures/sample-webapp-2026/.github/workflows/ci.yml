@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FLAKER_DIR: ${{ github.workspace }}/.tools/flaker
+      VRT_DIR: ${{ github.workspace }}/.tools/vrt
+    steps:
+      - name: Checkout app
+        uses: actions/checkout@v6
+
+      - name: Checkout flaker
+        uses: actions/checkout@v6
+        with:
+          repository: mizchi/flaker
+          path: .tools/flaker
+
+      - name: Checkout vrt
+        uses: actions/checkout@v6
+        with:
+          repository: mizchi/vrt
+          path: .tools/vrt
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install app dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install flaker dependencies
+        run: pnpm --dir "$FLAKER_DIR" install --frozen-lockfile
+
+      - name: Install vrt dependencies
+        run: pnpm --dir "$VRT_DIR" install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install vrt Playwright browsers
+        run: pnpm --dir "$VRT_DIR" exec playwright install --with-deps chromium
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Playwright E2E
+        run: pnpm test:e2e
+
+      - name: VRT snapshot
+        run: pnpm vrt:snapshot:ci
+
+      - name: Upload quality artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: quality-artifacts
+          path: |
+            .artifacts
+            playwright-report
+            vrt/dashboard

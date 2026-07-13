@@ -1,0 +1,115 @@
+/// Web application domain authoring helpers.
+///
+/// This preset pack covers the implementation facts extracted by
+/// `import-real-app`: routes, contract schemas, workflows, and gates.
+@ModuleInfo { minPklVersion = "0.31.0" }
+module dspec.domains.WebApp
+
+import "../Schema.pkl" as d
+
+function route(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "relation"
+  text = d.text(jaText, enText)
+}
+
+function schema(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "entity"
+  text = d.text(jaText, enText)
+}
+
+function workflow(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "action"
+  text = d.text(jaText, enText)
+}
+
+function gate(termId: d.Identifier, jaText: String, enText: String): d.Term = new {
+  id = termId
+  kind = "relation"
+  text = d.text(jaText, enText)
+}
+
+function routeUsesSchema(
+  ruleId: d.Identifier,
+  routeId: d.Identifier,
+  schemaId: d.Identifier,
+  checkRef: String,
+  implPath: String,
+  implSymbol: String,
+): d.Rule = new {
+  id = ruleId
+  kind = "invariant"
+  text =
+    d.text(
+      "\(routeId) は \(schemaId) で検証される",
+      "\(routeId) is validated by \(schemaId)",
+    )
+  terms {
+    routeId
+    schemaId
+  }
+  must {
+    new d.Clause {
+      expr = "routeUsesSchema(\(routeId), \(schemaId))"
+      ast = new d.ExprAst {
+        op = "atom"
+        name = "routeUsesSchema"
+        args {
+          routeId
+          schemaId
+        }
+      }
+      text = d.text("\(routeId) が \(schemaId) を使う", "\(routeId) uses \(schemaId)")
+    }
+  }
+  reviewStatus = "approved"
+  checks {
+    d.nodeCheck(checkRef)
+  }
+  implementedBy {
+    d.codeRef(implPath, implSymbol)
+  }
+}
+
+function workflowHasGate(
+  ruleId: d.Identifier,
+  workflowId: d.Identifier,
+  gateId: d.Identifier,
+  checkRef: String,
+  implPath: String,
+): d.Rule = new {
+  id = ruleId
+  kind = "obligation"
+  text =
+    d.text(
+      "\(workflowId) は \(gateId) を持つ",
+      "\(workflowId) has \(gateId)",
+    )
+  terms {
+    workflowId
+    gateId
+  }
+  must {
+    new d.Clause {
+      expr = "workflowHasGate(\(workflowId), \(gateId))"
+      ast = new d.ExprAst {
+        op = "atom"
+        name = "workflowHasGate"
+        args {
+          workflowId
+          gateId
+        }
+      }
+      text = d.text("\(workflowId) に \(gateId) が含まれる", "\(workflowId) includes \(gateId)")
+    }
+  }
+  reviewStatus = "approved"
+  checks {
+    d.nodeCheck(checkRef)
+  }
+  implementedBy {
+    d.runtimeRef(implPath)
+  }
+}

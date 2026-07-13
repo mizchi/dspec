@@ -1,0 +1,304 @@
+{
+  "categories": [
+    "release-gate",
+    "route",
+    "contract-schema",
+    "workflow",
+    "data-store",
+    "runtime-dependency"
+  ],
+  "declaredCategories": [],
+  "detected": 12,
+  "errors": [],
+  "generated": 12,
+  "inferredCategories": [
+    "release-gate",
+    "route",
+    "contract-schema",
+    "workflow",
+    "data-store",
+    "runtime-dependency"
+  ],
+  "missed": 0,
+  "mutations": [
+    {
+      "actual": "fail",
+      "category": "release-gate",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed release gate: ci -> typecheck"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "release-gate-implementation-missing",
+      "kind": "remove-release-gate",
+      "mutation": {
+        "removedGate": "typecheck",
+        "step": "ci"
+      },
+      "shrinks": [
+        {
+          "kind": "remove-release-gate"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "implementation-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "release-gate",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: release.gate security at observed.domain.release.gates[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "release-gate-spec-missing",
+      "kind": "add-observed-release-gate",
+      "mutation": {
+        "addedGate": "security",
+        "workflow": "ci"
+      },
+      "shrinks": [
+        {
+          "kind": "add-observed-release-gate"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "spec-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "route",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed route: /api/dashboard"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "route-implementation-missing",
+      "kind": "remove-route",
+      "mutation": {
+        "removedRoute": "/api/dashboard"
+      },
+      "shrinks": [
+        {
+          "kind": "remove-route"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "implementation-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "route",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed route: /api/admin"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "route-spec-missing",
+      "kind": "add-observed-route",
+      "mutation": {
+        "addedRoute": "/api/admin"
+      },
+      "shrinks": [
+        {
+          "kind": "add-observed-route"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "spec-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "contract-schema",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed data dataset: dashboard-snapshot",
+        "missing observed data flow: api-to-dashboard-data"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "contract-schema-implementation-missing",
+      "kind": "remove-contract-schema",
+      "mutation": {
+        "removedSchema": "dashboardSnapshotSchema"
+      },
+      "shrinks": [
+        {
+          "kind": "remove-contract-schema"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "implementation-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "contract-schema",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed contract schema: auditLogSchema"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "contract-schema-spec-missing",
+      "kind": "add-observed-contract-schema",
+      "mutation": {
+        "addedSchema": "auditLogSchema"
+      },
+      "shrinks": [
+        {
+          "kind": "add-observed-contract-schema"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "spec-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "workflow",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed release step: ci",
+        "missing observed release gate: ci -> typecheck",
+        "missing observed release gate: ci -> unit",
+        "missing observed release gate: ci -> e2e",
+        "missing observed release gate: ci -> vrt"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "workflow-implementation-missing",
+      "kind": "remove-workflow",
+      "mutation": {
+        "removedWorkflow": "ci"
+      },
+      "shrinks": [
+        {
+          "kind": "remove-workflow"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "implementation-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "workflow",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: release.step nightly at observed.domain.release.steps[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "workflow-spec-missing",
+      "kind": "add-observed-workflow",
+      "mutation": {
+        "addedWorkflow": "nightly"
+      },
+      "shrinks": [
+        {
+          "kind": "add-observed-workflow"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "spec-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "data-store",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed data store: api-memory"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "data-store-implementation-missing",
+      "kind": "remove-data-store",
+      "mutation": {
+        "removedStore": "api-memory"
+      },
+      "shrinks": [
+        {
+          "kind": "remove-data-store"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "implementation-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "data-store",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: data.store audit-log at observed.domain.data.stores[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "data-store-spec-missing",
+      "kind": "add-observed-data-store",
+      "mutation": {
+        "addedStore": "audit-log"
+      },
+      "shrinks": [
+        {
+          "kind": "add-observed-data-store"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "spec-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "runtime-dependency",
+      "detectedSuggestionKind": "implementation-missing",
+      "errors": [
+        "missing observed runtime dependency: dashboard-to-api"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "runtime-dependency-implementation-missing",
+      "kind": "remove-runtime-dependency",
+      "mutation": {
+        "removedDependency": "dashboard-to-api"
+      },
+      "shrinks": [
+        {
+          "kind": "remove-runtime-dependency"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "implementation-missing"
+    },
+    {
+      "actual": "fail",
+      "category": "runtime-dependency",
+      "detectedSuggestionKind": "spec-missing",
+      "errors": [
+        "unmodeled observed fact: runtime.dependency worker-to-api at observed.domain.runtime.dependencies[1]"
+      ],
+      "expected": "fail",
+      "guard": "false-negative",
+      "id": "runtime-dependency-spec-missing",
+      "kind": "add-observed-runtime-dependency",
+      "mutation": {
+        "addedDependency": "worker-to-api"
+      },
+      "shrinks": [
+        {
+          "kind": "add-observed-runtime-dependency"
+        }
+      ],
+      "status": "pass",
+      "suggestionKind": "spec-missing"
+    }
+  ],
+  "profile": {
+    "appRoot": "fixtures/sample-webapp-2026",
+    "id": "sample-webapp-2026-extended-scenarios",
+    "modelPath": "examples/sample-webapp-2026.pkl",
+    "observedFacts": "fixtures/reports/import-real-app-sample-webapp.json"
+  },
+  "score": 1,
+  "status": "pass"
+}

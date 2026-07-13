@@ -1,0 +1,17 @@
+import "../dspec/Schema.pkl" as d
+import "runtime-model.pkl" as base
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    runtime = (base.model.patterns.runtime) {
+      alerts {
+        new d.RuntimeAlert {
+          id = "orphan-alert"
+          service = "checkout-api"
+          signal = "missing-signal"
+          severity = "page"
+        }
+      }
+    }
+  }
+}

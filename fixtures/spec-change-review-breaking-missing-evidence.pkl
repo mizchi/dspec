@@ -1,0 +1,32 @@
+import "../dspec/Schema.pkl" as d
+
+review: d.SpecChangeReview = new {
+  id = "spec-change-review-breaking-missing-evidence"
+  beforeModelPath = "fixtures/compat-before.pkl"
+  afterModelPath = "fixtures/compat-breaking-after.pkl"
+  expectedCompatibility = "breaking"
+  allowedCompatibility {
+    "breaking"
+  }
+  requiredSteps {
+    "check-before"
+    "check-after"
+    "impact"
+    "compatibility"
+    "breaking-policy"
+    "evidence-ref"
+    "coverage-after"
+  }
+  breakingRequires {
+    "migration-plan"
+    "deprecation-plan"
+    "rollout-plan"
+    "owner-approval"
+  }
+  evidence {
+    new {
+      kind = "owner-approval"
+      ref = "docs/dogfooding-2026-07-10.md#spec-change-review"
+    }
+  }
+}

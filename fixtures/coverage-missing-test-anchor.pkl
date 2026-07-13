@@ -1,0 +1,26 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/dspec.pkl" as base
+
+model: d.Model = (base.model) {
+  rules = new {
+    new d.Rule {
+      id = "COVERAGE-MISSING-TEST-ANCHOR"
+      kind = "invariant"
+      text = base.model.name
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#missing test anchor"
+        }
+      }
+      implementedBy {
+        new d.ImplementationRef {
+          kind = "code"
+          path = "src/cli.mjs"
+          symbol = "validate"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+import "../dspec/Schema.pkl" as d
+
+profile: d.AppProfile = new {
+  id = "route-only-missing-spec-scenario"
+  modelPath = "fixtures/route-only-model.pkl"
+  appRoot = "fixtures/route-only-app"
+  gates {
+    "check"
+  }
+  requiredScenarioCategories {
+    "route"
+  }
+  scenarios {
+    new d.AppProfileScenario {
+      id = "baseline"
+      kind = "baseline-no-drift"
+    }
+    new d.AppProfileScenario {
+      id = "route-missing-ping"
+      kind = "remove-route"
+      route = "/api/ping"
+    }
+  }
+}

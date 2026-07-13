@@ -1,0 +1,88 @@
+{
+  "cases": [
+    {
+      "actual": "no-drift",
+      "afterAppRoot": "fixtures/holdout-mixed-shuffled-app",
+      "beforeAppRoot": "fixtures/holdout-mixed-app",
+      "changes": [],
+      "errors": [],
+      "expected": "no-drift",
+      "id": "compatible-order-only-change",
+      "modelPath": "fixtures/holdout-mixed-model.pkl",
+      "status": "pass"
+    },
+    {
+      "actual": "implementation-missing",
+      "afterAppRoot": "fixtures/replay-missing-app",
+      "beforeAppRoot": "fixtures/holdout-mixed-app",
+      "changes": [
+        {
+          "change": "removed",
+          "id": "orderEnvelopeSchema",
+          "kind": "contract-schema",
+          "modeled": true,
+          "suggestionKind": "implementation-missing"
+        },
+        {
+          "change": "removed",
+          "id": "/api/orders",
+          "kind": "route",
+          "modeled": true,
+          "suggestionKind": "implementation-missing"
+        },
+        {
+          "change": "removed",
+          "id": "ship",
+          "kind": "workflow",
+          "modeled": true,
+          "suggestionKind": "implementation-missing"
+        }
+      ],
+      "errors": [],
+      "expected": "implementation-missing",
+      "id": "implementation-removed-modeled-surface",
+      "modelPath": "fixtures/holdout-mixed-model.pkl",
+      "status": "pass"
+    },
+    {
+      "actual": "spec-missing",
+      "afterAppRoot": "fixtures/holdout-mixed-noisy-app",
+      "beforeAppRoot": "fixtures/holdout-mixed-app",
+      "changes": [
+        {
+          "change": "added",
+          "id": "accountAuditSchema",
+          "kind": "contract-schema",
+          "modeled": false,
+          "suggestionKind": "spec-missing"
+        },
+        {
+          "change": "added",
+          "id": "/api/audit",
+          "kind": "route",
+          "modeled": false,
+          "suggestionKind": "spec-missing"
+        },
+        {
+          "change": "added",
+          "id": "audit",
+          "kind": "workflow",
+          "modeled": false,
+          "suggestionKind": "spec-missing"
+        }
+      ],
+      "errors": [],
+      "expected": "spec-missing",
+      "id": "implementation-added-unmodeled-surface",
+      "modelPath": "fixtures/holdout-mixed-model.pkl",
+      "status": "pass"
+    }
+  ],
+  "corpus": {
+    "id": "app-change-replay-corpus"
+  },
+  "errors": [],
+  "passed": 3,
+  "status": "pass",
+  "total": 3
+}

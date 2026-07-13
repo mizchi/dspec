@@ -1,0 +1,149 @@
+{
+  "classification": "breaking",
+  "errors": [
+    "breaking-policy: missing breaking change evidence: deprecation-plan, migration-plan, rollout-plan"
+  ],
+  "model": {
+    "after": {
+      "id": "compat-fixture",
+      "version": "1.0.0"
+    },
+    "before": {
+      "id": "compat-fixture",
+      "version": "0.1.0"
+    }
+  },
+  "passed": 6,
+  "review": {
+    "afterModelPath": "fixtures/compat-breaking-after.pkl",
+    "allowedCompatibility": [
+      "breaking"
+    ],
+    "beforeModelPath": "fixtures/compat-before.pkl",
+    "breakingRequires": [
+      "migration-plan",
+      "deprecation-plan",
+      "rollout-plan",
+      "owner-approval"
+    ],
+    "evidence": [
+      {
+        "kind": "owner-approval",
+        "ref": "docs/dogfooding-2026-07-10.md#spec-change-review"
+      }
+    ],
+    "expectedCompatibility": "breaking",
+    "id": "spec-change-review-breaking-missing-evidence",
+    "requiredSteps": [
+      "check-before",
+      "check-after",
+      "impact",
+      "compatibility",
+      "breaking-policy",
+      "evidence-ref",
+      "coverage-after"
+    ]
+  },
+  "status": "fail",
+  "steps": [
+    {
+      "errors": [],
+      "id": "check-before",
+      "model": {
+        "id": "compat-fixture",
+        "version": "0.1.0"
+      },
+      "status": "pass",
+      "summary": "compat-fixture@0.1.0: 2 terms, 1 rules"
+    },
+    {
+      "errors": [],
+      "id": "check-after",
+      "model": {
+        "id": "compat-fixture",
+        "version": "1.0.0"
+      },
+      "status": "pass",
+      "summary": "compat-fixture@1.0.0: 2 terms, 0 rules"
+    },
+    {
+      "changes": 1,
+      "errors": [],
+      "id": "impact",
+      "impacts": 1,
+      "status": "pass",
+      "summary": "1 changes, 1 impacts"
+    },
+    {
+      "classification": "breaking",
+      "decisions": 1,
+      "errors": [],
+      "id": "compatibility",
+      "status": "pass",
+      "summary": "breaking: 1 decisions"
+    },
+    {
+      "errors": [
+        "missing breaking change evidence: deprecation-plan, migration-plan, rollout-plan"
+      ],
+      "id": "breaking-policy",
+      "missingEvidence": [
+        "deprecation-plan",
+        "migration-plan",
+        "rollout-plan"
+      ],
+      "presentEvidence": [
+        "owner-approval"
+      ],
+      "requiredEvidence": [
+        "migration-plan",
+        "deprecation-plan",
+        "rollout-plan",
+        "owner-approval"
+      ],
+      "status": "fail",
+      "suggestedEvidence": [
+        {
+          "kind": "deprecation-plan",
+          "pkl": "new {\n  kind = \"deprecation-plan\"\n  ref = \"docs/spec-change-review-breaking-missing-evidence.md#deprecation-plan\"\n}",
+          "ref": "docs/spec-change-review-breaking-missing-evidence.md#deprecation-plan"
+        },
+        {
+          "kind": "migration-plan",
+          "pkl": "new {\n  kind = \"migration-plan\"\n  ref = \"docs/spec-change-review-breaking-missing-evidence.md#migration-plan\"\n}",
+          "ref": "docs/spec-change-review-breaking-missing-evidence.md#migration-plan"
+        },
+        {
+          "kind": "rollout-plan",
+          "pkl": "new {\n  kind = \"rollout-plan\"\n  ref = \"docs/spec-change-review-breaking-missing-evidence.md#rollout-plan\"\n}",
+          "ref": "docs/spec-change-review-breaking-missing-evidence.md#rollout-plan"
+        }
+      ],
+      "summary": "breaking evidence 1/4"
+    },
+    {
+      "errors": [],
+      "id": "evidence-ref",
+      "refs": [
+        {
+          "anchor": "spec-change-review",
+          "kind": "owner-approval",
+          "path": "docs/dogfooding-2026-07-10.md",
+          "ref": "docs/dogfooding-2026-07-10.md#spec-change-review",
+          "status": "pass"
+        }
+      ],
+      "status": "pass",
+      "summary": "1/1 evidence refs"
+    },
+    {
+      "covered": 0,
+      "errors": [],
+      "id": "coverage-after",
+      "status": "pass",
+      "summary": "0/0 approved rules",
+      "total": 0
+    }
+  ],
+  "total": 7
+}

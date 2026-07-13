@@ -1,0 +1,95 @@
+import "../dspec/Schema.pkl" as d
+import "runtime-model.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "runtime-model-broken"
+  patterns = new d.PatternCatalog {
+    runtime = (base.model.patterns.runtime) {
+      services {
+        new d.RuntimeService {
+          id = "billing-api"
+          critical = true
+        }
+      }
+      dependencies {
+        new d.RuntimeDependency {
+          id = "checkout-api-to-inventory-without-timeout"
+          service = "checkout-api"
+          target = "inventory-api"
+          kind = "http"
+        }
+        new d.RuntimeDependency {
+          id = "checkout-api-to-payments-non-idempotent-retry"
+          service = "checkout-api"
+          target = "payments-api"
+          kind = "http"
+          timeoutMs = 2000
+          retryable = true
+          idempotent = false
+        }
+      }
+      runbooks {
+        new d.RuntimeRunbook {
+          id = "checkout-untested-runbook"
+          service = "checkout-api"
+          tested = false
+        }
+      }
+      alerts {
+        new d.RuntimeAlert {
+          id = "checkout-latency-page-untested"
+          service = "checkout-api"
+          signal = "checkout-availability-signal"
+          severity = "page"
+          runbook = "checkout-untested-runbook"
+        }
+      }
+      slos {
+        new d.RuntimeSlo {
+          id = "billing-availability"
+          service = "billing-api"
+          indicator = "availability"
+          targetPercent = 99
+          window = "30d"
+        }
+      }
+      telemetry {
+        new d.RuntimeTelemetryWindow {
+          id = "checkout-availability-low-30d"
+          service = "checkout-api"
+          signal = "checkout-availability-signal"
+          slo = "checkout-availability"
+          observedPercent = 95
+          source = "prometheus:checkout_availability:low-30d"
+        }
+      }
+      alertPolicies {
+        new d.RuntimeAlertPolicy {
+          id = "checkout-latency-page-disabled-policy"
+          alert = "checkout-latency-page-untested"
+          enabled = false
+          source = "pagerduty:checkout-latency-page-disabled"
+        }
+      }
+      runbookExecutions {
+        new d.RuntimeRunbookExecution {
+          id = "checkout-untested-runbook-failed-drill"
+          runbook = "checkout-untested-runbook"
+          status = "fail"
+          executedAt = "2026-07-08"
+          source = "incident-drill:checkout-untested-runbook"
+        }
+      }
+      dependencyTraces {
+        new d.RuntimeDependencyTrace {
+          id = "checkout-api-to-payments-timeout-trace"
+          dependency = "checkout-api-to-payments"
+          observedLatencyMs = 2500
+          timedOut = true
+          idempotencyKeyObserved = true
+          source = "otel:checkout-api-to-payments:timeout"
+        }
+      }
+    }
+  }
+}

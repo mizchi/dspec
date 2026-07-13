@@ -1,0 +1,21 @@
+{
+  "data": {
+    "result": [
+      {
+        "metric": {
+          "__name__": "checkout_availability_ratio",
+          "evidence_id": "checkout-availability-30d",
+          "service": "checkout-api",
+          "signal": "checkout-availability-signal",
+          "slo": "checkout-availability"
+        },
+        "value": [
+          1783500000,
+          "0.98"
+        ]
+      }
+    ],
+    "resultType": "vector"
+  },
+  "status": "success"
+}

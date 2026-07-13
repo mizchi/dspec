@@ -1,0 +1,673 @@
+/// dspec schema.
+///
+/// This module intentionally keeps the first prototype small:
+/// Pkl owns the typed document shape, while `Clause.ast` carries the first
+/// portable expression structure for deterministic backend projections.
+@ModuleInfo { minPklVersion = "0.31.0" }
+module dspec.Schema
+
+typealias Identifier = String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+typealias Locale = String(matches(Regex(#"^[a-z]{2}(-[A-Z]{2})?$"#)))
+typealias Version = String(matches(Regex(#"^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9_.-]+)?$"#)))
+typealias IsoDate = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}$"#)))
+typealias Expr = String(length > 0)
+typealias ExprOp = "atom" | "not" | "and" | "or" | "implies" | "eq" | "neq" | "exists" | "forall"
+typealias DbColumnType = "id" | "string" | "int" | "bool" | "datetime" | "decimal"
+typealias CloudZoneExposure = "public" | "private" | "restricted"
+typealias CloudNodeKind =
+  "internet" | "service" | "database" | "queue" | "bucket" | "secret" | "cache" | "external"
+typealias DataClassification = "public" | "internal" | "personal" | "confidential" | "secret"
+typealias ReleaseGateKind = "test" | "approval" | "health" | "security" | "manual"
+typealias ReleaseStrategy = "direct" | "rolling" | "canary" | "blueGreen"
+typealias RuntimeDependencyKind = "http" | "database" | "queue" | "cache" | "external"
+typealias RuntimeSignalKind = "metric" | "log" | "trace" | "synthetic"
+typealias RuntimeAlertSeverity = "info" | "ticket" | "page"
+typealias RuntimeRunbookExecutionStatus = "pass" | "fail"
+typealias DomainPackHelperReturn = "term" | "rule"
+typealias RuleCoverageMode = "rule" | "clause"
+typealias AppProfileGate =
+  "check"
+    | "drift"
+    | "domain-coverage"
+    | "import-real-app"
+    | "observed-fixture"
+    | "reconcile-real-app"
+    | "reverse-coverage"
+typealias AppProfileScenarioKind =
+  "baseline-no-drift"
+    | "remove-release-gate"
+    | "add-observed-release-gate"
+    | "remove-route"
+    | "add-observed-route"
+    | "remove-contract-schema"
+    | "add-observed-contract-schema"
+    | "remove-workflow"
+    | "add-observed-workflow"
+    | "remove-data-store"
+    | "add-observed-data-store"
+    | "remove-runtime-dependency"
+    | "add-observed-runtime-dependency"
+typealias AppProfileScenarioCategory =
+  "release-gate" | "route" | "contract-schema" | "workflow" | "data-store" | "runtime-dependency"
+typealias AppProfileScenarioExpectation = "pass" | "fail"
+typealias AppProfileChangeDrift = "no-drift" | "implementation-missing" | "spec-missing" | "mixed"
+typealias SpecReadingExpectation = "entailed" | "contradicted" | "not-supported"
+typealias SpecCompatibility = "compatible" | "breaking" | "narrowing" | "widening" | "unknown"
+typealias SpecChangeReviewStep =
+  "check-before"
+    | "check-after"
+    | "impact"
+    | "compatibility"
+    | "breaking-policy"
+    | "evidence-ref"
+    | "coverage-after"
+typealias SpecChangeEvidenceKind =
+  "migration-plan" | "deprecation-plan" | "rollout-plan" | "owner-approval"
+
+typealias WorldMode = "open" | "closed"
+typealias ReviewStatus = "draft" | "review" | "approved"
+typealias TermKind =
+  "actor"
+    | "role"
+    | "entity"
+    | "value"
+    | "enum"
+    | "relation"
+    | "event"
+    | "state"
+    | "action"
+    | "quantity"
+typealias SpecKind =
+  "decision"
+    | "invariant"
+    | "transition"
+    | "obligation"
+    | "permission"
+    | "prohibition"
+    | "exception"
+    | "witness"
+    | "example"
+    | "non_goal"
+    | "equivalence"
+typealias Backend =
+  "node" | "pkl" | "lean" | "alloy" | "tla" | "rego" | "cue" | "playwright" | "runtime" | "manual"
+
+/// A language-independent text node.
+///
+/// `default` is what humans see when a requested locale is missing.
+/// `labels` stores locale-specific renderings without changing stable ids.
+class LocalizedText {
+  default: String(length > 0)
+  labels: Mapping<Locale, String(length > 0)> = new {}
+}
+
+function text(jaText: String, enText: String): LocalizedText = new {
+  default = jaText
+  labels {
+    ["ja"] = jaText
+    ["en"] = enText
+  }
+}
+
+/// A review plan for changing a spec master.
+///
+/// This records the before/after models plus the gates that must pass before a
+/// change is accepted. The CLI expands it into a deterministic human and JSON
+/// review report.
+class SpecChangeReview {
+  id: Identifier
+  beforeModelPath: String(length > 0)
+  afterModelPath: String(length > 0)
+  expectedCompatibility: SpecCompatibility? = null
+  allowedCompatibility: Listing<SpecCompatibility> = new {}
+  requiredSteps: Listing<SpecChangeReviewStep> = new {}
+  breakingRequires: Listing<SpecChangeEvidenceKind> = new {}
+  evidence: Listing<SpecChangeEvidence> = new {}
+}
+
+class SpecChangeEvidence {
+  kind: SpecChangeEvidenceKind
+  ref: String(length > 0)
+  text: LocalizedText? = null
+}
+
+/// Domain vocabulary. Rules should refer to terms by stable ids.
+class Term {
+  id: Identifier
+  kind: TermKind
+  text: LocalizedText
+  aliases: Mapping<Locale, Listing<String(length > 0)>> = new {}
+  world: WorldMode = "open"
+  values: Listing<Identifier> = new {}
+  supersedes: Listing<Identifier> = new {}
+}
+
+function term(termId: Identifier, termKind: TermKind, jaText: String, enText: String): Term = new {
+  id = termId
+  kind = termKind
+  text = text(jaText, enText)
+}
+
+/// A typed expression AST.
+///
+/// This is intentionally small. `atom` is an uninterpreted predicate over
+/// string arguments, `eq`/`neq` compare two symbolic arguments, boolean
+/// operators compose child expressions, and `exists`/`forall` bind `name` over
+/// one child. `expr` strings stay available as a compatibility and display
+/// layer, while `ast` carries the portable structure used by deterministic
+/// backend projections.
+class ExprAst {
+  op: ExprOp
+  name: Identifier? = null
+  args: Listing<String(length > 0)> = new {}
+  children: Listing<ExprAst> = new {}
+}
+
+/// A claim fragment.
+///
+/// `expr` is a stable compatibility and display string. It is not natural
+/// language; natural-language renderings belong in `text`. When `ast` is
+/// present, generators should treat it as the structured source.
+class Clause {
+  expr: Expr
+  ast: ExprAst? = null
+  text: LocalizedText? = null
+}
+
+function clause(clauseExpr: Expr, jaText: String, enText: String): Clause = new {
+  expr = clauseExpr
+  text = text(jaText, enText)
+}
+
+class CheckTarget {
+  backend: Backend
+  ref: String(length > 0)
+  mode: "generated" | "linked" | "manual" = "linked"
+  covers: Listing<String(matches(Regex(#"^(when|must|mustNot)\[[0-9]+\]$"#)))> = new {}
+}
+
+function linkedCheck(checkBackend: Backend, checkRef: String): CheckTarget = new {
+  backend = checkBackend
+  ref = checkRef
+}
+
+function generatedCheck(checkBackend: Backend, checkRef: String): CheckTarget = new {
+  backend = checkBackend
+  ref = checkRef
+  mode = "generated"
+}
+
+function nodeCheck(checkRef: String): CheckTarget = linkedCheck("node", checkRef)
+
+class ImplementationRef {
+  kind: "code" | "test" | "runtime" | "doc" | "proof" | "model"
+  path: String(length > 0)
+  symbol: String? = null
+}
+
+function codeRef(refPath: String, refSymbol: String): ImplementationRef = new {
+  kind = "code"
+  path = refPath
+  symbol = refSymbol
+}
+
+function modelRef(refPath: String): ImplementationRef = new {
+  kind = "model"
+  path = refPath
+}
+
+function runtimeRef(refPath: String): ImplementationRef = new {
+  kind = "runtime"
+  path = refPath
+}
+
+class DomainPackHelper {
+  id: Identifier
+  symbol: Identifier
+  returns: DomainPackHelperReturn
+  emitsTypedAst: Boolean = false
+  predicates: Listing<Identifier> = new {}
+}
+
+class DomainPack {
+  id: Identifier
+  path: String(length > 0)
+  helpers: Listing<DomainPackHelper> = new {}
+}
+
+class I18nGlossaryEntry {
+  term: Identifier
+  labels: Mapping<Locale, String(length > 0)> = new {}
+}
+
+class I18nContract {
+  requiredLocales: Listing<Locale> = new {}
+  glossary: Listing<I18nGlossaryEntry> = new {}
+}
+
+class AppProfile {
+  id: Identifier
+  modelPath: String(length > 0)
+  appRoot: String(length > 0)
+  observedFacts: String(length > 0)? = null
+  gates: Listing<AppProfileGate> = new {}
+  requiredScenarioCategories: Listing<AppProfileScenarioCategory> = new {}
+  scenarios: Listing<AppProfileScenario> = new {}
+}
+
+class AppProfileScenario {
+  id: Identifier
+  kind: AppProfileScenarioKind
+  route: String(length > 0)? = null
+  schema: Identifier? = null
+  step: Identifier? = null
+  workflow: Identifier? = null
+  gate: Identifier? = null
+  store: Identifier? = null
+  dependency: Identifier? = null
+  expected: AppProfileScenarioExpectation? = null
+}
+
+class AppProfileSuite {
+  id: Identifier
+  profiles: Listing<String(length > 0)> = new {}
+}
+
+class AppProfileChangeReplayCase {
+  id: Identifier
+  modelPath: String(length > 0)
+  beforeAppRoot: String(length > 0)
+  afterAppRoot: String(length > 0)
+  expected: AppProfileChangeDrift
+}
+
+class AppProfileChangeReplayCorpus {
+  id: Identifier
+  cases: Listing<AppProfileChangeReplayCase> = new {}
+}
+
+class SpecReadingEvidence {
+  ref: String(length > 0)
+  note: LocalizedText? = null
+}
+
+class SpecReadingCase {
+  id: Identifier
+  claim: LocalizedText
+  expected: SpecReadingExpectation
+  evidence: Listing<SpecReadingEvidence> = new {}
+  evidenceDigest: String? = null
+  tags: Listing<Identifier> = new {}
+  paraphrases: Mapping<Locale, Listing<String(length > 0)>> = new {}
+  rationale: LocalizedText? = null
+}
+
+class SpecReadingEvaluation {
+  id: Identifier
+  modelPath: String(length > 0)
+  locale: Locale? = null
+  rubricVersion: String(length > 0) = "spec-reading-rubric-v1"
+  cases: Listing<SpecReadingCase> = new {}
+}
+
+class SpecReadingEvaluationSuite {
+  id: Identifier
+  evaluations: Listing<String(length > 0)> = new {}
+  minEvaluations: Int(this >= 0) = 1
+  minCases: Int(this >= 0) = 1
+  requiredLabels: Listing<SpecReadingExpectation> = new {
+    "entailed"
+    "contradicted"
+    "not-supported"
+  }
+  requiredEvidenceKinds: Listing<Identifier> = new {}
+  requiredModelKinds: Listing<Identifier> = new {}
+  requiredTags: Listing<Identifier> = new {}
+  requiredParaphraseLocales: Listing<Locale> = new {}
+}
+
+/// A spec atom: permission, invariant, transition, obligation, etc.
+class Rule {
+  id: Identifier
+  kind: SpecKind
+  text: LocalizedText
+  terms: Listing<Identifier> = new {}
+  `when`: Listing<Clause> = new {}
+  must: Listing<Clause> = new {}
+  mustNot: Listing<Clause> = new {}
+  exceptions: Listing<Identifier> = new {}
+  priority: Int(this >= 0) = 100
+  reviewStatus: ReviewStatus = "draft"
+  coverage: RuleCoverageMode = "rule"
+  deprecated: Boolean = false
+  checks: Listing<CheckTarget> = new {}
+  implementedBy: Listing<ImplementationRef> = new {}
+  rationale: String? = null
+}
+
+class Decision {
+  id: Identifier
+  date: IsoDate
+  summary: LocalizedText
+  author: String? = null
+  supersedes: Listing<Identifier> = new {}
+  rationale: String? = null
+}
+
+class DbColumn {
+  id: Identifier
+  type: DbColumnType
+  nullable: Boolean = false
+  unique: Boolean = false
+  references: Identifier? = null
+}
+
+class DbTable {
+  id: Identifier
+  text: LocalizedText? = null
+  columns: Listing<DbColumn> = new {}
+  primaryKey: Listing<Identifier> = new {}
+  tenantColumn: Identifier? = null
+}
+
+class DbInvariant {
+  id: Identifier
+  text: LocalizedText
+  expr: Expr
+  tables: Listing<Identifier> = new {}
+}
+
+class DbTransaction {
+  id: Identifier
+  text: LocalizedText
+  reads: Listing<Identifier> = new {}
+  writes: Listing<Identifier> = new {}
+  preserves: Listing<Identifier> = new {}
+  idempotencyKey: Identifier? = null
+}
+
+class DbMapping {
+  id: Identifier
+  text: LocalizedText? = null
+  sourceExpr: Expr
+  targetExpr: Expr
+  invariants: Listing<Identifier> = new {}
+}
+
+class DbMigration {
+  id: Identifier
+  text: LocalizedText
+  fromTables: Listing<Identifier> = new {}
+  toTables: Listing<Identifier> = new {}
+  preserves: Listing<Identifier> = new {}
+  mappings: Listing<DbMapping> = new {}
+}
+
+class DbModel {
+  tables: Listing<DbTable> = new {}
+  invariants: Listing<DbInvariant> = new {}
+  transactions: Listing<DbTransaction> = new {}
+  migrations: Listing<DbMigration> = new {}
+}
+
+class CloudZone {
+  id: Identifier
+  exposure: CloudZoneExposure
+  text: LocalizedText? = null
+}
+
+class CloudNode {
+  id: Identifier
+  kind: CloudNodeKind
+  zone: Identifier
+  text: LocalizedText? = null
+  tenantScoped: Boolean = false
+}
+
+class CloudFlow {
+  id: Identifier
+  text: LocalizedText? = null
+  from: Identifier
+  to: Identifier
+  action: Identifier
+  tenantPropagated: Boolean = false
+  idempotencyKey: Identifier? = null
+}
+
+class CloudPolicy {
+  id: Identifier
+  principal: Identifier
+  resource: Identifier
+  actions: Listing<Identifier> = new {}
+}
+
+class CloudModel {
+  zones: Listing<CloudZone> = new {}
+  nodes: Listing<CloudNode> = new {}
+  flows: Listing<CloudFlow> = new {}
+  policies: Listing<CloudPolicy> = new {}
+}
+
+class DataPolicy {
+  id: Identifier
+  classification: DataClassification
+  maxRetentionDays: Int? = null
+}
+
+class DataSet {
+  id: Identifier
+  classification: DataClassification
+  residency: Identifier? = null
+  retentionDays: Int? = null
+  text: LocalizedText? = null
+}
+
+class DataStore {
+  id: Identifier
+  region: Identifier
+  encrypted: Boolean = false
+  deletionSupported: Boolean = false
+  text: LocalizedText? = null
+}
+
+class DataPlacement {
+  id: Identifier
+  dataset: Identifier
+  store: Identifier
+}
+
+class DataFlow {
+  id: Identifier
+  dataset: Identifier
+  from: Identifier
+  to: Identifier
+  purpose: Identifier
+  legalBasis: Identifier? = null
+}
+
+class DataModel {
+  policies: Listing<DataPolicy> = new {}
+  datasets: Listing<DataSet> = new {}
+  stores: Listing<DataStore> = new {}
+  placements: Listing<DataPlacement> = new {}
+  flows: Listing<DataFlow> = new {}
+}
+
+class ReleaseService {
+  id: Identifier
+  critical: Boolean = false
+  text: LocalizedText? = null
+}
+
+class ReleaseEnvironment {
+  id: Identifier
+  production: Boolean = false
+  text: LocalizedText? = null
+}
+
+class ReleaseGate {
+  id: Identifier
+  kind: ReleaseGateKind
+  text: LocalizedText? = null
+}
+
+class ReleaseRollback {
+  id: Identifier
+  service: Identifier
+  tested: Boolean = false
+  text: LocalizedText? = null
+}
+
+class ReleaseMigration {
+  id: Identifier
+  service: Identifier
+  backwardsCompatible: Boolean = false
+  text: LocalizedText? = null
+}
+
+class ReleaseStep {
+  id: Identifier
+  service: Identifier
+  environment: Identifier
+  strategy: ReleaseStrategy
+  trafficPercent: Int = 0
+  gates: Listing<Identifier> = new {}
+  rollback: Identifier? = null
+  migration: Identifier? = null
+  text: LocalizedText? = null
+}
+
+class ReleaseModel {
+  services: Listing<ReleaseService> = new {}
+  environments: Listing<ReleaseEnvironment> = new {}
+  gates: Listing<ReleaseGate> = new {}
+  rollbacks: Listing<ReleaseRollback> = new {}
+  migrations: Listing<ReleaseMigration> = new {}
+  steps: Listing<ReleaseStep> = new {}
+}
+
+class RuntimeService {
+  id: Identifier
+  critical: Boolean = false
+  text: LocalizedText? = null
+}
+
+class RuntimeDependency {
+  id: Identifier
+  service: Identifier
+  target: Identifier
+  kind: RuntimeDependencyKind
+  timeoutMs: Int? = null
+  retryable: Boolean = false
+  idempotent: Boolean = false
+  text: LocalizedText? = null
+}
+
+class RuntimeSignal {
+  id: Identifier
+  service: Identifier
+  kind: RuntimeSignalKind
+  indicator: Identifier
+  text: LocalizedText? = null
+}
+
+class RuntimeRunbook {
+  id: Identifier
+  service: Identifier
+  tested: Boolean = false
+  text: LocalizedText? = null
+}
+
+class RuntimeAlert {
+  id: Identifier
+  service: Identifier
+  signal: Identifier
+  severity: RuntimeAlertSeverity
+  runbook: Identifier? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeSlo {
+  id: Identifier
+  service: Identifier
+  indicator: Identifier
+  targetPercent: Int
+  window: Identifier? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeTelemetryWindow {
+  id: Identifier
+  service: Identifier
+  signal: Identifier
+  slo: Identifier? = null
+  observedPercent: Int? = null
+  observedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeAlertPolicy {
+  id: Identifier
+  alert: Identifier
+  enabled: Boolean = true
+  observedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeRunbookExecution {
+  id: Identifier
+  runbook: Identifier
+  status: RuntimeRunbookExecutionStatus
+  executedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeDependencyTrace {
+  id: Identifier
+  dependency: Identifier
+  observedLatencyMs: Int? = null
+  timedOut: Boolean = false
+  idempotencyKeyObserved: Boolean = false
+  observedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeModel {
+  services: Listing<RuntimeService> = new {}
+  dependencies: Listing<RuntimeDependency> = new {}
+  signals: Listing<RuntimeSignal> = new {}
+  runbooks: Listing<RuntimeRunbook> = new {}
+  alerts: Listing<RuntimeAlert> = new {}
+  slos: Listing<RuntimeSlo> = new {}
+  telemetry: Listing<RuntimeTelemetryWindow> = new {}
+  alertPolicies: Listing<RuntimeAlertPolicy> = new {}
+  runbookExecutions: Listing<RuntimeRunbookExecution> = new {}
+  dependencyTraces: Listing<RuntimeDependencyTrace> = new {}
+}
+
+class PatternCatalog {
+  db: DbModel? = null
+  cloud: CloudModel? = null
+  data: DataModel? = null
+  release: ReleaseModel? = null
+  runtime: RuntimeModel? = null
+}
+
+/// The master intent model.
+class Model {
+  id: Identifier
+  name: LocalizedText
+  version: Version
+  primaryLocale: Locale
+  locales: Listing<Locale>
+  vocabulary: Listing<Term> = new {}
+  domainPacks: Listing<DomainPack> = new {}
+  i18n: I18nContract = new {}
+  rules: Listing<Rule> = new {}
+  decisions: Listing<Decision> = new {}
+  patterns: PatternCatalog = new {}
+}

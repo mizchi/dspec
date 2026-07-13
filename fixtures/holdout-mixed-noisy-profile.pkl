@@ -1,0 +1,12 @@
+import "../dspec/Schema.pkl" as d
+
+profile: d.AppProfile = new {
+  id = "holdout-mixed-noisy-profile"
+  modelPath = "fixtures/holdout-mixed-model.pkl"
+  appRoot = "fixtures/holdout-mixed-noisy-app"
+  requiredScenarioCategories {
+    "route"
+    "contract-schema"
+    "workflow"
+  }
+}

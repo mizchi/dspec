@@ -1,0 +1,30 @@
+{
+  "backends": {
+    "alloyAnalyzer": {
+      "status": "available-or-skip"
+    },
+    "alloySyntax": {
+      "status": "pass"
+    },
+    "lean": {
+      "status": "pass"
+    },
+    "quickcheck": {
+      "status": "pass"
+    },
+    "tlaSany": {
+      "status": "available-or-skip"
+    },
+    "tlaSyntax": {
+      "status": "pass"
+    },
+    "tlaTlc": {
+      "status": "available-or-skip"
+    }
+  },
+  "model": {
+    "id": "typed-ast-fixture",
+    "version": "0.1.0"
+  },
+  "status": "pass"
+}

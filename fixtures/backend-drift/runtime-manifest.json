@@ -1,0 +1,13 @@
+{
+  "sources": [
+    {
+      "expects": {
+        "id": "runtime-evidence"
+      },
+      "kind": "telemetry",
+      "path": "runtime-collector/prometheus-availability.json",
+      "provider": "prometheus",
+      "source": "file"
+    }
+  ]
+}

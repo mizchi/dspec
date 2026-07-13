@@ -1,0 +1,39 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "coverage-clause-invalid-selector"
+  name =
+    d.text("Clause coverage invalid selector fixture", "Clause coverage invalid selector fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  rules {
+    new d.Rule {
+      id = "CLAUSE-INVALID-SELECTOR"
+      kind = "invariant"
+      text =
+        d.text(
+          "clause coverage selector は実在 clause を指す",
+          "clause coverage selectors point to real clauses",
+        )
+      coverage = "clause"
+      must {
+        d.clause("domainPack.expandsToCoreIr", "Core IR に展開される", "expands to Core IR")
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#reports clause-level coverage"
+          covers {
+            "must[1]"
+          }
+        }
+      }
+    }
+  }
+}

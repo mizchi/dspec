@@ -1,0 +1,10 @@
+{
+  "sources": [
+    {
+      "kind": "unknown",
+      "path": "runtime-collector/prometheus-availability.json",
+      "provider": "prometheus",
+      "source": "file"
+    }
+  ]
+}

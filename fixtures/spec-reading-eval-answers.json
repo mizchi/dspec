@@ -1,0 +1,46 @@
+{
+  "answers": [
+    {
+      "id": "cloud-topology",
+      "label": "entailed",
+      "evidence": ["rule:SAMPLE-CLOUD-TOPOLOGY"],
+      "rationale": "The rule states that dashboard/API/contracts and CI runner connectivity follows explicit topology."
+    },
+    {
+      "id": "runtime-slo",
+      "label": "entailed",
+      "evidence": ["rule:SAMPLE-RUNTIME-SAFETY"],
+      "rationale": "The runtime safety rule says the dashboard owns the API dependency and availability SLO."
+    },
+    {
+      "id": "ci-weekly-review",
+      "label": "entailed",
+      "evidence": ["rule:SAMPLE-RELEASE-SAFETY"],
+      "rationale": "The release safety rule mentions CI and weekly review."
+    },
+    {
+      "id": "database-primary-store",
+      "label": "contradicted",
+      "evidence": ["term:store.api-memory"],
+      "rationale": "The modeled API store is in-memory, not a persistent database."
+    },
+    {
+      "id": "payment-release-gate",
+      "label": "contradicted",
+      "evidence": ["rule:SAMPLE-RELEASE-SAFETY"],
+      "rationale": "Release safety mentions CI and weekly review, not a payment workflow gate."
+    },
+    {
+      "id": "latency-budget",
+      "label": "contradicted",
+      "evidence": ["rule:SAMPLE-RUNTIME-SAFETY", "term:dependency.dashboard-to-api"],
+      "rationale": "The dashboard-to-api dependency timeout is declared as 2000ms, not 200ms."
+    },
+    {
+      "id": "slo-owner",
+      "label": "not-supported",
+      "evidence": [],
+      "rationale": "The spec defines the dashboard availability SLO but does not state an owner team."
+    }
+  ]
+}

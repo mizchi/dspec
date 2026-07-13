@@ -1,0 +1,467 @@
+{
+  "covered": 29,
+  "elements": [
+    {
+      "candidates": [
+        "cloud.flow.api-to-contracts",
+        "flow.api-to-contracts"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:flow.api-to-contracts"
+        }
+      ],
+      "id": "api-to-contracts",
+      "kind": "cloud.flow",
+      "path": "model.patterns.cloud.flows[2]"
+    },
+    {
+      "candidates": [
+        "cloud.flow.dashboard-to-api",
+        "flow.dashboard-to-api"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:flow.dashboard-to-api"
+        }
+      ],
+      "id": "dashboard-to-api",
+      "kind": "cloud.flow",
+      "path": "model.patterns.cloud.flows[1]"
+    },
+    {
+      "candidates": [
+        "cloud.flow.github-actions-to-flaker",
+        "flow.github-actions-to-flaker"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:flow.github-actions-to-flaker"
+        }
+      ],
+      "id": "github-actions-to-flaker",
+      "kind": "cloud.flow",
+      "path": "model.patterns.cloud.flows[3]"
+    },
+    {
+      "candidates": [
+        "cloud.flow.github-actions-to-vrt",
+        "flow.github-actions-to-vrt"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:flow.github-actions-to-vrt"
+        }
+      ],
+      "id": "github-actions-to-vrt",
+      "kind": "cloud.flow",
+      "path": "model.patterns.cloud.flows[4]"
+    },
+    {
+      "candidates": [
+        "cloud.flow.public-to-dashboard",
+        "flow.public-to-dashboard"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:flow.public-to-dashboard"
+        }
+      ],
+      "id": "public-to-dashboard",
+      "kind": "cloud.flow",
+      "path": "model.patterns.cloud.flows[0]"
+    },
+    {
+      "candidates": [
+        "cloud.node.api",
+        "node.api"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:node.api"
+        }
+      ],
+      "id": "api",
+      "kind": "cloud.node",
+      "path": "model.patterns.cloud.nodes[2]"
+    },
+    {
+      "candidates": [
+        "cloud.node.contracts",
+        "node.contracts"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:node.contracts"
+        }
+      ],
+      "id": "contracts",
+      "kind": "cloud.node",
+      "path": "model.patterns.cloud.nodes[3]"
+    },
+    {
+      "candidates": [
+        "cloud.node.dashboard",
+        "node.dashboard"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:node.dashboard"
+        }
+      ],
+      "id": "dashboard",
+      "kind": "cloud.node",
+      "path": "model.patterns.cloud.nodes[1]"
+    },
+    {
+      "candidates": [
+        "cloud.node.flaker",
+        "node.flaker"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:node.flaker"
+        }
+      ],
+      "id": "flaker",
+      "kind": "cloud.node",
+      "path": "model.patterns.cloud.nodes[5]"
+    },
+    {
+      "candidates": [
+        "cloud.node.github-actions",
+        "node.github-actions"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:node.github-actions"
+        }
+      ],
+      "id": "github-actions",
+      "kind": "cloud.node",
+      "path": "model.patterns.cloud.nodes[4]"
+    },
+    {
+      "candidates": [
+        "cloud.node.public-client",
+        "node.public-client"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:node.public-client"
+        }
+      ],
+      "id": "public-client",
+      "kind": "cloud.node",
+      "path": "model.patterns.cloud.nodes[0]"
+    },
+    {
+      "candidates": [
+        "cloud.node.vrt",
+        "node.vrt"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-CLOUD-TOPOLOGY",
+          "via": "term:node.vrt"
+        }
+      ],
+      "id": "vrt",
+      "kind": "cloud.node",
+      "path": "model.patterns.cloud.nodes[6]"
+    },
+    {
+      "candidates": [
+        "data.dashboard-snapshot",
+        "data.dataset.dashboard-snapshot",
+        "dataset.dashboard-snapshot"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:data.dashboard-snapshot"
+        }
+      ],
+      "id": "dashboard-snapshot",
+      "kind": "data.dataset",
+      "path": "model.patterns.data.datasets[0]"
+    },
+    {
+      "candidates": [
+        "data.dataset.incident",
+        "data.incident",
+        "dataset.incident"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:data.incident"
+        }
+      ],
+      "id": "incident",
+      "kind": "data.dataset",
+      "path": "model.patterns.data.datasets[1]"
+    },
+    {
+      "candidates": [
+        "data.dataset.service-detail",
+        "data.service-detail",
+        "dataset.service-detail"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:data.service-detail"
+        }
+      ],
+      "id": "service-detail",
+      "kind": "data.dataset",
+      "path": "model.patterns.data.datasets[2]"
+    },
+    {
+      "candidates": [
+        "data.flow.api-to-dashboard-data",
+        "flow.api-to-dashboard-data"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:flow.api-to-dashboard-data"
+        }
+      ],
+      "id": "api-to-dashboard-data",
+      "kind": "data.flow",
+      "path": "model.patterns.data.flows[0]"
+    },
+    {
+      "candidates": [
+        "data.flow.ci-to-flaker-data",
+        "flow.ci-to-flaker-data"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:flow.ci-to-flaker-data"
+        }
+      ],
+      "id": "ci-to-flaker-data",
+      "kind": "data.flow",
+      "path": "model.patterns.data.flows[1]"
+    },
+    {
+      "candidates": [
+        "data.store.api-memory",
+        "store.api-memory"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:store.api-memory"
+        }
+      ],
+      "id": "api-memory",
+      "kind": "data.store",
+      "path": "model.patterns.data.stores[0]"
+    },
+    {
+      "candidates": [
+        "data.store.dashboard-cache",
+        "store.dashboard-cache"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:store.dashboard-cache"
+        }
+      ],
+      "id": "dashboard-cache",
+      "kind": "data.store",
+      "path": "model.patterns.data.stores[1]"
+    },
+    {
+      "candidates": [
+        "data.store.flaker-duckdb",
+        "store.flaker-duckdb"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:store.flaker-duckdb"
+        }
+      ],
+      "id": "flaker-duckdb",
+      "kind": "data.store",
+      "path": "model.patterns.data.stores[3]"
+    },
+    {
+      "candidates": [
+        "data.store.github-actions-artifacts",
+        "store.github-actions-artifacts"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-DATA-CONTRACT",
+          "via": "term:store.github-actions-artifacts"
+        }
+      ],
+      "id": "github-actions-artifacts",
+      "kind": "data.store",
+      "path": "model.patterns.data.stores[2]"
+    },
+    {
+      "candidates": [
+        "release.service.api",
+        "service.api"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-RELEASE-SAFETY",
+          "via": "term:service.api"
+        },
+        {
+          "rule": "SAMPLE-RUNTIME-SAFETY",
+          "via": "term:service.api"
+        }
+      ],
+      "id": "api",
+      "kind": "release.service",
+      "path": "model.patterns.release.services[0]"
+    },
+    {
+      "candidates": [
+        "release.service.dashboard",
+        "service.dashboard"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-RELEASE-SAFETY",
+          "via": "term:service.dashboard"
+        },
+        {
+          "rule": "SAMPLE-RUNTIME-SAFETY",
+          "via": "term:service.dashboard"
+        }
+      ],
+      "id": "dashboard",
+      "kind": "release.service",
+      "path": "model.patterns.release.services[1]"
+    },
+    {
+      "candidates": [
+        "release.step.ci",
+        "step.ci"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-RELEASE-SAFETY",
+          "via": "term:release.step.ci"
+        }
+      ],
+      "id": "ci",
+      "kind": "release.step",
+      "path": "model.patterns.release.steps[0]"
+    },
+    {
+      "candidates": [
+        "release.step.weekly-review",
+        "step.weekly-review"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-RELEASE-SAFETY",
+          "via": "term:release.step.weekly-review"
+        }
+      ],
+      "id": "weekly-review",
+      "kind": "release.step",
+      "path": "model.patterns.release.steps[1]"
+    },
+    {
+      "candidates": [
+        "dependency.dashboard-to-api",
+        "runtime.dependency.dashboard-to-api"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-RUNTIME-SAFETY",
+          "via": "term:dependency.dashboard-to-api"
+        }
+      ],
+      "id": "dashboard-to-api",
+      "kind": "runtime.dependency",
+      "path": "model.patterns.runtime.dependencies[0]"
+    },
+    {
+      "candidates": [
+        "runtime.service.api",
+        "service.api"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-RELEASE-SAFETY",
+          "via": "term:service.api"
+        },
+        {
+          "rule": "SAMPLE-RUNTIME-SAFETY",
+          "via": "term:service.api"
+        }
+      ],
+      "id": "api",
+      "kind": "runtime.service",
+      "path": "model.patterns.runtime.services[0]"
+    },
+    {
+      "candidates": [
+        "runtime.service.dashboard",
+        "service.dashboard"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-RELEASE-SAFETY",
+          "via": "term:service.dashboard"
+        },
+        {
+          "rule": "SAMPLE-RUNTIME-SAFETY",
+          "via": "term:service.dashboard"
+        }
+      ],
+      "id": "dashboard",
+      "kind": "runtime.service",
+      "path": "model.patterns.runtime.services[1]"
+    },
+    {
+      "candidates": [
+        "runtime.slo.dashboard-availability",
+        "slo.dashboard-availability"
+      ],
+      "coveredBy": [
+        {
+          "rule": "SAMPLE-RUNTIME-SAFETY",
+          "via": "term:slo.dashboard-availability"
+        }
+      ],
+      "id": "dashboard-availability",
+      "kind": "runtime.slo",
+      "path": "model.patterns.runtime.slos[0]"
+    }
+  ],
+  "errors": [],
+  "model": {
+    "id": "sample-webapp-2026",
+    "version": "0.1.0"
+  },
+  "status": "pass",
+  "total": 29,
+  "uncovered": []
+}

@@ -1,0 +1,42 @@
+import "../dspec/domains/WebApp.pkl" as webapp
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "webapp-domain-pack-fixture"
+  name = d.text("Web app domain pack fixture", "Web app domain pack fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    webapp.route("route.dashboard", "dashboard API route", "dashboard API route")
+    webapp.schema(
+      "schema.dashboardSnapshot",
+      "dashboard snapshot schema",
+      "dashboard snapshot schema",
+    )
+    webapp.workflow("workflow.ci", "CI workflow", "CI workflow")
+    webapp.gate("gate.vrt", "VRT gate", "VRT gate")
+  }
+
+  rules {
+    webapp.routeUsesSchema(
+      "WEBAPP-ROUTE-DASHBOARD-SCHEMA",
+      "route.dashboard",
+      "schema.dashboardSnapshot",
+      "test/cli.test.mjs#accepts web app domain preset packs",
+      "src/cli.mjs",
+      "importRealApp",
+    )
+    webapp.workflowHasGate(
+      "WEBAPP-CI-HAS-VRT",
+      "workflow.ci",
+      "gate.vrt",
+      "test/cli.test.mjs#accepts web app domain preset packs",
+      "Taskfile.pkl",
+    )
+  }
+}

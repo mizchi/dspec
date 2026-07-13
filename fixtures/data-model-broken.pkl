@@ -1,0 +1,47 @@
+import "../dspec/Schema.pkl" as d
+import "data-model.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "data-model-broken"
+  patterns = new d.PatternCatalog {
+    data = (base.model.patterns.data) {
+      datasets {
+        new d.DataSet {
+          id = "customer-profile-long-retention"
+          classification = "personal"
+          residency = "jp"
+          retentionDays = 730
+        }
+      }
+      stores {
+        new d.DataStore {
+          id = "legacy-db"
+          region = "jp"
+          encrypted = false
+          deletionSupported = false
+        }
+      }
+      placements {
+        new d.DataPlacement {
+          id = "customer-profile-legacy"
+          dataset = "customer-profile"
+          store = "legacy-db"
+        }
+        new d.DataPlacement {
+          id = "long-retention-primary"
+          dataset = "customer-profile-long-retention"
+          store = "orders-db"
+        }
+      }
+      flows {
+        new d.DataFlow {
+          id = "customer-profile-to-us-without-basis"
+          dataset = "customer-profile"
+          from = "orders-db"
+          to = "analytics-warehouse"
+          purpose = "analytics"
+        }
+      }
+    }
+  }
+}

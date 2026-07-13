@@ -1,0 +1,53 @@
+[repo]
+owner = "mizchi"
+name = "sample-webapp-2026"
+
+[storage]
+path = ".flaker/data.duckdb"
+
+[adapter]
+type = "playwright"
+artifact_name = "playwright-report"
+
+[runner]
+type = "playwright"
+command = "pnpm exec playwright test -c playwright.config.ts"
+
+[runner.actrun]
+workflow = ".github/workflows/flaker-local.yml"
+local = true
+trust = true
+
+[affected]
+resolver = "workspace"
+config = ""
+
+[quarantine]
+auto = true
+flaky_rate_threshold_percentage = 30
+min_runs = 5
+
+[flaky]
+window_days = 14
+detection_threshold_ratio = 0.1
+
+[profile.scheduled]
+strategy = "full"
+co_failure_window_days = 30
+
+[profile.ci]
+strategy = "hybrid"
+sample_percentage = 60
+holdout_ratio = 0.1
+co_failure_window_days = 30
+adaptive = true
+adaptive_min_percentage = 20
+adaptive_step = 10
+skip_quarantined = true
+
+[profile.local]
+strategy = "affected"
+fallback_strategy = "hybrid"
+sample_percentage = 40
+max_duration_seconds = 60
+skip_quarantined = true

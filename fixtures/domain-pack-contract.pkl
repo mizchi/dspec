@@ -1,0 +1,101 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "domain-pack-contract-fixture"
+  name = d.text("Domain pack contract fixture", "Domain pack contract fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  domainPacks {
+    new d.DomainPack {
+      id = "rbac"
+      path = "dspec/domains/Rbac.pkl"
+      helpers {
+        new d.DomainPackHelper {
+          id = "rbac.role"
+          symbol = "role"
+          returns = "term"
+        }
+        new d.DomainPackHelper {
+          id = "rbac.onlyRoleCan"
+          symbol = "onlyRoleCan"
+          returns = "rule"
+          emitsTypedAst = true
+          predicates {
+            "hasRole"
+            "allow"
+          }
+        }
+      }
+    }
+    new d.DomainPack {
+      id = "tenant"
+      path = "dspec/domains/Tenant.pkl"
+      helpers {
+        new d.DomainPackHelper {
+          id = "tenant.scope"
+          symbol = "scope"
+          returns = "term"
+        }
+        new d.DomainPackHelper {
+          id = "tenant.noCrossTenantAccess"
+          symbol = "noCrossTenantAccess"
+          returns = "rule"
+          emitsTypedAst = true
+          predicates {
+            "sameTenantScope"
+            "crossTenantAccess"
+          }
+        }
+      }
+    }
+    new d.DomainPack {
+      id = "webapp"
+      path = "dspec/domains/WebApp.pkl"
+      helpers {
+        new d.DomainPackHelper {
+          id = "webapp.route"
+          symbol = "route"
+          returns = "term"
+        }
+        new d.DomainPackHelper {
+          id = "webapp.schema"
+          symbol = "schema"
+          returns = "term"
+        }
+        new d.DomainPackHelper {
+          id = "webapp.workflow"
+          symbol = "workflow"
+          returns = "term"
+        }
+        new d.DomainPackHelper {
+          id = "webapp.gate"
+          symbol = "gate"
+          returns = "term"
+        }
+        new d.DomainPackHelper {
+          id = "webapp.routeUsesSchema"
+          symbol = "routeUsesSchema"
+          returns = "rule"
+          emitsTypedAst = true
+          predicates {
+            "routeUsesSchema"
+          }
+        }
+        new d.DomainPackHelper {
+          id = "webapp.workflowHasGate"
+          symbol = "workflowHasGate"
+          returns = "rule"
+          emitsTypedAst = true
+          predicates {
+            "workflowHasGate"
+          }
+        }
+      }
+    }
+  }
+}

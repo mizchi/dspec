@@ -1,0 +1,37 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "coverage-clause-missing"
+  name = d.text("Clause coverage missing fixture", "Clause coverage missing fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  rules {
+    new d.Rule {
+      id = "CLAUSE-MISSING"
+      kind = "invariant"
+      text = d.text("clause coverage は欠落を検出する", "clause coverage detects missing support")
+      coverage = "clause"
+      must {
+        d.clause("domainPack.expandsToCoreIr", "Core IR に展開される", "expands to Core IR")
+      }
+      mustNot {
+        d.clause("domainPack.hasPrivateSemantics", "独自意味論を持たない", "does not own private semantics")
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#reports clause-level coverage"
+          covers {
+            "must[0]"
+          }
+        }
+      }
+    }
+  }
+}

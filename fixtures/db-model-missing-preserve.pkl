@@ -1,0 +1,23 @@
+import "../dspec/Schema.pkl" as d
+import "db-model.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "db-model-missing-preserve"
+  patterns = new d.PatternCatalog {
+    db = (base.model.patterns.db) {
+      transactions {
+        new d.DbTransaction {
+          id = "pay-order-without-preserve"
+          text = base.model.name
+          reads {
+            "orders"
+          }
+          writes {
+            "orders"
+            "payments"
+          }
+        }
+      }
+    }
+  }
+}

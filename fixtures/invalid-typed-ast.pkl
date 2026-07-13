@@ -1,0 +1,30 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/dspec.pkl" as base
+
+model: d.Model = (base.model) {
+  rules = new {
+    new d.Rule {
+      id = "INVALID-TYPED-AST"
+      kind = "invariant"
+      text = base.model.name
+      must {
+        new d.Clause {
+          expr = "x == y"
+          ast = new d.ExprAst {
+            op = "eq"
+            args {
+              "x"
+            }
+          }
+        }
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#rejects invalid typed Clause.ast"
+        }
+      }
+    }
+  }
+}

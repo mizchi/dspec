@@ -1,0 +1,39 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "backend-aware-drift-invalid"
+  name = d.text("backend-aware drift invalid", "backend-aware drift invalid")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("artifact.backend_check", "entity", "backend check", "backend check")
+  }
+  rules {
+    new d.Rule {
+      id = "BACKEND-DRIFT-MISSING"
+      kind = "obligation"
+      text = d.text("backend check targets resolve", "backend check targets resolve")
+      terms {
+        "artifact.backend_check"
+      }
+      must {
+        d.clause("backend.targets.resolve", "backend targets resolve", "backend targets resolve")
+      }
+      reviewStatus = "approved"
+      checks {
+        d.linkedCheck("lean", "fixtures/backend-drift/Proof.lean#missing_anchor")
+        d.linkedCheck("tla", "fixtures/backend-drift/Spec.tla#MissingInvariant")
+        d.linkedCheck("alloy", "fixtures/backend-drift/model.als#MissingInvariant")
+        d.linkedCheck("runtime", "fixtures/backend-drift/runtime-manifest.json#missing-runtime")
+        d.linkedCheck(
+          "playwright",
+          "fixtures/backend-drift/example.spec.ts#missing playwright target",
+        )
+      }
+    }
+  }
+}

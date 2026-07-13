@@ -1,0 +1,28 @@
+import "../dspec/Schema.pkl" as d
+
+corpus: d.AppProfileChangeReplayCorpus = new {
+  id = "app-change-replay-corpus"
+  cases {
+    new d.AppProfileChangeReplayCase {
+      id = "compatible-order-only-change"
+      modelPath = "fixtures/holdout-mixed-model.pkl"
+      beforeAppRoot = "fixtures/holdout-mixed-app"
+      afterAppRoot = "fixtures/holdout-mixed-shuffled-app"
+      expected = "no-drift"
+    }
+    new d.AppProfileChangeReplayCase {
+      id = "implementation-removed-modeled-surface"
+      modelPath = "fixtures/holdout-mixed-model.pkl"
+      beforeAppRoot = "fixtures/holdout-mixed-app"
+      afterAppRoot = "fixtures/replay-missing-app"
+      expected = "implementation-missing"
+    }
+    new d.AppProfileChangeReplayCase {
+      id = "implementation-added-unmodeled-surface"
+      modelPath = "fixtures/holdout-mixed-model.pkl"
+      beforeAppRoot = "fixtures/holdout-mixed-app"
+      afterAppRoot = "fixtures/holdout-mixed-noisy-app"
+      expected = "spec-missing"
+    }
+  }
+}

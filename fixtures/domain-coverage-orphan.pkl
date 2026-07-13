@@ -1,0 +1,20 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/sample-webapp-2026.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "domain-coverage-orphan"
+  patterns = new d.PatternCatalog {
+    cloud = (base.model.patterns.cloud) {
+      nodes {
+        new d.CloudNode {
+          id = "orphan-worker"
+          kind = "service"
+          zone = "private"
+        }
+      }
+    }
+    data = base.model.patterns.data
+    release = base.model.patterns.release
+    runtime = base.model.patterns.runtime
+  }
+}
