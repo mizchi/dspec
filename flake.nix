@@ -3,9 +3,13 @@
 
   inputs = {
     nixpkgs.url = "https://flakehub.com/f/DeterminateSystems/nixpkgs-weekly/0.1";
+    pkfire = {
+      url = "git+https://github.com/mizchi/pkfire?ref=refs/tags/pkfire@0.12.3";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { nixpkgs, ... }:
+  outputs = { nixpkgs, pkfire, ... }:
     let
       systems = [
         "aarch64-darwin"
@@ -28,10 +32,14 @@
             z3
             tlaplus
             alloy6
+            pkfire.packages.${system}.default
           ];
 
           shellHook = ''
             export PATH="$HOME/.moon/bin:$PATH"
+            if ! lean --version >/dev/null 2>&1; then
+              elan default leanprover/lean4:v4.31.0 >/dev/null
+            fi
             echo "dspec devShell"
             echo "  node    : $(node --version 2>&1 | head -1 || echo not-found)"
             echo "  pnpm    : $(pnpm --version 2>&1 | head -1 || echo not-found)"
