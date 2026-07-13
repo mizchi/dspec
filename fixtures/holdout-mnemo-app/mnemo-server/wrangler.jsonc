@@ -1,0 +1,42 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "mnemo",
+  "main": "src/worker.ts",
+  "observability": { "enabled": true },
+  "triggers": {
+    // Production compaction runs hourly.
+    "crons": ["0 * * * *"],
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "mnemo-platform", "database_id": "PRODUCTION_DB" },
+    { "binding": "DB_SHARD_00", "database_name": "mnemo-platform-shard-00", "database_id": "PRODUCTION_SHARD_00" },
+    { "binding": "DB_SHARD_01", "database_name": "mnemo-platform-shard-01", "database_id": "PRODUCTION_SHARD_01" },
+  ],
+  "vectorize": [
+    { "binding": "SKILL_INDEX", "index_name": "mnemo-skills" },
+  ],
+  "r2_buckets": [
+    { "binding": "SKILL_ASSETS", "bucket_name": "mnemo-skill-assets" },
+  ],
+  "ai": { "binding": "AI" },
+  "images": { "binding": "IMAGES" },
+  "env": {
+    "staging": {
+      "name": "mnemo-staging",
+      "observability": { "enabled": true },
+      "d1_databases": [
+        { "binding": "DB", "database_name": "mnemo-platform-staging", "database_id": "STAGING_DB" },
+        { "binding": "DB_SHARD_00", "database_name": "mnemo-platform-shard-00-staging", "database_id": "STAGING_SHARD_00" },
+        { "binding": "DB_SHARD_01", "database_name": "mnemo-platform-shard-01-staging", "database_id": "STAGING_SHARD_01" },
+      ],
+      "vectorize": [
+        { "binding": "SKILL_INDEX", "index_name": "mnemo-skills-staging" },
+      ],
+      "r2_buckets": [
+        { "binding": "SKILL_ASSETS", "bucket_name": "mnemo-skill-assets-staging" },
+      ],
+      "ai": { "binding": "AI" },
+      "images": { "binding": "IMAGES" },
+    },
+  },
+}

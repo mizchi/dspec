@@ -1,0 +1,44 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.0",
+  "variables": {
+    "environment": { "value": "production" }
+  },
+  "planned_values": {
+    "root_module": {
+      "resources": [
+        {
+          "address": "aws_db_instance.primary",
+          "mode": "managed",
+          "type": "aws_db_instance",
+          "name": "primary",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": { "identifier": "payments-primary" }
+        },
+        {
+          "address": "aws_s3_bucket.assets",
+          "mode": "managed",
+          "type": "aws_s3_bucket",
+          "name": "assets",
+          "provider_name": "registry.terraform.io/hashicorp/aws",
+          "values": { "bucket": "payments-assets" }
+        }
+      ],
+      "child_modules": [
+        {
+          "address": "module.queue",
+          "resources": [
+            {
+              "address": "module.queue.aws_sqs_queue.jobs",
+              "mode": "managed",
+              "type": "aws_sqs_queue",
+              "name": "jobs",
+              "provider_name": "registry.terraform.io/hashicorp/aws",
+              "values": { "name": "payments-jobs" }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

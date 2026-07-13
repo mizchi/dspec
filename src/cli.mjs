@@ -1,10 +1,26 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import {
+  CLAUSE_AST_SEMANTICS_VERSION,
+  validateClauseAst,
+} from "./core/clause-ast.mjs";
+import {
+  RealAppCoreError,
+  evaluateRealAppImport,
+  importInfrastructureDocuments,
+  infrastructureBindingId,
+  infrastructureCloudNodeKind,
+  infrastructureDataStore,
+  infrastructureDependencyKind,
+  infrastructureService,
+  realAppObservedDomain,
+} from "./core/real-app.mjs";
 
 const TOP_LEVEL_COMMANDS = [
   { name: "check", usage: "dspec check [--json] <model.pkl>" },
@@ -24,6 +40,7 @@ const TOP_LEVEL_COMMANDS = [
   { name: "import-db-schema", usage: "dspec import-db-schema [--json] <schema.sql>" },
   { name: "check-sql-queries", usage: "dspec check-sql-queries [--json] <model.pkl> <queries.sql>" },
   { name: "import-real-app", usage: "dspec import-real-app [--json|--pkl] <app-root>" },
+  { name: "evaluate-real-app-import", usage: "dspec evaluate-real-app-import [--json] <evaluation.pkl>" },
   { name: "reconcile-real-app", usage: "dspec reconcile-real-app [--json] <model.pkl> <observed.json>" },
   { name: "reverse-coverage", usage: "dspec reverse-coverage [--json] <model.pkl> <observed.json>" },
   { name: "check-app-profile", usage: "dspec check-app-profile [--json|--markdown] [--fix [--dry-run]] <profile.pkl...>" },
@@ -43,7 +60,7 @@ const TOP_LEVEL_COMMANDS = [
   {
     name: "spec-reading-eval",
     usage:
-      "dspec spec-reading-eval [--json|--markdown|--prompt] [--locale <locale>] [--score <answers.json>] [--write-run <report.json>] [--refresh-digests [--apply]] <eval.pkl>",
+      "dspec spec-reading-eval [--json|--markdown|--prompt] [--locale <locale>] [--score <answers.json>|--runner <runner.pkl>] [--write-run <report.json>] [--refresh-digests [--apply]] <eval.pkl>",
   },
   { name: "spec-reading-eval-suite", usage: "dspec spec-reading-eval-suite [--json|--markdown] <suite.pkl>" },
   { name: "import-runtime-evidence", usage: "dspec import-runtime-evidence [--json] <evidence.json>" },
@@ -183,6 +200,14 @@ function loadAppProfileChangeReplayCorpus(file) {
   return document.corpus;
 }
 
+function loadRealAppImportEvaluation(file) {
+  const document = evalPklJson(file);
+  if (!document || typeof document !== "object" || !document.realAppImportEval) {
+    throw new CommandError(`missing top-level realAppImportEval: ${file}`);
+  }
+  return document.realAppImportEval;
+}
+
 function loadSpecChangeReview(file) {
   const document = evalPklJson(file);
   if (!document || typeof document !== "object" || !document.review) {
@@ -205,6 +230,14 @@ function loadSpecReadingEvaluationSuite(file) {
     throw new CommandError(`missing top-level specReadingEvalSuite: ${file}`);
   }
   return document.specReadingEvalSuite;
+}
+
+function loadSpecReadingAgentRunner(file) {
+  const document = evalPklJson(file);
+  if (!document || typeof document !== "object" || !document.specReadingAgentRunner) {
+    throw new CommandError(`missing top-level specReadingAgentRunner: ${file}`);
+  }
+  return document.specReadingAgentRunner;
 }
 
 function list(value) {
@@ -355,48 +388,7 @@ function activeApprovedRules(model) {
 }
 
 function validateExprAst(errors, context, ast) {
-  if (!ast) return;
-
-  const children = list(ast.children);
-  const args = list(ast.args);
-  const hasName = ast.name !== null && ast.name !== undefined;
-  const fail = (message) => errors.push(`invalid expr ast: ${context} ${message}`);
-  const rejectName = () => {
-    if (hasName) fail(`${ast.op} does not accept name`);
-  };
-  const rejectArgs = () => {
-    if (args.length > 0) fail(`${ast.op} does not accept args`);
-  };
-  const rejectChildren = () => {
-    if (children.length > 0) fail(`${ast.op} does not accept children`);
-  };
-
-  if (ast.op === "atom") {
-    if (!hasName) fail("atom expects name");
-    rejectChildren();
-  } else if (ast.op === "eq" || ast.op === "neq") {
-    rejectName();
-    rejectChildren();
-    if (args.length !== 2) fail(`${ast.op} expects exactly 2 args`);
-  } else if (ast.op === "not") {
-    rejectName();
-    rejectArgs();
-    if (children.length !== 1) fail("not expects exactly 1 child");
-  } else if (ast.op === "and" || ast.op === "or") {
-    rejectName();
-    rejectArgs();
-    if (children.length === 0) fail(`${ast.op} expects at least 1 child`);
-  } else if (ast.op === "implies") {
-    rejectName();
-    rejectArgs();
-    if (children.length !== 2) fail("implies expects exactly 2 children");
-  } else if (ast.op === "exists" || ast.op === "forall") {
-    if (!hasName) fail(`${ast.op} expects bound variable name`);
-    rejectArgs();
-    if (children.length !== 1) fail(`${ast.op} expects exactly 1 child`);
-  }
-
-  children.forEach((child, index) => validateExprAst(errors, `${context}.${ast.op}[${index}]`, child));
+  errors.push(...validateClauseAst(ast, { context }));
 }
 
 function validateClauseAsts(errors, rule, fieldName) {
@@ -1106,6 +1098,10 @@ function validate(model) {
   const ruleIds = new Set(rules.map((rule) => rule.id));
   const locales = new Set(list(model.locales));
 
+  if (model.clauseAstSemanticsVersion !== CLAUSE_AST_SEMANTICS_VERSION) {
+    errors.push(`unsupported Clause.ast semantics version: ${model.clauseAstSemanticsVersion}`);
+  }
+
   if (!locales.has(model.primaryLocale)) {
     errors.push(`primary locale is not listed in locales: ${model.primaryLocale}`);
   }
@@ -1554,6 +1550,7 @@ function parseSpecReadingEvalArgs(args) {
   let markdown = false;
   let prompt = false;
   let scoreFile = null;
+  let runnerFile = null;
   let locale = null;
   let refreshDigests = false;
   let apply = false;
@@ -1587,6 +1584,11 @@ function parseSpecReadingEvalArgs(args) {
       index += 1;
       continue;
     }
+    if (arg === "--runner") {
+      runnerFile = args[index + 1];
+      index += 1;
+      continue;
+    }
     if (arg === "--write-run") {
       writeRunFile = args[index + 1];
       index += 1;
@@ -1603,18 +1605,20 @@ function parseSpecReadingEvalArgs(args) {
   if (
     files.length !== 1 ||
     [json, markdown, prompt].filter(Boolean).length > 1 ||
-    (prompt && scoreFile) ||
+    (prompt && (scoreFile || runnerFile)) ||
     (prompt && refreshDigests) ||
-    (refreshDigests && scoreFile) ||
+    (refreshDigests && (scoreFile || runnerFile)) ||
+    (scoreFile && runnerFile) ||
     (apply && !refreshDigests) ||
-    (writeRunFile && !scoreFile) ||
+    (writeRunFile && !scoreFile && !runnerFile) ||
     (!scoreFile && args.includes("--score")) ||
+    (!runnerFile && args.includes("--runner")) ||
     (!writeRunFile && args.includes("--write-run")) ||
     (!locale && args.includes("--locale"))
   ) {
     throw new CommandError(usage());
   }
-  return { file: files[0], json, markdown, prompt, scoreFile, locale, refreshDigests, apply, writeRunFile };
+  return { file: files[0], json, markdown, prompt, scoreFile, runnerFile, locale, refreshDigests, apply, writeRunFile };
 }
 
 function parseSpecReadingEvalSuiteArgs(args) {
@@ -2504,6 +2508,38 @@ function parseTomlString(source, key) {
   return source.match(new RegExp(`^${escapeRegex(key)}\\s*=\\s*"([^"]*)"`, "m"))?.[1] ?? null;
 }
 
+function portablePath(path) {
+  return path.replaceAll("\\", "/");
+}
+
+function walkAppFiles(root, { skip = new Set([".git", "node_modules", ".direnv", ".mooncakes", "dist", "coverage"]) } = {}) {
+  const absoluteRoot = resolve(root);
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (skip.has(entry.name)) continue;
+      const absolute = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolute);
+      } else if (entry.isFile()) {
+        files.push(portablePath(relative(absoluteRoot, absolute)));
+      }
+    }
+  };
+  visit(absoluteRoot);
+  return files.sort();
+}
+
+function importInfrastructure(root) {
+  const documents = walkAppFiles(root).map((path) => ({ path, source: readOptionalText(root, path) }));
+  try {
+    return importInfrastructureDocuments(documents);
+  } catch (error) {
+    if (error instanceof RealAppCoreError) throw new CommandError(error.message);
+    throw error;
+  }
+}
+
 function importRealApp(root) {
   const appTs = readOptionalText(root, "apps/api/src/app.ts");
   const contractsTs = readOptionalText(root, "packages/contracts/src/index.ts");
@@ -2521,15 +2557,17 @@ function importRealApp(root) {
   const schemas = parseZodSchemas(contractsTs);
   const routes = parseHonoRoutes(appTs);
   const scripts = Object.keys(packageJson.scripts ?? {}).sort();
+  const infrastructure = importInfrastructure(root);
   return {
     id: appRootId(root),
     root: String(root).replace(/\/+$/, ""),
     routes,
     contracts: {
-      path: "packages/contracts/src/index.ts",
+      path: existsSync(appRootFile(root, "packages/contracts/src/index.ts")) ? "packages/contracts/src/index.ts" : null,
       schemas,
     },
     workflows,
+    infrastructure,
     quality: {
       flaker: {
         path: existsSync(appRootFile(root, "flaker.toml")) ? "flaker.toml" : null,
@@ -2548,72 +2586,23 @@ function importRealApp(root) {
   };
 }
 
-function realAppObservedDomain(app) {
-  const routePaths = new Set(list(app.routes).map((route) => route.path));
-  const schemas = new Set(list(app.contracts?.schemas));
-  const workflowGates = sortedUnique(list(app.workflows).flatMap((workflow) => workflow.gates));
-  const workflowIds = new Set(list(app.workflows).map((workflow) => workflow.id));
-  const hasWorkflowText = (pattern) => list(app.workflows).some((workflow) => {
-    const corpus = [...workflow.steps, ...workflow.repositories, ...workflow.artifacts, ...workflow.gates].join("\n").toLowerCase();
-    return pattern.test(corpus);
-  });
-  const hasDashboard = list(app.scripts).some((script) => script.includes("dashboard")) || list(app.quality?.vrt?.routes).length > 0;
-  const hasApi = list(app.routes).length > 0;
-  const hasContracts = schemas.size > 0;
-  const hasFlaker = Boolean(app.quality?.flaker?.path) || hasWorkflowText(/flaker/);
-  const hasVrt = Boolean(app.quality?.vrt?.path) || hasWorkflowText(/\bvrt\b/);
-  const hasArtifacts = hasWorkflowText(/artifact/);
-  const hasApiMemory = hasApi;
-
-  return {
-    cloud: {
-      nodes: sortedUnique([
-        hasDashboard ? "public-client" : null,
-        hasDashboard ? "dashboard" : null,
-        hasApi ? "api" : null,
-        hasContracts ? "contracts" : null,
-        list(app.workflows).length > 0 ? "github-actions" : null,
-        hasFlaker ? "flaker" : null,
-        hasVrt ? "vrt" : null,
-      ]),
-      flows: sortedUnique([
-        hasDashboard ? "public-to-dashboard" : null,
-        hasDashboard && hasApi ? "dashboard-to-api" : null,
-        hasApi && hasContracts ? "api-to-contracts" : null,
-        hasFlaker ? "github-actions-to-flaker" : null,
-        hasVrt ? "github-actions-to-vrt" : null,
-      ]),
-    },
-    data: {
-      datasets: sortedUnique([
-        schemas.has("dashboardSnapshotSchema") ? "dashboard-snapshot" : null,
-        schemas.has("incidentSchema") ? "incident" : null,
-        schemas.has("serviceDetailSchema") ? "service-detail" : null,
-      ]),
-      stores: sortedUnique([
-        hasApiMemory ? "api-memory" : null,
-        hasDashboard ? "dashboard-cache" : null,
-        hasArtifacts ? "github-actions-artifacts" : null,
-        app.quality?.flaker?.storage ? "flaker-duckdb" : null,
-      ]),
-      flows: sortedUnique([
-        routePaths.has("/api/dashboard") && schemas.has("dashboardSnapshotSchema") ? "api-to-dashboard-data" : null,
-        hasFlaker && hasArtifacts ? "ci-to-flaker-data" : null,
-      ]),
-    },
-    release: {
-      services: sortedUnique([hasApi ? "api" : null, hasDashboard ? "dashboard" : null]),
-      gates: workflowGates.filter((gate) => gate !== "flaker"),
-      steps: sortedUnique([...workflowIds]),
-    },
-    runtime: {
-      services: sortedUnique([hasApi ? "api" : null, hasDashboard ? "dashboard" : null]),
-      dependencies: sortedUnique([hasDashboard && hasApi ? "dashboard-to-api" : null]),
-      slos: sortedUnique([hasDashboard ? "dashboard-availability" : null]),
-    },
-  };
+function realAppImportEvaluationAppRoot(evaluation, file) {
+  if (isAbsolute(evaluation.appRoot)) return evaluation.appRoot;
+  if (existsSync(resolve(evaluation.appRoot))) return evaluation.appRoot;
+  return resolve(dirname(resolve(file)), evaluation.appRoot);
 }
 
+function realAppImportEvaluationReport(evaluation, file) {
+  const app = importRealApp(realAppImportEvaluationAppRoot(evaluation, file));
+  return evaluateRealAppImport(evaluation, app);
+}
+
+function renderRealAppImportEvaluationReport(report) {
+  if (report.status === "pass") {
+    return `ok: ${report.evaluation.id} real app import precision ${report.summary.precision} recall ${report.summary.recall}\n`;
+  }
+  return `${report.errors.join("\n")}\n`;
+}
 function emitPklRecord(lines, indent, className, fields) {
   lines.push(`${indent}new d.${className} {`);
   for (const [field, value] of Object.entries(fields)) {
@@ -2628,6 +2617,13 @@ function emitPklRecord(lines, indent, className, fields) {
 
 function emitRealAppPkl(app) {
   const domain = realAppObservedDomain(app);
+  const infrastructureResources = list(app.infrastructure?.resources);
+  const infrastructureById = new Map(infrastructureResources.map((resource) => [resource.id, resource]));
+  const infrastructureBindings = new Map(
+    infrastructureResources
+      .filter((resource) => resource.owner)
+      .map((resource) => [infrastructureBindingId(resource), resource]),
+  );
   const lines = ["patterns = new d.PatternCatalog {", "  cloud = new d.CloudModel {"];
   lines.push("    zones {");
   emitPklRecord(lines, "      ", "CloudZone", { id: "public", exposure: "public" });
@@ -2637,7 +2633,14 @@ function emitRealAppPkl(app) {
   lines.push("    nodes {");
   const nodeKind = { "public-client": "internet", dashboard: "service", api: "service", contracts: "service", "github-actions": "service", flaker: "service", vrt: "service" };
   const nodeZone = { "public-client": "public", dashboard: "public", api: "private", contracts: "private", "github-actions": "ci", flaker: "ci", vrt: "ci" };
-  for (const id of domain.cloud.nodes) emitPklRecord(lines, "      ", "CloudNode", { id, kind: nodeKind[id] ?? "service", zone: nodeZone[id] ?? "private" });
+  for (const id of domain.cloud.nodes) {
+    const resource = infrastructureById.get(id);
+    emitPklRecord(lines, "      ", "CloudNode", {
+      id,
+      kind: resource ? infrastructureCloudNodeKind(resource) : nodeKind[id] ?? "service",
+      zone: nodeZone[id] ?? "private",
+    });
+  }
   lines.push("    }");
   lines.push("    flows {");
   const flowDefaults = {
@@ -2647,7 +2650,13 @@ function emitRealAppPkl(app) {
     "github-actions-to-flaker": { from: "github-actions", to: "flaker", action: "run" },
     "github-actions-to-vrt": { from: "github-actions", to: "vrt", action: "snapshot" },
   };
-  for (const id of domain.cloud.flows) emitPklRecord(lines, "      ", "CloudFlow", { id, ...flowDefaults[id] });
+  for (const id of domain.cloud.flows) {
+    const resource = infrastructureBindings.get(id);
+    const fields = resource
+      ? { from: resource.owner, to: resource.id, action: "bind" }
+      : flowDefaults[id];
+    emitPklRecord(lines, "      ", "CloudFlow", { id, ...fields });
+  }
   lines.push("    }", "  }", "  data = new d.DataModel {", "    policies {");
   emitPklRecord(lines, "      ", "DataPolicy", { id: "public-policy", classification: "public", maxRetentionDays: 365 });
   emitPklRecord(lines, "      ", "DataPolicy", { id: "operational-policy", classification: "internal", maxRetentionDays: 90 });
@@ -2655,7 +2664,15 @@ function emitRealAppPkl(app) {
   const datasetClass = { "dashboard-snapshot": "public", incident: "internal", "service-detail": "internal" };
   for (const id of domain.data.datasets) emitPklRecord(lines, "      ", "DataSet", { id, classification: datasetClass[id] ?? "internal", retentionDays: id === "dashboard-snapshot" ? 30 : 90 });
   lines.push("    }", "    stores {");
-  for (const id of domain.data.stores) emitPklRecord(lines, "      ", "DataStore", { id, region: "local", encrypted: true, deletionSupported: true });
+  for (const id of domain.data.stores) {
+    const resource = infrastructureById.get(id);
+    emitPklRecord(lines, "      ", "DataStore", {
+      id,
+      region: resource?.environment ?? "local",
+      encrypted: resource ? false : true,
+      deletionSupported: resource ? false : true,
+    });
+  }
   lines.push("    }", "    flows {");
   const dataFlowDefaults = {
     "api-to-dashboard-data": { dataset: "dashboard-snapshot", from: "api-memory", to: "dashboard-cache", purpose: "operator-dashboard" },
@@ -2663,15 +2680,29 @@ function emitRealAppPkl(app) {
   };
   for (const id of domain.data.flows) emitPklRecord(lines, "      ", "DataFlow", { id, ...dataFlowDefaults[id] });
   lines.push("    }", "  }", "  release = new d.ReleaseModel {", "    services {");
-  for (const id of domain.release.services) emitPklRecord(lines, "      ", "ReleaseService", { id, critical: true });
+  for (const id of domain.release.services) emitPklRecord(lines, "      ", "ReleaseService", { id, critical: !infrastructureById.has(id) });
   lines.push("    }", "    environments {");
-  emitPklRecord(lines, "      ", "ReleaseEnvironment", { id: "ci", production: false });
+  for (const id of domain.release.environments) {
+    emitPklRecord(lines, "      ", "ReleaseEnvironment", { id, production: id === "production" || id.endsWith("/production") });
+  }
   lines.push("    }", "    gates {");
   for (const id of domain.release.gates) emitPklRecord(lines, "      ", "ReleaseGate", { id, kind: "test" });
   lines.push("    }", "  }", "  runtime = new d.RuntimeModel {", "    services {");
-  for (const id of domain.runtime.services) emitPklRecord(lines, "      ", "RuntimeService", { id, critical: true });
+  for (const id of domain.runtime.services) emitPklRecord(lines, "      ", "RuntimeService", { id, critical: !infrastructureById.has(id) });
   lines.push("    }", "    dependencies {");
-  for (const id of domain.runtime.dependencies) emitPklRecord(lines, "      ", "RuntimeDependency", { id, service: "dashboard", target: "api", kind: "http", timeoutMs: 2000, retryable: true, idempotent: true });
+  for (const id of domain.runtime.dependencies) {
+    const resource = infrastructureBindings.get(id);
+    emitPklRecord(lines, "      ", "RuntimeDependency", resource
+      ? {
+          id,
+          service: resource.owner,
+          target: resource.id,
+          kind: infrastructureDependencyKind(resource),
+          retryable: false,
+          idempotent: false,
+        }
+      : { id, service: "dashboard", target: "api", kind: "http", timeoutMs: 2000, retryable: true, idempotent: true });
+  }
   lines.push("    }", "  }", "}");
   return `${lines.join("\n")}\n`;
 }
@@ -4894,6 +4925,79 @@ function specReadingEvalScoreReport(evaluation, answersFile, options = {}) {
   return specReadingEvalScoreReportFromAnswers(evaluation, specReadingAnswersById(answersFile), answersFile, options);
 }
 
+function specReadingAgentAnswers(stdout) {
+  try {
+    const document = JSON.parse(stdout);
+    if (!Array.isArray(document?.answers)) {
+      return { answers: new Map(), errors: ["agent stdout must contain an answers array"] };
+    }
+    const answers = new Map();
+    const errors = [];
+    for (const answer of document.answers) {
+      if (!answer?.id) {
+        errors.push("agent answer is missing id");
+        continue;
+      }
+      if (answers.has(answer.id)) errors.push(`duplicate agent answer: ${answer.id}`);
+      answers.set(answer.id, answer);
+    }
+    return { answers, errors };
+  } catch (error) {
+    return { answers: new Map(), errors: [`failed to parse agent stdout: ${error.message}`] };
+  }
+}
+
+function specReadingAgentReport(evaluation, runner, runnerFile, options = {}) {
+  const command = list(runner.command);
+  const prompt = renderSpecReadingEvalPrompt(evaluation, options);
+  const executionErrors = [];
+  let result = { status: null, signal: null, stdout: "", stderr: "" };
+  if (command.length === 0) {
+    executionErrors.push("spec reading agent runner command must not be empty");
+  } else {
+    result = spawnSync(command[0], command.slice(1), {
+      cwd: dirname(resolve(runnerFile)),
+      input: prompt,
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+      timeout: runner.timeoutMs,
+    });
+    if (result.error) executionErrors.push(`spec reading agent process failed: ${result.error.message}`);
+    if (result.status !== 0) executionErrors.push(`spec reading agent exited with status ${result.status ?? "unknown"}`);
+  }
+
+  const rawStdout = result.stdout ?? "";
+  const rawStderr = result.stderr ?? "";
+  const parsed = specReadingAgentAnswers(rawStdout);
+  const report = specReadingEvalScoreReportFromAnswers(
+    evaluation,
+    parsed.answers,
+    `runner:${runner.id}`,
+    options,
+  );
+  const agentErrors = [...executionErrors, ...parsed.errors];
+  const errors = [...report.errors, ...agentErrors];
+  const runnerIdentity = { id: runner.id, provider: runner.provider, model: runner.model };
+  return {
+    ...report,
+    status: reportStatus(errors),
+    agentRun: {
+      contractVersion: "spec-reading-agent-process-v1",
+      runner: runnerIdentity,
+      runnerDigest: sha256Digest(stableJson({ ...runnerIdentity, command, timeoutMs: runner.timeoutMs })),
+      command,
+      timeoutMs: runner.timeoutMs,
+      promptDigest: sha256Digest(prompt),
+      answerDigest: sha256Digest(rawStdout),
+      exitCode: result.status ?? null,
+      signal: result.signal ?? null,
+      rawStdout,
+      rawStderr,
+    },
+    errors,
+  };
+}
+
 function specReadingGoldAnswers(evaluation) {
   return list(evaluation.cases).map((entry) => ({
     id: entry.id,
@@ -6297,6 +6401,7 @@ function exprAstProjection(ast) {
 function clauseProjection(clause) {
   return {
     expr: clause.expr,
+    astSemanticsVersion: clause.ast ? CLAUSE_AST_SEMANTICS_VERSION : null,
     ast: exprAstProjection(clause.ast),
   };
 }
@@ -8739,6 +8844,7 @@ import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export const modelId = ${JSON.stringify(model.id)};
+export const clauseAstSemanticsVersion = ${JSON.stringify(model.clauseAstSemanticsVersion)};
 export const rules = ${JSON.stringify(rules, null, 2)};
 export const approvedRuleIds = ${JSON.stringify(approved, null, 2)};
 export const dbModel = ${JSON.stringify(dbProjection(model), null, 2)};
@@ -10364,6 +10470,8 @@ function emitTla(model) {
   return `---- MODULE ${moduleName} ----
 EXTENDS Sequences, FiniteSets, Naturals, TLC
 
+ClauseAstSemanticsVersion == ${JSON.stringify(model.clauseAstSemanticsVersion)}
+
 Rules == ${allRuleSet}
 
 ActiveApprovedRules == ${ruleSet}
@@ -10695,6 +10803,8 @@ function emitLean(model) {
     .map((rule) => `  | RuleId.${sanitizeIdentifier(rule.id)} => [${ruleClauseExprs(rule).join(", ")}]`)
     .join("\n");
   return `namespace DSpec.Generated
+
+def clauseAstSemanticsVersion : String := ${JSON.stringify(model.clauseAstSemanticsVersion)}
 
 inductive Expr where
   | opaque : String -> Expr
@@ -12510,6 +12620,22 @@ async function run(argv) {
     return;
   }
 
+  if (command === "evaluate-real-app-import") {
+    const { file, json } = parseJsonReportArgs(args);
+    const report = realAppImportEvaluationReport(loadRealAppImportEvaluation(file), file);
+    if (json) {
+      process.stdout.write(stableJson(report));
+      assertReportOk(report);
+      return;
+    }
+    const rendered = renderRealAppImportEvaluationReport(report);
+    if (report.status === "fail") {
+      throw new CommandError(rendered);
+    }
+    process.stdout.write(rendered);
+    return;
+  }
+
   if (command === "reconcile-real-app") {
     const { modelFile, observedFile, json } = parseReconcileRealAppArgs(args);
     const model = loadModel(modelFile);
@@ -12741,7 +12867,7 @@ async function run(argv) {
   }
 
   if (command === "spec-reading-eval") {
-    const { file, json, markdown, prompt, scoreFile, locale, refreshDigests, apply, writeRunFile } = parseSpecReadingEvalArgs(args);
+    const { file, json, markdown, prompt, scoreFile, runnerFile, locale, refreshDigests, apply, writeRunFile } = parseSpecReadingEvalArgs(args);
     const evaluation = loadSpecReadingEvaluation(file);
     const modelFile = specReadingModelFile(evaluation, file);
     if (prompt) {
@@ -12767,9 +12893,16 @@ async function run(argv) {
       process.stdout.write(rendered);
       return;
     }
-    const report = scoreFile
-      ? specReadingEvalScoreReport(evaluation, scoreFile, { locale, file, modelFile })
-      : specReadingEvalReport(evaluation, { locale, file, modelFile });
+    const report = runnerFile
+      ? specReadingAgentReport(
+          evaluation,
+          loadSpecReadingAgentRunner(runnerFile),
+          runnerFile,
+          { locale, file, modelFile },
+        )
+      : scoreFile
+        ? specReadingEvalScoreReport(evaluation, scoreFile, { locale, file, modelFile })
+        : specReadingEvalReport(evaluation, { locale, file, modelFile });
     if (writeRunFile) {
       mkdirSync(dirname(resolve(writeRunFile)), { recursive: true });
       writeFileSync(resolve(writeRunFile), stableJson(report));

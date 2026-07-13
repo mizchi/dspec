@@ -12,6 +12,7 @@ typealias Version = String(matches(Regex(#"^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9_.
 typealias IsoDate = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}$"#)))
 typealias Expr = String(length > 0)
 typealias ExprOp = "atom" | "not" | "and" | "or" | "implies" | "eq" | "neq" | "exists" | "forall"
+typealias ClauseAstSemanticsVersion = String(matches(Regex(#"^[0-9]+\.[0-9]+$"#)))
 typealias DbColumnType = "id" | "string" | "int" | "bool" | "datetime" | "decimal"
 typealias CloudZoneExposure = "public" | "private" | "restricted"
 typealias CloudNodeKind =
@@ -51,6 +52,15 @@ typealias AppProfileScenarioCategory =
   "release-gate" | "route" | "contract-schema" | "workflow" | "data-store" | "runtime-dependency"
 typealias AppProfileScenarioExpectation = "pass" | "fail"
 typealias AppProfileChangeDrift = "no-drift" | "implementation-missing" | "spec-missing" | "mixed"
+typealias RealAppImportFactKind =
+  "route"
+    | "contract-path"
+    | "contract-schema"
+    | "workflow"
+    | "infrastructure-source"
+    | "infrastructure-environment"
+    | "infrastructure-resource"
+    | "infrastructure-schedule"
 typealias SpecReadingExpectation = "entailed" | "contradicted" | "not-supported"
 typealias SpecCompatibility = "compatible" | "breaking" | "narrowing" | "widening" | "unknown"
 typealias SpecChangeReviewStep =
@@ -286,6 +296,17 @@ class AppProfileChangeReplayCorpus {
   cases: Listing<AppProfileChangeReplayCase> = new {}
 }
 
+class RealAppImportFact {
+  kind: RealAppImportFactKind
+  id: String(length > 0)
+}
+
+class RealAppImportEvaluation {
+  id: Identifier
+  appRoot: String(length > 0)
+  expectedFacts: Listing<RealAppImportFact> = new {}
+}
+
 class SpecReadingEvidence {
   ref: String(length > 0)
   note: LocalizedText? = null
@@ -308,6 +329,19 @@ class SpecReadingEvaluation {
   locale: Locale? = null
   rubricVersion: String(length > 0) = "spec-reading-rubric-v1"
   cases: Listing<SpecReadingCase> = new {}
+}
+
+/// Provider-neutral process adapter for a spec-reading agent.
+///
+/// The process receives the evaluation prompt on stdin and must emit the
+/// documented answers JSON object on stdout. `command` is argv, not a shell
+/// expression, so providers can be swapped without changing score semantics.
+class SpecReadingAgentRunner {
+  id: Identifier
+  provider: String(length > 0)
+  model: String(length > 0)
+  command: Listing<String(length > 0)>
+  timeoutMs: Int(this > 0) = 120000
 }
 
 class SpecReadingEvaluationSuite {
@@ -662,6 +696,7 @@ class Model {
   id: Identifier
   name: LocalizedText
   version: Version
+  clauseAstSemanticsVersion: ClauseAstSemanticsVersion = "1.0"
   primaryLocale: Locale
   locales: Listing<Locale>
   vocabulary: Listing<Term> = new {}

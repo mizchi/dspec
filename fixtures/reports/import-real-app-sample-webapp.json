@@ -17,6 +17,12 @@
       ]
     },
     "id": "sample-webapp-2026",
+    "infrastructure": {
+      "environments": [],
+      "resources": [],
+      "schedules": [],
+      "sources": []
+    },
     "quality": {
       "flaker": {
         "path": "flaker.toml",

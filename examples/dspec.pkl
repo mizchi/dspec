@@ -103,6 +103,7 @@ model: d.Model = new {
       "spec reading evaluation set",
       "spec reading evaluation set",
     )
+    d.term("artifact.package_release", "action", "npm package release", "npm package release")
     d.term(
       "artifact.real_app_model",
       "entity",
@@ -1381,33 +1382,68 @@ model: d.Model = new {
       }
       must {
         d.clause(
-          "importRealApp(root).observes(routes + contracts + workflows + qualityConfig)",
-          "Hono route、Zod schema、GitHub Actions、flaker/VRT config を観測 fact として抽出する",
-          "Hono routes, Zod schemas, GitHub Actions, and flaker/VRT config are extracted as observed facts",
+          "importRealApp(root).observes(routes + contracts + workflows + qualityConfig + infrastructure)",
+          "Hono route、Zod schema、GitHub Actions、quality config、IaC 宣言を観測 fact として抽出する",
+          "Hono routes, Zod schemas, GitHub Actions, quality config, and IaC declarations are extracted as observed facts",
         )
         d.clause(
           "importRealApp(root).pklFragment.canSeed(patterns)",
-          "observed facts は Pkl fragment として pattern model の下書きに変換できる",
-          "observed facts can be rendered as a Pkl fragment that seeds pattern models",
+          "observed facts は未確認の安全性を true にせず Pkl pattern model の下書きへ変換できる",
+          "observed facts seed a Pkl pattern model without turning unknown safety guarantees into true",
+        )
+        d.clause(
+          "evaluateRealAppImport(goldFacts).precision == 1 && evaluateRealAppImport(goldFacts).recall == 1",
+          "別プロジェクト由来の typed gold facts で importer の precision と recall を回帰検証する",
+          "typed gold facts derived from other projects regress importer precision and recall",
+        )
+        d.clause(
+          "realAppCore.hasNoFilesystemOrPklProcessDependency && cli.infrastructure == realAppCore.infrastructure",
+          "正規化・評価・domain 投影は filesystem と Pkl process に依存しない core API とし、CLI と同一結果を返す",
+          "normalization, evaluation, and domain projection form a core API without filesystem or Pkl process dependencies and remain identical to CLI output",
         )
       }
       reviewStatus = "approved"
       checks {
         d.nodeCheck("test/cli.test.mjs#imports real app artifacts as observed facts")
         d.nodeCheck("test/cli.test.mjs#imports real app artifacts as a Pkl fragment")
+        d.nodeCheck("test/cli.test.mjs#imports Cloudflare and Pulumi infrastructure from a second real app holdout")
+        d.nodeCheck("test/cli.test.mjs#evaluates real app importer precision and recall against typed gold facts")
+        d.nodeCheck("test/cli.test.mjs#imports Terraform plans and Kubernetes manifests as infrastructure facts")
+        d.nodeCheck("test/cli.test.mjs#evaluates Terraform and Kubernetes importer coverage")
+        d.nodeCheck("test/cli.test.mjs#projects imported IaC into domain patterns without inventing guarantees")
         d.nodeCheck("test/cli.test.mjs#keeps real app import fixture in sync")
+        d.nodeCheck("test/real-app-core.test.mjs#normalizes IaC documents without filesystem access")
+        d.nodeCheck("test/real-app-core.test.mjs#keeps the core API and CLI infrastructure output identical")
+        d.nodeCheck("test/real-app-core.test.mjs#compares normalized app facts with a typed gold set")
+        d.nodeCheck("test/real-app-core.test.mjs#projects infrastructure facts conservatively")
       }
       implementedBy {
         d.codeRef("src/cli.mjs", "importRealApp")
         d.codeRef("src/cli.mjs", "parseHonoRoutes")
         d.codeRef("src/cli.mjs", "parseWorkflowYaml")
+        d.codeRef("src/cli.mjs", "importInfrastructure")
+        d.codeRef("src/cli.mjs", "realAppImportEvaluationReport")
         d.codeRef("src/cli.mjs", "emitRealAppPkl")
+        d.codeRef("src/core/real-app.mjs", "importInfrastructureDocuments")
+        d.codeRef("src/core/real-app.mjs", "parseWranglerInfrastructure")
+        d.codeRef("src/core/real-app.mjs", "parsePulumiInfrastructure")
+        d.codeRef("src/core/real-app.mjs", "parseTerraformPlanInfrastructure")
+        d.codeRef("src/core/real-app.mjs", "parseKubernetesInfrastructure")
+        d.codeRef("src/core/real-app.mjs", "evaluateRealAppImport")
+        d.codeRef("src/core/real-app.mjs", "realAppObservedDomain")
+        d.codeRef("dspec/Schema.pkl", "RealAppImportEvaluation")
+        d.codeRef("dspec/Schema.pkl", "RealAppImportFact")
+        d.modelRef("fixtures/import-real-app-eval-mnemo.pkl")
+        d.modelRef("fixtures/import-real-app-eval-iac.pkl")
+        d.modelRef("fixtures/reports/evaluate-real-app-import-mnemo.json")
+        d.modelRef("fixtures/reports/evaluate-real-app-import-iac.json")
         d.modelRef("fixtures/reports/import-real-app-sample-webapp.json")
         d.modelRef("fixtures/sample-webapp-2026/apps/api/src/app.ts")
         d.modelRef("fixtures/sample-webapp-2026/packages/contracts/src/index.ts")
         d.modelRef("fixtures/sample-webapp-2026/.github/workflows/ci.yml")
         d.modelRef("fixtures/sample-webapp-2026/flaker.toml")
         d.modelRef("fixtures/sample-webapp-2026/vrt.config.json")
+        d.modelRef("docs/dogfooding-2026-07-14-mnemo.md")
       }
     }
 
@@ -1453,7 +1489,7 @@ model: d.Model = new {
       }
       implementedBy {
         d.codeRef("src/cli.mjs", "reconcileRealAppReport")
-        d.codeRef("src/cli.mjs", "realAppObservedDomain")
+        d.codeRef("src/core/real-app.mjs", "realAppObservedDomain")
         d.codeRef("src/cli.mjs", "restoreObservedFactSuggestion")
         d.codeRef("src/cli.mjs", "restoreObservedReleaseGateSuggestion")
         d.codeRef("src/cli.mjs", "renderReportSuggestions")
@@ -2021,6 +2057,55 @@ model: d.Model = new {
     }
 
     new d.Rule {
+      id = "DSPEC-PACKAGE-RELEASE"
+      kind = "obligation"
+      text =
+        text(
+          "v0.1 package は公開 API、互換性、OIDC release 手順を明示する",
+          "The v0.1 package declares its public API, compatibility policy, and OIDC release procedure",
+        )
+      terms {
+        "artifact.package_release"
+        "artifact.cli"
+        "artifact.checker"
+      }
+      must {
+        d.clause(
+          "npmPackage.files == {schema + cli + core + readme + license}",
+          "npm package は宣言した公開境界だけを含む",
+          "the npm package contains only the declared public boundary",
+        )
+        d.clause(
+          "publish.uses(oidcTrustedPublisher + node24 + npm11) && !publish.uses(longLivedWriteToken)",
+          "publish は Node 24/npm 11 の OIDC Trusted Publisher を使い、長期 write token を使わない",
+          "publishing uses an OIDC Trusted Publisher on Node 24/npm 11 without a long-lived write token",
+        )
+        d.clause(
+          "breakingPublicChange -> semverMinorBefore1_0 && changedSemantics -> newClauseAstSemanticsVersion",
+          "1.0 前の破壊的変更と Clause.ast 意味論変更の versioning 方針を明示する",
+          "versioning policy is explicit for pre-1.0 breaking changes and Clause.ast semantic changes",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/release.test.mjs#defines the v0.1 public package boundary")
+        d.nodeCheck("test/release.test.mjs#defines explicit release and compatibility policy")
+        d.nodeCheck("test/release.test.mjs#publishes through npm OIDC without a long-lived token")
+      }
+      implementedBy {
+        d.modelRef("package.json")
+        d.modelRef("release-please-config.json")
+        d.modelRef(".release-please-manifest.json")
+        d.modelRef(".github/workflows/release-please.yml")
+        d.modelRef(".github/workflows/publish.yml")
+        d.modelRef("docs/versioning.md")
+        d.modelRef("docs/releasing.md")
+        d.modelRef("LICENSE")
+        d.codeRef("src/core/clause-ast.mjs", "CLAUSE_AST_SEMANTICS_VERSION")
+      }
+    }
+
+    new d.Rule {
       id = "DSPEC-EXPR-TYPED-AST"
       kind = "invariant"
       text =
@@ -2076,6 +2161,21 @@ model: d.Model = new {
               "Each operator fixes which of name, args, and children it accepts",
             )
         }
+        new d.Clause {
+          expr = "model.clauseAstSemanticsVersion == checker.supportedClauseAstSemanticsVersion"
+          ast = new d.ExprAst {
+            op = "eq"
+            args {
+              "model.clauseAstSemanticsVersion"
+              "checker.supportedClauseAstSemanticsVersion"
+            }
+          }
+          text =
+            text(
+              "model が宣言する Clause.ast 意味論 version は checker が実装する version と一致する",
+              "The Clause.ast semantics version declared by the model matches the version implemented by the checker",
+            )
+        }
       }
       reviewStatus = "approved"
       checks {
@@ -2091,6 +2191,10 @@ model: d.Model = new {
           backend = "node"
           ref = "test/cli.test.mjs#rejects expr ast fields outside operator semantics"
         }
+        d.nodeCheck("test/cli.test.mjs#rejects unsupported Clause.ast semantics versions")
+        d.nodeCheck("test/clause-ast-core.test.mjs#defines Clause.ast semantics version 1.0")
+        d.nodeCheck("test/clause-ast-core.test.mjs#evaluates every Clause.ast 1.0 operator consistently")
+        d.nodeCheck("test/clause-ast-core.test.mjs#rejects evaluation with an unsupported semantics version")
       }
       implementedBy {
         new d.ImplementationRef {
@@ -2100,9 +2204,12 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
-          symbol = "validateExprAst"
+          path = "src/core/clause-ast.mjs"
+          symbol = "validateClauseAst"
         }
+        d.codeRef("src/core/clause-ast.mjs", "evaluateClauseAst")
+        d.codeRef("src/core/clause-ast.mjs", "CLAUSE_AST_SEMANTICS_VERSION")
+        d.modelRef("fixtures/unsupported-ast-semantics.pkl")
       }
     }
 
@@ -2122,7 +2229,7 @@ model: d.Model = new {
       }
       must {
         new d.Clause {
-          expr = "emit(quickcheck|tla|lean, model).preserves(clause.ast)"
+          expr = "emit(quickcheck|tla|lean, model).preserves(clause.ast + clauseAstSemanticsVersion)"
           ast = new d.ExprAst {
             op = "atom"
             name = "preservesClauseAst"
@@ -2134,8 +2241,8 @@ model: d.Model = new {
           }
           text =
             text(
-              "QuickCheck/TLA+/Lean 出力は Clause.ast 由来の構造を含む",
-              "QuickCheck, TLA+, and Lean outputs contain structure derived from Clause.ast",
+              "QuickCheck/TLA+/Lean 出力は Clause.ast 由来の構造と意味論 version を含む",
+              "QuickCheck, TLA+, and Lean outputs contain structure derived from Clause.ast and its semantics version",
             )
         }
       }
@@ -5248,6 +5355,11 @@ model: d.Model = new {
           "score can write the subagent prompt and score report as a run artifact",
         )
         d.clause(
+          "specReadingEval.runner.process(stdinPrompt).stdoutAnswers && artifact.records(provider + model + digests + exit + rawOutput + score)",
+          "provider-neutral runner は prompt/answers の process contract で実 agent を起動し、再現可能な採点 artifact を残す",
+          "the provider-neutral runner invokes real agents through a prompt/answers process contract and records a reproducible scored artifact",
+        )
+        d.clause(
           "specReadingEval.markdownScore.records(subagentRun + goldFixCandidates)",
           "score Markdown は subagent run と gold 修正候補を記録する",
           "score Markdown records the subagent run and gold-fix candidates",
@@ -5272,6 +5384,9 @@ model: d.Model = new {
         d.nodeCheck("test/cli.test.mjs#detects spec reading rubric version mismatches")
         d.nodeCheck("test/cli.test.mjs#renders spec reading score reports for subagent runs")
         d.nodeCheck("test/cli.test.mjs#writes spec reading subagent run artifacts")
+        d.nodeCheck("test/cli.test.mjs#runs provider-neutral spec reading agents and records reproducible artifacts")
+        d.nodeCheck("test/cli.test.mjs#records invalid spec reading agent output as a failing artifact")
+        d.nodeCheck("test/cli.test.mjs#keeps provider-neutral spec reading agent artifacts in sync")
         d.nodeCheck("test/cli.test.mjs#runs metamorphic spec reading evaluation")
         d.nodeCheck("test/cli.test.mjs#keeps spec reading evaluation JSON report fixture in sync")
         d.nodeCheck(
@@ -5288,6 +5403,7 @@ model: d.Model = new {
         d.codeRef("dspec/Schema.pkl", "SpecReadingEvaluationSuite")
         d.codeRef("dspec/Schema.pkl", "SpecReadingCase")
         d.codeRef("dspec/Schema.pkl", "SpecReadingEvidence")
+        d.codeRef("dspec/Schema.pkl", "SpecReadingAgentRunner")
         d.codeRef("src/cli.mjs", "SPEC_READING_RUBRIC")
         d.codeRef("src/cli.mjs", "parseSpecReadingEvalArgs")
         d.codeRef("src/cli.mjs", "parseSpecReadingEvalSuiteArgs")
@@ -5306,6 +5422,9 @@ model: d.Model = new {
         d.codeRef("src/cli.mjs", "resolvePathRelativeToFile")
         d.codeRef("src/cli.mjs", "renderSpecReadingEvalPrompt")
         d.codeRef("src/cli.mjs", "specReadingEvalScoreReport")
+        d.codeRef("src/cli.mjs", "loadSpecReadingAgentRunner")
+        d.codeRef("src/cli.mjs", "specReadingAgentReport")
+        d.codeRef("src/cli.mjs", "specReadingAgentAnswers")
         d.codeRef("src/cli.mjs", "renderSpecReadingEvalScoreMarkdownReport")
         d.codeRef("src/cli.mjs", "specReadingEvidenceDigest")
         d.codeRef("src/cli.mjs", "specReadingEvidenceOverlap")
@@ -5316,6 +5435,11 @@ model: d.Model = new {
         d.modelRef("fixtures/spec-reading-eval-stale-digest.pkl")
         d.modelRef("fixtures/spec-reading-eval-rubric-mismatch.pkl")
         d.modelRef("fixtures/spec-reading-eval-answers.json")
+        d.modelRef("fixtures/spec-reading-agent-runner.pkl")
+        d.modelRef("fixtures/spec-reading-agent-invalid-runner.pkl")
+        d.modelRef("fixtures/agents/spec-reading-fixture-agent.mjs")
+        d.modelRef("fixtures/agents/spec-reading-invalid-agent.mjs")
+        d.modelRef("fixtures/reports/spec-reading-agent-run.json")
         d.modelRef("fixtures/reports/spec-reading-eval-sample-webapp.json")
         d.modelRef("fixtures/reports/spec-reading-eval-refresh-stale.json")
         d.modelRef("fixtures/reports/spec-reading-eval-suite.json")
@@ -5487,8 +5611,8 @@ model: d.Model = new {
       kind = "obligation"
       text =
         text(
-          "CI は Nix devShell 内で dspec の全検証を実行する",
-          "CI runs all dspec checks inside the Nix devShell",
+          "CI は portable fast gate と Nix formal gate を並列実行する",
+          "CI runs portable fast and Nix formal gates in parallel",
         )
       terms {
         "artifact.nix_dev_shell"
@@ -5496,37 +5620,32 @@ model: d.Model = new {
         "artifact.coverage_oracle"
       }
       must {
-        new d.Clause {
-          expr = "githubActions.run(nix develop path:$PWD -c pkf run check)"
-          text =
-            text(
-              "GitHub Actions は pkf run check を nix develop 内で実行する",
-              "GitHub Actions runs pkf run check inside nix develop",
-            )
-        }
         d.clause(
-          "githubActions.run(nix develop path:$PWD -c pkf run devshell:tools)",
-          "GitHub Actions は devShell 内で必須ツール smoke を実行する",
-          "GitHub Actions runs the required-tool smoke inside the devShell",
+          "githubActions.fast.run(pkf run check:fast).cache(pnpm + pkl + pkfireCas)",
+          "fast job は portable gate を実行し、pnpm/Pkl/pkfire CAS を cache する",
+          "the fast job runs portable gates and caches pnpm, Pkl, and the pkfire CAS",
         )
         d.clause(
-          "githubActions.run(nix develop path:$PWD -c pkf run devshell:formal)",
-          "GitHub Actions は devShell 内で formal backend required gate を実行する",
-          "GitHub Actions runs the formal-backend required gate inside the devShell",
+          "githubActions.formal.run(nix develop path:$PWD -c pkf run check:formal).cache(nix)",
+          "formal job は Nix devShell の tool smoke と required backend gate を Nix cache 付きで実行する",
+          "the formal job runs devShell tool smoke and required backend gates with a Nix cache",
+        )
+        d.clause(
+          "githubActions.jobs(fast, formal).parallel && pullRequest.supersededRun.cancelled",
+          "fast/formal job は並列で、更新された PR の古い run は cancel する",
+          "fast and formal jobs run in parallel and stale pull-request runs are cancelled",
         )
       }
       reviewStatus = "approved"
       checks {
-        new d.CheckTarget {
-          backend = "node"
-          ref = "test/cli.test.mjs#runs full check through Nix in GitHub Actions"
-        }
+        d.nodeCheck("test/cli.test.mjs#splits fast and formal GitHub Actions gates with caches")
       }
       implementedBy {
         new d.ImplementationRef {
           kind = "runtime"
           path = ".github/workflows/check.yml"
         }
+        d.runtimeRef("Taskfile.pkl")
       }
     }
 

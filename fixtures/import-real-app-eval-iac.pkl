@@ -1,0 +1,20 @@
+import "../dspec/Schema.pkl" as d
+
+realAppImportEval: d.RealAppImportEvaluation = new {
+  id = "terraform-kubernetes-holdout"
+  appRoot = "fixtures/holdout-iac-app"
+  expectedFacts {
+    new d.RealAppImportFact { kind = "infrastructure-source"; id = "infra/k8s/payments.yaml" }
+    new d.RealAppImportFact { kind = "infrastructure-source"; id = "infra/terraform-plan.json" }
+    new d.RealAppImportFact { kind = "infrastructure-environment"; id = "kubernetes/production" }
+    new d.RealAppImportFact { kind = "infrastructure-environment"; id = "production" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "kubernetes/production/cron-job/nightly-reconcile" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "kubernetes/production/deployment/payments-api" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "kubernetes/production/secret/payments-api-secrets" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "kubernetes/production/service/payments-api" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "terraform/aws_db_instance.primary" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "terraform/aws_s3_bucket.assets" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "terraform/module.queue.aws_sqs_queue.jobs" }
+    new d.RealAppImportFact { kind = "infrastructure-schedule"; id = "kubernetes/production/nightly-reconcile" }
+  }
+}

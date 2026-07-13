@@ -1,0 +1,4 @@
+{
+  "name": "vendored-worker-that-must-not-be-imported",
+  "main": "src/index.ts"
+}

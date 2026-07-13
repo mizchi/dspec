@@ -1,0 +1,10 @@
+{
+  "name": "mnemo-e2e",
+  "main": "src/worker.ts",
+  "d1_databases": [
+    { "binding": "DB", "database_name": "mnemo-e2e", "database_id": "local" },
+  ],
+  "r2_buckets": [
+    { "binding": "SKILL_ASSETS", "bucket_name": "mnemo-e2e-assets" },
+  ],
+}

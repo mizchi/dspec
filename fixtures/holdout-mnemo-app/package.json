@@ -1,0 +1,9 @@
+{
+  "name": "mnemo-workspace",
+  "private": true,
+  "scripts": {
+    "build": "moon build",
+    "openapi:generate": "node contract/openapi/generate-client.mjs",
+    "test": "moon test"
+  }
+}

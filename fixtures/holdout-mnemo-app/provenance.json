@@ -1,0 +1,16 @@
+{
+  "source": "https://github.com/mizchi/mnemo",
+  "commit": "5cbf27107339dbbf92546065f3df5b6dec9dddce",
+  "capturedOn": "2026-07-14",
+  "files": {
+    ".github/workflows/ci.yml": "2eb8c46e6f424c8c7f76bf49afb40aff73ceaa1ad1108134fa9a7a1fd547f199",
+    "mnemo-server/infra/pulumi/index.ts": "307fe3f5f3f8162a4abd7296bf80ed78d84e1564951d7ca37e6338569a3eda70",
+    "mnemo-server/wrangler.jsonc": "6b50ace842135f613f67f3e9bebb8928c6288c8237cf1960d2f1902ce9910cba",
+    "package.json": "5e77c4be2762934538892dbe0da6a1211b6760a7ba816dfb477e22b744165dc4"
+  },
+  "transformations": [
+    "Reduced files to importer-relevant declarations.",
+    "Replaced deployed resource identifiers and access identifiers with placeholders.",
+    "Preserved resource kinds, bindings, environments, schedules, and IaC declaration shapes."
+  ]
+}

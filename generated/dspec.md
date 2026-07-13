@@ -6,9 +6,9 @@
 
 ## Review Summary
 
-- approvedRules: `65`
-- automatedCheckTargets: `266`
-- implementationRefs: `562`
+- approvedRules: `66`
+- automatedCheckTargets: `285`
+- implementationRefs: `600`
 - domainElements: `0`
 - runtimeEvidenceRecords: `0`
 
@@ -48,6 +48,7 @@
 - `artifact.markdown` (entity): Markdown 仕様文書
 - `artifact.nix_dev_shell` (entity): Nix devShell
 - `artifact.observed_app_facts` (entity): observed application facts
+- `artifact.package_release` (action): npm package release
 - `artifact.pkl_model` (entity): Pkl 仕様モデル
 - `artifact.profile_scaffold` (action): app profile authoring scaffold
 - `artifact.profile_scaffold_diff` (action): app profile scaffold drift diff
@@ -402,7 +403,7 @@ backend verification と反例正規化 report の互換 fixture は安定 proje
 
 #### Review
 
-- source: model.rules[49]
+- source: model.rules[50]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 8
@@ -500,7 +501,7 @@ check/drift/coverage/domain-coverage/reconcile/reverse/app-profile は機械可�
 
 #### Review
 
-- source: model.rules[47]
+- source: model.rules[48]
 - coverage: rule
 - automatedChecks: 8
 - implementationRefs: 12
@@ -586,7 +587,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 
 #### Review
 
-- source: model.rules[32]
+- source: model.rules[33]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -618,7 +619,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 
 #### Review
 
-- source: model.rules[57]
+- source: model.rules[58]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 5
@@ -724,7 +725,7 @@ Data governance は typed pattern として記述され、暗号化・削除対�
 
 #### Review
 
-- source: model.rules[33]
+- source: model.rules[34]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -758,7 +759,7 @@ DB migration の preserve 宣言は mapping witness で cover される
 
 #### Review
 
-- source: model.rules[30]
+- source: model.rules[31]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 5
@@ -791,7 +792,7 @@ DB migration mapping は preserve scope と from/to table に接地している
 
 #### Review
 
-- source: model.rules[31]
+- source: model.rules[32]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -823,7 +824,7 @@ DB migration は typed pattern として記述され、preserve 宣言を backen
 
 #### Review
 
-- source: model.rules[29]
+- source: model.rules[30]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -852,7 +853,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 
 #### Review
 
-- source: model.rules[26]
+- source: model.rules[27]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 5
@@ -876,7 +877,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 
 #### Review
 
-- source: model.rules[27]
+- source: model.rules[28]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -920,7 +921,7 @@ README/docs/Taskfile の CLI 例は公開 CLI surface に接地する
 
 #### Review
 
-- source: model.rules[63]
+- source: model.rules[64]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 15
@@ -960,7 +961,7 @@ dogfood task は self spec、Runtime observation loop、実アプリ model の�
 
 #### Review
 
-- source: model.rules[59]
+- source: model.rules[60]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1186,7 +1187,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[25]
+- source: model.rules[26]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 3
@@ -1206,7 +1207,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[65]
+- source: model.rules[66]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1224,20 +1225,29 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 - term: `concept.expr_ast`
 - must: `clause.ast == null || validExprAst(clause.ast)`
 - must: `acceptsOnlyDeclaredFields(exprAst.operator)`
+- must: `model.clauseAstSemanticsVersion == checker.supportedClauseAstSemanticsVersion`
 - check: node test/cli.test.mjs#accepts typed Clause.ast
 - check: node test/cli.test.mjs#rejects invalid typed Clause.ast
 - check: node test/cli.test.mjs#rejects expr ast fields outside operator semantics
+- check: node test/cli.test.mjs#rejects unsupported Clause.ast semantics versions
+- check: node test/clause-ast-core.test.mjs#defines Clause.ast semantics version 1.0
+- check: node test/clause-ast-core.test.mjs#evaluates every Clause.ast 1.0 operator consistently
+- check: node test/clause-ast-core.test.mjs#rejects evaluation with an unsupported semantics version
 - implementation: model dspec/Schema.pkl#ExprAst
-- implementation: code src/cli.mjs#validateExprAst
+- implementation: code src/core/clause-ast.mjs#validateClauseAst
+- implementation: code src/core/clause-ast.mjs#evaluateClauseAst
+- implementation: code src/core/clause-ast.mjs#CLAUSE_AST_SEMANTICS_VERSION
+- implementation: model fixtures/unsupported-ast-semantics.pkl
 
 #### Review
 
-- source: model.rules[24]
+- source: model.rules[25]
 - coverage: rule
-- automatedChecks: 3
-- implementationRefs: 2
+- automatedChecks: 7
+- implementationRefs: 5
 - selector: DSPEC-EXPR-TYPED-AST.must[0]
 - selector: DSPEC-EXPR-TYPED-AST.must[1]
+- selector: DSPEC-EXPR-TYPED-AST.must[2]
 
 ### DSPEC-GENERATED-ALLOY-SYNTAX
 
@@ -1259,7 +1269,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[45]
+- source: model.rules[46]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1291,7 +1301,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[56]
+- source: model.rules[57]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 5
@@ -1315,7 +1325,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[50]
+- source: model.rules[51]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1338,7 +1348,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[43]
+- source: model.rules[44]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1361,7 +1371,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[42]
+- source: model.rules[43]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1391,7 +1401,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[44]
+- source: model.rules[45]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 5
@@ -1534,7 +1544,7 @@ JSON report の互換 fixture は CLI 出力と同期される
 
 #### Review
 
-- source: model.rules[48]
+- source: model.rules[49]
 - coverage: rule
 - automatedChecks: 31
 - implementationRefs: 33
@@ -1561,7 +1571,7 @@ Markdown review artifact は仕様モデルから決定的に再生成できる
 
 #### Review
 
-- source: model.rules[58]
+- source: model.rules[59]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1585,7 +1595,7 @@ Markdown review artifact は仕様モデルから決定的に再生成できる
 
 #### Review
 
-- source: model.rules[66]
+- source: model.rules[67]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0
@@ -1594,7 +1604,7 @@ Markdown review artifact は仕様モデルから決定的に再生成できる
 
 ### DSPEC-NIX-CI-GATE
 
-CI は Nix devShell 内で dspec の全検証を実行する
+CI は portable fast gate と Nix formal gate を並列実行する
 
 - kind: obligation
 - status: approved
@@ -1602,18 +1612,19 @@ CI は Nix devShell 内で dspec の全検証を実行する
 - term: `artifact.coverage_oracle`
 - term: `artifact.formal_backend`
 - term: `artifact.nix_dev_shell`
-- must: `githubActions.run(nix develop path:$PWD -c pkf run check)`
-- must: `githubActions.run(nix develop path:$PWD -c pkf run devshell:tools)`
-- must: `githubActions.run(nix develop path:$PWD -c pkf run devshell:formal)`
-- check: node test/cli.test.mjs#runs full check through Nix in GitHub Actions
+- must: `githubActions.fast.run(pkf run check:fast).cache(pnpm + pkl + pkfireCas)`
+- must: `githubActions.formal.run(nix develop path:$PWD -c pkf run check:formal).cache(nix)`
+- must: `githubActions.jobs(fast, formal).parallel && pullRequest.supersededRun.cancelled`
+- check: node test/cli.test.mjs#splits fast and formal GitHub Actions gates with caches
 - implementation: runtime .github/workflows/check.yml
+- implementation: runtime Taskfile.pkl
 
 #### Review
 
-- source: model.rules[62]
+- source: model.rules[63]
 - coverage: rule
 - automatedChecks: 1
-- implementationRefs: 1
+- implementationRefs: 2
 - selector: DSPEC-NIX-CI-GATE.must[0]
 - selector: DSPEC-NIX-CI-GATE.must[1]
 - selector: DSPEC-NIX-CI-GATE.must[2]
@@ -1648,6 +1659,42 @@ Nix devShell は dspec 実行基盤と形式 backend ツールを提供する
 - selector: DSPEC-NIX-FORMAL-TOOLS.must[0]
 - selector: DSPEC-NIX-FORMAL-TOOLS.must[1]
 - selector: DSPEC-NIX-FORMAL-TOOLS.must[2]
+
+### DSPEC-PACKAGE-RELEASE
+
+v0.1 package は公開 API、互換性、OIDC release 手順を明示する
+
+- kind: obligation
+- status: approved
+- priority: 100
+- term: `artifact.checker`
+- term: `artifact.cli`
+- term: `artifact.package_release`
+- must: `npmPackage.files == {schema + cli + core + readme + license}`
+- must: `publish.uses(oidcTrustedPublisher + node24 + npm11) && !publish.uses(longLivedWriteToken)`
+- must: `breakingPublicChange -> semverMinorBefore1_0 && changedSemantics -> newClauseAstSemanticsVersion`
+- check: node test/release.test.mjs#defines the v0.1 public package boundary
+- check: node test/release.test.mjs#defines explicit release and compatibility policy
+- check: node test/release.test.mjs#publishes through npm OIDC without a long-lived token
+- implementation: model package.json
+- implementation: model release-please-config.json
+- implementation: model .release-please-manifest.json
+- implementation: model .github/workflows/release-please.yml
+- implementation: model .github/workflows/publish.yml
+- implementation: model docs/versioning.md
+- implementation: model docs/releasing.md
+- implementation: model LICENSE
+- implementation: code src/core/clause-ast.mjs#CLAUSE_AST_SEMANTICS_VERSION
+
+#### Review
+
+- source: model.rules[24]
+- coverage: rule
+- automatedChecks: 3
+- implementationRefs: 9
+- selector: DSPEC-PACKAGE-RELEASE.must[0]
+- selector: DSPEC-PACKAGE-RELEASE.must[1]
+- selector: DSPEC-PACKAGE-RELEASE.must[2]
 
 ### DSPEC-REAL-APP-DOGFOOD
 
@@ -1723,7 +1770,7 @@ Nix devShell は dspec 実行基盤と形式 backend ツールを提供する
 
 #### Review
 
-- source: model.rules[61]
+- source: model.rules[62]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 34
@@ -1757,30 +1804,59 @@ real app importer は実装 artifact から観測済み app facts を決定的�
 - term: `artifact.observed_app_facts`
 - term: `artifact.real_app_importer`
 - term: `artifact.real_app_model`
-- must: `importRealApp(root).observes(routes + contracts + workflows + qualityConfig)`
+- must: `importRealApp(root).observes(routes + contracts + workflows + qualityConfig + infrastructure)`
 - must: `importRealApp(root).pklFragment.canSeed(patterns)`
+- must: `evaluateRealAppImport(goldFacts).precision == 1 && evaluateRealAppImport(goldFacts).recall == 1`
+- must: `realAppCore.hasNoFilesystemOrPklProcessDependency && cli.infrastructure == realAppCore.infrastructure`
 - check: node test/cli.test.mjs#imports real app artifacts as observed facts
 - check: node test/cli.test.mjs#imports real app artifacts as a Pkl fragment
+- check: node test/cli.test.mjs#imports Cloudflare and Pulumi infrastructure from a second real app holdout
+- check: node test/cli.test.mjs#evaluates real app importer precision and recall against typed gold facts
+- check: node test/cli.test.mjs#imports Terraform plans and Kubernetes manifests as infrastructure facts
+- check: node test/cli.test.mjs#evaluates Terraform and Kubernetes importer coverage
+- check: node test/cli.test.mjs#projects imported IaC into domain patterns without inventing guarantees
 - check: node test/cli.test.mjs#keeps real app import fixture in sync
+- check: node test/real-app-core.test.mjs#normalizes IaC documents without filesystem access
+- check: node test/real-app-core.test.mjs#keeps the core API and CLI infrastructure output identical
+- check: node test/real-app-core.test.mjs#compares normalized app facts with a typed gold set
+- check: node test/real-app-core.test.mjs#projects infrastructure facts conservatively
 - implementation: code src/cli.mjs#importRealApp
 - implementation: code src/cli.mjs#parseHonoRoutes
 - implementation: code src/cli.mjs#parseWorkflowYaml
+- implementation: code src/cli.mjs#importInfrastructure
+- implementation: code src/cli.mjs#realAppImportEvaluationReport
 - implementation: code src/cli.mjs#emitRealAppPkl
+- implementation: code src/core/real-app.mjs#importInfrastructureDocuments
+- implementation: code src/core/real-app.mjs#parseWranglerInfrastructure
+- implementation: code src/core/real-app.mjs#parsePulumiInfrastructure
+- implementation: code src/core/real-app.mjs#parseTerraformPlanInfrastructure
+- implementation: code src/core/real-app.mjs#parseKubernetesInfrastructure
+- implementation: code src/core/real-app.mjs#evaluateRealAppImport
+- implementation: code src/core/real-app.mjs#realAppObservedDomain
+- implementation: code dspec/Schema.pkl#RealAppImportEvaluation
+- implementation: code dspec/Schema.pkl#RealAppImportFact
+- implementation: model fixtures/import-real-app-eval-mnemo.pkl
+- implementation: model fixtures/import-real-app-eval-iac.pkl
+- implementation: model fixtures/reports/evaluate-real-app-import-mnemo.json
+- implementation: model fixtures/reports/evaluate-real-app-import-iac.json
 - implementation: model fixtures/reports/import-real-app-sample-webapp.json
 - implementation: model fixtures/sample-webapp-2026/apps/api/src/app.ts
 - implementation: model fixtures/sample-webapp-2026/packages/contracts/src/index.ts
 - implementation: model fixtures/sample-webapp-2026/.github/workflows/ci.yml
 - implementation: model fixtures/sample-webapp-2026/flaker.toml
 - implementation: model fixtures/sample-webapp-2026/vrt.config.json
+- implementation: model docs/dogfooding-2026-07-14-mnemo.md
 
 #### Review
 
 - source: model.rules[16]
 - coverage: rule
-- automatedChecks: 3
-- implementationRefs: 10
+- automatedChecks: 12
+- implementationRefs: 26
 - selector: DSPEC-REAL-APP-IMPORTER.must[0]
 - selector: DSPEC-REAL-APP-IMPORTER.must[1]
+- selector: DSPEC-REAL-APP-IMPORTER.must[2]
+- selector: DSPEC-REAL-APP-IMPORTER.must[3]
 
 ### DSPEC-REAL-APP-RECONCILIATION
 
@@ -1803,7 +1879,7 @@ real app reconciliation は手書き model と観測済み app facts の drift �
 - check: node test/cli.test.mjs#renders real app drift suggestions for CLI readers
 - check: node test/cli.test.mjs#keeps real app reconciliation fixture in sync
 - implementation: code src/cli.mjs#reconcileRealAppReport
-- implementation: code src/cli.mjs#realAppObservedDomain
+- implementation: code src/core/real-app.mjs#realAppObservedDomain
 - implementation: code src/cli.mjs#restoreObservedFactSuggestion
 - implementation: code src/cli.mjs#restoreObservedReleaseGateSuggestion
 - implementation: code src/cli.mjs#renderReportSuggestions
@@ -1895,7 +1971,7 @@ Release safety は typed pattern として記述され、health gate・rollback�
 
 #### Review
 
-- source: model.rules[34]
+- source: model.rules[35]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -1926,7 +2002,7 @@ Runtime collector fixture は Runtime safety spec から collect/verify 可能�
 
 #### Review
 
-- source: model.rules[41]
+- source: model.rules[42]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 3
@@ -1959,7 +2035,7 @@ Runtime collector manifest は Runtime safety spec から deterministic に生�
 
 #### Review
 
-- source: model.rules[39]
+- source: model.rules[40]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 4
@@ -1998,7 +2074,7 @@ Runtime evidence collector は provider API payload を manifest から読み、
 
 #### Review
 
-- source: model.rules[38]
+- source: model.rules[39]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -2034,7 +2110,7 @@ Runtime evidence importer は provider 別 JSON を deterministic な Runtime ev
 
 #### Review
 
-- source: model.rules[37]
+- source: model.rules[38]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 4
@@ -2083,7 +2159,7 @@ Runtime evidence は typed pattern として記述され、SLO telemetry・alert
 
 #### Review
 
-- source: model.rules[36]
+- source: model.rules[37]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 12
@@ -2129,7 +2205,7 @@ Runtime evidence verifier は collector manifest の expects と収集済み evi
 
 #### Review
 
-- source: model.rules[40]
+- source: model.rules[41]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 9
@@ -2174,7 +2250,7 @@ Runtime safety は typed pattern として記述され、SLO page alert・tested
 
 #### Review
 
-- source: model.rules[35]
+- source: model.rules[36]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -2222,7 +2298,7 @@ dspec の意味論は truth ではなく support/inferability として拡張す
 
 #### Review
 
-- source: model.rules[64]
+- source: model.rules[65]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0
@@ -2248,7 +2324,7 @@ dspec の意味論は truth ではなく support/inferability として拡張す
 
 #### Review
 
-- source: model.rules[51]
+- source: model.rules[52]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -2310,7 +2386,7 @@ spec change review は仕様変更時の check、impact、互換性分類、cove
 
 #### Review
 
-- source: model.rules[54]
+- source: model.rules[55]
 - coverage: rule
 - automatedChecks: 11
 - implementationRefs: 24
@@ -2382,7 +2458,7 @@ spec change review scaffold は before/after model からレビュー用 Pkl ド
 
 #### Review
 
-- source: model.rules[55]
+- source: model.rules[56]
 - coverage: rule
 - automatedChecks: 14
 - implementationRefs: 20
@@ -2439,7 +2515,7 @@ spec compatibility classifier は before/after spec を compatible/breaking/narr
 
 #### Review
 
-- source: model.rules[53]
+- source: model.rules[54]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 18
@@ -2472,7 +2548,7 @@ spec diff impact report は変更された term/rule から生成 selector と�
 
 #### Review
 
-- source: model.rules[52]
+- source: model.rules[53]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 6
@@ -2507,6 +2583,7 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 - must: `specReadingEval.paths.resolveRelativeTo(ownerFile)`
 - must: `specReadingEval.rubricVersion == cli.rubricVersion`
 - must: `specReadingEval.score.writeRun.records(subagentPrompt + scoreReport)`
+- must: `specReadingEval.runner.process(stdinPrompt).stdoutAnswers && artifact.records(provider + model + digests + exit + rawOutput + score)`
 - must: `specReadingEval.markdownScore.records(subagentRun + goldFixCandidates)`
 - check: node test/cli.test.mjs#evaluates spec reading gold sets
 - check: node test/cli.test.mjs#renders spec reading evaluation prompts without gold labels
@@ -2523,6 +2600,9 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 - check: node test/cli.test.mjs#detects spec reading rubric version mismatches
 - check: node test/cli.test.mjs#renders spec reading score reports for subagent runs
 - check: node test/cli.test.mjs#writes spec reading subagent run artifacts
+- check: node test/cli.test.mjs#runs provider-neutral spec reading agents and records reproducible artifacts
+- check: node test/cli.test.mjs#records invalid spec reading agent output as a failing artifact
+- check: node test/cli.test.mjs#keeps provider-neutral spec reading agent artifacts in sync
 - check: node test/cli.test.mjs#runs metamorphic spec reading evaluation
 - check: node test/cli.test.mjs#keeps spec reading evaluation JSON report fixture in sync
 - check: node test/cli.test.mjs#keeps spec reading digest refresh JSON report fixture in sync
@@ -2533,6 +2613,7 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 - implementation: code dspec/Schema.pkl#SpecReadingEvaluationSuite
 - implementation: code dspec/Schema.pkl#SpecReadingCase
 - implementation: code dspec/Schema.pkl#SpecReadingEvidence
+- implementation: code dspec/Schema.pkl#SpecReadingAgentRunner
 - implementation: code src/cli.mjs#SPEC_READING_RUBRIC
 - implementation: code src/cli.mjs#parseSpecReadingEvalArgs
 - implementation: code src/cli.mjs#parseSpecReadingEvalSuiteArgs
@@ -2551,6 +2632,9 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 - implementation: code src/cli.mjs#resolvePathRelativeToFile
 - implementation: code src/cli.mjs#renderSpecReadingEvalPrompt
 - implementation: code src/cli.mjs#specReadingEvalScoreReport
+- implementation: code src/cli.mjs#loadSpecReadingAgentRunner
+- implementation: code src/cli.mjs#specReadingAgentReport
+- implementation: code src/cli.mjs#specReadingAgentAnswers
 - implementation: code src/cli.mjs#renderSpecReadingEvalScoreMarkdownReport
 - implementation: code src/cli.mjs#specReadingEvidenceDigest
 - implementation: code src/cli.mjs#specReadingEvidenceOverlap
@@ -2561,6 +2645,11 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 - implementation: model fixtures/spec-reading-eval-stale-digest.pkl
 - implementation: model fixtures/spec-reading-eval-rubric-mismatch.pkl
 - implementation: model fixtures/spec-reading-eval-answers.json
+- implementation: model fixtures/spec-reading-agent-runner.pkl
+- implementation: model fixtures/spec-reading-agent-invalid-runner.pkl
+- implementation: model fixtures/agents/spec-reading-fixture-agent.mjs
+- implementation: model fixtures/agents/spec-reading-invalid-agent.mjs
+- implementation: model fixtures/reports/spec-reading-agent-run.json
 - implementation: model fixtures/reports/spec-reading-eval-sample-webapp.json
 - implementation: model fixtures/reports/spec-reading-eval-refresh-stale.json
 - implementation: model fixtures/reports/spec-reading-eval-suite.json
@@ -2572,10 +2661,10 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 
 #### Review
 
-- source: model.rules[60]
+- source: model.rules[61]
 - coverage: rule
-- automatedChecks: 21
-- implementationRefs: 40
+- automatedChecks: 24
+- implementationRefs: 49
 - selector: DSPEC-SPEC-READING-EVAL.must[0]
 - selector: DSPEC-SPEC-READING-EVAL.must[1]
 - selector: DSPEC-SPEC-READING-EVAL.must[2]
@@ -2593,6 +2682,7 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 - selector: DSPEC-SPEC-READING-EVAL.must[14]
 - selector: DSPEC-SPEC-READING-EVAL.must[15]
 - selector: DSPEC-SPEC-READING-EVAL.must[16]
+- selector: DSPEC-SPEC-READING-EVAL.must[17]
 
 ### DSPEC-SQL-QUERY-ORACLE
 
@@ -2614,7 +2704,7 @@ SQL query catalog は DB model と照合され、schema/tenant/FK drift を検�
 
 #### Review
 
-- source: model.rules[28]
+- source: model.rules[29]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -2682,7 +2772,7 @@ verify-generated は backend ごとの検証結果を JSON artifact として出
 
 #### Review
 
-- source: model.rules[46]
+- source: model.rules[47]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2

@@ -1,0 +1,12 @@
+import "../dspec/Schema.pkl" as d
+
+specReadingAgentRunner: d.SpecReadingAgentRunner = new {
+  id = "fixture-agent"
+  provider = "process-fixture"
+  model = "deterministic-gold-v1"
+  command {
+    "node"
+    "agents/spec-reading-fixture-agent.mjs"
+  }
+  timeoutMs = 5000
+}

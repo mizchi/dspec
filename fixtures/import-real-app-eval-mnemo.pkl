@@ -1,0 +1,40 @@
+import "../dspec/Schema.pkl" as d
+
+realAppImportEval: d.RealAppImportEvaluation = new {
+  id = "mnemo-external-dogfood"
+  appRoot = "fixtures/holdout-mnemo-app"
+  expectedFacts {
+    new d.RealAppImportFact { kind = "workflow"; id = "CI" }
+    new d.RealAppImportFact { kind = "infrastructure-source"; id = "mnemo-server/infra/pulumi/index.ts" }
+    new d.RealAppImportFact { kind = "infrastructure-source"; id = "mnemo-server/wrangler.e2e.jsonc" }
+    new d.RealAppImportFact { kind = "infrastructure-source"; id = "mnemo-server/wrangler.jsonc" }
+    new d.RealAppImportFact { kind = "infrastructure-environment"; id = "e2e" }
+    new d.RealAppImportFact { kind = "infrastructure-environment"; id = "production" }
+    new d.RealAppImportFact { kind = "infrastructure-environment"; id = "staging" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "e2e/mnemo-e2e" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "e2e/db" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "e2e/skill-assets" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/mnemo" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/db" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/db-shard-00" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/db-shard-01" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/skill-index" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/skill-assets" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/ai" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/images" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/mnemo-staging" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/db" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/db-shard-00" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/db-shard-01" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/skill-index" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/skill-assets" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/ai" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/images" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/mnemo-cli-service-token" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/mnemo-v1-api" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/mnemo-platform-db" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/mnemo-platform-shard-00-db" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/mnemo-skill-assets-bucket" }
+    new d.RealAppImportFact { kind = "infrastructure-schedule"; id = "production/0-star-star-star-star" }
+  }
+}

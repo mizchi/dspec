@@ -440,6 +440,168 @@ describe("dspec CLI", () => {
     assert.match(result.stdout, /id = "dashboard-snapshot"/);
   });
 
+  it("imports Cloudflare and Pulumi infrastructure from a second real app holdout", () => {
+    const result = run(["import-real-app", "--json", "fixtures/holdout-mnemo-app"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const imported = JSON.parse(result.stdout);
+    assert.equal(imported.app.contracts.path, null);
+    assert.deepEqual(
+      imported.app.infrastructure.sources.map((source) => `${source.kind}:${source.path}`),
+      [
+        "pulumi:mnemo-server/infra/pulumi/index.ts",
+        "wrangler:mnemo-server/wrangler.e2e.jsonc",
+        "wrangler:mnemo-server/wrangler.jsonc",
+      ],
+    );
+    assert.deepEqual(
+      imported.app.infrastructure.environments.map((environment) => environment.id),
+      ["e2e", "production", "staging"],
+    );
+    const resourceIds = imported.app.infrastructure.resources.map((resource) => resource.id);
+    for (const id of [
+      "production/mnemo",
+      "production/db",
+      "production/skill-assets",
+      "e2e/mnemo-e2e",
+      "e2e/db",
+      "staging/mnemo-staging",
+      "staging/db",
+      "staging/skill-index",
+      "pulumi/mnemo-v1-api",
+      "pulumi/mnemo-platform-db",
+    ]) {
+      assert.ok(resourceIds.includes(id), id);
+    }
+    assert.ok(!resourceIds.some((id) => id.includes("vendored")));
+    assert.deepEqual(
+      imported.app.infrastructure.schedules.map((schedule) => schedule.id),
+      ["production/0-star-star-star-star"],
+    );
+  });
+
+  it("evaluates real app importer precision and recall against typed gold facts", () => {
+    const result = run([
+      "evaluate-real-app-import",
+      "--json",
+      "fixtures/import-real-app-eval-mnemo.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.deepEqual(report.summary, {
+      expected: 32,
+      observed: 32,
+      matched: 32,
+      missing: 0,
+      unexpected: 0,
+      precision: 1,
+      recall: 1,
+    });
+    assert.deepEqual(report.missing, []);
+    assert.deepEqual(report.unexpected, []);
+  });
+
+  it("keeps the external real app import evaluation report in sync", () => {
+    assertReportFixture(
+      ["evaluate-real-app-import", "--json", "fixtures/import-real-app-eval-mnemo.pkl"],
+      "fixtures/reports/evaluate-real-app-import-mnemo.json",
+    );
+  });
+
+  it("imports Terraform plans and Kubernetes manifests as infrastructure facts", () => {
+    const result = run(["import-real-app", "--json", "fixtures/holdout-iac-app"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const infrastructure = JSON.parse(result.stdout).app.infrastructure;
+    assert.deepEqual(
+      infrastructure.sources.map((source) => `${source.kind}:${source.path}`),
+      [
+        "kubernetes:infra/k8s/payments.yaml",
+        "terraform-plan:infra/terraform-plan.json",
+      ],
+    );
+    assert.deepEqual(
+      infrastructure.environments.map((environment) => environment.id),
+      ["kubernetes/production", "production"],
+    );
+    const byId = new Map(infrastructure.resources.map((resource) => [resource.id, resource]));
+    assert.equal(byId.get("terraform/aws_db_instance.primary")?.kind, "database");
+    assert.equal(byId.get("terraform/aws_s3_bucket.assets")?.kind, "bucket");
+    assert.equal(byId.get("terraform/module.queue.aws_sqs_queue.jobs")?.kind, "queue");
+    assert.equal(byId.get("kubernetes/production/deployment/payments-api")?.kind, "service");
+    assert.equal(byId.get("kubernetes/production/secret/payments-api-secrets")?.kind, "secret");
+    assert.deepEqual(
+      infrastructure.schedules.map((schedule) => schedule.id),
+      ["kubernetes/production/nightly-reconcile"],
+    );
+  });
+
+  it("evaluates Terraform and Kubernetes importer coverage", () => {
+    const result = run([
+      "evaluate-real-app-import",
+      "--json",
+      "fixtures/import-real-app-eval-iac.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.deepEqual(report.summary, {
+      expected: 12,
+      observed: 12,
+      matched: 12,
+      missing: 0,
+      unexpected: 0,
+      precision: 1,
+      recall: 1,
+    });
+  });
+
+  it("keeps the Terraform and Kubernetes import evaluation report in sync", () => {
+    assertReportFixture(
+      ["evaluate-real-app-import", "--json", "fixtures/import-real-app-eval-iac.pkl"],
+      "fixtures/reports/evaluate-real-app-import-iac.json",
+    );
+  });
+
+  it("projects imported IaC into domain patterns without inventing guarantees", () => {
+    const iac = run(["import-real-app", "--pkl", "fixtures/holdout-iac-app"]);
+    assert.equal(iac.status, 0, iac.stderr);
+    assert.match(
+      iac.stdout,
+      /new d\.CloudNode \{\n        id = "terraform\/aws_db_instance\.primary"\n        kind = "database"/,
+    );
+    assert.match(
+      iac.stdout,
+      /new d\.DataStore \{\n        id = "terraform\/aws_db_instance\.primary"\n        region = "production"\n        encrypted = false\n        deletionSupported = false/,
+    );
+    assert.match(
+      iac.stdout,
+      /new d\.RuntimeService \{\n        id = "kubernetes\/production\/deployment\/payments-api"/,
+    );
+
+    const mnemo = run(["import-real-app", "--pkl", "fixtures/holdout-mnemo-app"]);
+    assert.equal(mnemo.status, 0, mnemo.stderr);
+    assert.match(mnemo.stdout, /id = "production\/mnemo\/to\/production\/db"/);
+    assert.match(mnemo.stdout, /from = "production\/mnemo"/);
+    assert.match(mnemo.stdout, /to = "production\/db"/);
+
+    const dir = mkdtempSync(join(root, "fixtures", ".tmp-iac-import-"));
+    try {
+      const modelPath = join(dir, "model.pkl");
+      writeFileSync(
+        modelPath,
+        `import "../../dspec/Schema.pkl" as d\nimport "../../examples/rbac.pkl" as base\n\nmodel: d.Model = (base.model) {\n${iac.stdout}}\n`,
+      );
+      const evaluated = spawnSync("pkl", ["eval", modelPath], { cwd: root, encoding: "utf8" });
+      assert.equal(evaluated.status, 0, evaluated.stderr);
+    } finally {
+      rmSync(dir, { force: true, recursive: true });
+    }
+  });
+
   it("keeps real app import fixture in sync", () => {
     assertReportFixture(
       ["import-real-app", "--json", "fixtures/sample-webapp-2026"],
@@ -1460,6 +1622,70 @@ profile: d.AppProfile = new {
     }
   });
 
+  it("runs provider-neutral spec reading agents and records reproducible artifacts", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-spec-reading-agent-run-"));
+    try {
+      const artifact = join(dir, "run.json");
+      const result = run([
+        "spec-reading-eval",
+        "--json",
+        "--runner",
+        "fixtures/spec-reading-agent-runner.pkl",
+        "--write-run",
+        artifact,
+        "fixtures/spec-reading-eval-sample-webapp.pkl",
+      ]);
+
+      assert.equal(result.status, 0, result.stderr);
+      const report = JSON.parse(result.stdout);
+      const written = JSON.parse(readFileSync(artifact, "utf8"));
+      assert.deepEqual(written, report);
+      assert.equal(report.status, "pass");
+      assert.equal(report.score.correct, 7);
+      assert.deepEqual(report.agentRun.runner, {
+        id: "fixture-agent",
+        provider: "process-fixture",
+        model: "deterministic-gold-v1",
+      });
+      assert.equal(report.agentRun.exitCode, 0);
+      assert.match(report.agentRun.promptDigest, /^sha256:[a-f0-9]{64}$/);
+      assert.match(report.agentRun.answerDigest, /^sha256:[a-f0-9]{64}$/);
+      assert.match(report.agentRun.rawStdout, /"answers"/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("records invalid spec reading agent output as a failing artifact", () => {
+    const result = run([
+      "spec-reading-eval",
+      "--json",
+      "--runner",
+      "fixtures/spec-reading-agent-invalid-runner.pkl",
+      "fixtures/spec-reading-eval-sample-webapp.pkl",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "fail");
+    assert.equal(report.agentRun.exitCode, 0);
+    assert.equal(report.agentRun.rawStdout, "not-json\n");
+    assert.match(report.errors.join("\n"), /failed to parse agent stdout/);
+  });
+
+  it("keeps provider-neutral spec reading agent artifacts in sync", () => {
+    assertReportFixture(
+      [
+        "spec-reading-eval",
+        "--json",
+        "--runner",
+        "fixtures/spec-reading-agent-runner.pkl",
+        "fixtures/spec-reading-eval-sample-webapp.pkl",
+      ],
+      "fixtures/reports/spec-reading-agent-run.json",
+    );
+  });
+
   it("runs metamorphic spec reading evaluation", () => {
     const result = run(["metamorphic-spec-reading-eval", "--json", "fixtures/spec-reading-eval-sample-webapp.pkl"]);
 
@@ -2163,6 +2389,13 @@ profile: d.AppProfile = new {
     assert.match(result.stderr, /invalid expr ast: INVALID-AST-EXTRA-FIELDS must\[0\] atom does not accept children/);
   });
 
+  it("rejects unsupported Clause.ast semantics versions", () => {
+    const result = run(["check", "fixtures/unsupported-ast-semantics.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /unsupported Clause\.ast semantics version: 2\.0/);
+  });
+
   it("renders localized model text", () => {
     const result = run(["render", "--locale", "ja", "examples/rbac.pkl"]);
 
@@ -2177,7 +2410,7 @@ profile: d.AppProfile = new {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: dspec-self/);
-    assert.match(result.stdout, /100 terms, 67 rules/);
+    assert.match(result.stdout, /101 terms, 68 rules/);
   });
 
   it("emits check JSON reports", () => {
@@ -2187,8 +2420,8 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.summary.terms, 100);
-    assert.equal(report.summary.rules, 67);
+    assert.equal(report.summary.terms, 101);
+    assert.equal(report.summary.rules, 68);
     assert.deepEqual(report.errors, []);
   });
 
@@ -2912,12 +3145,19 @@ profile: d.AppProfile = new {
     assert.equal(artifact, emitted.stdout);
   });
 
-  it("runs full check through Nix in GitHub Actions", () => {
+  it("splits fast and formal GitHub Actions gates with caches", () => {
     const source = readFileSync(join(root, ".github", "workflows", "check.yml"), "utf8");
+    const taskfile = readFileSync(join(root, "Taskfile.pkl"), "utf8");
 
-    assert.match(source, /nix develop path:\$PWD -c pkf run check/);
-    assert.match(source, /pkf run devshell:tools/);
-    assert.match(source, /pkf run devshell:formal/);
+    assert.match(source, /^  fast:/m);
+    assert.match(source, /^  formal:/m);
+    assert.match(source, /cache: "pnpm"/);
+    assert.match(source, /magic-nix-cache-action@[a-f0-9]{40}/);
+    assert.match(source, /pkf run check:fast/);
+    assert.match(source, /nix develop path:\$PWD -c pkf run check:formal/);
+    assert.match(source, /cancel-in-progress: \$\{\{ github\.ref != 'refs\/heads\/main' \}\}/);
+    assert.match(taskfile, /name = "check:fast"/);
+    assert.match(taskfile, /name = "check:formal"/);
   });
 
   it("declares formal backend tools in Nix devShell", () => {
@@ -3032,7 +3272,11 @@ profile: d.AppProfile = new {
     assert.equal(lean.status, 0, lean.stderr);
     assert.equal(tla.status, 0, tla.stderr);
     assert.match(quickcheck.stdout, /"ast": \{\n\s+"op": "atom",\n\s+"name": "approvedHasAutomatedCheck"/);
+    assert.match(quickcheck.stdout, /export const clauseAstSemanticsVersion = "1\.0"/);
+    assert.match(quickcheck.stdout, /"astSemanticsVersion": "1\.0"/);
+    assert.match(lean.stdout, /def clauseAstSemanticsVersion : String := "1\.0"/);
     assert.match(lean.stdout, /Expr\.atom "approvedHasAutomatedCheck" \["rule"\]/);
+    assert.match(tla.stdout, /ClauseAstSemanticsVersion == "1\.0"/);
     assert.match(tla.stdout, /approvedHasAutomatedCheck\(rule\)/);
   });
 
@@ -3767,7 +4011,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 846);
+    assert.equal(report.references, 903);
     assert.deepEqual(report.errors, []);
   });
 
@@ -3786,7 +4030,7 @@ profile: d.AppProfile = new {
     const result = run(["coverage", "examples/dspec.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: dspec-self coverage \(65\/65 approved rules\)/);
+    assert.match(result.stdout, /ok: dspec-self coverage \(66\/66 approved rules\)/);
   });
 
   it("reports domain model element coverage", () => {
@@ -3840,8 +4084,8 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.covered, 65);
-    assert.equal(report.total, 65);
+    assert.equal(report.covered, 66);
+    assert.equal(report.total, 66);
     assert.deepEqual(report.errors, []);
   });
 

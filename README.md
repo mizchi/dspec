@@ -61,6 +61,8 @@ node src/cli.mjs domain-coverage examples/sample-webapp-2026.pkl
 node src/cli.mjs domain-coverage --json fixtures/domain-coverage-orphan.pkl
 node src/cli.mjs import-real-app --json fixtures/sample-webapp-2026
 node src/cli.mjs import-real-app --pkl fixtures/sample-webapp-2026
+node src/cli.mjs evaluate-real-app-import --json fixtures/import-real-app-eval-mnemo.pkl
+node src/cli.mjs evaluate-real-app-import --json fixtures/import-real-app-eval-iac.pkl
 node src/cli.mjs reconcile-real-app --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json
 node src/cli.mjs reverse-coverage --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json
 node src/cli.mjs scaffold-app-profile --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl fixtures/sample-webapp-2026
@@ -87,6 +89,7 @@ node src/cli.mjs spec-reading-eval --prompt fixtures/spec-reading-eval-sample-we
 node src/cli.mjs spec-reading-eval --prompt --locale en fixtures/spec-reading-eval-sample-webapp.pkl
 node src/cli.mjs spec-reading-eval --json --refresh-digests fixtures/spec-reading-eval-stale-digest.pkl
 node src/cli.mjs spec-reading-eval --json --score fixtures/spec-reading-eval-answers.json --write-run /tmp/dspec-spec-reading-run.json fixtures/spec-reading-eval-sample-webapp.pkl
+node src/cli.mjs spec-reading-eval --json --runner fixtures/spec-reading-agent-runner.pkl --write-run /tmp/dspec-spec-reading-agent-run.json fixtures/spec-reading-eval-sample-webapp.pkl
 node src/cli.mjs spec-reading-eval --markdown --score fixtures/spec-reading-eval-answers.json fixtures/spec-reading-eval-sample-webapp.pkl
 node src/cli.mjs spec-change compat --json fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl
 node src/cli.mjs spec-change scaffold fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl
@@ -184,8 +187,19 @@ It models the current implementation boundary:
   approved rules by stable ids, so orphan Cloud/Data/Release/Runtime model
   facts are caught before they become unreviewed spec master data.
 - `import-real-app` extracts observed facts from a real application checkout:
-  Hono API routes, Zod contract schemas, GitHub Actions workflows, flaker, and
-  VRT config.
+  Hono API routes, Zod contract schemas, GitHub Actions workflows, flaker/VRT
+  config, Cloudflare Wrangler JSONC, Pulumi declarations, Terraform/OpenTofu
+  planned resources, and application-owned Kubernetes manifests. IaC
+  declarations are observations, not deployment proofs. Unknown encryption,
+  deletion, criticality, retry, and idempotency guarantees remain false or
+  unset in generated Pkl drafts.
+- `evaluate-real-app-import` compares normalized importer facts with a typed
+  Pkl gold set and reports missing/unexpected facts plus precision and recall.
+  The mnemo holdout records source commit, file digests, sanitization, vendored
+  config noise, and E2E environment classification.
+  The normalization, fact comparison, and conservative domain projection are
+  also available as filesystem-free functions from `src/core/real-app.mjs`;
+  the CLI is an adapter over the same core output.
 - `reconcile-real-app` compares those observed facts with a hand-authored
   Cloud/Data/Release/Runtime model, catching implementation-to-domain mapping
   drift such as a missing release gate.
@@ -275,6 +289,11 @@ It models the current implementation boundary:
   updates, `--refresh-digests --apply` writes them back to the Pkl gold set,
   `--write-run` records the sub-agent prompt and score report, and
   `spec-reading-eval-suite` aggregates sample and holdout evaluation sets.
+  `--runner <runner.pkl>` invokes a provider-neutral process adapter: prompt on
+  stdin, answers JSON on stdout. The typed runner records provider/model
+  identity and argv without embedding an SDK. Its deterministic artifact keeps
+  runner, prompt, and answer digests, exit status, raw stdout/stderr, and the
+  ordinary score report; environment variables and secrets are not recorded.
   `coverage-spec-reading-eval-suite` checks that a suite covers required
   labels, evidence kinds, model kinds, tags, and paraphrase locales.
   `metamorphic-spec-reading-eval` verifies that answer order, evidence order,
@@ -285,7 +304,7 @@ It models the current implementation boundary:
   `--markdown --score` emits a sub-agent run report with gold-fix candidates.
 - `fixtures/reports/*.json` fixes the check/drift/coverage/impact,
   domain-coverage, real-app import/reconciliation, app-profile mutation score,
-  app change replay, spec reading evaluation, spec compatibility, spec change
+  app change replay, spec reading evaluation and agent runs, spec compatibility, spec change
   review, verify-generated, and normalized-counterexample report shapes as
   compatibility artifacts for future checker implementations.
   `fixtures/spec-change-scaffold-*.pkl` does the same for deterministic
@@ -345,9 +364,10 @@ It models the current implementation boundary:
   back to concrete spec records.
 - `flake.nix` provides the devShell used to put Z3 and the TLA+/Alloy tools on
   `PATH`.
-- `.github/workflows/check.yml` runs `pkf run devshell:tools`,
-  `pkf run devshell:formal`, and `pkf run check` inside the Nix devShell so
-  required tool smoke and optional local backend checks become CI gates.
+- `.github/workflows/check.yml` runs an Ubuntu `check:fast` job with pnpm,
+  Pkl, and pkfire CAS caches in parallel with a macOS/Nix `check:formal` job.
+  The formal job requires devShell tools plus Lean/TLA+/Alloy execution while
+  the fast job provides earlier schema, report, test, and dogfood feedback.
 - `Clause.expr` remains a compatibility/display string, while `Clause.ast`
   carries the typed expression structure used by deterministic projections
   when present.
@@ -398,11 +418,16 @@ QuickCheck, TLA+, and Lean outputs. The current implementation still falls back
 to `expr` when `ast` is absent, which keeps older specs readable while giving
 new specs a deterministic projection surface.
 
-`Clause.ast` currently defines a minimal first-order boolean fragment:
+`Model.clauseAstSemanticsVersion` versions the interpretation contract for all
+typed clauses in a model. Version `1.0` defines a minimal first-order boolean
+fragment:
 uninterpreted `atom` predicates, symbolic `eq`/`neq`, boolean
 `not`/`and`/`or`/`implies`, and single-child `exists`/`forall` binders.
 `dspec check` rejects nodes that use fields outside the selected operator's
-semantics.
+semantics or models that request an unsupported semantics version. QuickCheck,
+TLA+, and Lean projections carry the version explicitly. The executable
+reference semantics and conformance tests live in `src/core/clause-ast.mjs` and
+`test/clause-ast-core.test.mjs`.
 
 `patterns.db` is the first domain pattern. It separates DB structure from
 transaction and migration behavior: tables declare columns, primary keys,
