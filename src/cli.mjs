@@ -344,6 +344,42 @@ function clauseForSelector(rule, selector) {
   return list(rule[match[1]])[Number(match[2])] ?? null;
 }
 
+function leanClauseTheoremName(ruleId, selector) {
+  const normalizedSelector = sanitizeIdentifier(selector).replace(/_+$/, "");
+  return `clause_${sanitizeIdentifier(ruleId)}_${normalizedSelector}`;
+}
+
+function leanClauseArtifactId(ruleId, selector) {
+  return `lean-clause-${ruleId}-${selector.replace(/[^A-Za-z0-9]+/g, "-").replace(/-+$/, "")}`;
+}
+
+function leanSemanticClauseProofs(model) {
+  const proofs = new Map();
+  for (const rule of sortedRules(model).filter((candidate) => candidate.reviewStatus === "approved" && !candidate.deprecated)) {
+    for (const target of list(rule.checks)) {
+      if (target.backend !== "lean" || !checkTargetAssurances(target).includes("proved")) continue;
+      for (const selector of list(target.covers)) {
+        const match = /^(must|mustNot)\[([0-9]+)\]$/.exec(selector);
+        const clause = clauseForSelector(rule, selector);
+        if (!match || !clause?.ast) continue;
+        if (clauseBackendSupport("lean", expressionOperators(clause.ast)) !== "semantic") continue;
+        const theorem = leanClauseTheoremName(rule.id, selector);
+        proofs.set(`${rule.id}:${selector}`, {
+          rule,
+          selector,
+          field: match[1],
+          index: Number(match[2]),
+          clause,
+          theorem,
+          artifactId: leanClauseArtifactId(rule.id, selector),
+          generatedSelector: `lean.theorem.${theorem}`,
+        });
+      }
+    }
+  }
+  return [...proofs.values()];
+}
+
 function validateCheckTargetAssuranceDeclarations(errors, model, rule, { requireFormalEvidence = false } = {}) {
   for (const target of list(rule.checks)) {
     const assurances = checkTargetAssurances(target);
@@ -400,10 +436,6 @@ function validateCheckTargetAssuranceDeclarations(errors, model, rule, { require
             for (const error of report.errors) {
               errors.push(`invalid formal assurance evidence manifest: ${rule.id} -> ${kind}: ${error}`);
             }
-            const artifact = list(report.manifest?.artifacts).find((entry) => entry?.backend === target.backend);
-            if (!artifact || artifact.result !== "pass" || artifact.scope !== "clause") {
-              errors.push(`formal assurance lacks passing clause artifact: ${rule.id} -> ${kind} ${target.backend}`);
-            }
             for (const selector of list(target.covers)) {
               const binding = list(report.manifest?.clauseBindings).find(
                 (entry) => entry?.ruleId === rule.id && entry.selector === selector,
@@ -411,6 +443,17 @@ function validateCheckTargetAssuranceDeclarations(errors, model, rule, { require
               const backendBinding = list(binding?.backends).find((entry) => entry?.backend === target.backend);
               if (!backendBinding || backendBinding.support !== "semantic" || list(backendBinding.generatedSelectors).length === 0) {
                 errors.push(`formal assurance lacks semantic manifest binding: ${rule.id} -> ${kind} ${target.backend} ${selector}`);
+                continue;
+              }
+              const generatedSelectors = new Set(backendBinding.generatedSelectors);
+              const artifact = list(report.manifest?.artifacts).find(
+                (entry) => entry?.backend === target.backend
+                  && entry.scope === "clause"
+                  && entry.result === "pass"
+                  && list(entry.propertyIds).some((propertyId) => generatedSelectors.has(propertyId)),
+              );
+              if (!artifact) {
+                errors.push(`formal assurance lacks passing clause artifact: ${rule.id} -> ${kind} ${target.backend} ${selector}`);
               }
             }
           }
@@ -1389,6 +1432,13 @@ function validateCheckTargetRef(rule, target) {
     return [`manual check target is not machine-verifiable: ${rule.id} -> ${target.ref}`];
   }
 
+  if (target.backend === "lean" && path === "generated:lean") {
+    const generatedTheorems = list(target.covers).map((selector) => leanClauseTheoremName(rule.id, selector));
+    return anchor && generatedTheorems.includes(anchor)
+      ? []
+      : [`missing generated lean check target symbol: ${rule.id} -> ${target.ref}`];
+  }
+
   if (!existsSync(resolve(path))) {
     return [`missing check target path: ${rule.id} -> ${target.ref}`];
   }
@@ -1460,11 +1510,14 @@ function validateCheckTargetRef(rule, target) {
   return [];
 }
 
-function validateCheckTarget(rule, target) {
+function validateCheckTarget(rule, target, { allowMissingFormalEvidence = false } = {}) {
   const errors = validateCheckTargetRef(rule, target);
   for (const [kind, evidenceRef] of Object.entries(target.assuranceEvidence ?? {})) {
     const { path, anchor } = splitRef(evidenceRef);
     if (!existsSync(resolve(path))) {
+      if (allowMissingFormalEvidence && (kind === "bounded" || kind === "proved") && !anchor && path.endsWith(".json")) {
+        continue;
+      }
       errors.push(`missing check assurance evidence path: ${rule.id} -> ${kind} ${evidenceRef}`);
       continue;
     }
@@ -1475,28 +1528,28 @@ function validateCheckTarget(rule, target) {
   return errors;
 }
 
-function validateCheckTargets(model, rules = list(model.rules)) {
+function validateCheckTargets(model, rules = list(model.rules), options = {}) {
   const errors = [];
   let count = 0;
 
   for (const rule of rules) {
     for (const target of list(rule.checks)) {
       count += 1 + Object.keys(target.assuranceEvidence ?? {}).length;
-      errors.push(...validateCheckTarget(rule, target));
+      errors.push(...validateCheckTarget(rule, target, options));
     }
   }
 
   return { errors, count };
 }
 
-function validateDrift(model) {
+function validateDrift(model, options = {}) {
   const modelErrors = validate(model);
   if (modelErrors.length > 0) {
     return { errors: modelErrors, count: 0 };
   }
 
   const implementations = validateImplementationRefs(model);
-  const checks = validateCheckTargets(model);
+  const checks = validateCheckTargets(model, list(model.rules), options);
   const packs = validateDomainPackRefs(model);
   return {
     errors: [...implementations.errors, ...checks.errors, ...packs.errors],
@@ -1504,8 +1557,8 @@ function validateDrift(model) {
   };
 }
 
-function validateCoverage(model) {
-  const drift = validateDrift(model);
+function validateCoverage(model, options = {}) {
+  const drift = validateDrift(model, options);
   if (drift.errors.length > 0) {
     return {
       errors: drift.errors,
@@ -6707,6 +6760,14 @@ function ruleClauseExprs(rule) {
   return ruleClauses(rule).map((clause) => exprToLean(clause.ast, clause.expr));
 }
 
+function emitLeanClauseTheorem(proof) {
+  const satisfaction = `SatisfiesEq env (${exprToLean(proof.clause.ast, proof.clause.expr)})`;
+  const proposition = proof.field === "mustNot" ? `¬ ${satisfaction}` : satisfaction;
+  return `theorem ${proof.theorem} : ∀ env : ClauseEnv, ${proposition} := by
+  intro env
+  rfl`;
+}
+
 function modelSource() {
   return { kind: "model", path: "model" };
 }
@@ -7427,6 +7488,16 @@ function emitSourceMapObject(model, requestedLocale) {
       });
     }
   });
+
+  for (const proof of leanSemanticClauseProofs(model)) {
+    const ruleIndex = originalRuleIndex.get(proof.rule.id);
+    artifacts.lean.push(
+      generatedEntry(
+        proof.generatedSelector,
+        clauseSource(proof.rule, ruleIndex, proof.field, proof.index),
+      ),
+    );
+  }
 
   for (const generated of [
     "quickcheck.propertyApprovedRulesHaveAutomatedChecks",
@@ -11106,6 +11177,7 @@ function emitLean(model) {
   const clauses = approved
     .map((rule) => `  | RuleId.${sanitizeIdentifier(rule.id)} => [${ruleClauseExprs(rule).join(", ")}]`)
     .join("\n");
+  const clauseTheorems = leanSemanticClauseProofs(model).map(emitLeanClauseTheorem).join("\n\n");
   return `namespace DSpec.Generated
 
 def clauseAstSemanticsVersion : String := ${JSON.stringify(model.clauseAstSemanticsVersion)}
@@ -11123,6 +11195,15 @@ inductive Expr where
   | forall_ : String -> Expr -> Expr
 deriving Repr
 
+abbrev ClauseEnv := String -> Option String
+
+def resolveClauseValue (env : ClauseEnv) (name : String) : String :=
+  (env name).getD name
+
+def SatisfiesEq (env : ClauseEnv) : Expr -> Prop
+  | .eq left right => resolveClauseValue env left = resolveClauseValue env right
+  | _ => False
+
 inductive RuleId where
 ${constructors}
 deriving DecidableEq, Repr
@@ -11134,6 +11215,8 @@ ${clauses}
 
 def checks : RuleId -> List String
 ${checks}
+
+${clauseTheorems}
 
 def AutomatedSupport (r : RuleId) : Bool := decide ((checks r).length > 0)
 
@@ -11561,12 +11644,16 @@ function verifyGeneratedReport(model) {
 }
 
 function assuranceArtifactSources(model) {
-  return {
+  const sources = {
     alloy: emitAlloy(model),
     lean: emitLean(model),
     quickcheck: emitQuickcheck(model),
     tla: emitTla(model),
   };
+  for (const proof of leanSemanticClauseProofs(model)) {
+    sources[proof.artifactId] = sources.lean;
+  }
+  return sources;
 }
 
 function assuranceArtifactResults(verification) {
@@ -11587,7 +11674,7 @@ function assuranceEvidenceExpected(model, verification = verifyGeneratedReport(m
     artifactDefinitions: Object.fromEntries(
       assuranceEvidenceArtifactDefinitions(model).map((definition) => [
         definition.id,
-        { ...definition, result: results[definition.id].status },
+        { ...definition, result: results[definition.backend].status },
       ]),
     ),
   };
@@ -11611,7 +11698,7 @@ function currentAssuranceToolVersions() {
 }
 
 function assuranceEvidenceArtifactDefinitions(model) {
-  return [
+  const generatorArtifacts = [
     {
       id: "alloy",
       backend: "alloy",
@@ -11649,6 +11736,16 @@ function assuranceEvidenceArtifactDefinitions(model) {
       bounds: { configDigest: assuranceDigest(emitTlaConfig(model)) },
     },
   ];
+  const clauseArtifacts = leanSemanticClauseProofs(model).map((proof) => ({
+    id: proof.artifactId,
+    backend: "lean",
+    tool: "lean",
+    scope: "clause",
+    propertyIds: [proof.generatedSelector],
+    theorem: proof.theorem,
+    bounds: {},
+  }));
+  return [...generatorArtifacts, ...clauseArtifacts];
 }
 
 function assuranceEvidenceArtifacts(model, verification, expected, toolVersions) {
@@ -11660,7 +11757,7 @@ function assuranceEvidenceArtifacts(model, verification, expected, toolVersions)
     scope: definition.scope,
     propertyIds: definition.propertyIds,
     digest: expected.artifactDigests[definition.id],
-    result: results[definition.id].status,
+    result: results[definition.backend].status,
     tool: {
       name: definition.tool,
       version: toolVersions[definition.tool],
@@ -12917,7 +13014,7 @@ function runSpecChangeCommand(args) {
 }
 
 function assertModelCoverage(model) {
-  const coverage = validateCoverage(model);
+  const coverage = validateCoverage(model, { allowMissingFormalEvidence: true });
   if (coverage.errors.length > 0) {
     throw new CommandError(`${coverage.errors.join("\n")}\n`);
   }

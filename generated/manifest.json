@@ -1,28 +1,28 @@
 {
   "artifacts": {
     "alloy": {
-      "bytes": 31565,
-      "sha256": "0d1f9a3f1dbb80a99ea8652fa9535ef0bb21dcf6c62e0c6b0a908a8329371641"
+      "bytes": 31880,
+      "sha256": "89dffbaf5af228563fca2e6062ae6dc184aa09ab6c433ca00750d197def9f98a"
     },
     "lean": {
-      "bytes": 50280,
-      "sha256": "b96da0beb389136b44f35c7f6bc09ee62f6244535722166c963530553ecf54d2"
+      "bytes": 51302,
+      "sha256": "84ad0c46b1b53819a9f30d424fb8e1b1535d992c2dacc3863a50c44ac9cb3f21"
     },
     "markdown": {
-      "bytes": 136307,
-      "sha256": "666689b10f2f1edb7fb9d392cddf5adec884c7a60f103819e0a32bda06c007e7"
+      "bytes": 138229,
+      "sha256": "022202af4798f0db025896376d405d771795b878f086a28d70fe3e3c7cb8b3ad"
     },
     "quickcheck": {
-      "bytes": 173516,
-      "sha256": "a47015c83617ef36447133a366b82e3a3f0d341615c37ad15d1b23258afa1f10"
+      "bytes": 175631,
+      "sha256": "5b7dcb5551faa92dddb4296c105fea51dfa5f94463007fd88e66a513fbb947a3"
     },
     "sourceMap": {
-      "bytes": 1223970,
-      "sha256": "2d117c55219e5e6ae2cb71079233e34c4c26f42537f312bc068b220998ccae91"
+      "bytes": 1239833,
+      "sha256": "fee1a90e14a3d1c4edc16283828c2b050d8965378c754607c2f8047ba0453b07"
     },
     "tla": {
-      "bytes": 52194,
-      "sha256": "987f3cfefc4a1fd44e4d5f41387b4b05c700f36fd04012a713f81d66a6c85f3a"
+      "bytes": 52860,
+      "sha256": "0f9610589d8e3a7a7a86ed3eeb5ea9320e4adcb65b3032ea2b3e665f9f46c144"
     },
     "tlaCfg": {
       "bytes": 1111,

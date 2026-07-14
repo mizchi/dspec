@@ -1,8 +1,8 @@
 import "../dspec/Schema.pkl" as d
 
 model: d.Model = new {
-  id = "assurance-formal-unsupported"
-  name = d.text("未対応の形式保証", "Unsupported formal assurance")
+  id = "assurance-formal-lean-eq"
+  name = d.text("Lean equality formal assurance", "Lean equality formal assurance")
   version = "0.1.0"
   primaryLocale = "en"
   locales {
@@ -14,19 +14,19 @@ model: d.Model = new {
   }
   rules {
     new d.Rule {
-      id = "ASSURANCE-FORMAL-UNSUPPORTED"
+      id = "ASSURANCE-FORMAL-LEAN-EQ"
       kind = "invariant"
-      text = d.text("残高は正である", "Balance is positive")
+      text = d.text("残高は自身と等しい", "Balance equals itself")
       terms {
         "concept.balance"
       }
       must {
         new d.Clause {
-          expr = "positiveBalance(balance)"
+          expr = "balance == balance"
           ast = new d.ExprAst {
-            op = "atom"
-            name = "positiveBalance"
+            op = "eq"
             args {
+              "balance"
               "balance"
             }
           }
@@ -40,7 +40,7 @@ model: d.Model = new {
       checks {
         new d.CheckTarget {
           backend = "lean"
-          ref = "fixtures/backend-drift/Proof.lean#backend_anchor"
+          ref = "generated:lean#clause_ASSURANCE_FORMAL_LEAN_EQ_must_0"
           covers {
             "must[0]"
           }
@@ -49,7 +49,7 @@ model: d.Model = new {
             "proved"
           }
           assuranceEvidence {
-            ["proved"] = "fixtures/reports/evidence-assurance-formal-unsupported.json"
+            ["proved"] = "/tmp/dspec-assurance-formal-lean-eq.json"
           }
         }
       }

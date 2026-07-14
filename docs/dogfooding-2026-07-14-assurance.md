@@ -1,5 +1,8 @@
 # Assurance Contract Dogfooding 2026-07-14
 
+This is the pre-semantic-path snapshot. The first clause-scoped Lean equality
+proof was added in the follow-up evaluation on 2026-07-15.
+
 ## Scope
 
 This pass evaluates whether dspec can distinguish different kinds of support

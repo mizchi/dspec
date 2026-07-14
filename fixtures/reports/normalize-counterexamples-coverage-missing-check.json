@@ -25,7 +25,7 @@
     {
       "backend": "lean",
       "evidence": {
-        "message": "<generated>/model.lean:37:14: error: Tactic `decide` proved that the proposition\n  AutomatedSupport RuleId.COVERAGE_MISSING_CHECK = true\nis false\n<generated>/model.lean:41:14: error: Tactic `decide` proved that the proposition\n  (checks RuleId.COVERAGE_MISSING_CHECK).length > 0\nis false\n"
+        "message": "<generated>/model.lean:48:14: error: Tactic `decide` proved that the proposition\n  AutomatedSupport RuleId.COVERAGE_MISSING_CHECK = true\nis false\n<generated>/model.lean:52:14: error: Tactic `decide` proved that the proposition\n  (checks RuleId.COVERAGE_MISSING_CHECK).length > 0\nis false\n"
       },
       "generated": "lean.RuleId.COVERAGE_MISSING_CHECK",
       "message": "approved rule lacks automated check support",

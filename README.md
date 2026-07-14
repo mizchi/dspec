@@ -367,9 +367,11 @@ It models the current implementation boundary:
   `evidence verify` rejects stale model/artifact/tool/result/binding data, while
   `evidence refresh` re-executes and replaces the manifest.
 - Clause/backend applicability is recorded per AST operator as `unmapped`,
-  `textual`, `structural`, or `semantic`. The current generated backends are at
-  most structural, so a successful Lean/TLC/Alloy run remains generator-scoped
-  evidence and cannot authorize `bounded` or `proved` business clauses.
+  `textual`, `structural`, or `semantic`. Lean has one semantic path for a
+  standalone `eq` Clause: it generates a satisfaction theorem and a
+  clause-scoped artifact, so a passing manifest can authorize `proved` for that
+  selector. Other Lean operators remain structural, TLA+ remains textual, and
+  Alloy remains unmapped.
 - `generated/dspec.md` is the checked-in Markdown review artifact generated
   from `examples/dspec.pkl`; each rule includes review metadata such as source
   path, coverage mode, clause selectors, checks, and implementation refs. The
@@ -457,6 +459,12 @@ backend support, and the referenced evidence manifest must contain a passing
 clause-scoped artifact. File or theorem anchors alone are rejected.
 The pure manifest/digest/support helpers are exported from `@mizchi/dspec` and
 `@mizchi/dspec/assurance-evidence` for non-CLI integrations.
+
+The first semantic implementation is deliberately narrow. Generated Lean
+defines a partial `ClauseEnv`, resolves both operands of a standalone `eq`, and
+proves the selected `must` Clause for every environment. `eq(x, x)` succeeds;
+`eq(x, y)` does not produce evidence without an actual proof. This proves the
+Clause proposition, not the behavior of application code.
 
 `patterns.db` is the first domain pattern. It separates DB structure from
 transaction and migration behavior: tables declare columns, primary keys,

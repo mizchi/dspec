@@ -1516,6 +1516,79 @@ model: d.Model = new {
     }
 
     new d.Rule {
+      id = "DSPEC-LEAN-EQ-SEMANTIC"
+      kind = "invariant"
+      text =
+        text(
+          "Lean は単独の eq Clause を満足関係と clause 定理として検証する",
+          "Lean verifies standalone eq Clauses through a satisfaction relation and clause theorem",
+        )
+      terms {
+        "artifact.assurance_evidence_manifest"
+        "artifact.formal_backend"
+        "artifact.source_map"
+        "concept.clause_backend_support"
+        "concept.expr_ast"
+        "concept.rule"
+        "concept.verification_target"
+      }
+      must {
+        d.clause(
+          "ClauseEnv == String -> Option String",
+          "Lean の ClauseEnv は未束縛名を区別できる部分環境として扱う",
+          "Lean ClauseEnv is a partial environment that preserves unbound names",
+        )
+        d.clause(
+          "SatisfiesEq(env, eq(left, right)) == (resolve(env, left) == resolve(env, right))",
+          "SatisfiesEq は eq の左右を ClauseEnv で解決して等価性を判定する",
+          "SatisfiesEq resolves both eq operands through ClauseEnv and compares them",
+        )
+        d.clause(
+          "proved(lean, selector) -> generatedClauseTheorem(selector)",
+          "Lean proved target は対象 Clause ごとの定理を決定的に生成する",
+          "a Lean proved target deterministically generates a theorem for each selected Clause",
+        )
+        d.clause(
+          "clauseTheorem.failed -> evidence.create.failed",
+          "Clause 定理を証明できない場合は evidence manifest を生成しない",
+          "evidence manifest creation fails when the Clause theorem cannot be proved",
+        )
+        d.clause(
+          "clauseArtifact.propertyIds intersects clauseBinding.generatedSelectors",
+          "clause-scoped artifact は source map の Clause selector と同じ theorem を束縛する",
+          "the clause-scoped artifact binds the same theorem as the source-mapped Clause selector",
+        )
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "executed"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#proves Lean eq clauses with clause-scoped evidence"
+          assurances {
+            "executed"
+          }
+          assuranceEvidence {
+            ["executed"] = "Taskfile.pkl#test"
+          }
+        }
+        d.nodeCheck("test/cli.test.mjs#keeps Lean eq semantic proofs load-bearing")
+        d.nodeCheck("test/assurance-evidence-core.test.mjs#classifies only standalone Lean eq clauses as semantic")
+      }
+      implementedBy {
+        d.codeRef("src/core/assurance-evidence.mjs", "CLAUSE_BACKEND_OPERATOR_SUPPORT")
+        d.codeRef("src/cli.mjs", "leanSemanticClauseProofs")
+        d.codeRef("src/cli.mjs", "emitLeanClauseTheorem")
+        d.codeRef("src/cli.mjs", "emitLean")
+        d.codeRef("src/cli.mjs", "assuranceEvidenceArtifactDefinitions")
+        d.modelRef("fixtures/assurance-formal-lean-eq.pkl")
+        d.modelRef("fixtures/assurance-formal-lean-eq-broken.pkl")
+      }
+    }
+
+    new d.Rule {
       id = "DSPEC-DOMAIN-COVERAGE-ORACLE"
       kind = "invariant"
       text =

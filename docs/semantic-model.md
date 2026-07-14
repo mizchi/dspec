@@ -382,15 +382,25 @@ operator/backend pair is classified as:
   relation is checked.
 - `semantic`: the generated property checks the source Clause meaning.
 
-The current matrix classifies Alloy as `unmapped`, TLA+ as `textual`, and Lean
-and QuickCheck as `structural` for the Clause AST operators. Consequently,
-backend smoke success is recorded with `scope = generator`; it cannot satisfy
-`bounded` or `proved`. Promoting an operator to `semantic` requires a
-load-bearing generated property and clause-scoped evidence.
+The current matrix classifies Alloy as `unmapped`, TLA+ as `textual`, and
+QuickCheck as `structural`. Lean is `semantic` only for a standalone `eq` and
+remains `structural` for the other operators. Lean resolves both operands
+through `ClauseEnv = String -> Option String`, emits a theorem for selected
+`must`/`mustNot` Clauses, and records the theorem as a clause-scoped artifact.
+All other backend smoke success remains generator-scoped and cannot satisfy
+`bounded` or `proved`.
+
+Semantic support means that the generated theorem checks the Clause AST
+proposition under the declared interpretation. It does not mean application
+code implements that proposition. An implementation proof still needs a
+separate refinement or conformance relation.
 
 The likely next evolution is one of these:
 
-- expand the shared typed expression AST across all backends
+- compose Lean `eq` with boolean operators without weakening the satisfaction
+  relation
+- connect a Clause interpretation to implementation inputs and outputs
+- expand the shared typed expression AST across the other backends
 - add backend-specific expression dialects with explicit projection rules
 - use a hybrid: common boolean/relation/core terms plus backend escapes
 

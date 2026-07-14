@@ -6,7 +6,10 @@ export const CLAUSE_AST_OPERATORS = ["and", "atom", "eq", "exists", "forall", "i
 
 export const CLAUSE_BACKEND_OPERATOR_SUPPORT = Object.freeze({
   alloy: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "unmapped"]))),
-  lean: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "structural"]))),
+  lean: Object.freeze({
+    ...Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "structural"])),
+    eq: "semantic",
+  }),
   quickcheck: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "structural"]))),
   tla: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "textual"]))),
 });

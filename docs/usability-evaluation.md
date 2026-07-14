@@ -123,12 +123,13 @@ It works today as:
 
 It is not yet enough as:
 
-- a source of bounded or proved business-clause assurance; the self model
-  deliberately reports zero `bounded` and zero `proved` targets until backend
-  semantics justify those labels
+- a general source of bounded or proved business-clause assurance; only a
+  standalone Lean `eq` currently has a semantic satisfaction theorem, and the
+  self model deliberately reports zero `bounded` and zero `proved` targets
 - a semantic checker for the full meaning of `Clause.ast`; the applicability
-  matrix currently reports only unmapped, textual, or structural support
-- a proof-producing source generator for implementation or backend proofs
+  matrix reports semantic support only for standalone Lean `eq`
+- a proof-producing source generator for application implementation proofs;
+  the Lean theorem currently proves the Clause proposition under `ClauseEnv`
 - a deep TLC/Alloy model-checking workflow with meaningful bounded scopes and
   counterexample interpretation beyond the current smoke checks
 - structured trace valuation for TLA+/Alloy beyond generated-selector witness

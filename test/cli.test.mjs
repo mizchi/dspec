@@ -2410,7 +2410,7 @@ profile: d.AppProfile = new {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: dspec-self/);
-    assert.match(result.stdout, /103 terms, 70 rules/);
+    assert.match(result.stdout, /103 terms, 71 rules/);
   });
 
   it("emits check JSON reports", () => {
@@ -2421,9 +2421,9 @@ profile: d.AppProfile = new {
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
     assert.equal(report.summary.terms, 103);
-    assert.equal(report.summary.rules, 70);
-    assert.deepEqual(report.assurance.rules, { satisfied: 68, total: 68 });
-    assert.equal(report.assurance.targets.byKind.executed, 3);
+    assert.equal(report.summary.rules, 71);
+    assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
+    assert.equal(report.assurance.targets.byKind.executed, 4);
     assert.equal(report.assurance.targets.byKind["mutation-tested"], 1);
     assert.equal(report.assurance.targets.byKind.bounded, 0);
     assert.equal(report.assurance.targets.byKind.proved, 0);
@@ -4039,8 +4039,8 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 944);
-    assert.deepEqual(report.assurance.rules, { satisfied: 68, total: 68 });
+    assert.equal(report.references, 955);
+    assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
     assert.deepEqual(report.errors, []);
   });
 
@@ -4059,7 +4059,7 @@ profile: d.AppProfile = new {
     const result = run(["coverage", "examples/dspec.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: dspec-self coverage \(68\/68 approved rules\)/);
+    assert.match(result.stdout, /ok: dspec-self coverage \(69\/69 approved rules\)/);
   });
 
   it("reports domain model element coverage", () => {
@@ -4113,11 +4113,11 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.covered, 68);
-    assert.equal(report.total, 68);
+    assert.equal(report.covered, 69);
+    assert.equal(report.total, 69);
     assert.deepEqual(report.assurance.requirements, {
-      reference: 68,
-      executed: 3,
+      reference: 69,
+      executed: 4,
       "mutation-tested": 1,
       bounded: 0,
       proved: 0,
@@ -4338,6 +4338,61 @@ profile: d.AppProfile = new {
       result.stderr,
       /formal assurance requires semantic Clause\.ast support: ASSURANCE-FORMAL-UNSUPPORTED -> proved lean must\[0\] \(structural\)/,
     );
+  });
+
+  it("proves Lean eq clauses with clause-scoped evidence", () => {
+    const manifestPath = "/tmp/dspec-assurance-formal-lean-eq.json";
+    try {
+      rmSync(manifestPath, { force: true });
+      const missing = run(["check", "fixtures/assurance-formal-lean-eq.pkl"]);
+      assert.notEqual(missing.status, 0);
+      assert.match(missing.stderr, /missing formal assurance evidence manifest/);
+
+      const created = run([
+        "evidence",
+        "create",
+        "--json",
+        "--executed-at",
+        "2026-07-15T00:00:00Z",
+        "--output",
+        manifestPath,
+        "fixtures/assurance-formal-lean-eq.pkl",
+      ]);
+
+      assert.equal(created.status, 0, created.stderr);
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      const selector = "lean.theorem.clause_ASSURANCE_FORMAL_LEAN_EQ_must_0";
+      const artifact = manifest.artifacts.find((entry) => entry.id === "lean-clause-ASSURANCE-FORMAL-LEAN-EQ-must-0");
+      assert.equal(artifact.scope, "clause");
+      assert.equal(artifact.result, "pass");
+      assert.equal(artifact.theorem, "clause_ASSURANCE_FORMAL_LEAN_EQ_must_0");
+      assert.deepEqual(artifact.propertyIds, [selector]);
+      const binding = manifest.clauseBindings.find(
+        (entry) => entry.ruleId === "ASSURANCE-FORMAL-LEAN-EQ" && entry.selector === "must[0]",
+      );
+      const lean = binding.backends.find((entry) => entry.backend === "lean");
+      assert.equal(lean.support, "semantic");
+      assert.ok(lean.generatedSelectors.includes(selector));
+
+      const checked = run(["check", "fixtures/assurance-formal-lean-eq.pkl"]);
+      assert.equal(checked.status, 0, checked.stderr);
+    } finally {
+      rmSync(manifestPath, { force: true });
+    }
+  });
+
+  it("keeps Lean eq semantic proofs load-bearing", () => {
+    const result = run([
+      "evidence",
+      "create",
+      "--executed-at",
+      "2026-07-15T00:00:00Z",
+      "fixtures/assurance-formal-lean-eq-broken.pkl",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /generated verification failed:/);
+    assert.match(result.stderr, /Tactic `rfl` failed/);
   });
 
   it("rejects legacy references as formal assurance evidence", () => {
