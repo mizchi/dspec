@@ -2197,6 +2197,26 @@
         }
       },
       {
+        "generated": "alloy.sig.C_41_3",
+        "sortedRuleIndex": 41,
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[3]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_41_4",
+        "sortedRuleIndex": 41,
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[4]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
         "generated": "alloy.sig.R_DSPEC_MARKDOWN_REVIEW_ARTIFACT",
         "sortedRuleIndex": 42,
         "source": {
@@ -7418,6 +7438,24 @@
         }
       },
       {
+        "generated": "lean.checks.DSPEC_LEAN_EQ_SEMANTIC[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[3]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_LEAN_EQ_SEMANTIC[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[4]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
         "generated": "lean.clauseExprs.DSPEC_LEAN_EQ_SEMANTIC.must[0]",
         "source": {
           "field": "must",
@@ -7464,6 +7502,46 @@
           "index": 4,
           "kind": "clause",
           "path": "model.rules[17].must[4]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_LEAN_EQ_SEMANTIC.must[5]",
+        "source": {
+          "field": "must",
+          "index": 5,
+          "kind": "clause",
+          "path": "model.rules[17].must[5]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_LEAN_EQ_SEMANTIC.must[6]",
+        "source": {
+          "field": "must",
+          "index": 6,
+          "kind": "clause",
+          "path": "model.rules[17].must[6]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_LEAN_EQ_SEMANTIC.must[7]",
+        "source": {
+          "field": "must",
+          "index": 7,
+          "kind": "clause",
+          "path": "model.rules[17].must[7]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_LEAN_EQ_SEMANTIC.must[8]",
+        "source": {
+          "field": "must",
+          "index": 8,
+          "kind": "clause",
+          "path": "model.rules[17].must[8]",
           "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
         }
       },
@@ -17454,6 +17532,46 @@
         }
       },
       {
+        "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.must[5]",
+        "source": {
+          "field": "must",
+          "index": 5,
+          "kind": "clause",
+          "path": "model.rules[17].must[5]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.must[6]",
+        "source": {
+          "field": "must",
+          "index": 6,
+          "kind": "clause",
+          "path": "model.rules[17].must[6]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.must[7]",
+        "source": {
+          "field": "must",
+          "index": 7,
+          "kind": "clause",
+          "path": "model.rules[17].must[7]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.must[8]",
+        "source": {
+          "field": "must",
+          "index": 8,
+          "kind": "clause",
+          "path": "model.rules[17].must[8]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
         "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.checks[0]",
         "source": {
           "index": 0,
@@ -17477,6 +17595,24 @@
           "index": 2,
           "kind": "checkTarget",
           "path": "model.rules[17].checks[2]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.checks[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[3]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.checks[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[4]",
           "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
         }
       },
@@ -17540,6 +17676,24 @@
           "index": 6,
           "kind": "implementationRef",
           "path": "model.rules[17].implementedBy[6]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.implementedBy[7]",
+        "source": {
+          "index": 7,
+          "kind": "implementationRef",
+          "path": "model.rules[17].implementedBy[7]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-LEAN-EQ-SEMANTIC.implementedBy[8]",
+        "source": {
+          "index": 8,
+          "kind": "implementationRef",
+          "path": "model.rules[17].implementedBy[8]",
           "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
         }
       },
@@ -28809,6 +28963,46 @@
         }
       },
       {
+        "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.must[5]",
+        "source": {
+          "field": "must",
+          "index": 5,
+          "kind": "clause",
+          "path": "model.rules[17].must[5]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.must[6]",
+        "source": {
+          "field": "must",
+          "index": 6,
+          "kind": "clause",
+          "path": "model.rules[17].must[6]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.must[7]",
+        "source": {
+          "field": "must",
+          "index": 7,
+          "kind": "clause",
+          "path": "model.rules[17].must[7]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.must[8]",
+        "source": {
+          "field": "must",
+          "index": 8,
+          "kind": "clause",
+          "path": "model.rules[17].must[8]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
         "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.checks[0]",
         "source": {
           "index": 0,
@@ -28832,6 +29026,24 @@
           "index": 2,
           "kind": "checkTarget",
           "path": "model.rules[17].checks[2]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.checks[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[3]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.checks[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[4]",
           "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
         }
       },
@@ -28895,6 +29107,24 @@
           "index": 6,
           "kind": "implementationRef",
           "path": "model.rules[17].implementedBy[6]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.implementedBy[7]",
+        "source": {
+          "index": 7,
+          "kind": "implementationRef",
+          "path": "model.rules[17].implementedBy[7]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-LEAN-EQ-SEMANTIC.implementedBy[8]",
+        "source": {
+          "index": 8,
+          "kind": "implementationRef",
+          "path": "model.rules[17].implementedBy[8]",
           "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
         }
       },
@@ -38265,6 +38495,24 @@
         }
       },
       {
+        "generated": "tla.Checks[DSPEC-LEAN-EQ-SEMANTIC][3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[3]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-LEAN-EQ-SEMANTIC][4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[17].checks[4]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
         "generated": "tla.RuleClauses[DSPEC-LEAN-EQ-SEMANTIC].must[0]",
         "source": {
           "field": "must",
@@ -38311,6 +38559,46 @@
           "index": 4,
           "kind": "clause",
           "path": "model.rules[17].must[4]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-LEAN-EQ-SEMANTIC].must[5]",
+        "source": {
+          "field": "must",
+          "index": 5,
+          "kind": "clause",
+          "path": "model.rules[17].must[5]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-LEAN-EQ-SEMANTIC].must[6]",
+        "source": {
+          "field": "must",
+          "index": 6,
+          "kind": "clause",
+          "path": "model.rules[17].must[6]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-LEAN-EQ-SEMANTIC].must[7]",
+        "source": {
+          "field": "must",
+          "index": 7,
+          "kind": "clause",
+          "path": "model.rules[17].must[7]",
+          "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-LEAN-EQ-SEMANTIC].must[8]",
+        "source": {
+          "field": "must",
+          "index": 8,
+          "kind": "clause",
+          "path": "model.rules[17].must[8]",
           "ruleId": "DSPEC-LEAN-EQ-SEMANTIC"
         }
       },

@@ -7,11 +7,11 @@
 ## Review Summary
 
 - approvedRules: `69`
-- automatedCheckTargets: `299`
-- implementationRefs: `633`
+- automatedCheckTargets: `301`
+- implementationRefs: `635`
 - domainElements: `0`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=299, executed=4, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=301, executed=4, mutation-tested=1, bounded=0, proved=0`
 
 ## Vocabulary
 
@@ -1708,7 +1708,7 @@ JSON report の互換 fixture は CLI 出力と同期される
 
 ### DSPEC-LEAN-EQ-SEMANTIC
 
-Lean は単独の eq Clause を満足関係と clause 定理として検証する
+Lean は等価性 fragment の Clause を満足関係と clause 定理として検証する
 
 - kind: invariant
 - status: approved
@@ -1722,14 +1722,20 @@ Lean は単独の eq Clause を満足関係と clause 定理として検証す�
 - term: `concept.rule`
 - term: `concept.verification_target`
 - must: `ClauseEnv == String -> Option String`
-- must: `SatisfiesEq(env, eq(left, right)) == (resolve(env, left) == resolve(env, right))`
+- must: `Satisfies(env, eq(left, right)) == (resolve(env, left) == resolve(env, right))`
+- must: `Satisfies(env, neq(left, right)) == (resolve(env, left) != resolve(env, right))`
+- must: `Satisfies(env, not(child)) == not(Satisfies(env, child))`
+- must: `Satisfies(env, implies(left, right)) == (Satisfies(env, left) -> Satisfies(env, right))`
+- must: `semantic(lean, clause) iff operators(clause) subsetOf {eq, neq, not, implies}`
 - must: `proved(lean, selector) -> generatedClauseTheorem(selector)`
 - must: `clauseTheorem.failed -> evidence.create.failed`
 - must: `clauseArtifact.propertyIds intersects clauseBinding.generatedSelectors`
 - check: node test/cli.test.mjs#proves Lean eq clauses with clause-scoped evidence [reference, executed]
 - assuranceEvidence: executed -> Taskfile.pkl#test
 - check: node test/cli.test.mjs#keeps Lean eq semantic proofs load-bearing [reference]
-- check: node test/assurance-evidence-core.test.mjs#classifies only standalone Lean eq clauses as semantic [reference]
+- check: node test/cli.test.mjs#proves composed Lean implication clauses with clause-scoped evidence [reference]
+- check: node test/cli.test.mjs#keeps composed Lean implication proofs load-bearing [reference]
+- check: node test/assurance-evidence-core.test.mjs#classifies the supported Lean equality fragment as semantic [reference]
 - implementation: code src/core/assurance-evidence.mjs#CLAUSE_BACKEND_OPERATOR_SUPPORT
 - implementation: code src/cli.mjs#leanSemanticClauseProofs
 - implementation: code src/cli.mjs#emitLeanClauseTheorem
@@ -1737,18 +1743,24 @@ Lean は単独の eq Clause を満足関係と clause 定理として検証す�
 - implementation: code src/cli.mjs#assuranceEvidenceArtifactDefinitions
 - implementation: model fixtures/assurance-formal-lean-eq.pkl
 - implementation: model fixtures/assurance-formal-lean-eq-broken.pkl
+- implementation: model fixtures/assurance-formal-lean-implies.pkl
+- implementation: model fixtures/assurance-formal-lean-implies-broken.pkl
 
 #### Review
 
 - source: model.rules[17]
 - coverage: rule
-- automatedChecks: 3
-- implementationRefs: 7
+- automatedChecks: 5
+- implementationRefs: 9
 - selector: DSPEC-LEAN-EQ-SEMANTIC.must[0]
 - selector: DSPEC-LEAN-EQ-SEMANTIC.must[1]
 - selector: DSPEC-LEAN-EQ-SEMANTIC.must[2]
 - selector: DSPEC-LEAN-EQ-SEMANTIC.must[3]
 - selector: DSPEC-LEAN-EQ-SEMANTIC.must[4]
+- selector: DSPEC-LEAN-EQ-SEMANTIC.must[5]
+- selector: DSPEC-LEAN-EQ-SEMANTIC.must[6]
+- selector: DSPEC-LEAN-EQ-SEMANTIC.must[7]
+- selector: DSPEC-LEAN-EQ-SEMANTIC.must[8]
 
 ### DSPEC-MARKDOWN-REVIEW-ARTIFACT
 

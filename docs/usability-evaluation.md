@@ -124,10 +124,11 @@ It works today as:
 It is not yet enough as:
 
 - a general source of bounded or proved business-clause assurance; only a
-  standalone Lean `eq` currently has a semantic satisfaction theorem, and the
-  self model deliberately reports zero `bounded` and zero `proved` targets
+  Lean fragment composed from `eq`, `neq`, `not`, and `implies` currently has a
+  semantic satisfaction theorem, and the self model deliberately reports zero
+  `bounded` and zero `proved` targets
 - a semantic checker for the full meaning of `Clause.ast`; the applicability
-  matrix reports semantic support only for standalone Lean `eq`
+  matrix reports semantic support only for that Lean equality fragment
 - a proof-producing source generator for application implementation proofs;
   the Lean theorem currently proves the Clause proposition under `ClauseEnv`
 - a deep TLC/Alloy model-checking workflow with meaningful bounded scopes and

@@ -383,12 +383,14 @@ operator/backend pair is classified as:
 - `semantic`: the generated property checks the source Clause meaning.
 
 The current matrix classifies Alloy as `unmapped`, TLA+ as `textual`, and
-QuickCheck as `structural`. Lean is `semantic` only for a standalone `eq` and
-remains `structural` for the other operators. Lean resolves both operands
-through `ClauseEnv = String -> Option String`, emits a theorem for selected
-`must`/`mustNot` Clauses, and records the theorem as a clause-scoped artifact.
-All other backend smoke success remains generator-scoped and cannot satisfy
-`bounded` or `proved`.
+QuickCheck as `structural`. Lean is `semantic` for expression trees composed
+only from `eq`, `neq`, `not`, and `implies`, and remains `structural` when an
+`atom`, `and`, `or`, or quantifier occurs. Lean resolves equality operands
+through `ClauseEnv = String -> Option String`, recursively interprets negation
+and implication as propositions, emits a theorem for selected `must`/`mustNot`
+Clauses, and records the theorem as a clause-scoped artifact. All other backend
+smoke success remains generator-scoped and cannot satisfy `bounded` or
+`proved`.
 
 Semantic support means that the generated theorem checks the Clause AST
 proposition under the declared interpretation. It does not mean application
@@ -397,8 +399,8 @@ separate refinement or conformance relation.
 
 The likely next evolution is one of these:
 
-- compose Lean `eq` with boolean operators without weakening the satisfaction
-  relation
+- add semantic `and`/`or` once list-valued proposition recursion is modeled and
+  mutation-tested
 - connect a Clause interpretation to implementation inputs and outputs
 - expand the shared typed expression AST across the other backends
 - add backend-specific expression dialects with explicit projection rules

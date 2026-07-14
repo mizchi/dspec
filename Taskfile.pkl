@@ -301,9 +301,9 @@ local devshellTools: Task = new {
 
 local devshellFormal: Task = new {
   name = "devshell:formal"
-  description = "Require formal tools and verify clause-scoped Lean equality evidence inside the devShell"
+  description = "Require formal tools and verify clause-scoped Lean equality-fragment evidence inside the devShell"
   cmd =
-    "node src/cli.mjs verify-generated --require-formal-tools fixtures/typed-ast.pkl && node src/cli.mjs evidence create --require-formal-tools --executed-at 2026-07-15T00:00:00Z fixtures/typed-ast.pkl >/dev/null && node src/cli.mjs evidence create --require-formal-tools --executed-at 2026-07-15T00:00:00Z --output /tmp/dspec-assurance-formal-lean-eq.json fixtures/assurance-formal-lean-eq.pkl >/dev/null && node src/cli.mjs check fixtures/assurance-formal-lean-eq.pkl"
+    "node src/cli.mjs verify-generated --require-formal-tools fixtures/typed-ast.pkl && node src/cli.mjs evidence create --require-formal-tools --executed-at 2026-07-15T00:00:00Z fixtures/typed-ast.pkl >/dev/null && node src/cli.mjs evidence create --require-formal-tools --executed-at 2026-07-15T00:00:00Z --output /tmp/dspec-assurance-formal-lean-eq.json fixtures/assurance-formal-lean-eq.pkl >/dev/null && node src/cli.mjs check fixtures/assurance-formal-lean-eq.pkl && node src/cli.mjs evidence create --require-formal-tools --executed-at 2026-07-15T00:00:00Z --output /tmp/dspec-assurance-formal-lean-implies.json fixtures/assurance-formal-lean-implies.pkl >/dev/null && node src/cli.mjs check fixtures/assurance-formal-lean-implies.pkl"
   inputs = new {
     ...pklSources
     ...jsSources

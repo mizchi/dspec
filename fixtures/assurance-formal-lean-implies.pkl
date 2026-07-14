@@ -1,0 +1,72 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-formal-lean-implies"
+  name = d.text("Lean implication formal assurance", "Lean implication formal assurance")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.balance", "quantity", "残高", "Balance")
+    d.term("concept.account", "entity", "口座", "Account")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-FORMAL-LEAN-IMPLIES"
+      kind = "invariant"
+      text = d.text("同じ等式は自身を含意する", "An equality implies itself")
+      terms {
+        "concept.balance"
+        "concept.account"
+      }
+      must {
+        new d.Clause {
+          expr = "(balance == account) -> (balance == account)"
+          ast = new d.ExprAst {
+            op = "implies"
+            children {
+              new d.ExprAst {
+                op = "eq"
+                args {
+                  "balance"
+                  "account"
+                }
+              }
+              new d.ExprAst {
+                op = "eq"
+                args {
+                  "balance"
+                  "account"
+                }
+              }
+            }
+          }
+        }
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "reference"
+        "proved"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "lean"
+          ref = "generated:lean#clause_ASSURANCE_FORMAL_LEAN_IMPLIES_must_0"
+          covers {
+            "must[0]"
+          }
+          assurances {
+            "reference"
+            "proved"
+          }
+          assuranceEvidence {
+            ["proved"] = "/tmp/dspec-assurance-formal-lean-implies.json"
+          }
+        }
+      }
+    }
+  }
+}

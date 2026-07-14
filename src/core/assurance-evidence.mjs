@@ -9,6 +9,9 @@ export const CLAUSE_BACKEND_OPERATOR_SUPPORT = Object.freeze({
   lean: Object.freeze({
     ...Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "structural"])),
     eq: "semantic",
+    implies: "semantic",
+    neq: "semantic",
+    not: "semantic",
   }),
   quickcheck: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "structural"]))),
   tla: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "textual"]))),

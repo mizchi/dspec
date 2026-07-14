@@ -367,11 +367,12 @@ It models the current implementation boundary:
   `evidence verify` rejects stale model/artifact/tool/result/binding data, while
   `evidence refresh` re-executes and replaces the manifest.
 - Clause/backend applicability is recorded per AST operator as `unmapped`,
-  `textual`, `structural`, or `semantic`. Lean has one semantic path for a
-  standalone `eq` Clause: it generates a satisfaction theorem and a
-  clause-scoped artifact, so a passing manifest can authorize `proved` for that
-  selector. Other Lean operators remain structural, TLA+ remains textual, and
-  Alloy remains unmapped.
+  `textual`, `structural`, or `semantic`. Lean has a semantic path for Clauses
+  composed only from `eq`, `neq`, `not`, and `implies`: it generates a
+  satisfaction theorem and a clause-scoped artifact, so a passing manifest can
+  authorize `proved` for that selector. Lean `atom`, `and`, `or`, and quantifier
+  operators remain structural, TLA+ remains textual, and Alloy remains
+  unmapped.
 - `generated/dspec.md` is the checked-in Markdown review artifact generated
   from `examples/dspec.pkl`; each rule includes review metadata such as source
   path, coverage mode, clause selectors, checks, and implementation refs. The
@@ -460,10 +461,11 @@ clause-scoped artifact. File or theorem anchors alone are rejected.
 The pure manifest/digest/support helpers are exported from `@mizchi/dspec` and
 `@mizchi/dspec/assurance-evidence` for non-CLI integrations.
 
-The first semantic implementation is deliberately narrow. Generated Lean
-defines a partial `ClauseEnv`, resolves both operands of a standalone `eq`, and
-proves the selected `must` Clause for every environment. `eq(x, x)` succeeds;
-`eq(x, y)` does not produce evidence without an actual proof. This proves the
+The semantic implementation is deliberately narrow. Generated Lean defines a
+partial `ClauseEnv`, resolves `eq`/`neq` operands, recursively interprets `not`
+and `implies`, and proves the selected `must` Clause for every environment.
+`eq(x, x)` and `eq(x, y) -> eq(x, y)` succeed; an arbitrary non-reflexive
+conclusion does not produce evidence without an actual proof. This proves the
 Clause proposition, not the behavior of application code.
 
 `patterns.db` is the first domain pattern. It separates DB structure from

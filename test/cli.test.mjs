@@ -4039,7 +4039,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 955);
+    assert.equal(report.references, 959);
     assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
     assert.deepEqual(report.errors, []);
   });
@@ -4392,7 +4392,57 @@ profile: d.AppProfile = new {
 
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /generated verification failed:/);
-    assert.match(result.stderr, /Tactic `rfl` failed/);
+    assert.match(result.stderr, /unsolved goals/);
+  });
+
+  it("proves composed Lean implication clauses with clause-scoped evidence", () => {
+    const manifestPath = "/tmp/dspec-assurance-formal-lean-implies.json";
+    try {
+      rmSync(manifestPath, { force: true });
+      const created = run([
+        "evidence",
+        "create",
+        "--json",
+        "--executed-at",
+        "2026-07-15T00:00:00Z",
+        "--output",
+        manifestPath,
+        "fixtures/assurance-formal-lean-implies.pkl",
+      ]);
+
+      assert.equal(created.status, 0, created.stderr);
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      const selector = "lean.theorem.clause_ASSURANCE_FORMAL_LEAN_IMPLIES_must_0";
+      const binding = manifest.clauseBindings.find(
+        (entry) => entry.ruleId === "ASSURANCE-FORMAL-LEAN-IMPLIES" && entry.selector === "must[0]",
+      );
+      assert.deepEqual(binding.operators, ["eq", "implies"]);
+      const lean = binding.backends.find((entry) => entry.backend === "lean");
+      assert.equal(lean.support, "semantic");
+      assert.ok(lean.generatedSelectors.includes(selector));
+      assert.ok(manifest.artifacts.some(
+        (entry) => entry.scope === "clause" && entry.propertyIds.includes(selector) && entry.result === "pass",
+      ));
+
+      const checked = run(["check", "fixtures/assurance-formal-lean-implies.pkl"]);
+      assert.equal(checked.status, 0, checked.stderr);
+    } finally {
+      rmSync(manifestPath, { force: true });
+    }
+  });
+
+  it("keeps composed Lean implication proofs load-bearing", () => {
+    const result = run([
+      "evidence",
+      "create",
+      "--executed-at",
+      "2026-07-15T00:00:00Z",
+      "fixtures/assurance-formal-lean-implies-broken.pkl",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /generated verification failed:/);
+    assert.match(result.stderr, /unsolved goals/);
   });
 
   it("rejects legacy references as formal assurance evidence", () => {

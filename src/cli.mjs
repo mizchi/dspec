@@ -6761,11 +6761,11 @@ function ruleClauseExprs(rule) {
 }
 
 function emitLeanClauseTheorem(proof) {
-  const satisfaction = `SatisfiesEq env (${exprToLean(proof.clause.ast, proof.clause.expr)})`;
+  const satisfaction = `Satisfies env (${exprToLean(proof.clause.ast, proof.clause.expr)})`;
   const proposition = proof.field === "mustNot" ? `¬ ${satisfaction}` : satisfaction;
   return `theorem ${proof.theorem} : ∀ env : ClauseEnv, ${proposition} := by
   intro env
-  rfl`;
+  simp [Satisfies]`;
 }
 
 function modelSource() {
@@ -11200,8 +11200,11 @@ abbrev ClauseEnv := String -> Option String
 def resolveClauseValue (env : ClauseEnv) (name : String) : String :=
   (env name).getD name
 
-def SatisfiesEq (env : ClauseEnv) : Expr -> Prop
+def Satisfies (env : ClauseEnv) : Expr -> Prop
   | .eq left right => resolveClauseValue env left = resolveClauseValue env right
+  | .neq left right => resolveClauseValue env left ≠ resolveClauseValue env right
+  | .not child => ¬ Satisfies env child
+  | .impl left right => Satisfies env left -> Satisfies env right
   | _ => False
 
 inductive RuleId where

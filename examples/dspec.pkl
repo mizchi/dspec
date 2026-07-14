@@ -1520,8 +1520,8 @@ model: d.Model = new {
       kind = "invariant"
       text =
         text(
-          "Lean は単独の eq Clause を満足関係と clause 定理として検証する",
-          "Lean verifies standalone eq Clauses through a satisfaction relation and clause theorem",
+          "Lean は等価性 fragment の Clause を満足関係と clause 定理として検証する",
+          "Lean verifies equality-fragment Clauses through a satisfaction relation and clause theorem",
         )
       terms {
         "artifact.assurance_evidence_manifest"
@@ -1539,9 +1539,29 @@ model: d.Model = new {
           "Lean ClauseEnv is a partial environment that preserves unbound names",
         )
         d.clause(
-          "SatisfiesEq(env, eq(left, right)) == (resolve(env, left) == resolve(env, right))",
-          "SatisfiesEq は eq の左右を ClauseEnv で解決して等価性を判定する",
-          "SatisfiesEq resolves both eq operands through ClauseEnv and compares them",
+          "Satisfies(env, eq(left, right)) == (resolve(env, left) == resolve(env, right))",
+          "Satisfies は eq の左右を ClauseEnv で解決して等価性を判定する",
+          "Satisfies resolves both eq operands through ClauseEnv and compares them",
+        )
+        d.clause(
+          "Satisfies(env, neq(left, right)) == (resolve(env, left) != resolve(env, right))",
+          "Satisfies は neq の左右を ClauseEnv で解決して不等価性を判定する",
+          "Satisfies resolves both neq operands through ClauseEnv and compares them for inequality",
+        )
+        d.clause(
+          "Satisfies(env, not(child)) == not(Satisfies(env, child))",
+          "Satisfies は not を子 Clause の命題否定として解釈する",
+          "Satisfies interprets not as proposition negation of the child Clause",
+        )
+        d.clause(
+          "Satisfies(env, implies(left, right)) == (Satisfies(env, left) -> Satisfies(env, right))",
+          "Satisfies は implies を左右の Clause 命題間の含意として解釈する",
+          "Satisfies interprets implies as implication between the left and right Clause propositions",
+        )
+        d.clause(
+          "semantic(lean, clause) iff operators(clause) subsetOf {eq, neq, not, implies}",
+          "Lean は eq/neq/not/implies のみで構成された Clause を semantic と分類する",
+          "Lean classifies a Clause as semantic only when it is composed of eq, neq, not, and implies",
         )
         d.clause(
           "proved(lean, selector) -> generatedClauseTheorem(selector)",
@@ -1575,7 +1595,9 @@ model: d.Model = new {
           }
         }
         d.nodeCheck("test/cli.test.mjs#keeps Lean eq semantic proofs load-bearing")
-        d.nodeCheck("test/assurance-evidence-core.test.mjs#classifies only standalone Lean eq clauses as semantic")
+        d.nodeCheck("test/cli.test.mjs#proves composed Lean implication clauses with clause-scoped evidence")
+        d.nodeCheck("test/cli.test.mjs#keeps composed Lean implication proofs load-bearing")
+        d.nodeCheck("test/assurance-evidence-core.test.mjs#classifies the supported Lean equality fragment as semantic")
       }
       implementedBy {
         d.codeRef("src/core/assurance-evidence.mjs", "CLAUSE_BACKEND_OPERATOR_SUPPORT")
@@ -1585,6 +1607,8 @@ model: d.Model = new {
         d.codeRef("src/cli.mjs", "assuranceEvidenceArtifactDefinitions")
         d.modelRef("fixtures/assurance-formal-lean-eq.pkl")
         d.modelRef("fixtures/assurance-formal-lean-eq-broken.pkl")
+        d.modelRef("fixtures/assurance-formal-lean-implies.pkl")
+        d.modelRef("fixtures/assurance-formal-lean-implies-broken.pkl")
       }
     }
 
