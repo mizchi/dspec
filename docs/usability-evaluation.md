@@ -99,7 +99,8 @@ It works today as:
 - a JSON verification report from `dspec verify-generated --json`
 - a load-bearing negative fixture proving generated backend checks fail when
   an approved rule lacks support
-- a checked-in Markdown review artifact at `generated/dspec.md`
+- checked-in Japanese and English Markdown review artifacts under
+  `generated/examples/`
 - a checked-in source-map artifact at `generated/source-map.json` that maps
   generated selectors back to `Rule`, `Clause`, and `CheckTarget` source paths
 - a checked-in generated manifest at `generated/manifest.json` that records

@@ -373,9 +373,10 @@ It models the current implementation boundary:
   authorize `proved` for that selector. Lean `atom`, `and`, `or`, and quantifier
   operators remain structural, TLA+ remains textual, and Alloy remains
   unmapped.
-- `generated/dspec.md` is the checked-in Markdown review artifact generated
-  from `examples/dspec.pkl`; each rule includes review metadata such as source
-  path, coverage mode, clause selectors, checks, and implementation refs. The
+- `generated/examples/ja/dspec.md` and `generated/examples/en/dspec.md` are the
+  checked-in localized Markdown review artifacts generated from
+  `examples/dspec.pkl`; each rule includes review metadata such as source path,
+  coverage mode, clause selectors, checks, and implementation refs. The
   top-level review summary records approved-rule, automated-check,
   implementation-ref, domain-element, and runtime-evidence counts.
 - `generated/source-map.json` maps generated selectors back to source `Rule`,
@@ -630,7 +631,7 @@ does not see globally:
   `fixtures/release-model-broken.pkl`
 - generated Runtime safety and evidence checks are load-bearing against
   `fixtures/runtime-model-broken.pkl`
-- generated Markdown review artifact drift via `generated/dspec.md`
+- localized generated Markdown review artifact drift under `generated/examples/`
 - generated source-map artifact drift via `generated/source-map.json`
 - JSON verification report shape via `dspec verify-generated --json`
 - counterexample normalization from generated backend failures to source

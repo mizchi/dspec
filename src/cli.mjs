@@ -13734,6 +13734,7 @@ export {
   checkSqlQueriesReport,
   domainCoverageReport,
   emitDbSchemaPkl,
+  emitMarkdown,
   importDbSchema,
   normalizeCounterexamples,
   topLevelCommandRegistry,

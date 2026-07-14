@@ -1,65 +1,65 @@
-# DSpec 自己仕様
+# DSpec self specification
 
 - model: `dspec-self`
 - version: `0.1.0`
-- locale: `ja`
+- locale: `en`
 
 ## Review Summary
 
 - approvedRules: `69`
-- automatedCheckTargets: `301`
-- implementationRefs: `635`
+- automatedCheckTargets: `302`
+- implementationRefs: `637`
 - domainElements: `0`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=301, executed=4, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=302, executed=4, mutation-tested=1, bounded=0, proved=0`
 
 ## Vocabulary
 
-- `actor.spec_author` (actor): 仕様を書く人
+- `actor.spec_author` (actor): spec author
 - `artifact.app_profile` (entity): application verification profile
 - `artifact.app_profile_scenario` (entity): application profile evaluation scenario
 - `artifact.app_profile_suite` (entity): application profile registry suite
-- `artifact.assurance_evidence_manifest` (entity): 保証証跡 manifest
+- `artifact.assurance_evidence_manifest` (entity): assurance evidence manifest
 - `artifact.authoring_shorthand` (action): authoring shorthand
 - `artifact.breaking_change_policy` (entity): breaking change policy
-- `artifact.checker` (action): 整合性チェック
+- `artifact.checker` (action): consistency check
 - `artifact.clause_coverage` (action): clause-level coverage
 - `artifact.cli` (entity): dspec CLI
 - `artifact.cloud_topology_pattern` (entity): Cloud topology pattern
 - `artifact.command_example` (entity): documented CLI command example
 - `artifact.command_registry` (entity): CLI command registry
 - `artifact.compat_report` (entity): spec compatibility report
-- `artifact.counterexample_normalizer` (action): 反例正規化
-- `artifact.coverage_oracle` (action): 仕様カバレッジ oracle
+- `artifact.counterexample_normalizer` (action): counterexample normalization
+- `artifact.coverage_oracle` (action): spec coverage oracle
 - `artifact.data_governance_pattern` (entity): Data governance pattern
 - `artifact.db_model_pattern` (entity): DB model pattern
 - `artifact.db_schema_importer` (action): DB schema importer
 - `artifact.dogfood_task` (action): dogfood evaluation task
 - `artifact.domain_coverage_oracle` (action): domain model coverage oracle
 - `artifact.domain_preset_pack` (entity): domain preset pack
-- `artifact.drift_detector` (action): 実装ドリフト検出
+- `artifact.drift_detector` (action): implementation drift detection
 - `artifact.drift_guard_evaluation` (action): false-positive and false-negative drift guard evaluation
 - `artifact.evidence_quality_summary` (entity): evidence quality and freshness summary
-- `artifact.failure_suggestion` (entity): 失敗時の次アクション
-- `artifact.formal_backend` (entity): 形式手法 backend 形式
+- `artifact.failure_suggestion` (entity): failure suggestion
+- `artifact.formal_backend` (entity): formal-method backend format
 - `artifact.generated_manifest` (entity): generated artifact manifest
-- `artifact.generator` (action): 決定的生成器
+- `artifact.generator` (action): deterministic generator
 - `artifact.i18n_contract` (entity): i18n semantic contract
 - `artifact.impact_report` (entity): spec diff impact report
 - `artifact.json_report` (entity): JSON report
-- `artifact.markdown` (entity): Markdown 仕様文書
+- `artifact.markdown` (entity): Markdown specification document
 - `artifact.nix_dev_shell` (entity): Nix devShell
 - `artifact.observed_app_facts` (entity): observed application facts
 - `artifact.package_release` (action): npm package release
-- `artifact.pkl_model` (entity): Pkl 仕様モデル
+- `artifact.pkl_model` (entity): Pkl spec model
 - `artifact.profile_scaffold` (action): app profile authoring scaffold
 - `artifact.profile_scaffold_diff` (action): app profile scaffold drift diff
-- `artifact.quickcheck` (entity): QuickCheck 形式の性質テスト
+- `artifact.quickcheck` (entity): QuickCheck-style property test
 - `artifact.real_app_importer` (action): real application artifact importer
 - `artifact.real_app_model` (entity): real application dogfood model
 - `artifact.reconciliation_oracle` (action): spec-to-artifact reconciliation oracle
 - `artifact.release_safety_pattern` (entity): Release safety pattern
-- `artifact.renderer` (action): 自然言語レンダリング
+- `artifact.renderer` (action): natural-language rendering
 - `artifact.report_fixture` (entity): JSON report compatibility fixture
 - `artifact.reverse_coverage_oracle` (action): observed-to-spec reverse coverage oracle
 - `artifact.runtime_collector_fixture` (entity): Runtime collector fixture
@@ -70,14 +70,14 @@
 - `artifact.runtime_evidence_verifier` (action): Runtime evidence verifier
 - `artifact.runtime_safety_pattern` (entity): Runtime safety pattern
 - `artifact.schema` (entity): dspec schema
-- `artifact.source_map` (entity): 生成 source map
+- `artifact.source_map` (entity): generated source map
 - `artifact.spec_change_review` (entity): spec change review
 - `artifact.spec_change_review_scaffold` (action): spec change review scaffold
 - `artifact.spec_reading_eval` (entity): spec reading evaluation set
 - `artifact.sql_query_oracle` (action): SQL query oracle
 - `backend.pkl` (entity): Pkl evaluator
 - `backend.pkl_mbt` (entity): mizchi/pkl-mbt
-- `concept.clause_backend_support` (value): Clause/backend 対応水準
+- `concept.clause_backend_support` (value): Clause/backend support level
 - `concept.clause_expr` (value): Clause.expr
 - `concept.cloud_flow` (relation): Cloud flow
 - `concept.cloud_node` (entity): Cloud node
@@ -93,15 +93,15 @@
 - `concept.db_migration` (action): DB migration
 - `concept.db_transaction` (action): DB transaction
 - `concept.expr_ast` (value): Clause.ast expression AST
-- `concept.inferon` (entity): inferon 的な仕様 claim
-- `concept.localized_text` (value): 多言語テキスト
+- `concept.inferon` (entity): inferon-like spec claim
+- `concept.localized_text` (value): localized text
 - `concept.release_environment` (state): Release environment
 - `concept.release_gate` (relation): Release gate
 - `concept.release_migration` (action): Release migration
 - `concept.release_rollback` (action): Release rollback
 - `concept.release_service` (entity): Release service
 - `concept.release_step` (action): Release step
-- `concept.rule` (entity): 仕様ルール
+- `concept.rule` (entity): spec rule
 - `concept.runtime_alert` (action): Runtime alert
 - `concept.runtime_alert_policy` (relation): Runtime alert policy
 - `concept.runtime_dependency` (relation): Runtime dependency
@@ -114,16 +114,16 @@
 - `concept.runtime_signal` (relation): Runtime signal
 - `concept.runtime_slo` (relation): Runtime SLO
 - `concept.runtime_telemetry` (relation): Runtime telemetry
-- `concept.stable_id` (value): 安定 ID
-- `concept.support` (relation): support 関係
-- `concept.term` (entity): 語彙 term
-- `concept.verification_target` (relation): 検証ターゲット
+- `concept.stable_id` (value): stable id
+- `concept.support` (relation): support relation
+- `concept.term` (entity): vocabulary term
+- `concept.verification_target` (relation): verification target
 
 ## Rules
 
 ### DSPEC-APP-PROFILE
 
-app profile は real app dogfood の検証 gate を型付き Pkl 設定として束ねる
+App profiles bundle real-app dogfood verification gates as typed Pkl configuration
 
 - kind: obligation
 - status: approved
@@ -359,7 +359,7 @@ app profile は real app dogfood の検証 gate を型付き Pkl 設定として
 
 ### DSPEC-ASSURANCE-EVIDENCE-MANIFEST
 
-形式保証は実行結果と Clause/backend 対応を束縛した manifest によって検証する
+Formal assurance is verified by a manifest binding execution results to Clause/backend support
 
 - kind: invariant
 - status: approved
@@ -410,7 +410,7 @@ app profile は real app dogfood の検証 gate を型付き Pkl 設定として
 
 ### DSPEC-AUTHORING-SHORTHAND
 
-schema はよく使う spec 要素の authoring shorthand を提供する
+The schema provides authoring shorthand for common spec elements
 
 - kind: obligation
 - status: approved
@@ -437,7 +437,7 @@ schema はよく使う spec 要素の authoring shorthand を提供する
 
 ### DSPEC-BACKEND-REPORT-COMPAT-FIXTURES
 
-backend verification と反例正規化 report の互換 fixture は安定 projection と同期される
+Backend verification and counterexample normalization report fixtures stay synchronized with stable projections
 
 - kind: obligation
 - status: approved
@@ -471,7 +471,7 @@ backend verification と反例正規化 report の互換 fixture は安定 proje
 
 ### DSPEC-CHECK-APPROVED-VERIFIED
 
-approved な有効ルールは検証先または実装先を持つ
+Approved active rules have a verification or implementation target
 
 - kind: invariant
 - status: approved
@@ -496,7 +496,7 @@ approved な有効ルールは検証先または実装先を持つ
 
 ### DSPEC-CHECK-ASSURANCE
 
-CheckTarget は保証の種類と証拠を明示し、coverage は必要な保証を検査する
+CheckTargets declare assurance kinds and evidence, and coverage checks required assurances
 
 - kind: invariant
 - status: approved
@@ -555,7 +555,7 @@ CheckTarget は保証の種類と証拠を明示し、coverage は必要な保�
 
 ### DSPEC-CHECK-CONTRADICTION
 
-同一ルール内で同じ clause identity を must と mustNot の両方に置かない
+The same clause identity is not allowed in both must and mustNot within one rule
 
 - kind: prohibition
 - status: approved
@@ -583,7 +583,7 @@ CheckTarget は保証の種類と証拠を明示し、coverage は必要な保�
 
 ### DSPEC-CHECK-DRIFT-COVERAGE-JSON
 
-check/drift/coverage/domain-coverage/reconcile/reverse/app-profile は機械可読な JSON report を出力できる
+check, drift, coverage, domain-coverage, reconcile, reverse, and app-profile gates can emit machine-readable JSON reports
 
 - kind: obligation
 - status: approved
@@ -631,7 +631,7 @@ check/drift/coverage/domain-coverage/reconcile/reverse/app-profile は機械可�
 
 ### DSPEC-CHECK-DUPLICATES
 
-同一モデル内の term/rule/decision ID 重複は受理しない
+Duplicate term, rule, or decision ids are rejected within one model
 
 - kind: prohibition
 - status: approved
@@ -653,7 +653,7 @@ check/drift/coverage/domain-coverage/reconcile/reverse/app-profile は機械可�
 
 ### DSPEC-CHECK-REFERENCES
 
-ルールが参照する term と exception は同一モデル内で解決できる
+Terms and exceptions referenced by rules resolve within the same model
 
 - kind: invariant
 - status: approved
@@ -678,7 +678,7 @@ check/drift/coverage/domain-coverage/reconcile/reverse/app-profile は機械可�
 
 ### DSPEC-CLOUD-TOPOLOGY-PATTERN
 
-Cloud topology は typed pattern として記述され、境界・policy・tenant・idempotency を backend に投影する
+Cloud topology is authored as a typed pattern and projects boundary, policy, tenant, and idempotency checks to backends
 
 - kind: obligation
 - status: approved
@@ -722,7 +722,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 
 ### DSPEC-COUNTEREXAMPLE-NORMALIZED
 
-生成 backend の失敗は source map 経由で仕様要素へ正規化される
+Generated backend failures are normalized back to source spec elements through source maps
 
 - kind: obligation
 - status: approved
@@ -753,7 +753,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 
 ### DSPEC-COVERAGE-APPROVED-CHECKED
 
-approved な有効ルールは自動検証ターゲットを持つ
+Approved active rules have automated check targets
 
 - kind: invariant
 - status: approved
@@ -780,7 +780,7 @@ approved な有効ルールは自動検証ターゲットを持つ
 
 ### DSPEC-COVERAGE-CLAUSE-QUALITY
 
-clause-level coverage を要求する rule は各 clause を支える CheckTarget.covers を持つ
+Rules requiring clause-level coverage have CheckTarget.covers entries for every clause
 
 - kind: invariant
 - status: approved
@@ -820,7 +820,7 @@ clause-level coverage を要求する rule は各 clause を支える CheckTarge
 
 ### DSPEC-DATA-GOVERNANCE-PATTERN
 
-Data governance は typed pattern として記述され、暗号化・削除対応・越境根拠・保持期限を backend に投影する
+Data governance is authored as a typed pattern and projects encryption, deletion support, transfer-basis, and retention checks to backends
 
 - kind: obligation
 - status: approved
@@ -865,7 +865,7 @@ Data governance は typed pattern として記述され、暗号化・削除対�
 
 ### DSPEC-DB-MIGRATION-MAPPING-COVERAGE
 
-DB migration の preserve 宣言は mapping witness で cover される
+DB migration preservation declarations are covered by mapping witnesses
 
 - kind: obligation
 - status: approved
@@ -897,7 +897,7 @@ DB migration の preserve 宣言は mapping witness で cover される
 
 ### DSPEC-DB-MIGRATION-MAPPING-WELL-FORMED
 
-DB migration mapping は preserve scope と from/to table に接地している
+DB migration mappings are grounded in the preserve scope and source/target tables
 
 - kind: obligation
 - status: approved
@@ -932,7 +932,7 @@ DB migration mapping は preserve scope と from/to table に接地している
 
 ### DSPEC-DB-MIGRATION-PATTERN
 
-DB migration は typed pattern として記述され、preserve 宣言を backend に投影する
+DB migrations are authored as a typed pattern and project preservation declarations to backends
 
 - kind: obligation
 - status: approved
@@ -964,7 +964,7 @@ DB migration は typed pattern として記述され、preserve 宣言を backen
 
 ### DSPEC-DB-MODEL-PATTERN
 
-DB schema、transaction、invariant は typed pattern として記述され、backend に投影される
+DB schemas, transactions, and invariants are authored as a typed pattern and projected to backends
 
 - kind: obligation
 - status: approved
@@ -994,7 +994,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 
 ### DSPEC-DB-SCHEMA-IMPORTER
 
-既存 SQL schema は typed DB model seed として決定的に import できる
+Existing SQL schemas are imported deterministically as typed DB model seeds
 
 - kind: obligation
 - status: approved
@@ -1019,7 +1019,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 
 ### DSPEC-DOCUMENTED-CLI-EXAMPLES
 
-README/docs/Taskfile の CLI 例は公開 CLI surface に接地する
+CLI examples in README/docs/Taskfile are grounded in the public CLI surface
 
 - kind: obligation
 - status: approved
@@ -1068,7 +1068,7 @@ README/docs/Taskfile の CLI 例は公開 CLI surface に接地する
 
 ### DSPEC-DOGFOOD-TASK
 
-dogfood task は self spec、Runtime observation loop、実アプリ model の評価を再実行する
+The dogfood task reruns self-spec, Runtime observation loop, and real app model evaluation
 
 - kind: obligation
 - status: approved
@@ -1105,7 +1105,7 @@ dogfood task は self spec、Runtime observation loop、実アプリ model の�
 
 ### DSPEC-DOMAIN-COVERAGE-ORACLE
 
-domain pattern の各要素は approved rule の安定 ID に接地する
+Domain pattern elements are grounded in approved rules through stable ids
 
 - kind: invariant
 - status: approved
@@ -1140,7 +1140,7 @@ domain pattern の各要素は approved rule の安定 ID に接地する
 
 ### DSPEC-DOMAIN-PRESET-PACK
 
-domain preset pack は Core IR に展開される authoring layer として提供される
+Domain preset packs are provided as authoring layers that expand to the Core IR
 
 - kind: obligation
 - status: approved
@@ -1186,7 +1186,7 @@ domain preset pack は Core IR に展開される authoring layer として提�
 
 ### DSPEC-DRIFT-CHECK-TARGET
 
-CheckTarget は機械的に解決できる参照を持つ
+CheckTarget entries point to mechanically resolvable references
 
 - kind: invariant
 - status: approved
@@ -1220,7 +1220,7 @@ CheckTarget は機械的に解決できる参照を持つ
 
 ### DSPEC-DRIFT-IMPLEMENTATION-REF
 
-implementedBy の path と symbol は実装内で解決できる
+implementedBy path and symbol references resolve in the implementation
 
 - kind: invariant
 - status: approved
@@ -1244,7 +1244,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 ### DSPEC-EMIT-FORMAL-BACKENDS
 
-仕様モデルから形式手法 backend 用の骨格を決定的に生成する
+Formal-method backend skeletons are generated deterministically from the spec model
 
 - kind: obligation
 - status: approved
@@ -1267,7 +1267,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 ### DSPEC-EMIT-MARKDOWN
 
-仕様モデルから人間が読める Markdown を決定的に生成する
+A human-readable Markdown document is generated deterministically from the spec model
 
 - kind: obligation
 - status: approved
@@ -1290,7 +1290,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 ### DSPEC-EMIT-QUICKCHECK
 
-仕様モデルから generator と shrink を持つ QuickCheck 形式を決定的に生成する
+A QuickCheck-style format with generators and shrinkers is generated deterministically from the spec model
 
 - kind: obligation
 - status: approved
@@ -1313,7 +1313,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 ### DSPEC-EXPR-AST-PROJECTION
 
-生成器は Clause.ast を QuickCheck/TLA+/Lean の投影へ決定的に保存する
+Generators deterministically preserve Clause.ast in QuickCheck, TLA+, and Lean projections
 
 - kind: obligation
 - status: approved
@@ -1339,7 +1339,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 ### DSPEC-EXPR-OPAQUE
 
-現段階の Clause.expr は typed AST ではなく opaque string として扱う
+Clause.expr is currently treated as an opaque string, not a typed AST
 
 - kind: non_goal
 - status: approved
@@ -1360,7 +1360,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 ### DSPEC-EXPR-TYPED-AST
 
-Clause.ast は operator ごとの意味論を持つ型付き式 AST として検証される
+Clause.ast is validated as a typed expression AST with per-operator semantics
 
 - kind: invariant
 - status: approved
@@ -1397,7 +1397,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 ### DSPEC-GENERATED-ALLOY-SYNTAX
 
-生成された Alloy 仕様は構文形状を検証され、alloy6 があれば analyzer でも実行される
+Generated Alloy specifications have their syntax shape checked and are executed by the analyzer when alloy6 is available
 
 - kind: obligation
 - status: approved
@@ -1425,7 +1425,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 ### DSPEC-GENERATED-ARTIFACT-FRESHNESS
 
-生成 artifact manifest は主要 generator 出力の freshness hash を持つ
+The generated artifact manifest carries freshness hashes for primary generator outputs
 
 - kind: obligation
 - status: approved
@@ -1458,7 +1458,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 ### DSPEC-GENERATED-CHECKS-LOAD-BEARING
 
-生成された backend check は support のない approved rule で失敗する
+Generated backend checks fail for approved rules without support
 
 - kind: invariant
 - status: approved
@@ -1482,7 +1482,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 ### DSPEC-GENERATED-LEAN-COMPILES
 
-生成された Lean 仕様は CI gate としてコンパイルされる
+Generated Lean specifications are compiled as a CI gate
 
 - kind: obligation
 - status: approved
@@ -1506,7 +1506,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 ### DSPEC-GENERATED-QUICKCHECK-RUNS
 
-生成された QuickCheck 形式の JS は CI gate として実行される
+Generated QuickCheck-style JS is executed as a CI gate
 
 - kind: obligation
 - status: approved
@@ -1530,7 +1530,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 ### DSPEC-GENERATED-TLA-SYNTAX
 
-生成された TLA+ 仕様は構文形状を検証され、tlasany/tlc があれば SANY と TLC でも検査される
+Generated TLA+ specifications have their syntax shape checked and are checked by SANY and TLC when tlasany/tlc are available
 
 - kind: obligation
 - status: approved
@@ -1563,7 +1563,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 ### DSPEC-I18N-RENDER
 
-render は指定 locale の自然言語表示を生成する
+render produces natural-language output for the requested locale
 
 - kind: obligation
 - status: approved
@@ -1587,7 +1587,7 @@ render は指定 locale の自然言語表示を生成する
 
 ### DSPEC-I18N-SEMANTIC-DRIFT
 
-i18n contract は必須 locale と glossary の意味ドリフトを検出する
+The i18n contract detects semantic drift across required locales and glossary labels
 
 - kind: invariant
 - status: approved
@@ -1620,7 +1620,7 @@ i18n contract は必須 locale と glossary の意味ドリフトを検出する
 
 ### DSPEC-JSON-REPORT-COMPAT-FIXTURES
 
-JSON report の互換 fixture は CLI 出力と同期される
+JSON report compatibility fixtures stay synchronized with CLI output
 
 - kind: obligation
 - status: approved
@@ -1708,7 +1708,7 @@ JSON report の互換 fixture は CLI 出力と同期される
 
 ### DSPEC-LEAN-EQ-SEMANTIC
 
-Lean は等価性 fragment の Clause を満足関係と clause 定理として検証する
+Lean verifies equality-fragment Clauses through a satisfaction relation and clause theorem
 
 - kind: invariant
 - status: approved
@@ -1764,7 +1764,7 @@ Lean は等価性 fragment の Clause を満足関係と clause 定理として�
 
 ### DSPEC-MARKDOWN-REVIEW-ARTIFACT
 
-Markdown review artifact は仕様モデルから決定的に再生成できる
+The Markdown review artifact for each locale is deterministically regenerated from the spec model
 
 - kind: obligation
 - status: approved
@@ -1772,28 +1772,31 @@ Markdown review artifact は仕様モデルから決定的に再生成できる
 - requiredAssurances: reference
 - term: `artifact.generator`
 - term: `artifact.markdown`
-- must: `generated/dspec.md == emit(markdown, examples/dspec.pkl)`
+- must: `for locale in examples/dspec.pkl.locales: generated/examples/{locale}/dspec.md == emit(markdown, locale, examples/dspec.pkl)`
 - must: `emit(markdown).rules.include(source, coverage, selectors, checks, implementations)`
 - must: `emit(markdown).reviewSummary.includes(approvedRules + automatedChecks + implementationRefs + domainElements + runtimeEvidenceRecords)`
-- check: node test/cli.test.mjs#keeps generated markdown review artifact in sync [reference]
+- check: node test/cli.test.mjs#keeps localized generated markdown review artifacts in sync [reference]
+- check: node test/cli.test.mjs#generates markdown for every declared dspec locale [reference]
 - check: node test/cli.test.mjs#emits deterministic markdown [reference]
 - implementation: code src/cli.mjs#emitMarkdown
 - implementation: code src/cli.mjs#markdownReviewSummary
-- implementation: doc generated/dspec.md
+- implementation: code scripts/generate-localized-markdown.mjs#generateLocalizedMarkdown
+- implementation: doc generated/examples/ja/dspec.md
+- implementation: doc generated/examples/en/dspec.md
 
 #### Review
 
 - source: model.rules[62]
 - coverage: rule
-- automatedChecks: 2
-- implementationRefs: 3
+- automatedChecks: 3
+- implementationRefs: 5
 - selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[0]
 - selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[1]
 - selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[2]
 
 ### DSPEC-MBT-BOUNDARY
 
-将来の pkl-mbt 実装は schema と fixture を維持したまま checker 境界を置き換える
+A future pkl-mbt implementation replaces the checker boundary while preserving schema and fixtures
 
 - kind: transition
 - status: review
@@ -1817,7 +1820,7 @@ Markdown review artifact は仕様モデルから決定的に再生成できる
 
 ### DSPEC-NIX-CI-GATE
 
-CI は portable fast gate と Nix formal gate を並列実行する
+CI runs portable fast and Nix formal gates in parallel
 
 - kind: obligation
 - status: approved
@@ -1845,7 +1848,7 @@ CI は portable fast gate と Nix formal gate を並列実行する
 
 ### DSPEC-NIX-FORMAL-TOOLS
 
-Nix devShell は dspec 実行基盤と形式 backend ツールを提供する
+The Nix devShell provides dspec runtime and formal backend tools
 
 - kind: obligation
 - status: approved
@@ -1877,7 +1880,7 @@ Nix devShell は dspec 実行基盤と形式 backend ツールを提供する
 
 ### DSPEC-PACKAGE-RELEASE
 
-v0.1 package は公開 API、互換性、OIDC release 手順を明示する
+The v0.1 package declares its public API, compatibility policy, and OIDC release procedure
 
 - kind: obligation
 - status: approved
@@ -1914,7 +1917,7 @@ v0.1 package は公開 API、互換性、OIDC release 手順を明示する
 
 ### DSPEC-REAL-APP-DOGFOOD
 
-実アプリ model は dspec の仕様マスターとして check/drift/domain/reconcile/reverse/profile を通過する
+The real app model passes check, drift, domain, reconcile, reverse, and profile gates as a dspec specification master
 
 - kind: obligation
 - status: approved
@@ -2012,7 +2015,7 @@ v0.1 package は公開 API、互換性、OIDC release 手順を明示する
 
 ### DSPEC-REAL-APP-IMPORTER
 
-real app importer は実装 artifact から観測済み app facts を決定的に抽出する
+The real app importer deterministically extracts observed app facts from implementation artifacts
 
 - kind: obligation
 - status: approved
@@ -2078,7 +2081,7 @@ real app importer は実装 artifact から観測済み app facts を決定的�
 
 ### DSPEC-REAL-APP-RECONCILIATION
 
-real app reconciliation は手書き model と観測済み app facts の drift を検出する
+Real app reconciliation detects drift between the authored model and observed app facts
 
 - kind: obligation
 - status: approved
@@ -2119,7 +2122,7 @@ real app reconciliation は手書き model と観測済み app facts の drift �
 
 ### DSPEC-REAL-APP-REVERSE-COVERAGE
 
-reverse coverage は観測済み app facts が手書き model に吸われていることを確認する
+Reverse coverage checks that observed app facts are represented in the authored model
 
 - kind: obligation
 - status: approved
@@ -2157,7 +2160,7 @@ reverse coverage は観測済み app facts が手書き model に吸われてい
 
 ### DSPEC-RELEASE-SAFETY-PATTERN
 
-Release safety は typed pattern として記述され、health gate・rollback・rollback test・migration 互換性を backend に投影する
+Release safety is authored as a typed pattern and projects health-gate, rollback, rollback-test, and migration-compatibility checks to backends
 
 - kind: obligation
 - status: approved
@@ -2203,7 +2206,7 @@ Release safety は typed pattern として記述され、health gate・rollback�
 
 ### DSPEC-RUNTIME-COLLECTOR-FIXTURE
 
-Runtime collector fixture は Runtime safety spec から collect/verify 可能な inline provider payload manifest として生成される
+Runtime collector fixtures are generated from Runtime safety specs as collectable and verifiable inline provider-payload manifests
 
 - kind: obligation
 - status: approved
@@ -2233,7 +2236,7 @@ Runtime collector fixture は Runtime safety spec から collect/verify 可能�
 
 ### DSPEC-RUNTIME-COLLECTOR-MANIFEST
 
-Runtime collector manifest は Runtime safety spec から deterministic に生成される
+Runtime collector manifests are deterministically generated from Runtime safety specs
 
 - kind: obligation
 - status: approved
@@ -2267,7 +2270,7 @@ Runtime collector manifest は Runtime safety spec から deterministic に生�
 
 ### DSPEC-RUNTIME-EVIDENCE-COLLECTOR
 
-Runtime evidence collector は provider API payload を manifest から読み、importer contract の provider-scoped JSON に集約する
+The runtime evidence collector reads provider API payloads from a manifest and aggregates them into the importer contract's provider-scoped JSON
 
 - kind: obligation
 - status: approved
@@ -2309,7 +2312,7 @@ Runtime evidence collector は provider API payload を manifest から読み、
 
 ### DSPEC-RUNTIME-EVIDENCE-IMPORTER
 
-Runtime evidence importer は provider 別 JSON を deterministic な Runtime evidence Pkl fragment または JSON に正規化する
+The runtime evidence importer normalizes provider-scoped JSON into deterministic Runtime evidence Pkl fragments or JSON
 
 - kind: obligation
 - status: approved
@@ -2345,7 +2348,7 @@ Runtime evidence importer は provider 別 JSON を deterministic な Runtime ev
 
 ### DSPEC-RUNTIME-EVIDENCE-PATTERN
 
-Runtime evidence は typed pattern として記述され、SLO telemetry・alert policy・runbook execution・dependency trace の drift を backend に投影する
+Runtime evidence is authored as a typed pattern and projects SLO telemetry, alert-policy, runbook-execution, and dependency-trace drift checks to backends
 
 - kind: obligation
 - status: approved
@@ -2397,7 +2400,7 @@ Runtime evidence は typed pattern として記述され、SLO telemetry・alert
 
 ### DSPEC-RUNTIME-EVIDENCE-VERIFIER
 
-Runtime evidence verifier は collector manifest の expects と収集済み evidence の drift を検出する
+The runtime evidence verifier detects drift between collector manifest expectations and collected evidence
 
 - kind: obligation
 - status: approved
@@ -2443,7 +2446,7 @@ Runtime evidence verifier は collector manifest の expects と収集済み evi
 
 ### DSPEC-RUNTIME-SAFETY-PATTERN
 
-Runtime safety は typed pattern として記述され、SLO page alert・tested runbook・dependency timeout・retry idempotency を backend に投影する
+Runtime safety is authored as a typed pattern and projects SLO page-alert, tested-runbook, dependency-timeout, and retry-idempotency checks to backends
 
 - kind: obligation
 - status: approved
@@ -2489,7 +2492,7 @@ Runtime safety は typed pattern として記述され、SLO page alert・tested
 
 ### DSPEC-SCHEMA-TYPED
 
-仕様モデルは Pkl schema で型検査される
+Spec models are type-checked by the Pkl schema
 
 - kind: obligation
 - status: approved
@@ -2514,7 +2517,7 @@ Runtime safety は typed pattern として記述され、SLO page alert・tested
 
 ### DSPEC-SEMANTICS-INFERENTIAL-SUPPORT
 
-dspec の意味論は truth ではなく support/inferability として拡張する
+dspec semantics is extended as support/inferability rather than truth
 
 - kind: transition
 - status: review
@@ -2536,7 +2539,7 @@ dspec の意味論は truth ではなく support/inferability として拡張す
 
 ### DSPEC-SOURCE-MAP-GENERATED
 
-生成 artifact は元の仕様要素へ戻る source map を持つ
+Generated artifacts have a source map back to source spec elements
 
 - kind: obligation
 - status: approved
@@ -2563,7 +2566,7 @@ dspec の意味論は truth ではなく support/inferability として拡張す
 
 ### DSPEC-SPEC-CHANGE-REVIEW
 
-spec change review は仕様変更時の check、impact、互換性分類、coverage gate を一つの手続き成果物として検証する
+Spec change review verifies check, impact, compatibility classification, and coverage gates as one procedure artifact for spec changes
 
 - kind: obligation
 - status: approved
@@ -2630,7 +2633,7 @@ spec change review は仕様変更時の check、impact、互換性分類、cove
 
 ### DSPEC-SPEC-CHANGE-REVIEW-SCAFFOLD
 
-spec change review scaffold は before/after model からレビュー用 Pkl ドラフトを決定的に生成する
+Spec change review scaffold deterministically generates a review Pkl draft from before/after models
 
 - kind: obligation
 - status: approved
@@ -2711,7 +2714,7 @@ spec change review scaffold は before/after model からレビュー用 Pkl ド
 
 ### DSPEC-SPEC-COMPAT-CLASSIFIER
 
-spec compatibility classifier は before/after spec を compatible/breaking/narrowing/widening/unknown に分類する
+The spec compatibility classifier classifies before/after specs as compatible, breaking, narrowing, widening, or unknown
 
 - kind: obligation
 - status: approved
@@ -2759,7 +2762,7 @@ spec compatibility classifier は before/after spec を compatible/breaking/narr
 
 ### DSPEC-SPEC-DIFF-IMPACT
 
-spec diff impact report は変更された term/rule から生成 selector と実装参照への影響を返す
+Spec diff impact reports map changed terms and rules to affected generated selectors and implementation references
 
 - kind: obligation
 - status: approved
@@ -2792,7 +2795,7 @@ spec diff impact report は変更された term/rule から生成 selector と�
 
 ### DSPEC-SPEC-READING-EVAL
 
-spec reading eval は仕様から読み取れる主張の正誤を gold set として評価する
+Spec reading eval scores whether claims are readable from the spec as a gold set
 
 - kind: obligation
 - status: approved
@@ -2922,7 +2925,7 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 
 ### DSPEC-SQL-QUERY-ORACLE
 
-SQL query catalog は DB model と照合され、schema/tenant/FK drift を検出する
+SQL query catalogs are checked against the DB model to detect schema, tenant, and FK drift
 
 - kind: obligation
 - status: approved
@@ -2951,7 +2954,7 @@ SQL query catalog は DB model と照合され、schema/tenant/FK drift を検�
 
 ### DSPEC-STABLE-IDS
 
-安定 ID は自然言語ラベルから分離される
+Stable ids are separated from natural-language labels
 
 - kind: invariant
 - status: approved
@@ -2975,7 +2978,7 @@ SQL query catalog は DB model と照合され、schema/tenant/FK drift を検�
 
 ### DSPEC-TOPLEVEL-MODEL
 
-CLI が読む仕様ファイルは top-level の model を公開する
+Spec files read by the CLI expose a top-level model
 
 - kind: invariant
 - status: approved
@@ -2997,7 +3000,7 @@ CLI が読む仕様ファイルは top-level の model を公開する
 
 ### DSPEC-VERIFY-GENERATED-JSON
 
-verify-generated は backend ごとの検証結果を JSON artifact として出力できる
+verify-generated can emit per-backend verification results as a JSON artifact
 
 - kind: obligation
 - status: approved
@@ -3023,11 +3026,11 @@ verify-generated は backend ごとの検証結果を JSON artifact として出
 ### ADR-SELF-0001
 
 - date: 2026-07-07
-- summary: dspec 自身の仕様を Pkl モデルとして管理する
+- summary: Manage dspec's own specification as a Pkl model
 - rationale: Self-modeling turns the prototype into the first regression target for its own language and checker.
 
 ### ADR-SELF-0002
 
 - date: 2026-07-07
-- summary: Clause.expr は typed AST 化まで opaque string とする
+- summary: Keep Clause.expr as an opaque string until typed AST work
 - rationale: This avoids inventing a half-finished expression language before the stable model, i18n, and drift-detection boundaries are validated.

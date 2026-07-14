@@ -33,7 +33,7 @@ local jsSources: Listing<String> = new {
 }
 
 local reviewArtifacts: Listing<String> = new {
-  "generated/dspec.md"
+  "generated/examples/**/*.md"
   "generated/source-map.json"
   "generated/manifest.json"
 }
@@ -177,11 +177,23 @@ local emitSmoke: Task = new {
   deps { coverage }
 }
 
+local markdownGenerate: Task = new {
+  name = "markdown:generate"
+  description = "Generate localized Markdown review artifacts for the dspec self specification"
+  cmd = "node scripts/generate-localized-markdown.mjs examples/dspec.pkl generated/examples"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+  }
+  outputs {
+    "generated/examples/**/*.md"
+  }
+}
+
 local markdownReview: Task = new {
   name = "markdown:review"
-  description = "Check generated Markdown review artifact"
-  cmd =
-    "node src/cli.mjs emit markdown --locale ja examples/dspec.pkl | diff -u generated/dspec.md -"
+  description = "Check localized generated Markdown review artifacts"
+  cmd = "node scripts/generate-localized-markdown.mjs --check examples/dspec.pkl generated/examples"
   inputs = new {
     ...pklSources
     ...jsSources
@@ -405,6 +417,7 @@ tasks {
   realAppReconcile
   appProfileRefresh
   emitSmoke
+  markdownGenerate
   markdownReview
   sourceMapReview
   generatedManifestReview

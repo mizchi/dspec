@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -3148,12 +3148,43 @@ profile: d.AppProfile = new {
     }
   });
 
-  it("keeps generated markdown review artifact in sync", () => {
-    const emitted = run(["emit", "markdown", "--locale", "ja", "examples/dspec.pkl"]);
-    const artifact = readFileSync(join(root, "generated", "dspec.md"), "utf8");
+  it("keeps localized generated markdown review artifacts in sync", () => {
+    const emittedModel = run(["emit", "json", "examples/dspec.pkl"]);
+    assert.equal(emittedModel.status, 0, emittedModel.stderr);
+    const locales = JSON.parse(emittedModel.stdout).model.locales.toSorted();
+    const generatedLocales = readdirSync(join(root, "generated", "examples")).toSorted();
+    assert.deepEqual(generatedLocales, locales);
 
-    assert.equal(emitted.status, 0, emitted.stderr);
-    assert.equal(artifact, emitted.stdout);
+    for (const locale of locales) {
+      const emitted = run(["emit", "markdown", "--locale", locale, "examples/dspec.pkl"]);
+      const artifact = readFileSync(join(root, "generated", "examples", locale, "dspec.md"), "utf8");
+
+      assert.equal(emitted.status, 0, emitted.stderr);
+      assert.equal(artifact, emitted.stdout);
+    }
+  });
+
+  it("generates markdown for every declared dspec locale", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-localized-markdown-"));
+    const output = join(dir, "examples");
+    try {
+      const generated = spawnSync(
+        process.execPath,
+        [join(root, "scripts", "generate-localized-markdown.mjs"), "examples/dspec.pkl", output],
+        { cwd: root, encoding: "utf8" },
+      );
+      const emittedModel = run(["emit", "json", "examples/dspec.pkl"]);
+      const locales = JSON.parse(emittedModel.stdout).model.locales.toSorted();
+
+      assert.equal(generated.status, 0, generated.stderr);
+      assert.deepEqual(readdirSync(output).toSorted(), locales);
+      for (const locale of locales) {
+        const emitted = run(["emit", "markdown", "--locale", locale, "examples/dspec.pkl"]);
+        assert.equal(readFileSync(join(output, locale, "dspec.md"), "utf8"), emitted.stdout);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("keeps generated source map artifact in sync", () => {
@@ -4039,7 +4070,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 959);
+    assert.equal(report.references, 962);
     assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
     assert.deepEqual(report.errors, []);
   });

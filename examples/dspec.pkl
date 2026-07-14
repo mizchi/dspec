@@ -5454,8 +5454,8 @@ model: d.Model = new {
       kind = "obligation"
       text =
         text(
-          "Markdown review artifact は仕様モデルから決定的に再生成できる",
-          "The Markdown review artifact is deterministically regenerated from the spec model",
+          "各 locale の Markdown review artifact は仕様モデルから決定的に再生成できる",
+          "The Markdown review artifact for each locale is deterministically regenerated from the spec model",
         )
       terms {
         "artifact.markdown"
@@ -5463,11 +5463,11 @@ model: d.Model = new {
       }
       must {
         new d.Clause {
-          expr = "generated/dspec.md == emit(markdown, examples/dspec.pkl)"
+          expr = "for locale in examples/dspec.pkl.locales: generated/examples/{locale}/dspec.md == emit(markdown, locale, examples/dspec.pkl)"
           text =
             text(
-              "generated/dspec.md は emit markdown の現在出力と一致する",
-              "generated/dspec.md matches the current emit markdown output",
+              "generated/examples/{locale}/dspec.md は各 locale の emit markdown の現在出力と一致する",
+              "generated/examples/{locale}/dspec.md matches the current emit markdown output for each locale",
             )
         }
         d.clause(
@@ -5485,8 +5485,9 @@ model: d.Model = new {
       checks {
         new d.CheckTarget {
           backend = "node"
-          ref = "test/cli.test.mjs#keeps generated markdown review artifact in sync"
+          ref = "test/cli.test.mjs#keeps localized generated markdown review artifacts in sync"
         }
+        d.nodeCheck("test/cli.test.mjs#generates markdown for every declared dspec locale")
         d.nodeCheck("test/cli.test.mjs#emits deterministic markdown")
       }
       implementedBy {
@@ -5496,9 +5497,14 @@ model: d.Model = new {
           symbol = "emitMarkdown"
         }
         d.codeRef("src/cli.mjs", "markdownReviewSummary")
+        d.codeRef("scripts/generate-localized-markdown.mjs", "generateLocalizedMarkdown")
         new d.ImplementationRef {
           kind = "doc"
-          path = "generated/dspec.md"
+          path = "generated/examples/ja/dspec.md"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/examples/en/dspec.md"
         }
       }
     }

@@ -2246,6 +2246,16 @@
         }
       },
       {
+        "generated": "alloy.sig.C_42_2",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
         "generated": "alloy.sig.R_DSPEC_MBT_BOUNDARY",
         "sortedRuleIndex": 43,
         "source": {
@@ -7584,6 +7594,15 @@
           "index": 1,
           "kind": "checkTarget",
           "path": "model.rules[62].checks[1]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[2]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -17754,6 +17773,15 @@
         }
       },
       {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
         "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[0]",
         "source": {
           "index": 0,
@@ -17777,6 +17805,24 @@
           "index": 2,
           "kind": "implementationRef",
           "path": "model.rules[62].implementedBy[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[3]",
+        "source": {
+          "index": 3,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[4]",
+        "source": {
+          "index": 4,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[4]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -29185,6 +29231,15 @@
         }
       },
       {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
         "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[0]",
         "source": {
           "index": 0,
@@ -29208,6 +29263,24 @@
           "index": 2,
           "kind": "implementationRef",
           "path": "model.rules[62].implementedBy[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[3]",
+        "source": {
+          "index": 3,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[4]",
+        "source": {
+          "index": 4,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[4]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -38641,6 +38714,15 @@
           "index": 1,
           "kind": "checkTarget",
           "path": "model.rules[62].checks[1]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[2]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
