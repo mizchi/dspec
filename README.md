@@ -182,7 +182,13 @@ It models the current implementation boundary:
   `node $OLDPWD`, pipes, and inline backticks.
 - `coverage` requires approved active rules to have automated check targets,
   and can require clause-level support through `Rule.coverage = "clause"` plus
-  `CheckTarget.covers`.
+  `CheckTarget.covers`. `CheckTarget.assurances` distinguishes a resolvable
+  `reference` from `executed`, `mutation-tested`, `bounded`, and `proved`
+  support. Stronger claims require `assuranceEvidence`, and
+  `Rule.requiredAssurances` makes missing assurance fail coverage. QuickCheck
+  output preserves these fields and rechecks them as a generated property;
+  compatibility review classifies added requirements as narrowing and removed
+  requirements as widening.
 - `domain-coverage` requires tracked domain pattern elements to be grounded in
   approved rules by stable ids, so orphan Cloud/Data/Release/Runtime model
   facts are caught before they become unreviewed spec master data.
@@ -602,13 +608,16 @@ These are deliberately cheap checks, but they are now load-bearing: a fixture
 with an unsupported approved rule fails generated QuickCheck and Lean, and in
 the Nix shell also fails the TLA+/Alloy backend gates. The normalizer maps
 those failures back to spec source records. The useful next step is to split the
-checker into a reusable core so the current Node CLI and a future MoonBit
-implementation can share fixtures and expected diagnostics.
+remaining checker and generators into reusable core modules. Clause AST
+semantics and real-app normalization already have filesystem-independent core
+APIs; most validation, report, and emitter logic still lives in the Node CLI.
 
 ## Evaluation
 
-See `docs/usability-evaluation.md` for the current usability assessment and
-`docs/dogfooding-2026-07-10.md` for the latest concrete dogfood run.
+See `docs/usability-evaluation.md` for the current usability assessment,
+`docs/dogfooding-2026-07-14-mnemo.md` for the latest external importer run, and
+`docs/dogfooding-2026-07-14-assurance.md` for the latest self-spec assurance
+review.
 `examples/dspec.pkl` is now usable as the prototype's active self-spec ledger;
 the remaining gap is full backend semantics for `Clause.ast`,
 backend-specific proof/model-check generation beyond the current QuickCheck,

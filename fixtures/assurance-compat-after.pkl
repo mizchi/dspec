@@ -1,0 +1,46 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-compat"
+  name = d.text("保証互換性", "Assurance compatibility")
+  version = "0.2.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+  vocabulary {
+    d.term("concept.assurance", "entity", "保証", "Assurance")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-COMPAT"
+      kind = "obligation"
+      text = d.text("保証要件を満たす", "Satisfy assurance requirements")
+      terms {
+        "concept.assurance"
+      }
+      must {
+        d.clause("checks.declare.assurance", "check は保証を宣言する", "Checks declare assurance")
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "reference"
+        "executed"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#classifies assurance requirement compatibility"
+          assurances {
+            "reference"
+            "executed"
+          }
+          assuranceEvidence {
+            ["executed"] = "Taskfile.pkl#test"
+          }
+        }
+      }
+    }
+  }
+}

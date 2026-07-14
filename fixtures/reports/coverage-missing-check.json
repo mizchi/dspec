@@ -1,4 +1,34 @@
 {
+  "assurance": {
+    "kinds": [
+      "reference",
+      "executed",
+      "mutation-tested",
+      "bounded",
+      "proved"
+    ],
+    "requirements": {
+      "bounded": 0,
+      "executed": 0,
+      "mutation-tested": 0,
+      "proved": 0,
+      "reference": 1
+    },
+    "rules": {
+      "satisfied": 0,
+      "total": 1
+    },
+    "targets": {
+      "byKind": {
+        "bounded": 0,
+        "executed": 0,
+        "mutation-tested": 0,
+        "proved": 0,
+        "reference": 0
+      },
+      "total": 0
+    }
+  },
   "covered": 0,
   "errors": [
     "approved rule has no automated check target: COVERAGE-MISSING-CHECK"

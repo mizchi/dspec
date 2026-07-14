@@ -1,4 +1,34 @@
 {
+  "assurance": {
+    "kinds": [
+      "reference",
+      "executed",
+      "mutation-tested",
+      "bounded",
+      "proved"
+    ],
+    "requirements": {
+      "bounded": 0,
+      "executed": 2,
+      "mutation-tested": 1,
+      "proved": 0,
+      "reference": 67
+    },
+    "rules": {
+      "satisfied": 67,
+      "total": 67
+    },
+    "targets": {
+      "byKind": {
+        "bounded": 0,
+        "executed": 2,
+        "mutation-tested": 1,
+        "proved": 0,
+        "reference": 292
+      },
+      "total": 292
+    }
+  },
   "errors": [],
   "model": {
     "id": "dspec-self",
@@ -7,7 +37,7 @@
   "status": "pass",
   "summary": {
     "decisions": 2,
-    "rules": 68,
+    "rules": 69,
     "terms": 101
   }
 }

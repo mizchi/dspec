@@ -1,0 +1,42 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-backend-invalid"
+  name = d.text("不正な保証 backend", "invalid assurance backend")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.assurance", "entity", "保証", "assurance")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-BACKEND-INVALID"
+      kind = "obligation"
+      text = d.text("Node check を proof と誤表明しない", "do not claim a Node check is a proof")
+      terms {
+        "concept.assurance"
+      }
+      must {
+        d.clause("node.check.not.proof", "Node check は proof ではない", "a Node check is not a proof")
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#rejects incompatible assurance backends"
+          assurances {
+            "reference"
+            "proved"
+          }
+          assuranceEvidence {
+            ["proved"] = "test/cli.test.mjs#rejects incompatible assurance backends"
+          }
+        }
+      }
+    }
+  }
+}

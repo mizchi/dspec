@@ -2410,7 +2410,7 @@ profile: d.AppProfile = new {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: dspec-self/);
-    assert.match(result.stdout, /101 terms, 68 rules/);
+    assert.match(result.stdout, /101 terms, 69 rules/);
   });
 
   it("emits check JSON reports", () => {
@@ -2421,7 +2421,12 @@ profile: d.AppProfile = new {
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
     assert.equal(report.summary.terms, 101);
-    assert.equal(report.summary.rules, 68);
+    assert.equal(report.summary.rules, 69);
+    assert.deepEqual(report.assurance.rules, { satisfied: 67, total: 67 });
+    assert.equal(report.assurance.targets.byKind.executed, 2);
+    assert.equal(report.assurance.targets.byKind["mutation-tested"], 1);
+    assert.equal(report.assurance.targets.byKind.bounded, 0);
+    assert.equal(report.assurance.targets.byKind.proved, 0);
     assert.deepEqual(report.errors, []);
   });
 
@@ -2598,6 +2603,28 @@ profile: d.AppProfile = new {
       assert.equal(report.classification, expected, after);
       assert.ok(Array.isArray(report.decisions), after);
     }
+  });
+
+  it("classifies assurance requirement compatibility", () => {
+    const narrowing = run([
+      "spec-change",
+      "compat",
+      "--json",
+      "fixtures/assurance-compat-before.pkl",
+      "fixtures/assurance-compat-after.pkl",
+    ]);
+    const widening = run([
+      "spec-change",
+      "compat",
+      "--json",
+      "fixtures/assurance-compat-after.pkl",
+      "fixtures/assurance-compat-before.pkl",
+    ]);
+
+    assert.equal(narrowing.status, 0, narrowing.stderr);
+    assert.equal(widening.status, 0, widening.stderr);
+    assert.equal(JSON.parse(narrowing.stdout).classification, "narrowing");
+    assert.equal(JSON.parse(widening.stdout).classification, "widening");
   });
 
   it("renders spec compatibility classification for review", () => {
@@ -4011,7 +4038,8 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 903);
+    assert.equal(report.references, 928);
+    assert.deepEqual(report.assurance.rules, { satisfied: 67, total: 67 });
     assert.deepEqual(report.errors, []);
   });
 
@@ -4030,7 +4058,7 @@ profile: d.AppProfile = new {
     const result = run(["coverage", "examples/dspec.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: dspec-self coverage \(66\/66 approved rules\)/);
+    assert.match(result.stdout, /ok: dspec-self coverage \(67\/67 approved rules\)/);
   });
 
   it("reports domain model element coverage", () => {
@@ -4084,9 +4112,105 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.covered, 66);
-    assert.equal(report.total, 66);
+    assert.equal(report.covered, 67);
+    assert.equal(report.total, 67);
+    assert.deepEqual(report.assurance.requirements, {
+      reference: 67,
+      executed: 2,
+      "mutation-tested": 1,
+      bounded: 0,
+      proved: 0,
+    });
     assert.deepEqual(report.errors, []);
+  });
+
+  it("reports explicit assurance claims", () => {
+    const result = run(["coverage", "--json", "fixtures/assurance-levels.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(report.assurance, {
+      kinds: ["reference", "executed", "mutation-tested", "bounded", "proved"],
+      rules: { satisfied: 1, total: 1 },
+      targets: {
+        total: 3,
+        byKind: {
+          reference: 3,
+          executed: 1,
+          "mutation-tested": 1,
+          bounded: 1,
+          proved: 1,
+        },
+      },
+      requirements: {
+        reference: 1,
+        executed: 1,
+        "mutation-tested": 1,
+        bounded: 1,
+        proved: 1,
+      },
+    });
+  });
+
+  it("preserves assurance requirements in generated QuickCheck properties", () => {
+    const emitted = run(["emit", "quickcheck", "fixtures/assurance-levels.pkl"]);
+
+    assert.equal(emitted.status, 0, emitted.stderr);
+    assert.match(emitted.stdout, /"requiredAssurances": \[/);
+    assert.match(emitted.stdout, /"mutation-tested"/);
+    assert.match(emitted.stdout, /propertyApprovedRulesHaveRequiredAssurances/);
+    assert.match(emitted.stdout, /approved-rules-have-required-assurances/);
+
+    const verified = run(["verify-generated", "fixtures/assurance-levels.pkl"]);
+    assert.equal(verified.status, 0, verified.stderr);
+    assert.match(verified.stdout, /ok: assurance-levels generated quickcheck/);
+
+    const missing = verifyGeneratedReport(loadModel("fixtures/assurance-required-missing.pkl"));
+    assert.equal(missing.status, "fail");
+    assert.equal(missing.backends.quickcheck.status, "fail");
+    assert.match(missing.backends.quickcheck.message, /approved-rules-have-required-assurances/);
+
+    const normalized = run(["normalize-counterexamples", "--json", "fixtures/assurance-required-missing.pkl"]);
+    assert.notEqual(normalized.status, 0);
+    const counterexample = JSON.parse(normalized.stdout).counterexamples[0];
+    assert.equal(counterexample.property, "approved-rules-have-required-assurances");
+    assert.equal(counterexample.rule.id, "ASSURANCE-REQUIRED-MISSING");
+    assert.match(counterexample.message, /required assurance/);
+  });
+
+  it("renders assurance claims for human review", () => {
+    const result = run(["emit", "markdown", "fixtures/assurance-levels.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /- requiredAssurances: reference, executed, mutation-tested, bounded, proved/);
+    assert.match(
+      result.stdout,
+      /- check: node test\/cli\.test\.mjs#scores generated app profile mutations \[reference, executed, mutation-tested\]/,
+    );
+    assert.match(result.stdout, /- assuranceEvidence: mutation-tested -> fixtures\/reports\/score-app-profile-mutations\.json/);
+  });
+
+  it("rejects missing required assurances", () => {
+    const result = run(["coverage", "--json", "fixtures/assurance-required-missing.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(report.assurance.rules, { satisfied: 0, total: 1 });
+    assert.match(result.stderr, /approved rule is missing required assurance: ASSURANCE-REQUIRED-MISSING -> bounded/);
+  });
+
+  it("rejects incompatible assurance backends", () => {
+    const result = run(["check", "fixtures/assurance-backend-invalid.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /incompatible check assurance: ASSURANCE-BACKEND-INVALID -> proved requires lean backend, got node/);
+  });
+
+  it("rejects assurances without evidence", () => {
+    const result = run(["check", "fixtures/assurance-evidence-missing.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /missing check assurance evidence: ASSURANCE-EVIDENCE-MISSING -> executed/);
   });
 
   it("keeps coverage JSON report fixture in sync", () => {

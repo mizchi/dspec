@@ -1211,6 +1211,7 @@ model: d.Model = new {
           "Approved active rules have automated check targets",
         )
       terms {
+        "artifact.counterexample_normalizer"
         "artifact.coverage_oracle"
         "concept.rule"
         "concept.verification_target"
@@ -1319,6 +1320,103 @@ model: d.Model = new {
         d.modelRef("fixtures/coverage-clause-covered.pkl")
         d.modelRef("fixtures/coverage-clause-missing.pkl")
         d.modelRef("fixtures/coverage-clause-invalid-selector.pkl")
+      }
+    }
+
+    new d.Rule {
+      id = "DSPEC-CHECK-ASSURANCE"
+      kind = "invariant"
+      text =
+        text(
+          "CheckTarget は保証の種類と証拠を明示し、coverage は必要な保証を検査する",
+          "CheckTargets declare assurance kinds and evidence, and coverage checks required assurances",
+        )
+      terms {
+        "artifact.coverage_oracle"
+        "artifact.json_report"
+        "concept.rule"
+        "concept.verification_target"
+      }
+      must {
+        d.clause(
+          "check.assurances subsetOf {reference, executed, mutation-tested, bounded, proved}",
+          "check の保証は reference/executed/mutation-tested/bounded/proved を区別する",
+          "check assurance distinguishes reference, executed, mutation-tested, bounded, and proved",
+        )
+        d.clause(
+          "check.assurances - {reference} subsetOf check.assuranceEvidence.keys",
+          "reference より強い保証は証拠参照を持つ",
+          "assurance stronger than reference has an evidence reference",
+        )
+        d.clause(
+          "proved -> backend == lean && bounded -> backend in {tla, alloy}",
+          "proved/bounded/mutation-tested は互換 backend にだけ宣言できる",
+          "proved, bounded, and mutation-tested can only be declared on compatible backends",
+        )
+        d.clause(
+          "rule.requiredAssurances subsetOf union(rule.automatedChecks.assurances)",
+          "coverage は rule が要求する保証を automated CheckTarget 群が満たすか検査する",
+          "coverage checks that automated CheckTargets satisfy each rule's required assurances",
+        )
+        d.clause(
+          "reports.assurance == summary(activeApprovedRules.checks.assurances)",
+          "check/drift/coverage report は保証の内訳を機械可読に出力する",
+          "check, drift, and coverage reports expose machine-readable assurance summaries",
+        )
+        d.clause(
+          "generated.quickcheck.rules preserves (requiredAssurances + checks.assurances + assuranceEvidence)",
+          "QuickCheck 投影は保証要件・保証集合・証拠参照を保持し、独立した property として検査する",
+          "the QuickCheck projection preserves assurance requirements, claims, and evidence and checks them as an independent property",
+        )
+        d.clause(
+          "added(requiredAssurances) -> narrowing && removed(requiredAssurances) -> widening",
+          "承認済み rule の必要保証の追加は narrowing、削除は widening と分類する",
+          "adding assurance requirements to an approved rule is narrowing and removing them is widening",
+        )
+        d.clause(
+          "normalize(assuranceFailure).source.ruleId == failedRule.id",
+          "生成された保証不足の反例は元の rule と保証 property に正規化する",
+          "generated assurance counterexamples normalize to the source rule and assurance property",
+        )
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "executed"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#reports explicit assurance claims"
+          assurances {
+            "executed"
+          }
+          assuranceEvidence {
+            ["executed"] = "Taskfile.pkl#test"
+          }
+        }
+        d.nodeCheck("test/cli.test.mjs#renders assurance claims for human review")
+        d.nodeCheck("test/cli.test.mjs#rejects missing required assurances")
+        d.nodeCheck("test/cli.test.mjs#rejects incompatible assurance backends")
+        d.nodeCheck("test/cli.test.mjs#rejects assurances without evidence")
+        d.nodeCheck("test/cli.test.mjs#preserves assurance requirements in generated QuickCheck properties")
+        d.nodeCheck("test/cli.test.mjs#classifies assurance requirement compatibility")
+      }
+      implementedBy {
+        d.codeRef("dspec/Schema.pkl", "CheckAssuranceKind")
+        d.codeRef("dspec/Schema.pkl", "CheckTarget")
+        d.codeRef("dspec/Schema.pkl", "Rule")
+        d.codeRef("src/cli.mjs", "validateCheckTargetAssuranceDeclarations")
+        d.codeRef("src/cli.mjs", "assuranceSummary")
+        d.codeRef("src/cli.mjs", "validateCoverage")
+        d.codeRef("src/cli.mjs", "emitQuickcheck")
+        d.codeRef("src/cli.mjs", "classifyModifiedApprovedRule")
+        d.codeRef("src/cli.mjs", "normalizeQuickcheckCounterexamples")
+        d.modelRef("fixtures/assurance-levels.pkl")
+        d.modelRef("fixtures/assurance-required-missing.pkl")
+        d.modelRef("fixtures/assurance-backend-invalid.pkl")
+        d.modelRef("fixtures/assurance-evidence-missing.pkl")
+        d.modelRef("fixtures/assurance-compat-before.pkl")
+        d.modelRef("fixtures/assurance-compat-after.pkl")
       }
     }
 
@@ -1709,6 +1807,10 @@ model: d.Model = new {
         )
       }
       reviewStatus = "approved"
+      requiredAssurances {
+        "executed"
+        "mutation-tested"
+      }
       checks {
         d.nodeCheck("test/cli.test.mjs#checks app profiles as a dogfood bundle")
         d.nodeCheck("test/cli.test.mjs#checks multiple app profiles as an aggregate bundle")
@@ -1736,7 +1838,18 @@ model: d.Model = new {
         d.nodeCheck(
           "test/cli.test.mjs#does not count ineffective app profile scenarios as scenario coverage",
         )
-        d.nodeCheck("test/cli.test.mjs#scores generated app profile mutations")
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#scores generated app profile mutations"
+          assurances {
+            "executed"
+            "mutation-tested"
+          }
+          assuranceEvidence {
+            ["executed"] = "Taskfile.pkl#test"
+            ["mutation-tested"] = "fixtures/reports/score-app-profile-mutations.json"
+          }
+        }
         d.nodeCheck(
           "test/cli.test.mjs#scores generated app profile mutations for route-only profiles",
         )

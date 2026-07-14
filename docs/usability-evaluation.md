@@ -1,8 +1,9 @@
 # dspec Usability Evaluation
 
-Date: 2026-07-10
+Date: 2026-07-14
 
-Latest concrete dogfood run: `docs/dogfooding-2026-07-10.md`.
+Latest concrete dogfood runs: `docs/dogfooding-2026-07-14-mnemo.md` and
+`docs/dogfooding-2026-07-14-assurance.md`.
 
 ## Verdict
 
@@ -38,6 +39,10 @@ It works today as:
   digests, and aggregates sample plus holdout suites
 - a coverage gate that requires every approved active rule to have an automated
   check target
+- typed assurance claims that distinguish resolvable references from executed,
+  mutation-tested, bounded, and proved support, require evidence for stronger
+  claims, expose the assurance distribution in check/drift/coverage reports,
+  survive QuickCheck projection, and participate in compatibility classification
 - a domain coverage gate that requires tracked domain pattern elements to be
   grounded in approved rules by stable ids
 - stable JSON reports for check, drift, coverage, and domain coverage gates,
@@ -116,6 +121,9 @@ It works today as:
 
 It is not yet enough as:
 
+- a source of bounded or proved business-clause assurance; the self model
+  deliberately reports zero `bounded` and zero `proved` targets until backend
+  semantics justify those labels
 - a semantic checker for the full meaning of `Clause.ast`
 - a proof-producing source generator for implementation or backend proofs
 - a deep TLC/Alloy model-checking workflow with meaningful bounded scopes and

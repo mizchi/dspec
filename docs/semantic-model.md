@@ -20,6 +20,13 @@ For the current prototype:
 - `i18n.requiredLocales` and `i18n.glossary` are support obligations for the
   human-language surface of stable vocabulary ids.
 - `CheckTarget` and `ImplementationRef` are support evidence.
+- `CheckTarget.assurances` assigns explicit epistemic kinds to that support:
+  `reference`, `executed`, `mutation-tested`, `bounded`, and `proved`. These
+  form a set rather than a total strength order because mutation testing and
+  bounded model checking answer different questions.
+- support stronger than `reference` carries an `assuranceEvidence` reference;
+  `Rule.requiredAssurances` declares which kinds must be present before an
+  approved claim counts as covered.
 - `CheckTarget.covers` can refine support from rule-level to clause-level
   selectors such as `must[0]`.
 - `patterns.db` is a typed domain base for tables, invariants, transactions,
@@ -37,7 +44,12 @@ For the current prototype:
   Playwright test anchors, Lean declarations, TLA+ definitions/theorems, Alloy
   sig/assert/pred/check names, Pkl targets, and runtime collector sources.
 - `coverage` checks that approved claims have automated support, and checks
-  full clause support for rules that opt into `coverage = "clause"`.
+  full clause support for rules that opt into `coverage = "clause"`. It also
+  rejects rules whose automated targets do not supply every required assurance
+  kind.
+- generated QuickCheck data preserves `requiredAssurances`, target assurances,
+  and evidence references, then rechecks required assurance coverage as an
+  executable property.
 - `domain-coverage` checks that typed domain-base elements are mentioned by
   approved claims through stable ids, so orphan model facts do not silently
   become source-of-truth data.
@@ -415,6 +427,9 @@ preserves:
   coverage into one reviewable procedure artifact. Local Markdown evidence
   refs are support sites too, so the review checks that their files and heading
   anchors resolve.
+- Compatibility classifies an added assurance requirement on an approved rule
+  as `narrowing`, a removed requirement as `widening`, and simultaneous
+  replacement as `unknown`.
 - Report fixtures preserve the JSON shape of check/drift/coverage/impact and
   compatibility/spec-change-review outputs so another checker implementation
   can be validated against the same support artifact contract.

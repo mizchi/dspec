@@ -101,6 +101,7 @@ typealias SpecKind =
     | "equivalence"
 typealias Backend =
   "node" | "pkl" | "lean" | "alloy" | "tla" | "rego" | "cue" | "playwright" | "runtime" | "manual"
+typealias CheckAssuranceKind = "reference" | "executed" | "mutation-tested" | "bounded" | "proved"
 
 /// A language-independent text node.
 ///
@@ -194,6 +195,10 @@ class CheckTarget {
   ref: String(length > 0)
   mode: "generated" | "linked" | "manual" = "linked"
   covers: Listing<String(matches(Regex(#"^(when|must|mustNot)\[[0-9]+\]$"#)))> = new {}
+  /// Epistemic claims made by this target. `reference` only means that `ref`
+  /// resolves; stronger claims require an entry in `assuranceEvidence`.
+  assurances: Listing<CheckAssuranceKind> = new { "reference" }
+  assuranceEvidence: Mapping<CheckAssuranceKind, String(length > 0)> = new {}
 }
 
 function linkedCheck(checkBackend: Backend, checkRef: String): CheckTarget = new {
@@ -373,6 +378,7 @@ class Rule {
   priority: Int(this >= 0) = 100
   reviewStatus: ReviewStatus = "draft"
   coverage: RuleCoverageMode = "rule"
+  requiredAssurances: Listing<CheckAssuranceKind> = new { "reference" }
   deprecated: Boolean = false
   checks: Listing<CheckTarget> = new {}
   implementedBy: Listing<ImplementationRef> = new {}

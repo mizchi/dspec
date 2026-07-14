@@ -302,6 +302,86 @@ function automatedCheckTargets(rule) {
   return list(rule.checks).filter((target) => target.backend !== "manual" && target.backend !== "runtime");
 }
 
+const CHECK_ASSURANCE_KINDS = ["reference", "executed", "mutation-tested", "bounded", "proved"];
+
+const CHECK_ASSURANCE_BACKENDS = {
+  executed: ["node", "pkl", "lean", "alloy", "tla", "rego", "cue", "playwright", "runtime"],
+  "mutation-tested": ["node", "playwright"],
+  bounded: ["alloy", "tla"],
+  proved: ["lean"],
+};
+
+function checkTargetAssurances(target) {
+  const declared = list(target.assurances);
+  return [...new Set(declared.length > 0 ? declared : ["reference"])];
+}
+
+function ruleRequiredAssurances(rule) {
+  const required = list(rule.requiredAssurances);
+  return [...new Set(required.length > 0 ? required : ["reference"])];
+}
+
+function validateCheckTargetAssuranceDeclarations(errors, rule) {
+  for (const target of list(rule.checks)) {
+    const assurances = checkTargetAssurances(target);
+    const assuranceSet = new Set(assurances);
+    const evidence = target.assuranceEvidence ?? {};
+
+    if (!assuranceSet.has("reference")) {
+      errors.push(`check target assurance must include reference: ${rule.id} -> ${target.ref}`);
+    }
+
+    for (const kind of assurances) {
+      const allowedBackends = CHECK_ASSURANCE_BACKENDS[kind];
+      if (allowedBackends && !allowedBackends.includes(target.backend)) {
+        errors.push(
+          `incompatible check assurance: ${rule.id} -> ${kind} requires ${allowedBackends.join("/")} backend, got ${target.backend}`,
+        );
+      }
+      if (kind !== "reference" && !evidence[kind]) {
+        errors.push(`missing check assurance evidence: ${rule.id} -> ${kind}`);
+      }
+    }
+
+    for (const kind of Object.keys(evidence)) {
+      if (!assuranceSet.has(kind)) {
+        errors.push(`undeclared check assurance evidence: ${rule.id} -> ${kind}`);
+      }
+    }
+  }
+}
+
+function assuranceSummary(model) {
+  const rules = activeApprovedRules(model);
+  const targets = rules.flatMap(automatedCheckTargets);
+  const byKind = Object.fromEntries(CHECK_ASSURANCE_KINDS.map((kind) => [kind, 0]));
+  const requirements = Object.fromEntries(CHECK_ASSURANCE_KINDS.map((kind) => [kind, 0]));
+
+  for (const target of targets) {
+    for (const kind of new Set(checkTargetAssurances(target))) {
+      byKind[kind] += 1;
+    }
+  }
+
+  let satisfied = 0;
+  for (const rule of rules) {
+    const ruleTargets = automatedCheckTargets(rule);
+    const available = new Set(ruleTargets.flatMap(checkTargetAssurances));
+    const required = [...new Set(ruleRequiredAssurances(rule))];
+    for (const kind of required) requirements[kind] += 1;
+    if (ruleTargets.length > 0 && required.every((kind) => available.has(kind))) {
+      satisfied += 1;
+    }
+  }
+
+  return {
+    kinds: CHECK_ASSURANCE_KINDS,
+    rules: { satisfied, total: rules.length },
+    targets: { total: targets.length, byKind },
+    requirements,
+  };
+}
+
 function clauseExpr(clause) {
   return clause.ast ? exprToText(clause.ast) : clause.expr;
 }
@@ -1143,6 +1223,7 @@ function validate(model) {
     validateClauseAsts(errors, rule, "must");
     validateClauseAsts(errors, rule, "mustNot");
     validateCheckTargetCoverageSelectors(errors, rule);
+    validateCheckTargetAssuranceDeclarations(errors, rule);
 
     const verificationCount = list(rule.checks).length + list(rule.implementedBy).length;
     if (rule.reviewStatus === "approved" && !rule.deprecated && verificationCount === 0) {
@@ -1226,7 +1307,7 @@ function validateRuntimeCheckTarget(rule, target, path, anchor) {
   }
 }
 
-function validateCheckTarget(rule, target) {
+function validateCheckTargetRef(rule, target) {
   const { path, anchor } = splitRef(target.ref);
 
   if (target.backend === "manual") {
@@ -1304,13 +1385,28 @@ function validateCheckTarget(rule, target) {
   return [];
 }
 
+function validateCheckTarget(rule, target) {
+  const errors = validateCheckTargetRef(rule, target);
+  for (const [kind, evidenceRef] of Object.entries(target.assuranceEvidence ?? {})) {
+    const { path, anchor } = splitRef(evidenceRef);
+    if (!existsSync(resolve(path))) {
+      errors.push(`missing check assurance evidence path: ${rule.id} -> ${kind} ${evidenceRef}`);
+      continue;
+    }
+    if (anchor && !readTextFile(path).includes(anchor)) {
+      errors.push(`missing check assurance evidence anchor: ${rule.id} -> ${kind} ${evidenceRef}`);
+    }
+  }
+  return errors;
+}
+
 function validateCheckTargets(model, rules = list(model.rules)) {
   const errors = [];
   let count = 0;
 
   for (const rule of rules) {
     for (const target of list(rule.checks)) {
-      count += 1;
+      count += 1 + Object.keys(target.assuranceEvidence ?? {}).length;
       errors.push(...validateCheckTarget(rule, target));
     }
   }
@@ -1351,6 +1447,15 @@ function validateCoverage(model) {
     const targets = list(rule.checks).filter((target) => target.backend !== "manual" && target.backend !== "runtime");
     if (targets.length === 0) {
       errors.push(`approved rule has no automated check target: ${rule.id}`);
+      continue;
+    }
+    const availableAssurances = new Set(targets.flatMap(checkTargetAssurances));
+    const missingAssurances = [...new Set(ruleRequiredAssurances(rule))]
+      .filter((kind) => !availableAssurances.has(kind));
+    if (missingAssurances.length > 0) {
+      for (const kind of missingAssurances) {
+        errors.push(`approved rule is missing required assurance: ${rule.id} -> ${kind}`);
+      }
       continue;
     }
     if (rule.coverage === "clause") {
@@ -7162,6 +7267,7 @@ function emitSourceMapObject(model, requestedLocale) {
 
   for (const generated of [
     "quickcheck.propertyApprovedRulesHaveAutomatedChecks",
+    "quickcheck.propertyApprovedRulesHaveRequiredAssurances",
     "alloy.assert.ApprovedRulesHaveChecks",
     "alloy.assert.ActiveApprovedRulesHaveAutomatedSupport",
     "tla.CoverageInvariant",
@@ -7407,6 +7513,10 @@ function generatedSelectorForRule(backend, rule) {
 }
 
 function generatedSelectorForPolicy(backend, property = "approved-rules-have-automated-checks") {
+  if (property === "approved-rules-have-required-assurances") {
+    if (backend === "quickcheck") return "quickcheck.propertyApprovedRulesHaveRequiredAssurances";
+    return null;
+  }
   if (property === "db-transaction-preserves-invariants") {
     if (backend === "quickcheck") return "quickcheck.propertyDbTransactionsPreserveInvariants";
     if (backend.startsWith("tla")) return "tla.DbInvariantPreserved";
@@ -7540,6 +7650,7 @@ function generatedSelectorForPolicy(backend, property = "approved-rules-have-aut
 }
 
 function inferCounterexampleProperty(backend, message) {
+  if (message.includes("approved-rules-have-required-assurances")) return "approved-rules-have-required-assurances";
   if (message.includes("approved-rules-have-automated-checks")) return "approved-rules-have-automated-checks";
   if (message.includes("db-transaction-preserves-invariants") || message.includes("DbInvariantPreserved") || message.includes("DbTransactionsPreserveInvariants")) {
     return "db-transaction-preserves-invariants";
@@ -7582,6 +7693,9 @@ function inferCounterexampleProperty(backend, message) {
 }
 
 function counterexampleMessage(property) {
+  if (property === "approved-rules-have-required-assurances") {
+    return "approved rule lacks a required assurance kind";
+  }
   if (property === "approved-rules-have-automated-checks") {
     return "approved rule lacks automated check support";
   }
@@ -7929,12 +8043,14 @@ function runtimeEvidenceRecordCount(model) {
 }
 
 function markdownReviewSummary(model) {
+  const assurance = assuranceSummary(model);
   return {
     approvedRules: activeApprovedRules(model).length,
     automatedCheckTargets: sortedRules(model).reduce((count, rule) => count + automatedCheckTargets(rule).length, 0),
     implementationRefs: sortedRules(model).reduce((count, rule) => count + list(rule.implementedBy).length, 0),
     domainElements: domainCoverageElements(model).length,
     runtimeEvidenceRecords: runtimeEvidenceRecordCount(model),
+    assuranceTargets: assurance.targets.byKind,
   };
 }
 
@@ -7955,6 +8071,7 @@ function emitMarkdown(model, requestedLocale) {
     `- implementationRefs: \`${reviewSummary.implementationRefs}\``,
     `- domainElements: \`${reviewSummary.domainElements}\``,
     `- runtimeEvidenceRecords: \`${reviewSummary.runtimeEvidenceRecords}\``,
+    `- assuranceTargets: \`${CHECK_ASSURANCE_KINDS.map((kind) => `${kind}=${reviewSummary.assuranceTargets[kind]}`).join(", ")}\``,
     "",
     "## Vocabulary",
     "",
@@ -7973,6 +8090,7 @@ function emitMarkdown(model, requestedLocale) {
     lines.push(`- kind: ${rule.kind}`);
     lines.push(`- status: ${rule.reviewStatus}`);
     lines.push(`- priority: ${rule.priority}`);
+    lines.push(`- requiredAssurances: ${ruleRequiredAssurances(rule).join(", ")}`);
     for (const termId of list(rule.terms).sort()) {
       lines.push(`- term: \`${termId}\``);
     }
@@ -7986,7 +8104,11 @@ function emitMarkdown(model, requestedLocale) {
       lines.push(`- mustNot: \`${clauseExpr(clause)}\``);
     }
     for (const target of list(rule.checks)) {
-      lines.push(`- check: ${target.backend} ${target.ref}`);
+      lines.push(`- check: ${target.backend} ${target.ref} [${checkTargetAssurances(target).join(", ")}]`);
+      for (const kind of CHECK_ASSURANCE_KINDS) {
+        const evidenceRef = target.assuranceEvidence?.[kind];
+        if (evidenceRef) lines.push(`- assuranceEvidence: ${kind} -> ${evidenceRef}`);
+      }
     }
     for (const ref of list(rule.implementedBy)) {
       const symbol = ref.symbol ? `#${ref.symbol}` : "";
@@ -8821,10 +8943,15 @@ function ruleProjection(rule) {
     id: rule.id,
     kind: rule.kind,
     status: rule.reviewStatus,
+    requiredAssurances: ruleRequiredAssurances(rule),
     checks: list(rule.checks).map((target) => ({
       backend: target.backend,
       ref: target.ref,
       automated: target.backend !== "manual" && target.backend !== "runtime",
+      assurances: checkTargetAssurances(target),
+      assuranceEvidence: Object.fromEntries(
+        Object.entries(target.assuranceEvidence ?? {}).sort(([left], [right]) => left.localeCompare(right)),
+      ),
     })),
     terms: list(rule.terms).slice().sort(),
     when: list(rule.when).map(clauseProjection),
@@ -8870,6 +8997,17 @@ export function shrinkRuleId(ruleId) {
 export function propertyApprovedRulesHaveAutomatedChecks(ruleId) {
   const rule = rules.find((candidate) => candidate.id === ruleId);
   return Boolean(rule && rule.status === "approved" && rule.checks.some((check) => check.automated));
+}
+
+export function propertyApprovedRulesHaveRequiredAssurances(ruleId) {
+  const rule = rules.find((candidate) => candidate.id === ruleId);
+  if (!rule || rule.status !== "approved") return false;
+  const available = new Set(
+    rule.checks
+      .filter((check) => check.automated)
+      .flatMap((check) => check.assurances),
+  );
+  return rule.requiredAssurances.every((assurance) => available.has(assurance));
 }
 
 export function* generateDbTransactions() {
@@ -9194,8 +9332,11 @@ export function propertyRuntimeDependencyTracesWithinTimeout(trace) {
 export function checkAllProperties() {
   const failures = [];
   for (const ruleId of generateApprovedRuleIds()) {
-    if (!propertyApprovedRulesHaveAutomatedChecks(ruleId)) {
+    const hasAutomatedChecks = propertyApprovedRulesHaveAutomatedChecks(ruleId);
+    if (!hasAutomatedChecks) {
       failures.push({ property: "approved-rules-have-automated-checks", value: ruleId, shrinks: shrinkRuleId(ruleId) });
+    } else if (!propertyApprovedRulesHaveRequiredAssurances(ruleId)) {
+      failures.push({ property: "approved-rules-have-required-assurances", value: ruleId, shrinks: shrinkRuleId(ruleId) });
     }
   }
   for (const transaction of generateDbTransactions()) {
@@ -11336,6 +11477,7 @@ function checkReport(model) {
       rules: list(model.rules).length,
       decisions: list(model.decisions).length,
     },
+    assurance: assuranceSummary(model),
     errors,
   };
 }
@@ -11346,6 +11488,7 @@ function driftReport(model) {
     model: modelReport(model),
     status: reportStatus(drift.errors),
     references: drift.count,
+    assurance: assuranceSummary(model),
     errors: drift.errors,
   };
 }
@@ -11357,6 +11500,7 @@ function coverageReport(model) {
     status: reportStatus(coverage.errors),
     covered: coverage.covered,
     total: coverage.total,
+    assurance: assuranceSummary(model),
     errors: coverage.errors,
   };
 }
@@ -11694,6 +11838,38 @@ function classifyModifiedApprovedRule(before, after) {
   }
   if (removed.length > 0) {
     return decision(`rule:${after.id}:modified`, "widening", "approved rule lost clauses", { added, removed });
+  }
+  const addedAssurances = setDifference(
+    new Set(ruleRequiredAssurances(after)),
+    new Set(ruleRequiredAssurances(before)),
+  );
+  const removedAssurances = setDifference(
+    new Set(ruleRequiredAssurances(before)),
+    new Set(ruleRequiredAssurances(after)),
+  );
+  if (addedAssurances.length > 0 && removedAssurances.length > 0) {
+    return decision(
+      `rule:${after.id}:modified`,
+      "unknown",
+      "approved rule assurance requirements were both added and removed",
+      { addedAssurances, removedAssurances },
+    );
+  }
+  if (addedAssurances.length > 0) {
+    return decision(
+      `rule:${after.id}:modified`,
+      "narrowing",
+      "approved rule gained assurance requirements",
+      { addedAssurances, removedAssurances },
+    );
+  }
+  if (removedAssurances.length > 0) {
+    return decision(
+      `rule:${after.id}:modified`,
+      "widening",
+      "approved rule lost assurance requirements",
+      { addedAssurances, removedAssurances },
+    );
   }
   if (ruleTextualSignature(before) !== ruleTextualSignature(after)) {
     return decision(`rule:${after.id}:modified`, "compatible", "approved rule support metadata or text changed without changing clauses");

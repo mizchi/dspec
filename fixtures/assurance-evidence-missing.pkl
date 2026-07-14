@@ -1,0 +1,39 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-evidence-missing"
+  name = d.text("不足する保証証拠", "missing assurance evidence")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.assurance", "entity", "保証", "assurance")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-EVIDENCE-MISSING"
+      kind = "obligation"
+      text = d.text("実行済み保証は証拠を持つ", "executed assurance has evidence")
+      terms {
+        "concept.assurance"
+      }
+      must {
+        d.clause("executed.has.evidence", "実行済み保証は証拠を持つ", "executed assurance has evidence")
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#rejects assurances without evidence"
+          assurances {
+            "reference"
+            "executed"
+          }
+        }
+      }
+    }
+  }
+}
