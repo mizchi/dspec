@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import * as core from "../src/core/index.mjs";
 
 const read = (path) => readFileSync(path, "utf8");
 const pkg = JSON.parse(read("package.json"));
@@ -13,8 +14,11 @@ test("defines the v0.1 public package boundary", () => {
   assert.deepEqual(pkg.files, ["dspec", "src", "README.md", "LICENSE"]);
   assert.equal(pkg.exports["."], "./src/core/index.mjs");
   assert.equal(pkg.exports["./clause-ast"], "./src/core/clause-ast.mjs");
+  assert.equal(pkg.exports["./assurance-evidence"], "./src/core/assurance-evidence.mjs");
   assert.equal(pkg.exports["./real-app"], "./src/core/real-app.mjs");
   assert.equal(pkg.exports["./schema"], "./dspec/Schema.pkl");
+  assert.equal(typeof core.assuranceEvidenceSnapshot, "function");
+  assert.equal(typeof core.verifyAssuranceEvidenceManifest, "function");
 });
 
 test("defines explicit release and compatibility policy", () => {

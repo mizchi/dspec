@@ -289,6 +289,18 @@ model: d.Model = new {
       "generated artifact manifest",
       "generated artifact manifest",
     )
+    d.term(
+      "artifact.assurance_evidence_manifest",
+      "entity",
+      "保証証跡 manifest",
+      "assurance evidence manifest",
+    )
+    d.term(
+      "concept.clause_backend_support",
+      "value",
+      "Clause/backend 対応水準",
+      "Clause/backend support level",
+    )
     new d.Term {
       id = "artifact.formal_backend"
       kind = "entity"
@@ -1417,6 +1429,89 @@ model: d.Model = new {
         d.modelRef("fixtures/assurance-evidence-missing.pkl")
         d.modelRef("fixtures/assurance-compat-before.pkl")
         d.modelRef("fixtures/assurance-compat-after.pkl")
+      }
+    }
+
+    new d.Rule {
+      id = "DSPEC-ASSURANCE-EVIDENCE-MANIFEST"
+      kind = "invariant"
+      text =
+        text(
+          "形式保証は実行結果と Clause/backend 対応を束縛した manifest によって検証する",
+          "Formal assurance is verified by a manifest binding execution results to Clause/backend support",
+        )
+      terms {
+        "artifact.assurance_evidence_manifest"
+        "artifact.formal_backend"
+        "artifact.source_map"
+        "concept.clause_backend_support"
+        "concept.expr_ast"
+        "concept.rule"
+        "concept.verification_target"
+      }
+      must {
+        d.clause(
+          "evidence.create binds (modelDigest + sourceMapDigest + artifactDigest + toolVersion + result + executedAt)",
+          "evidence create はモデル・source map・生成物・tool/version・結果・実行時刻を束縛する",
+          "evidence create binds the model, source map, generated artifacts, tool version, result, and execution time",
+        )
+        d.clause(
+          "evidence.verify rejects stale(modelDigest || artifactDigest || toolVersion || result || clauseBindings)",
+          "evidence verify はモデル、生成物、tool version、実行結果、Clause binding の drift を拒否する",
+          "evidence verify rejects model, artifact, tool-version, result, and Clause-binding drift",
+        )
+        d.clause(
+          "evidence.refresh == create(currentModel, currentTools)",
+          "evidence refresh は現在のモデルとtoolでmanifestを再実行・置換する",
+          "evidence refresh re-executes and replaces the manifest using the current model and tools",
+        )
+        d.clause(
+          "clauseBinding.support in {unmapped, textual, structural, semantic}",
+          "Clause AST の各operatorはbackendごとに unmapped/textual/structural/semantic を明示する",
+          "each Clause AST operator declares unmapped, textual, structural, or semantic support per backend",
+        )
+        d.clause(
+          "formalAssurance -> selectors.nonEmpty && clauses.ast.nonEmpty && support == semantic && artifact.scope == clause && artifact.result == pass",
+          "bounded/proved はselector、型付きAST、semantic対応、pass済みclause artifactをすべて要求する",
+          "bounded and proved require selectors, typed AST, semantic support, and a passing clause-scoped artifact",
+        )
+        d.clause(
+          "artifact.scope == generator -> assurance notIn {bounded, proved}",
+          "生成器や形式toolが通っただけのgenerator証跡をbounded/provedへ昇格しない",
+          "generator-scoped tool success is not promoted to bounded or proved assurance",
+        )
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "executed"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#creates and verifies typed assurance evidence manifests"
+          assurances {
+            "executed"
+          }
+          assuranceEvidence {
+            ["executed"] = "Taskfile.pkl#test"
+          }
+        }
+        d.nodeCheck("test/cli.test.mjs#detects and refreshes stale assurance evidence manifests")
+        d.nodeCheck("test/cli.test.mjs#rejects formal assurance when backend binding is structural only")
+        d.nodeCheck("test/cli.test.mjs#rejects legacy references as formal assurance evidence")
+      }
+      implementedBy {
+        d.codeRef("dspec/Schema.pkl", "AssuranceEvidenceManifest")
+        d.codeRef("dspec/Schema.pkl", "AssuranceEvidenceClauseBinding")
+        d.codeRef("src/core/assurance-evidence.mjs", "assuranceEvidenceSnapshot")
+        d.codeRef("src/core/assurance-evidence.mjs", "CLAUSE_BACKEND_OPERATOR_SUPPORT")
+        d.codeRef("src/core/assurance-evidence.mjs", "verifyAssuranceEvidenceManifest")
+        d.codeRef("src/cli.mjs", "createAssuranceEvidenceManifest")
+        d.codeRef("src/cli.mjs", "assuranceEvidenceVerificationReport")
+        d.codeRef("src/cli.mjs", "runEvidenceCommand")
+        d.codeRef("src/cli.mjs", "validateCheckTargetAssuranceDeclarations")
+        d.modelRef("fixtures/typed-ast.pkl")
+        d.modelRef("fixtures/assurance-formal-unsupported.pkl")
       }
     }
 

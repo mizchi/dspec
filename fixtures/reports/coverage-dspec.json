@@ -9,32 +9,32 @@
     ],
     "requirements": {
       "bounded": 0,
-      "executed": 2,
+      "executed": 3,
       "mutation-tested": 1,
       "proved": 0,
-      "reference": 67
+      "reference": 68
     },
     "rules": {
-      "satisfied": 67,
-      "total": 67
+      "satisfied": 68,
+      "total": 68
     },
     "targets": {
       "byKind": {
         "bounded": 0,
-        "executed": 2,
+        "executed": 3,
         "mutation-tested": 1,
         "proved": 0,
-        "reference": 292
+        "reference": 296
       },
-      "total": 292
+      "total": 296
     }
   },
-  "covered": 67,
+  "covered": 68,
   "errors": [],
   "model": {
     "id": "dspec-self",
     "version": "0.1.0"
   },
   "status": "pass",
-  "total": 67
+  "total": 68
 }

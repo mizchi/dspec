@@ -23,6 +23,9 @@ node src/cli.mjs devshell-smoke --json
 node src/cli.mjs verify-generated examples/dspec.pkl
 node src/cli.mjs verify-generated --json examples/dspec.pkl
 node src/cli.mjs verify-generated --json --require-formal-tools fixtures/typed-ast.pkl
+node src/cli.mjs evidence create --output evidence.json fixtures/typed-ast.pkl
+node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl evidence.json
+node src/cli.mjs evidence refresh fixtures/typed-ast.pkl evidence.json
 ```
 
 The dev shell provides Node.js 24, pnpm, Pkl, Lean via elan, Z3, TLA+, and Alloy 6.
@@ -117,6 +120,9 @@ node src/cli.mjs emit runtime-collector fixtures/runtime-model.pkl
 node src/cli.mjs emit runtime-collector-fixture fixtures/runtime-model.pkl
 node src/cli.mjs verify-generated examples/dspec.pkl
 node src/cli.mjs verify-generated --json examples/dspec.pkl
+node src/cli.mjs evidence create --output /tmp/dspec-evidence.json fixtures/typed-ast.pkl
+node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl /tmp/dspec-evidence.json
+node src/cli.mjs evidence refresh fixtures/typed-ast.pkl /tmp/dspec-evidence.json
 node src/cli.mjs collect-runtime-evidence fixtures/runtime-evidence-collector.json
 node src/cli.mjs collect-runtime-evidence --pkl fixtures/runtime-evidence-collector.json
 node src/cli.mjs verify-runtime-evidence fixtures/runtime-evidence-collector.json
@@ -355,6 +361,15 @@ It models the current implementation boundary:
   TLA+ TLC, plus Alloy analyzer smoke checks when those tools are available.
 - `verify-generated --json` emits a deterministic backend-status report for CI
   artifacts and future drift/coverage ingestion.
+- `evidence create` executes the generated backends and records a typed
+  evidence manifest containing model, source-map, and generated-artifact
+  digests, tool versions, results, execution time, and Clause selectors.
+  `evidence verify` rejects stale model/artifact/tool/result/binding data, while
+  `evidence refresh` re-executes and replaces the manifest.
+- Clause/backend applicability is recorded per AST operator as `unmapped`,
+  `textual`, `structural`, or `semantic`. The current generated backends are at
+  most structural, so a successful Lean/TLC/Alloy run remains generator-scoped
+  evidence and cannot authorize `bounded` or `proved` business clauses.
 - `generated/dspec.md` is the checked-in Markdown review artifact generated
   from `examples/dspec.pkl`; each rule includes review metadata such as source
   path, coverage mode, clause selectors, checks, and implementation refs. The
@@ -434,6 +449,14 @@ semantics or models that request an unsupported semantics version. QuickCheck,
 TLA+, and Lean projections carry the version explicitly. The executable
 reference semantics and conformance tests live in `src/core/clause-ast.mjs` and
 `test/clause-ast-core.test.mjs`.
+
+`src/core/assurance-evidence.mjs` separately records how each operator reaches
+each backend. A `bounded` or `proved` target must select concrete clauses, those
+clauses must carry `Clause.ast`, every selected operator must have `semantic`
+backend support, and the referenced evidence manifest must contain a passing
+clause-scoped artifact. File or theorem anchors alone are rejected.
+The pure manifest/digest/support helpers are exported from `@mizchi/dspec` and
+`@mizchi/dspec/assurance-evidence` for non-CLI integrations.
 
 `patterns.db` is the first domain pattern. It separates DB structure from
 transaction and migration behavior: tables declare columns, primary keys,

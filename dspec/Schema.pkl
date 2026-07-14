@@ -102,6 +102,11 @@ typealias SpecKind =
 typealias Backend =
   "node" | "pkl" | "lean" | "alloy" | "tla" | "rego" | "cue" | "playwright" | "runtime" | "manual"
 typealias CheckAssuranceKind = "reference" | "executed" | "mutation-tested" | "bounded" | "proved"
+typealias AssuranceEvidenceSchemaVersion = "1.0"
+typealias AssuranceEvidenceScope = "generator" | "clause"
+typealias AssuranceEvidenceResult = "pass" | "fail" | "skip"
+typealias AssuranceEvidenceTimestamp = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"#)))
+typealias ClauseBackendSupport = "unmapped" | "textual" | "structural" | "semantic"
 
 /// A language-independent text node.
 ///
@@ -199,6 +204,59 @@ class CheckTarget {
   /// resolves; stronger claims require an entry in `assuranceEvidence`.
   assurances: Listing<CheckAssuranceKind> = new { "reference" }
   assuranceEvidence: Mapping<CheckAssuranceKind, String(length > 0)> = new {}
+}
+
+/// Identity of a model captured by an assurance evidence run.
+class AssuranceEvidenceModel {
+  id: Identifier
+  version: Version
+  digest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+}
+
+/// Tool identity recorded when a generated backend is executed.
+class AssuranceEvidenceTool {
+  name: String(length > 0)
+  version: String? = null
+}
+
+/// One generated artifact execution. Generator-scoped execution is not a
+/// proof of the source business clauses.
+class AssuranceEvidenceArtifact {
+  id: Identifier
+  backend: "quickcheck" | "lean" | "tla" | "alloy"
+  scope: AssuranceEvidenceScope
+  propertyIds: Listing<String(length > 0)> = new {}
+  digest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  result: AssuranceEvidenceResult
+  tool: AssuranceEvidenceTool
+  theorem: String? = null
+  bounds: Mapping<String, String(length > 0)> = new {}
+}
+
+/// Backend applicability for one source Clause.ast selector.
+class AssuranceEvidenceClauseBackend {
+  backend: "quickcheck" | "lean" | "tla" | "alloy"
+  support: ClauseBackendSupport
+  generatedSelectors: Listing<String(length > 0)> = new {}
+}
+
+class AssuranceEvidenceClauseBinding {
+  ruleId: Identifier
+  selector: String(matches(Regex(#"^(when|must|mustNot)\[[0-9]+\]$"#)))
+  astDigest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  operators: Listing<ExprOp> = new {}
+  backends: Listing<AssuranceEvidenceClauseBackend> = new {}
+}
+
+/// Deterministic verification evidence. `executedAt` is supplied by the run;
+/// all freshness decisions use digests rather than wall-clock age.
+class AssuranceEvidenceManifest {
+  schemaVersion: AssuranceEvidenceSchemaVersion
+  executedAt: AssuranceEvidenceTimestamp
+  model: AssuranceEvidenceModel
+  sourceMapDigest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  artifacts: Listing<AssuranceEvidenceArtifact> = new {}
+  clauseBindings: Listing<AssuranceEvidenceClauseBinding> = new {}
 }
 
 function linkedCheck(checkBackend: Backend, checkRef: String): CheckTarget = new {

@@ -14,8 +14,11 @@ The vocabulary is a set, not a linear maturity scale:
 - `bounded`: a bounded model-check result is attached
 - `proved`: a proof-assistant declaration is attached
 
-`fixtures/assurance-levels.pkl` exercises all five kinds. Negative fixtures
-cover a missing required kind, an incompatible backend, and missing evidence.
+`fixtures/assurance-levels.pkl` exercises declaration and rendering of all five
+kinds. It is intentionally rejected by `dspec check` as production formal
+evidence because its Lean/TLA+ anchors are not typed evidence manifests and do
+not bind source clauses. Negative fixtures also cover a missing required kind,
+an incompatible backend, and missing evidence.
 
 ## Result
 
@@ -34,13 +37,17 @@ The contract now survives the complete authoring path:
    requirements as `widening`.
 7. generated assurance failures normalize back to the source rule and the
    `approved-rules-have-required-assurances` property.
+8. `evidence create`, `verify`, and `refresh` bind backend execution to model,
+   source-map, artifact, tool-version, and Clause-selector digests.
+9. Clause/backend support is explicit per operator; generator-scoped structural
+   success cannot authorize `bounded` or `proved`.
 
 The self model currently reports:
 
-- approved active rules: 67
-- rules satisfying required assurance: 67/67
-- automated targets: 292
-- `executed` targets: 2
+- approved active rules: 68
+- rules satisfying required assurance: 68/68
+- automated targets: 296
+- `executed` targets: 3
 - `mutation-tested` targets: 1
 - `bounded` targets: 0
 - `proved` targets: 0
@@ -52,13 +59,13 @@ alone is therefore not recorded as bounded or proved assurance.
 
 ## Verification
 
-- `pkf run --refresh check:fast`: 264 tests, 261 pass, 3 formal-tool tests
+- `pkf run --refresh check:fast`: 268 tests, 265 pass, 3 formal-tool tests
   skipped outside the devShell, 0 failures
 - `nix develop path:$PWD -c pkf run --refresh check:formal`: QuickCheck, Lean,
   TLA+ SANY/TLC, and Alloy Analyzer pass for the self model and typed AST
   fixture
-- self drift: 928 references resolve
-- self coverage: 67/67 approved rules
+- self drift: 944 references resolve
+- self coverage: 68/68 approved rules
 
 ## Decision
 
@@ -67,17 +74,17 @@ plain anchor from being silently presented as an executed, mutation-tested,
 bounded, or proved result, and it makes assurance regressions visible during a
 spec change.
 
-It is not yet proof attestation. `assuranceEvidence` proves that an artifact and
-optional anchor resolve, but it does not prove that the referenced theorem or
-model-check property semantically corresponds to the source rule. The
-all-kinds fixture validates contract mechanics and must not be interpreted as a
-proof of dspec's business clauses.
+It is still not business-clause proof attestation. The typed manifest now makes
+the missing semantic correspondence explicit and drift-checked, and formal
+assurance rejects legacy anchors. The generated artifacts remain
+generator-scoped because no backend currently checks the source Clause
+satisfaction relation. The all-kinds fixture validates declaration mechanics
+and must not be interpreted as a proof of dspec's business clauses.
 
 ## Next Constraint
 
-The next useful increment is a typed evidence manifest produced by backend
-execution. It should bind model digest, rule id, clause selectors, generated
-property id, tool/version, bounds or theorem name, result, and artifact digest.
-Only a verified manifest should authorize `bounded` or `proved` in a production
-spec. Until that exists, dspec should continue to report those self-assurance
-counts as zero.
+The next useful increment is one real `semantic` operator/backend path: define
+an interpretation environment, generate a load-bearing satisfaction property,
+bind its rule and Clause selectors into a clause-scoped manifest artifact, and
+only then allow that path to emit `bounded` or `proved`. Until that exists,
+dspec should continue to report those self-assurance counts as zero.

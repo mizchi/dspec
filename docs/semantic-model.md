@@ -27,6 +27,9 @@ For the current prototype:
 - support stronger than `reference` carries an `assuranceEvidence` reference;
   `Rule.requiredAssurances` declares which kinds must be present before an
   approved claim counts as covered.
+- formal `bounded` and `proved` support additionally requires a verified
+  `AssuranceEvidenceManifest`. The manifest binds model/source-map/artifact
+  digests, tool identity, execution result, and Clause selectors.
 - `CheckTarget.covers` can refine support from rule-level to clause-level
   selectors such as `must[0]`.
 - `patterns.db` is a typed domain base for tables, invariants, transactions,
@@ -50,6 +53,9 @@ For the current prototype:
 - generated QuickCheck data preserves `requiredAssurances`, target assurances,
   and evidence references, then rechecks required assurance coverage as an
   executable property.
+- `evidence create`, `verify`, and `refresh` manage generated backend evidence.
+  Verification detects model, generated artifact, tool-version, and Clause
+  binding drift without treating an old pass result as current.
 - `domain-coverage` checks that typed domain-base elements are mentioned by
   approved claims through stable ids, so orphan model facts do not silently
   become source-of-truth data.
@@ -366,6 +372,21 @@ The current AST fixes these operator-level meanings:
 `dspec check` enforces the field shape for each operator. For example, an
 `atom` accepts `name` and `args` but not `children`, while `and` accepts
 `children` but not `name` or `args`.
+
+Backend applicability is a separate contract from AST well-formedness. Each
+operator/backend pair is classified as:
+
+- `unmapped`: the backend does not carry the Clause AST.
+- `textual`: only a rendered expression string reaches the backend.
+- `structural`: the typed node shape reaches the backend, but no satisfaction
+  relation is checked.
+- `semantic`: the generated property checks the source Clause meaning.
+
+The current matrix classifies Alloy as `unmapped`, TLA+ as `textual`, and Lean
+and QuickCheck as `structural` for the Clause AST operators. Consequently,
+backend smoke success is recorded with `scope = generator`; it cannot satisfy
+`bounded` or `proved`. Promoting an operator to `semantic` requires a
+load-bearing generated property and clause-scoped evidence.
 
 The likely next evolution is one of these:
 

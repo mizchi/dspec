@@ -11,6 +11,14 @@ import {
   validateClauseAst,
 } from "./core/clause-ast.mjs";
 import {
+  ASSURANCE_EVIDENCE_SCHEMA_VERSION,
+  assuranceDigest,
+  assuranceEvidenceSnapshot,
+  clauseBackendSupport,
+  expressionOperators,
+  verifyAssuranceEvidenceManifest,
+} from "./core/assurance-evidence.mjs";
+import {
   RealAppCoreError,
   evaluateRealAppImport,
   importInfrastructureDocuments,
@@ -29,6 +37,7 @@ const TOP_LEVEL_COMMANDS = [
   { name: "domain-coverage", usage: "dspec domain-coverage [--json] <model.pkl>" },
   { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
+  { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
   {
     name: "emit",
     usage:
@@ -95,6 +104,14 @@ Typical flow:
   dspec spec-change compat --json before.pkl after.pkl
   dspec spec-change scaffold --output review.pkl before.pkl after.pkl
   dspec spec-change review --json review.pkl
+`;
+}
+
+function evidenceUsage() {
+  return `usage:
+  dspec evidence create [--json] [--output <manifest.json>] [--executed-at <iso>] [--require-formal-tools] <model.pkl>
+  dspec evidence verify [--json] <model.pkl> <manifest.json>
+  dspec evidence refresh [--json] [--executed-at <iso>] [--require-formal-tools] <model.pkl> <manifest.json>
 `;
 }
 
@@ -321,7 +338,13 @@ function ruleRequiredAssurances(rule) {
   return [...new Set(required.length > 0 ? required : ["reference"])];
 }
 
-function validateCheckTargetAssuranceDeclarations(errors, rule) {
+function clauseForSelector(rule, selector) {
+  const match = /^(when|must|mustNot)\[([0-9]+)\]$/.exec(selector);
+  if (!match) return null;
+  return list(rule[match[1]])[Number(match[2])] ?? null;
+}
+
+function validateCheckTargetAssuranceDeclarations(errors, model, rule, { requireFormalEvidence = false } = {}) {
   for (const target of list(rule.checks)) {
     const assurances = checkTargetAssurances(target);
     const assuranceSet = new Set(assurances);
@@ -340,6 +363,58 @@ function validateCheckTargetAssuranceDeclarations(errors, rule) {
       }
       if (kind !== "reference" && !evidence[kind]) {
         errors.push(`missing check assurance evidence: ${rule.id} -> ${kind}`);
+      }
+      if (requireFormalEvidence && (kind === "bounded" || kind === "proved")) {
+        if (list(target.covers).length === 0) {
+          errors.push(`formal assurance requires clause selectors: ${rule.id} -> ${kind} ${target.backend}`);
+        }
+        for (const selector of list(target.covers)) {
+          const clause = clauseForSelector(rule, selector);
+          if (!clause?.ast) {
+            errors.push(`formal assurance requires typed Clause.ast: ${rule.id} -> ${kind} ${target.backend} ${selector}`);
+            continue;
+          }
+          const support = clauseBackendSupport(target.backend, expressionOperators(clause.ast));
+          if (support !== "semantic") {
+            errors.push(
+              `formal assurance requires semantic Clause.ast support: ${rule.id} -> ${kind} ${target.backend} ${selector} (${support})`,
+            );
+          }
+        }
+        const evidenceRef = evidence[kind];
+        if (evidenceRef) {
+          const { path, anchor } = splitRef(evidenceRef);
+          if (anchor || !path.endsWith(".json")) {
+            errors.push(`formal assurance requires evidence manifest: ${rule.id} -> ${kind} ${evidenceRef}`);
+          } else if (!existsSync(resolve(path))) {
+            errors.push(`missing formal assurance evidence manifest: ${rule.id} -> ${kind} ${evidenceRef}`);
+          } else {
+            let manifest;
+            try {
+              manifest = readJsonFile(path, "assurance evidence manifest");
+            } catch (error) {
+              errors.push(`invalid formal assurance evidence manifest: ${rule.id} -> ${kind}: ${error.message}`);
+              continue;
+            }
+            const report = assuranceEvidenceVerificationReport(model, manifest);
+            for (const error of report.errors) {
+              errors.push(`invalid formal assurance evidence manifest: ${rule.id} -> ${kind}: ${error}`);
+            }
+            const artifact = list(report.manifest?.artifacts).find((entry) => entry?.backend === target.backend);
+            if (!artifact || artifact.result !== "pass" || artifact.scope !== "clause") {
+              errors.push(`formal assurance lacks passing clause artifact: ${rule.id} -> ${kind} ${target.backend}`);
+            }
+            for (const selector of list(target.covers)) {
+              const binding = list(report.manifest?.clauseBindings).find(
+                (entry) => entry?.ruleId === rule.id && entry.selector === selector,
+              );
+              const backendBinding = list(binding?.backends).find((entry) => entry?.backend === target.backend);
+              if (!backendBinding || backendBinding.support !== "semantic" || list(backendBinding.generatedSelectors).length === 0) {
+                errors.push(`formal assurance lacks semantic manifest binding: ${rule.id} -> ${kind} ${target.backend} ${selector}`);
+              }
+            }
+          }
+        }
       }
     }
 
@@ -1164,7 +1239,7 @@ function validateCheckTargetCoverageSelectors(errors, rule) {
   }
 }
 
-function validate(model) {
+function validate(model, { requireFormalEvidence = false } = {}) {
   const errors = [];
   const terms = list(model.vocabulary);
   const rules = list(model.rules);
@@ -1223,7 +1298,7 @@ function validate(model) {
     validateClauseAsts(errors, rule, "must");
     validateClauseAsts(errors, rule, "mustNot");
     validateCheckTargetCoverageSelectors(errors, rule);
-    validateCheckTargetAssuranceDeclarations(errors, rule);
+    validateCheckTargetAssuranceDeclarations(errors, model, rule, { requireFormalEvidence });
 
     const verificationCount = list(rule.checks).length + list(rule.implementedBy).length;
     if (rule.reviewStatus === "approved" && !rule.deprecated && verificationCount === 0) {
@@ -1538,6 +1613,94 @@ function parseVerifyGeneratedArgs(args) {
     throw new CommandError(usage());
   }
   return { file, json, requireFormalTools };
+}
+
+function parseEvidenceCreateArgs(args) {
+  let json = false;
+  let outputFile = null;
+  let executedAt = null;
+  let requireFormalTools = false;
+  const files = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--require-formal-tools") {
+      requireFormalTools = true;
+      continue;
+    }
+    if (arg === "--output") {
+      outputFile = args[index + 1];
+      index += 1;
+      if (!outputFile) throw new CommandError("--output requires a manifest path\n");
+      continue;
+    }
+    if (arg === "--executed-at") {
+      executedAt = args[index + 1];
+      index += 1;
+      if (!executedAt) throw new CommandError("--executed-at requires an ISO timestamp\n");
+      continue;
+    }
+    files.push(arg);
+  }
+  if (files.length !== 1) throw new CommandError(evidenceUsage());
+  return {
+    modelFile: files[0],
+    json,
+    outputFile,
+    executedAt: executedAt ?? new Date().toISOString(),
+    requireFormalTools,
+  };
+}
+
+function parseEvidenceVerifyArgs(args) {
+  let json = false;
+  const files = [];
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    files.push(arg);
+  }
+  if (files.length !== 2) throw new CommandError(evidenceUsage());
+  return { modelFile: files[0], manifestFile: files[1], json };
+}
+
+function parseEvidenceRefreshArgs(args) {
+  let json = false;
+  let executedAt = null;
+  let requireFormalTools = false;
+  const files = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--require-formal-tools") {
+      requireFormalTools = true;
+      continue;
+    }
+    if (arg === "--executed-at") {
+      executedAt = args[index + 1];
+      index += 1;
+      if (!executedAt) throw new CommandError("--executed-at requires an ISO timestamp\n");
+      continue;
+    }
+    files.push(arg);
+  }
+  if (files.length !== 2) throw new CommandError(evidenceUsage());
+  return {
+    modelFile: files[0],
+    manifestFile: files[1],
+    json,
+    executedAt: executedAt ?? new Date().toISOString(),
+    requireFormalTools,
+  };
 }
 
 function parseDevshellSmokeArgs(args) {
@@ -11397,6 +11560,161 @@ function verifyGeneratedReport(model) {
   }
 }
 
+function assuranceArtifactSources(model) {
+  return {
+    alloy: emitAlloy(model),
+    lean: emitLean(model),
+    quickcheck: emitQuickcheck(model),
+    tla: emitTla(model),
+  };
+}
+
+function assuranceArtifactResults(verification) {
+  return {
+    alloy: verification.backends.alloyAnalyzer,
+    lean: verification.backends.lean,
+    quickcheck: verification.backends.quickcheck,
+    tla: verification.backends.tlaTlc,
+  };
+}
+
+function assuranceEvidenceExpected(model, verification = verifyGeneratedReport(model)) {
+  const sourceMap = emitSourceMapObject(model, model.primaryLocale);
+  const snapshot = assuranceEvidenceSnapshot(model, sourceMap, assuranceArtifactSources(model));
+  const results = assuranceArtifactResults(verification);
+  return {
+    ...snapshot,
+    artifactDefinitions: Object.fromEntries(
+      assuranceEvidenceArtifactDefinitions(model).map((definition) => [
+        definition.id,
+        { ...definition, result: results[definition.id].status },
+      ]),
+    ),
+  };
+}
+
+function commandVersion(command, args) {
+  if (!hasTool(command)) return null;
+  const result = spawnSync(command, args, { encoding: "utf8", timeout: 10000 });
+  if (result.error || result.status !== 0) return null;
+  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim();
+  return output.split("\n").map((line) => line.trim()).find(Boolean) ?? null;
+}
+
+function currentAssuranceToolVersions() {
+  return {
+    node: process.version,
+    lean: commandVersion("lean", ["--version"]),
+    tlc: commandVersion("tlc", ["-help"]),
+    alloy6: commandVersion("alloy6", ["version"]),
+  };
+}
+
+function assuranceEvidenceArtifactDefinitions(model) {
+  return [
+    {
+      id: "alloy",
+      backend: "alloy",
+      tool: "alloy6",
+      scope: "generator",
+      propertyIds: ["alloy.assert.ApprovedRulesHaveChecks", "alloy.assert.ActiveApprovedRulesHaveAutomatedSupport"],
+      bounds: { command: "check ApprovedRulesHaveChecks" },
+    },
+    {
+      id: "lean",
+      backend: "lean",
+      tool: "lean",
+      scope: "generator",
+      propertyIds: ["lean.theorem.coverage_invariant"],
+      theorem: "coverage_invariant",
+      bounds: {},
+    },
+    {
+      id: "quickcheck",
+      backend: "quickcheck",
+      tool: "node",
+      scope: "generator",
+      propertyIds: [
+        "quickcheck.propertyApprovedRulesHaveAutomatedChecks",
+        "quickcheck.propertyApprovedRulesHaveRequiredAssurances",
+      ],
+      bounds: {},
+    },
+    {
+      id: "tla",
+      backend: "tla",
+      tool: "tlc",
+      scope: "generator",
+      propertyIds: ["tla.CoverageInvariant", "tla.WorkflowInvariant"],
+      bounds: { configDigest: assuranceDigest(emitTlaConfig(model)) },
+    },
+  ];
+}
+
+function assuranceEvidenceArtifacts(model, verification, expected, toolVersions) {
+  const results = assuranceArtifactResults(verification);
+  const definitions = assuranceEvidenceArtifactDefinitions(model);
+  return definitions.map((definition) => ({
+    id: definition.id,
+    backend: definition.backend,
+    scope: definition.scope,
+    propertyIds: definition.propertyIds,
+    digest: expected.artifactDigests[definition.id],
+    result: results[definition.id].status,
+    tool: {
+      name: definition.tool,
+      version: toolVersions[definition.tool],
+    },
+    theorem: definition.theorem ?? null,
+    bounds: definition.bounds,
+  }));
+}
+
+function createAssuranceEvidenceManifest(model, options = {}) {
+  const executedAt = options.executedAt ?? new Date().toISOString();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(executedAt)) {
+    throw new CommandError(`invalid --executed-at timestamp: ${executedAt}\n`);
+  }
+  const verification = verifyGeneratedReport(model);
+  assertVerifyGeneratedReport(verification, { requireFormalTools: options.requireFormalTools });
+  const expected = assuranceEvidenceExpected(model, verification);
+  const toolVersions = currentAssuranceToolVersions();
+  return {
+    schemaVersion: ASSURANCE_EVIDENCE_SCHEMA_VERSION,
+    executedAt,
+    model: expected.model,
+    sourceMapDigest: expected.sourceMapDigest,
+    artifacts: assuranceEvidenceArtifacts(model, verification, expected, toolVersions),
+    clauseBindings: expected.clauseBindings,
+  };
+}
+
+function assuranceEvidenceVerificationReport(model, manifest) {
+  const expected = assuranceEvidenceExpected(model);
+  const verification = verifyAssuranceEvidenceManifest(manifest, expected, currentAssuranceToolVersions());
+  return {
+    model: { id: model.id, version: model.version },
+    manifest,
+    status: verification.status,
+    summary: {
+      artifacts: list(manifest?.artifacts).length,
+      clauseBindings: list(manifest?.clauseBindings).length,
+    },
+    errors: verification.errors,
+    warnings: verification.warnings,
+  };
+}
+
+function writeAssuranceEvidenceManifest(path, manifest) {
+  mkdirSync(dirname(resolve(path)), { recursive: true });
+  writeFileSync(path, stableJson(manifest));
+  return {
+    path,
+    bytes: Buffer.byteLength(stableJson(manifest), "utf8"),
+    digest: assuranceDigest(manifest),
+  };
+}
+
 function backendFailureMessage(report) {
   for (const [name, backend] of Object.entries(report.backends)) {
     if (backend.status === "fail") {
@@ -11468,7 +11786,7 @@ function reportStatus(errors) {
 }
 
 function checkReport(model) {
-  const errors = validate(model);
+  const errors = validate(model, { requireFormalEvidence: true });
   return {
     model: modelReport(model),
     status: reportStatus(errors),
@@ -12598,6 +12916,88 @@ function runSpecChangeCommand(args) {
   throw new CommandError(`unknown spec-change subcommand: ${subcommand}\n${specChangeUsage()}`);
 }
 
+function assertModelCoverage(model) {
+  const coverage = validateCoverage(model);
+  if (coverage.errors.length > 0) {
+    throw new CommandError(`${coverage.errors.join("\n")}\n`);
+  }
+}
+
+function runEvidenceCreate(args) {
+  const options = parseEvidenceCreateArgs(args);
+  const model = loadModel(options.modelFile);
+  assertModelCoverage(model);
+  const manifest = createAssuranceEvidenceManifest(model, options);
+  const output = options.outputFile ? writeAssuranceEvidenceManifest(options.outputFile, manifest) : null;
+  if (options.json) {
+    process.stdout.write(stableJson({ status: "pass", model: modelReport(model), output, manifest }));
+    return;
+  }
+  if (output) {
+    process.stdout.write(`ok: wrote assurance evidence manifest ${output.path}\n`);
+    return;
+  }
+  process.stdout.write(stableJson(manifest));
+}
+
+function runEvidenceVerify(args) {
+  const options = parseEvidenceVerifyArgs(args);
+  const model = loadModel(options.modelFile);
+  const manifest = readJsonFile(options.manifestFile, "assurance evidence manifest");
+  const report = assuranceEvidenceVerificationReport(model, manifest);
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    assertReportOk(report);
+    return;
+  }
+  assertReportOk(report);
+  process.stdout.write(`ok: ${model.id} assurance evidence (${report.summary.artifacts} artifacts, ${report.summary.clauseBindings} clause bindings)\n`);
+}
+
+function runEvidenceRefresh(args) {
+  const options = parseEvidenceRefreshArgs(args);
+  const model = loadModel(options.modelFile);
+  assertModelCoverage(model);
+  const before = existsSync(resolve(options.manifestFile))
+    ? assuranceDigest(readFileSync(resolve(options.manifestFile), "utf8"))
+    : null;
+  const manifest = createAssuranceEvidenceManifest(model, options);
+  const output = writeAssuranceEvidenceManifest(options.manifestFile, manifest);
+  const report = {
+    status: "pass",
+    model: modelReport(model),
+    changed: before !== assuranceDigest(stableJson(manifest)),
+    output,
+    manifest,
+  };
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    return;
+  }
+  process.stdout.write(`ok: refreshed assurance evidence manifest ${output.path}\n`);
+}
+
+function runEvidenceCommand(args) {
+  const [subcommand, ...rest] = args;
+  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    process.stdout.write(evidenceUsage());
+    return;
+  }
+  if (subcommand === "create") {
+    runEvidenceCreate(rest);
+    return;
+  }
+  if (subcommand === "verify") {
+    runEvidenceVerify(rest);
+    return;
+  }
+  if (subcommand === "refresh") {
+    runEvidenceRefresh(rest);
+    return;
+  }
+  throw new CommandError(`unknown evidence subcommand: ${subcommand}\n${evidenceUsage()}`);
+}
+
 function emit(target, model, locale) {
   if (target === "markdown") return emitMarkdown(model, locale);
   if (target === "json") return stableJson({ model });
@@ -12622,7 +13022,7 @@ async function run(argv) {
     throw new CommandError(`unknown command: ${command}\n${usage()}`);
   }
 
-  if (command !== "spec-change" && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+  if (!["spec-change", "evidence"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     process.stdout.write(topLevelCommandHelp(commandSpec));
     return;
   }
@@ -12700,6 +13100,11 @@ async function run(argv) {
 
   if (command === "spec-change") {
     runSpecChangeCommand(args);
+    return;
+  }
+
+  if (command === "evidence") {
+    runEvidenceCommand(args);
     return;
   }
 

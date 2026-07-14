@@ -43,6 +43,8 @@ It works today as:
   mutation-tested, bounded, and proved support, require evidence for stronger
   claims, expose the assurance distribution in check/drift/coverage reports,
   survive QuickCheck projection, and participate in compatibility classification
+- typed assurance evidence manifests with model/artifact/tool freshness checks,
+  refresh workflow, and per-operator Clause/backend applicability records
 - a domain coverage gate that requires tracked domain pattern elements to be
   grounded in approved rules by stable ids
 - stable JSON reports for check, drift, coverage, and domain coverage gates,
@@ -124,7 +126,8 @@ It is not yet enough as:
 - a source of bounded or proved business-clause assurance; the self model
   deliberately reports zero `bounded` and zero `proved` targets until backend
   semantics justify those labels
-- a semantic checker for the full meaning of `Clause.ast`
+- a semantic checker for the full meaning of `Clause.ast`; the applicability
+  matrix currently reports only unmapped, textual, or structural support
 - a proof-producing source generator for implementation or backend proofs
 - a deep TLC/Alloy model-checking workflow with meaningful bounded scopes and
   counterexample interpretation beyond the current smoke checks

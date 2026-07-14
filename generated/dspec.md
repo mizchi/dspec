@@ -6,12 +6,12 @@
 
 ## Review Summary
 
-- approvedRules: `67`
-- automatedCheckTargets: `292`
-- implementationRefs: `615`
+- approvedRules: `68`
+- automatedCheckTargets: `296`
+- implementationRefs: `626`
 - domainElements: `0`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=292, executed=2, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=296, executed=3, mutation-tested=1, bounded=0, proved=0`
 
 ## Vocabulary
 
@@ -19,6 +19,7 @@
 - `artifact.app_profile` (entity): application verification profile
 - `artifact.app_profile_scenario` (entity): application profile evaluation scenario
 - `artifact.app_profile_suite` (entity): application profile registry suite
+- `artifact.assurance_evidence_manifest` (entity): 保証証跡 manifest
 - `artifact.authoring_shorthand` (action): authoring shorthand
 - `artifact.breaking_change_policy` (entity): breaking change policy
 - `artifact.checker` (action): 整合性チェック
@@ -76,6 +77,7 @@
 - `artifact.sql_query_oracle` (action): SQL query oracle
 - `backend.pkl` (entity): Pkl evaluator
 - `backend.pkl_mbt` (entity): mizchi/pkl-mbt
+- `concept.clause_backend_support` (value): Clause/backend 対応水準
 - `concept.clause_expr` (value): Clause.expr
 - `concept.cloud_flow` (relation): Cloud flow
 - `concept.cloud_node` (entity): Cloud node
@@ -323,7 +325,7 @@ app profile は real app dogfood の検証 gate を型付き Pkl 設定として
 
 #### Review
 
-- source: model.rules[20]
+- source: model.rules[21]
 - coverage: rule
 - automatedChecks: 41
 - implementationRefs: 112
@@ -354,6 +356,57 @@ app profile は real app dogfood の検証 gate を型付き Pkl 設定として
 - selector: DSPEC-APP-PROFILE.must[24]
 - selector: DSPEC-APP-PROFILE.must[25]
 - selector: DSPEC-APP-PROFILE.must[26]
+
+### DSPEC-ASSURANCE-EVIDENCE-MANIFEST
+
+形式保証は実行結果と Clause/backend 対応を束縛した manifest によって検証する
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference, executed
+- term: `artifact.assurance_evidence_manifest`
+- term: `artifact.formal_backend`
+- term: `artifact.source_map`
+- term: `concept.clause_backend_support`
+- term: `concept.expr_ast`
+- term: `concept.rule`
+- term: `concept.verification_target`
+- must: `evidence.create binds (modelDigest + sourceMapDigest + artifactDigest + toolVersion + result + executedAt)`
+- must: `evidence.verify rejects stale(modelDigest || artifactDigest || toolVersion || result || clauseBindings)`
+- must: `evidence.refresh == create(currentModel, currentTools)`
+- must: `clauseBinding.support in {unmapped, textual, structural, semantic}`
+- must: `formalAssurance -> selectors.nonEmpty && clauses.ast.nonEmpty && support == semantic && artifact.scope == clause && artifact.result == pass`
+- must: `artifact.scope == generator -> assurance notIn {bounded, proved}`
+- check: node test/cli.test.mjs#creates and verifies typed assurance evidence manifests [reference, executed]
+- assuranceEvidence: executed -> Taskfile.pkl#test
+- check: node test/cli.test.mjs#detects and refreshes stale assurance evidence manifests [reference]
+- check: node test/cli.test.mjs#rejects formal assurance when backend binding is structural only [reference]
+- check: node test/cli.test.mjs#rejects legacy references as formal assurance evidence [reference]
+- implementation: code dspec/Schema.pkl#AssuranceEvidenceManifest
+- implementation: code dspec/Schema.pkl#AssuranceEvidenceClauseBinding
+- implementation: code src/core/assurance-evidence.mjs#assuranceEvidenceSnapshot
+- implementation: code src/core/assurance-evidence.mjs#CLAUSE_BACKEND_OPERATOR_SUPPORT
+- implementation: code src/core/assurance-evidence.mjs#verifyAssuranceEvidenceManifest
+- implementation: code src/cli.mjs#createAssuranceEvidenceManifest
+- implementation: code src/cli.mjs#assuranceEvidenceVerificationReport
+- implementation: code src/cli.mjs#runEvidenceCommand
+- implementation: code src/cli.mjs#validateCheckTargetAssuranceDeclarations
+- implementation: model fixtures/typed-ast.pkl
+- implementation: model fixtures/assurance-formal-unsupported.pkl
+
+#### Review
+
+- source: model.rules[16]
+- coverage: rule
+- automatedChecks: 4
+- implementationRefs: 11
+- selector: DSPEC-ASSURANCE-EVIDENCE-MANIFEST.must[0]
+- selector: DSPEC-ASSURANCE-EVIDENCE-MANIFEST.must[1]
+- selector: DSPEC-ASSURANCE-EVIDENCE-MANIFEST.must[2]
+- selector: DSPEC-ASSURANCE-EVIDENCE-MANIFEST.must[3]
+- selector: DSPEC-ASSURANCE-EVIDENCE-MANIFEST.must[4]
+- selector: DSPEC-ASSURANCE-EVIDENCE-MANIFEST.must[5]
 
 ### DSPEC-AUTHORING-SHORTHAND
 
@@ -409,7 +462,7 @@ backend verification と反例正規化 report の互換 fixture は安定 proje
 
 #### Review
 
-- source: model.rules[51]
+- source: model.rules[52]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 8
@@ -569,7 +622,7 @@ check/drift/coverage/domain-coverage/reconcile/reverse/app-profile は機械可�
 
 #### Review
 
-- source: model.rules[49]
+- source: model.rules[50]
 - coverage: rule
 - automatedChecks: 8
 - implementationRefs: 12
@@ -658,7 +711,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 
 #### Review
 
-- source: model.rules[34]
+- source: model.rules[35]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -691,7 +744,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 
 #### Review
 
-- source: model.rules[59]
+- source: model.rules[60]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 5
@@ -801,7 +854,7 @@ Data governance は typed pattern として記述され、暗号化・削除対�
 
 #### Review
 
-- source: model.rules[35]
+- source: model.rules[36]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -836,7 +889,7 @@ DB migration の preserve 宣言は mapping witness で cover される
 
 #### Review
 
-- source: model.rules[32]
+- source: model.rules[33]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 5
@@ -870,7 +923,7 @@ DB migration mapping は preserve scope と from/to table に接地している
 
 #### Review
 
-- source: model.rules[33]
+- source: model.rules[34]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -903,7 +956,7 @@ DB migration は typed pattern として記述され、preserve 宣言を backen
 
 #### Review
 
-- source: model.rules[31]
+- source: model.rules[32]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -933,7 +986,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 
 #### Review
 
-- source: model.rules[28]
+- source: model.rules[29]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 5
@@ -958,7 +1011,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 
 #### Review
 
-- source: model.rules[29]
+- source: model.rules[30]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1003,7 +1056,7 @@ README/docs/Taskfile の CLI 例は公開 CLI surface に接地する
 
 #### Review
 
-- source: model.rules[65]
+- source: model.rules[66]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 15
@@ -1044,7 +1097,7 @@ dogfood task は self spec、Runtime observation loop、実アプリ model の�
 
 #### Review
 
-- source: model.rules[61]
+- source: model.rules[62]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1078,7 +1131,7 @@ domain pattern の各要素は approved rule の安定 ID に接地する
 
 #### Review
 
-- source: model.rules[16]
+- source: model.rules[17]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 7
@@ -1206,7 +1259,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[23]
+- source: model.rules[24]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1229,7 +1282,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[21]
+- source: model.rules[22]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1252,7 +1305,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[22]
+- source: model.rules[23]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1278,7 +1331,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[27]
+- source: model.rules[28]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 3
@@ -1299,7 +1352,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[67]
+- source: model.rules[68]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1334,7 +1387,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[26]
+- source: model.rules[27]
 - coverage: rule
 - automatedChecks: 7
 - implementationRefs: 5
@@ -1363,7 +1416,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[47]
+- source: model.rules[48]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1396,7 +1449,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[58]
+- source: model.rules[59]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 5
@@ -1421,7 +1474,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[52]
+- source: model.rules[53]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1445,7 +1498,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[45]
+- source: model.rules[46]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1469,7 +1522,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[44]
+- source: model.rules[45]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1500,7 +1553,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[46]
+- source: model.rules[47]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 5
@@ -1646,7 +1699,7 @@ JSON report の互換 fixture は CLI 出力と同期される
 
 #### Review
 
-- source: model.rules[50]
+- source: model.rules[51]
 - coverage: rule
 - automatedChecks: 31
 - implementationRefs: 33
@@ -1674,7 +1727,7 @@ Markdown review artifact は仕様モデルから決定的に再生成できる
 
 #### Review
 
-- source: model.rules[60]
+- source: model.rules[61]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1699,7 +1752,7 @@ Markdown review artifact は仕様モデルから決定的に再生成できる
 
 #### Review
 
-- source: model.rules[68]
+- source: model.rules[69]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0
@@ -1726,7 +1779,7 @@ CI は portable fast gate と Nix formal gate を並列実行する
 
 #### Review
 
-- source: model.rules[64]
+- source: model.rules[65]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1758,7 +1811,7 @@ Nix devShell は dspec 実行基盤と形式 backend ツールを提供する
 
 #### Review
 
-- source: model.rules[24]
+- source: model.rules[25]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 4
@@ -1795,7 +1848,7 @@ v0.1 package は公開 API、互換性、OIDC release 手順を明示する
 
 #### Review
 
-- source: model.rules[25]
+- source: model.rules[26]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 9
@@ -1878,7 +1931,7 @@ v0.1 package は公開 API、互換性、OIDC release 手順を明示する
 
 #### Review
 
-- source: model.rules[63]
+- source: model.rules[64]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 34
@@ -1958,7 +2011,7 @@ real app importer は実装 artifact から観測済み app facts を決定的�
 
 #### Review
 
-- source: model.rules[17]
+- source: model.rules[18]
 - coverage: rule
 - automatedChecks: 12
 - implementationRefs: 26
@@ -2000,7 +2053,7 @@ real app reconciliation は手書き model と観測済み app facts の drift �
 
 #### Review
 
-- source: model.rules[18]
+- source: model.rules[19]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 9
@@ -2038,7 +2091,7 @@ reverse coverage は観測済み app facts が手書き model に吸われてい
 
 #### Review
 
-- source: model.rules[19]
+- source: model.rules[20]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 8
@@ -2083,7 +2136,7 @@ Release safety は typed pattern として記述され、health gate・rollback�
 
 #### Review
 
-- source: model.rules[36]
+- source: model.rules[37]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -2115,7 +2168,7 @@ Runtime collector fixture は Runtime safety spec から collect/verify 可能�
 
 #### Review
 
-- source: model.rules[43]
+- source: model.rules[44]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 3
@@ -2149,7 +2202,7 @@ Runtime collector manifest は Runtime safety spec から deterministic に生�
 
 #### Review
 
-- source: model.rules[41]
+- source: model.rules[42]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 4
@@ -2189,7 +2242,7 @@ Runtime evidence collector は provider API payload を manifest から読み、
 
 #### Review
 
-- source: model.rules[40]
+- source: model.rules[41]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -2226,7 +2279,7 @@ Runtime evidence importer は provider 別 JSON を deterministic な Runtime ev
 
 #### Review
 
-- source: model.rules[39]
+- source: model.rules[40]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 4
@@ -2276,7 +2329,7 @@ Runtime evidence は typed pattern として記述され、SLO telemetry・alert
 
 #### Review
 
-- source: model.rules[38]
+- source: model.rules[39]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 12
@@ -2323,7 +2376,7 @@ Runtime evidence verifier は collector manifest の expects と収集済み evi
 
 #### Review
 
-- source: model.rules[42]
+- source: model.rules[43]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 9
@@ -2369,7 +2422,7 @@ Runtime safety は typed pattern として記述され、SLO page alert・tested
 
 #### Review
 
-- source: model.rules[37]
+- source: model.rules[38]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -2419,7 +2472,7 @@ dspec の意味論は truth ではなく support/inferability として拡張す
 
 #### Review
 
-- source: model.rules[66]
+- source: model.rules[67]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0
@@ -2446,7 +2499,7 @@ dspec の意味論は truth ではなく support/inferability として拡張す
 
 #### Review
 
-- source: model.rules[53]
+- source: model.rules[54]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -2509,7 +2562,7 @@ spec change review は仕様変更時の check、impact、互換性分類、cove
 
 #### Review
 
-- source: model.rules[56]
+- source: model.rules[57]
 - coverage: rule
 - automatedChecks: 11
 - implementationRefs: 24
@@ -2582,7 +2635,7 @@ spec change review scaffold は before/after model からレビュー用 Pkl ド
 
 #### Review
 
-- source: model.rules[57]
+- source: model.rules[58]
 - coverage: rule
 - automatedChecks: 14
 - implementationRefs: 20
@@ -2640,7 +2693,7 @@ spec compatibility classifier は before/after spec を compatible/breaking/narr
 
 #### Review
 
-- source: model.rules[55]
+- source: model.rules[56]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 18
@@ -2674,7 +2727,7 @@ spec diff impact report は変更された term/rule から生成 selector と�
 
 #### Review
 
-- source: model.rules[54]
+- source: model.rules[55]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 6
@@ -2788,7 +2841,7 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 
 #### Review
 
-- source: model.rules[62]
+- source: model.rules[63]
 - coverage: rule
 - automatedChecks: 24
 - implementationRefs: 49
@@ -2832,7 +2885,7 @@ SQL query catalog は DB model と照合され、schema/tenant/FK drift を検�
 
 #### Review
 
-- source: model.rules[30]
+- source: model.rules[31]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -2903,7 +2956,7 @@ verify-generated は backend ごとの検証結果を JSON artifact として出
 
 #### Review
 
-- source: model.rules[48]
+- source: model.rules[49]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2

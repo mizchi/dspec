@@ -22,6 +22,7 @@
   "exports": {
     ".": "./src/core/index.mjs",
     "./clause-ast": "./src/core/clause-ast.mjs",
+    "./assurance-evidence": "./src/core/assurance-evidence.mjs",
     "./real-app": "./src/core/real-app.mjs",
     "./schema": "./dspec/Schema.pkl"
   },

@@ -1,0 +1,58 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-formal-unsupported"
+  name = d.text("未対応の形式保証", "Unsupported formal assurance")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.balance", "quantity", "残高", "Balance")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-FORMAL-UNSUPPORTED"
+      kind = "invariant"
+      text = d.text("残高は自身と等しい", "Balance equals itself")
+      terms {
+        "concept.balance"
+      }
+      must {
+        new d.Clause {
+          expr = "balance == balance"
+          ast = new d.ExprAst {
+            op = "eq"
+            args {
+              "balance"
+              "balance"
+            }
+          }
+        }
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "reference"
+        "proved"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "lean"
+          ref = "fixtures/backend-drift/Proof.lean#backend_anchor"
+          covers {
+            "must[0]"
+          }
+          assurances {
+            "reference"
+            "proved"
+          }
+          assuranceEvidence {
+            ["proved"] = "fixtures/reports/evidence-assurance-formal-unsupported.json"
+          }
+        }
+      }
+    }
+  }
+}
