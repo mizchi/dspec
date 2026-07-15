@@ -1,0 +1,152 @@
+{
+  "app": {
+    "id": "mnemo-workspace"
+  },
+  "errors": [],
+  "evaluation": {
+    "appRoot": "fixtures/holdout-mnemo-app",
+    "id": "mnemo-external-dogfood"
+  },
+  "matched": [
+    {
+      "id": "e2e",
+      "kind": "infrastructure-environment"
+    },
+    {
+      "id": "production",
+      "kind": "infrastructure-environment"
+    },
+    {
+      "id": "staging",
+      "kind": "infrastructure-environment"
+    },
+    {
+      "id": "e2e/db",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "e2e/mnemo-e2e",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "e2e/skill-assets",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/ai",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/db",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/db-shard-00",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/db-shard-01",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/images",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/mnemo",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/skill-assets",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/skill-index",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "pulumi/mnemo-cli-service-token",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "pulumi/mnemo-platform-db",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "pulumi/mnemo-platform-shard-00-db",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "pulumi/mnemo-skill-assets-bucket",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "pulumi/mnemo-v1-api",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "staging/ai",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "staging/db",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "staging/db-shard-00",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "staging/db-shard-01",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "staging/images",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "staging/mnemo-staging",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "staging/skill-assets",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "staging/skill-index",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "production/0-star-star-star-star",
+      "kind": "infrastructure-schedule"
+    },
+    {
+      "id": "mnemo-server/infra/pulumi/index.ts",
+      "kind": "infrastructure-source"
+    },
+    {
+      "id": "mnemo-server/wrangler.e2e.jsonc",
+      "kind": "infrastructure-source"
+    },
+    {
+      "id": "mnemo-server/wrangler.jsonc",
+      "kind": "infrastructure-source"
+    },
+    {
+      "id": "CI",
+      "kind": "workflow"
+    }
+  ],
+  "missing": [],
+  "status": "pass",
+  "summary": {
+    "expected": 32,
+    "matched": 32,
+    "missing": 0,
+    "observed": 32,
+    "precision": 1,
+    "recall": 1,
+    "unexpected": 0
+  },
+  "unexpected": []
+}

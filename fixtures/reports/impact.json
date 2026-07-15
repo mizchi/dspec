@@ -1,5 +1,6 @@
 {
   "changed": {
+    "projections": [],
     "rules": [
       {
         "change": "added",
@@ -536,6 +537,37 @@
       "id": "impact-fixture",
       "version": "0.1.0"
     }
+  },
+  "projectionImpact": {
+    "artifacts": [
+      {
+        "action": "regenerate",
+        "kind": "markdown",
+        "locale": "en",
+        "path": "generated/impact/en/impact.md",
+        "projectionId": "impact-markdown"
+      },
+      {
+        "action": "regenerate",
+        "kind": "provenance",
+        "locale": null,
+        "path": "generated/impact/impact.provenance.json",
+        "projectionId": "impact-markdown"
+      },
+      {
+        "action": "regenerate",
+        "kind": "markdown",
+        "locale": "ja",
+        "path": "generated/impact/ja/impact.md",
+        "projectionId": "impact-markdown"
+      }
+    ],
+    "regenerateArgv": [
+      "dspec",
+      "generate",
+      "fixtures/impact-after.pkl"
+    ],
+    "regenerateCommand": "dspec generate fixtures/impact-after.pkl"
   },
   "status": "pass"
 }

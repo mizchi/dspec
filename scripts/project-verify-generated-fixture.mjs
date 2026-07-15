@@ -22,7 +22,7 @@ export function verifyGeneratedFixtureProjection(report) {
     status: report.status,
     backends: {
       quickcheck: { status: report.backends.quickcheck.status },
-      lean: { status: report.backends.lean.status },
+      lean: { status: optionalToolStatus(report.backends.lean) },
       tlaSyntax: { status: report.backends.tlaSyntax.status },
       alloySyntax: { status: report.backends.alloySyntax.status },
       tlaSany: { status: optionalToolStatus(report.backends.tlaSany) },

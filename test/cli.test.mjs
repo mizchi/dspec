@@ -1,9 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { tmpdir } from "node:os";
+import { hostname, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -11,6 +11,7 @@ import {
   topLevelCommandRegistry,
   validateGeneratedAlloy,
   validateGeneratedTla,
+  verifyGenerated,
   verifyGeneratedReport,
 } from "../src/cli.mjs";
 import { normalizeCounterexamplesFixtureProjection } from "../scripts/project-normalize-counterexamples-fixture.mjs";
@@ -18,6 +19,7 @@ import { verifyGeneratedFixtureProjection } from "../scripts/project-verify-gene
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const cli = join(root, "src", "cli.mjs");
+const hasLean = spawnSync("which", ["lean"]).status === 0;
 const hasTlasany = spawnSync("which", ["tlasany"]).status === 0;
 const hasTlc = spawnSync("which", ["tlc"]).status === 0;
 const hasAlloy6 = spawnSync("which", ["alloy6"]).status === 0;
@@ -438,6 +440,168 @@ describe("dspec CLI", () => {
     assert.match(result.stdout, /id = "typecheck"/);
     assert.match(result.stdout, /new d\.DataSet \{/);
     assert.match(result.stdout, /id = "dashboard-snapshot"/);
+  });
+
+  it("imports Cloudflare and Pulumi infrastructure from a second real app holdout", () => {
+    const result = run(["import-real-app", "--json", "fixtures/holdout-mnemo-app"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const imported = JSON.parse(result.stdout);
+    assert.equal(imported.app.contracts.path, null);
+    assert.deepEqual(
+      imported.app.infrastructure.sources.map((source) => `${source.kind}:${source.path}`),
+      [
+        "pulumi:mnemo-server/infra/pulumi/index.ts",
+        "wrangler:mnemo-server/wrangler.e2e.jsonc",
+        "wrangler:mnemo-server/wrangler.jsonc",
+      ],
+    );
+    assert.deepEqual(
+      imported.app.infrastructure.environments.map((environment) => environment.id),
+      ["e2e", "production", "staging"],
+    );
+    const resourceIds = imported.app.infrastructure.resources.map((resource) => resource.id);
+    for (const id of [
+      "production/mnemo",
+      "production/db",
+      "production/skill-assets",
+      "e2e/mnemo-e2e",
+      "e2e/db",
+      "staging/mnemo-staging",
+      "staging/db",
+      "staging/skill-index",
+      "pulumi/mnemo-v1-api",
+      "pulumi/mnemo-platform-db",
+    ]) {
+      assert.ok(resourceIds.includes(id), id);
+    }
+    assert.ok(!resourceIds.some((id) => id.includes("vendored")));
+    assert.deepEqual(
+      imported.app.infrastructure.schedules.map((schedule) => schedule.id),
+      ["production/0-star-star-star-star"],
+    );
+  });
+
+  it("evaluates real app importer precision and recall against typed gold facts", () => {
+    const result = run([
+      "evaluate-real-app-import",
+      "--json",
+      "fixtures/import-real-app-eval-mnemo.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.deepEqual(report.summary, {
+      expected: 32,
+      observed: 32,
+      matched: 32,
+      missing: 0,
+      unexpected: 0,
+      precision: 1,
+      recall: 1,
+    });
+    assert.deepEqual(report.missing, []);
+    assert.deepEqual(report.unexpected, []);
+  });
+
+  it("keeps the external real app import evaluation report in sync", () => {
+    assertReportFixture(
+      ["evaluate-real-app-import", "--json", "fixtures/import-real-app-eval-mnemo.pkl"],
+      "fixtures/reports/evaluate-real-app-import-mnemo.json",
+    );
+  });
+
+  it("imports Terraform plans and Kubernetes manifests as infrastructure facts", () => {
+    const result = run(["import-real-app", "--json", "fixtures/holdout-iac-app"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const infrastructure = JSON.parse(result.stdout).app.infrastructure;
+    assert.deepEqual(
+      infrastructure.sources.map((source) => `${source.kind}:${source.path}`),
+      [
+        "kubernetes:infra/k8s/payments.yaml",
+        "terraform-plan:infra/terraform-plan.json",
+      ],
+    );
+    assert.deepEqual(
+      infrastructure.environments.map((environment) => environment.id),
+      ["kubernetes/production", "production"],
+    );
+    const byId = new Map(infrastructure.resources.map((resource) => [resource.id, resource]));
+    assert.equal(byId.get("terraform/aws_db_instance.primary")?.kind, "database");
+    assert.equal(byId.get("terraform/aws_s3_bucket.assets")?.kind, "bucket");
+    assert.equal(byId.get("terraform/module.queue.aws_sqs_queue.jobs")?.kind, "queue");
+    assert.equal(byId.get("kubernetes/production/deployment/payments-api")?.kind, "service");
+    assert.equal(byId.get("kubernetes/production/secret/payments-api-secrets")?.kind, "secret");
+    assert.deepEqual(
+      infrastructure.schedules.map((schedule) => schedule.id),
+      ["kubernetes/production/nightly-reconcile"],
+    );
+  });
+
+  it("evaluates Terraform and Kubernetes importer coverage", () => {
+    const result = run([
+      "evaluate-real-app-import",
+      "--json",
+      "fixtures/import-real-app-eval-iac.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.deepEqual(report.summary, {
+      expected: 12,
+      observed: 12,
+      matched: 12,
+      missing: 0,
+      unexpected: 0,
+      precision: 1,
+      recall: 1,
+    });
+  });
+
+  it("keeps the Terraform and Kubernetes import evaluation report in sync", () => {
+    assertReportFixture(
+      ["evaluate-real-app-import", "--json", "fixtures/import-real-app-eval-iac.pkl"],
+      "fixtures/reports/evaluate-real-app-import-iac.json",
+    );
+  });
+
+  it("projects imported IaC into domain patterns without inventing guarantees", () => {
+    const iac = run(["import-real-app", "--pkl", "fixtures/holdout-iac-app"]);
+    assert.equal(iac.status, 0, iac.stderr);
+    assert.match(
+      iac.stdout,
+      /new d\.CloudNode \{\n        id = "terraform\/aws_db_instance\.primary"\n        kind = "database"/,
+    );
+    assert.match(
+      iac.stdout,
+      /new d\.DataStore \{\n        id = "terraform\/aws_db_instance\.primary"\n        region = "production"\n        encrypted = false\n        deletionSupported = false/,
+    );
+    assert.match(
+      iac.stdout,
+      /new d\.RuntimeService \{\n        id = "kubernetes\/production\/deployment\/payments-api"/,
+    );
+
+    const mnemo = run(["import-real-app", "--pkl", "fixtures/holdout-mnemo-app"]);
+    assert.equal(mnemo.status, 0, mnemo.stderr);
+    assert.match(mnemo.stdout, /id = "production\/mnemo\/to\/production\/db"/);
+    assert.match(mnemo.stdout, /from = "production\/mnemo"/);
+    assert.match(mnemo.stdout, /to = "production\/db"/);
+
+    const dir = mkdtempSync(join(root, "fixtures", ".tmp-iac-import-"));
+    try {
+      const modelPath = join(dir, "model.pkl");
+      writeFileSync(
+        modelPath,
+        `import "../../dspec/Schema.pkl" as d\nimport "../../examples/rbac.pkl" as base\n\nmodel: d.Model = (base.model) {\n${iac.stdout}}\n`,
+      );
+      const evaluated = spawnSync("pkl", ["eval", modelPath], { cwd: root, encoding: "utf8" });
+      assert.equal(evaluated.status, 0, evaluated.stderr);
+    } finally {
+      rmSync(dir, { force: true, recursive: true });
+    }
   });
 
   it("keeps real app import fixture in sync", () => {
@@ -1460,6 +1624,70 @@ profile: d.AppProfile = new {
     }
   });
 
+  it("runs provider-neutral spec reading agents and records reproducible artifacts", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-spec-reading-agent-run-"));
+    try {
+      const artifact = join(dir, "run.json");
+      const result = run([
+        "spec-reading-eval",
+        "--json",
+        "--runner",
+        "fixtures/spec-reading-agent-runner.pkl",
+        "--write-run",
+        artifact,
+        "fixtures/spec-reading-eval-sample-webapp.pkl",
+      ]);
+
+      assert.equal(result.status, 0, result.stderr);
+      const report = JSON.parse(result.stdout);
+      const written = JSON.parse(readFileSync(artifact, "utf8"));
+      assert.deepEqual(written, report);
+      assert.equal(report.status, "pass");
+      assert.equal(report.score.correct, 7);
+      assert.deepEqual(report.agentRun.runner, {
+        id: "fixture-agent",
+        provider: "process-fixture",
+        model: "deterministic-gold-v1",
+      });
+      assert.equal(report.agentRun.exitCode, 0);
+      assert.match(report.agentRun.promptDigest, /^sha256:[a-f0-9]{64}$/);
+      assert.match(report.agentRun.answerDigest, /^sha256:[a-f0-9]{64}$/);
+      assert.match(report.agentRun.rawStdout, /"answers"/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("records invalid spec reading agent output as a failing artifact", () => {
+    const result = run([
+      "spec-reading-eval",
+      "--json",
+      "--runner",
+      "fixtures/spec-reading-agent-invalid-runner.pkl",
+      "fixtures/spec-reading-eval-sample-webapp.pkl",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "fail");
+    assert.equal(report.agentRun.exitCode, 0);
+    assert.equal(report.agentRun.rawStdout, "not-json\n");
+    assert.match(report.errors.join("\n"), /failed to parse agent stdout/);
+  });
+
+  it("keeps provider-neutral spec reading agent artifacts in sync", () => {
+    assertReportFixture(
+      [
+        "spec-reading-eval",
+        "--json",
+        "--runner",
+        "fixtures/spec-reading-agent-runner.pkl",
+        "fixtures/spec-reading-eval-sample-webapp.pkl",
+      ],
+      "fixtures/reports/spec-reading-agent-run.json",
+    );
+  });
+
   it("runs metamorphic spec reading evaluation", () => {
     const result = run(["metamorphic-spec-reading-eval", "--json", "fixtures/spec-reading-eval-sample-webapp.pkl"]);
 
@@ -2163,6 +2391,13 @@ profile: d.AppProfile = new {
     assert.match(result.stderr, /invalid expr ast: INVALID-AST-EXTRA-FIELDS must\[0\] atom does not accept children/);
   });
 
+  it("rejects unsupported Clause.ast semantics versions", () => {
+    const result = run(["check", "fixtures/unsupported-ast-semantics.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /unsupported Clause\.ast semantics version: 2\.0/);
+  });
+
   it("renders localized model text", () => {
     const result = run(["render", "--locale", "ja", "examples/rbac.pkl"]);
 
@@ -2177,7 +2412,7 @@ profile: d.AppProfile = new {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: dspec-self/);
-    assert.match(result.stdout, /100 terms, 67 rules/);
+    assert.match(result.stdout, /109 terms, 71 rules/);
   });
 
   it("emits check JSON reports", () => {
@@ -2187,8 +2422,14 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.summary.terms, 100);
-    assert.equal(report.summary.rules, 67);
+    assert.equal(report.summary.terms, 109);
+    assert.equal(report.summary.projections, 1);
+    assert.equal(report.summary.rules, 71);
+    assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
+    assert.equal(report.assurance.targets.byKind.executed, 4);
+    assert.equal(report.assurance.targets.byKind["mutation-tested"], 1);
+    assert.equal(report.assurance.targets.byKind.bounded, 0);
+    assert.equal(report.assurance.targets.byKind.proved, 0);
     assert.deepEqual(report.errors, []);
   });
 
@@ -2244,8 +2485,12 @@ profile: d.AppProfile = new {
     assert.match(result.stdout, /- approvedRules: `\d+`/);
     assert.match(result.stdout, /- automatedCheckTargets: `\d+`/);
     assert.match(result.stdout, /- implementationRefs: `\d+`/);
+    assert.match(result.stdout, /- projections: `1`/);
     assert.match(result.stdout, /- domainElements: `\d+`/);
     assert.match(result.stdout, /- runtimeEvidenceRecords: `\d+`/);
+    assert.match(result.stdout, /## Projections/);
+    assert.match(result.stdout, /### self-markdown/);
+    assert.match(result.stdout, /- output: `generated\/examples\/\{locale\}\/dspec\.md`/);
     assert.match(result.stdout, /### DSPEC-EMIT-MARKDOWN/);
     assert.match(result.stdout, /- status: approved/);
     assert.match(result.stdout, /- check: node test\/cli\.test\.mjs#emits deterministic markdown/);
@@ -2326,6 +2571,35 @@ profile: d.AppProfile = new {
     assert.deepEqual(report.model.after, { id: "impact-fixture", version: "0.1.1" });
     assert.deepEqual(report.changed.terms, [{ id: "action.view", change: "modified" }]);
     assert.deepEqual(report.changed.rules, [{ id: "IMPACT-AUDIT", change: "added" }]);
+    assert.deepEqual(report.changed.projections, []);
+    assert.deepEqual(report.projectionImpact.regenerateArgv, ["dspec", "generate", "fixtures/impact-after.pkl"]);
+    assert.equal(report.projectionImpact.regenerateCommand, "dspec generate fixtures/impact-after.pkl");
+    assert.deepEqual(
+      report.projectionImpact.artifacts,
+      [
+        {
+          action: "regenerate",
+          kind: "markdown",
+          locale: "en",
+          path: "generated/impact/en/impact.md",
+          projectionId: "impact-markdown",
+        },
+        {
+          action: "regenerate",
+          kind: "provenance",
+          locale: null,
+          path: "generated/impact/impact.provenance.json",
+          projectionId: "impact-markdown",
+        },
+        {
+          action: "regenerate",
+          kind: "markdown",
+          locale: "ja",
+          path: "generated/impact/ja/impact.md",
+          projectionId: "impact-markdown",
+        },
+      ],
+    );
 
     const termImpact = report.impacts.find((impact) => impact.kind === "term" && impact.id === "action.view");
     assert.ok(termImpact);
@@ -2347,6 +2621,31 @@ profile: d.AppProfile = new {
     );
   });
 
+  it("reports removed and regenerated artifacts for projection path changes", () => {
+    const result = run([
+      "impact",
+      "--json",
+      "fixtures/impact-before.pkl",
+      "fixtures/impact-projection-after.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(report.changed.projections, [{ id: "impact-markdown", change: "modified" }]);
+    assert.ok(report.projectionImpact.artifacts.some(
+      (artifact) => artifact.action === "remove" && artifact.path === "generated/impact/en/impact.md",
+    ));
+    assert.ok(report.projectionImpact.artifacts.some(
+      (artifact) => artifact.action === "regenerate" && artifact.path === "generated/impact-v2/en/impact.md",
+    ));
+    assert.deepEqual(report.projectionImpact.regenerateArgv, [
+      "dspec",
+      "generate",
+      "fixtures/impact-projection-after.pkl",
+    ]);
+    assert.equal(report.projectionImpact.regenerateCommand, "dspec generate fixtures/impact-projection-after.pkl");
+  });
+
   it("classifies spec compatibility changes", () => {
     const cases = [
       ["fixtures/compat-compatible-after.pkl", "compatible"],
@@ -2365,6 +2664,28 @@ profile: d.AppProfile = new {
       assert.equal(report.classification, expected, after);
       assert.ok(Array.isArray(report.decisions), after);
     }
+  });
+
+  it("classifies assurance requirement compatibility", () => {
+    const narrowing = run([
+      "spec-change",
+      "compat",
+      "--json",
+      "fixtures/assurance-compat-before.pkl",
+      "fixtures/assurance-compat-after.pkl",
+    ]);
+    const widening = run([
+      "spec-change",
+      "compat",
+      "--json",
+      "fixtures/assurance-compat-after.pkl",
+      "fixtures/assurance-compat-before.pkl",
+    ]);
+
+    assert.equal(narrowing.status, 0, narrowing.stderr);
+    assert.equal(widening.status, 0, widening.stderr);
+    assert.equal(JSON.parse(narrowing.stdout).classification, "narrowing");
+    assert.equal(JSON.parse(widening.stdout).classification, "widening");
   });
 
   it("renders spec compatibility classification for review", () => {
@@ -2423,6 +2744,22 @@ profile: d.AppProfile = new {
     assert.equal(report.status, "pass");
     assert.equal(report.review.id, "spec-change-review-narrowing");
     assert.equal(report.classification, "narrowing");
+  });
+
+  it("reports portable projection actions through spec-change review", () => {
+    const reviewFile = join(root, "fixtures", "spec-change-review-projection.pkl");
+    const result = spawnSync(process.execPath, [cli, "spec-change", "review", "--json", reviewFile], {
+      cwd: tmpdir(),
+      encoding: "utf8",
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    const impact = report.steps.find((step) => step.id === "impact");
+    assert.ok(impact);
+    assert.equal(impact.projectionArtifacts, 6);
+    assert.deepEqual(impact.regenerateArgv, ["dspec", "generate", "fixtures/impact-projection-after.pkl"]);
+    assert.equal(impact.regenerateCommand, "dspec generate fixtures/impact-projection-after.pkl");
   });
 
   it("renders a spec change procedure for review", () => {
@@ -2888,12 +3225,310 @@ profile: d.AppProfile = new {
     }
   });
 
-  it("keeps generated markdown review artifact in sync", () => {
-    const emitted = run(["emit", "markdown", "--locale", "ja", "examples/dspec.pkl"]);
-    const artifact = readFileSync(join(root, "generated", "dspec.md"), "utf8");
+  it("accepts localized generated projection contracts", () => {
+    const result = run(["check", "fixtures/projection-model.pkl"]);
+    const sourceMapResult = run(["emit", "source-map", "fixtures/projection-model.pkl"]);
 
-    assert.equal(emitted.status, 0, emitted.stderr);
-    assert.equal(artifact, emitted.stdout);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(sourceMapResult.status, 0, sourceMapResult.stderr);
+    const sourceMap = JSON.parse(sourceMapResult.stdout);
+    assert.ok(sourceMap.artifacts.markdown.some(
+      (entry) => entry.generated === "markdown.projection.localized-markdown"
+        && entry.source.path === "projections[0]",
+    ));
+  });
+
+  it("does not inherit entrypoint projection ownership through model amendments", () => {
+    const checked = run(["check", "--json", "fixtures/projection-derived-model.pkl"]);
+    const generated = run(["generated", "check", "--json", "fixtures/projection-derived-model.pkl"]);
+
+    assert.equal(checked.status, 0, checked.stderr);
+    assert.equal(JSON.parse(checked.stdout).summary.projections, 0);
+    assert.equal(generated.status, 0, generated.stderr);
+    assert.equal(JSON.parse(generated.stdout).summary.projections, 0);
+  });
+
+  it("generates and checks localized projection artifacts", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-"));
+    const generatedPath = join(dir, "generated", "projection");
+    try {
+      const generated = run(["generate", "--json", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.equal(generated.status, 0, generated.stderr);
+      const generatedReport = JSON.parse(generated.stdout);
+      assert.equal(generatedReport.status, "pass");
+      assert.equal(generatedReport.summary.artifacts, 2);
+      assert.equal(generatedReport.projections[0].source, "self");
+      assert.deepEqual(readdirSync(generatedPath).toSorted(), ["en", "ja", "projection-model.provenance.json"]);
+
+      const checked = run(["generated", "check", "--json", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.equal(checked.status, 0, checked.stderr);
+      assert.equal(JSON.parse(checked.stdout).status, "pass");
+
+      rmSync(join(generatedPath, "en", "projection-model.md"));
+      const missing = run(["generated", "check", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.notEqual(missing.status, 0);
+      assert.match(missing.stderr, /missing generated artifact: localized-markdown -> generated\/projection\/en\/projection-model\.md/);
+      assert.equal(run(["generate", "--root", dir, "fixtures/projection-model.pkl"]).status, 0);
+
+      writeFileSync(join(generatedPath, "en", "projection-model.md"), "stale\n");
+      const stale = run(["generated", "check", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.notEqual(stale.status, 0);
+      assert.match(stale.stderr, /stale generated artifact: localized-markdown -> generated\/projection\/en\/projection-model\.md/);
+
+      mkdirSync(join(generatedPath, "fr"), { recursive: true });
+      writeFileSync(join(generatedPath, "fr", "projection-model.md"), "extra\n");
+      const extra = run(["generated", "check", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.notEqual(extra.status, 0);
+      assert.match(extra.stderr, /unexpected generated artifact: localized-markdown -> generated\/projection\/fr\/projection-model\.md/);
+
+      const repaired = run(["generate", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.equal(repaired.status, 0, repaired.stderr);
+      assert.deepEqual(readdirSync(generatedPath).toSorted(), ["en", "ja", "projection-model.provenance.json"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("previews Projection generation without writing", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-preview-"));
+    try {
+      const result = run([
+        "generate",
+        "--dry-run",
+        "--json",
+        "--generated-at",
+        "2026-07-15T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+
+      assert.equal(result.status, 0, result.stderr);
+      const report = JSON.parse(result.stdout);
+      assert.equal(report.dryRun, true);
+      assert.equal(report.transaction.status, "preview");
+      assert.deepEqual(report.summary.actions, { create: 3, remove: 0, unchanged: 0, update: 0 });
+      assert.equal(existsSync(join(dir, "generated")), false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects invalid Projection generation timestamps as command errors", () => {
+    const result = run([
+      "generate",
+      "--dry-run",
+      "--generated-at",
+      "not-an-iso-timestamp",
+      "fixtures/projection-model.pkl",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /invalid --generated-at: not-an-iso-timestamp/);
+    assert.doesNotMatch(result.stderr, /TypeError|\n\s+at /);
+  });
+
+  it("writes and checks Projection provenance without changing its stable generation time", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-provenance-"));
+    const provenancePath = join(dir, "generated", "projection", "projection-model.provenance.json");
+    try {
+      const first = run([
+        "generate",
+        "--json",
+        "--generated-at",
+        "2026-07-15T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+      assert.equal(first.status, 0, first.stderr);
+      const provenance = JSON.parse(readFileSync(provenancePath, "utf8"));
+      assert.equal(provenance.schemaVersion, "1.0");
+      assert.equal(provenance.generatedAt, "2026-07-15T00:00:00.000Z");
+      assert.equal(provenance.projection.id, "localized-markdown");
+      assert.match(provenance.model.digest, /^sha256:[a-f0-9]{64}$/);
+      assert.deepEqual(provenance.emitter, { name: "dspec/markdown", version: "1.0" });
+
+      const repeated = run([
+        "generate",
+        "--json",
+        "--generated-at",
+        "2027-01-01T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+      assert.equal(repeated.status, 0, repeated.stderr);
+      assert.equal(JSON.parse(repeated.stdout).changed, 0);
+      assert.equal(JSON.parse(readFileSync(provenancePath, "utf8")).generatedAt, "2026-07-15T00:00:00.000Z");
+
+      writeFileSync(provenancePath, "{}\n");
+      const stale = run(["generated", "check", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.notEqual(stale.status, 0);
+      assert.match(stale.stderr, /stale projection provenance: localized-markdown/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("recovers stale Projection generation locks without overriding live owners", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-unlock-"));
+    const lock = join(dir, ".dspec-projection.lock");
+    const writeOwner = (pid, token) => {
+      const now = new Date().toISOString();
+      mkdirSync(lock);
+      writeFileSync(join(lock, "owner.json"), `${JSON.stringify({
+        schemaVersion: "2.0",
+        token,
+        pid,
+        hostname: hostname(),
+        acquiredAt: now,
+        heartbeatAt: now,
+        leaseMs: 900_000,
+      }, null, 2)}\n`);
+    };
+
+    try {
+      writeOwner(2_147_483_647, "stale-cli-owner");
+      const stale = run(["generated", "unlock", "--json", "--root", dir]);
+      assert.equal(stale.status, 0, stale.stderr);
+      assert.equal(JSON.parse(stale.stdout).status, "recovered");
+      assert.equal(existsSync(lock), false);
+
+      writeOwner(process.pid, "live-cli-owner");
+      const live = run(["generated", "unlock", "--root", dir]);
+      assert.notEqual(live.status, 0);
+      assert.match(live.stderr, /Projection generation lock has a live owner/);
+      assert.equal(existsSync(lock), true);
+
+      const forced = run(["generated", "unlock", "--json", "--force", "--root", dir]);
+      assert.equal(forced.status, 0, forced.stderr);
+      assert.equal(JSON.parse(forced.stdout).forced, true);
+      assert.equal(existsSync(lock), false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps generate projection JSON report fixture in sync", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-generate-report-"));
+    try {
+      const result = run([
+        "generate",
+        "--json",
+        "--generated-at",
+        "2026-07-15T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+      const expected = readFileSync(join(root, "fixtures", "reports", "generate-projection.json"), "utf8");
+
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout, expected);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps generated check projection JSON report fixture in sync", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-generated-check-report-"));
+    try {
+      const generated = run([
+        "generate",
+        "--generated-at",
+        "2026-07-15T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+      const result = run(["generated", "check", "--json", "--root", dir, "fixtures/projection-model.pkl"]);
+      const expected = readFileSync(join(root, "fixtures", "reports", "generated-check-projection.json"), "utf8");
+
+      assert.equal(generated.status, 0, generated.stderr);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout, expected);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects projection locale matrices without a locale output placeholder", () => {
+    const result = run(["check", "fixtures/projection-invalid-template.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /projection output must contain exactly one \{locale\}: localized-markdown/);
+  });
+
+  it("checks dspec's localized projection artifacts", () => {
+    const result = run(["generated", "check", "--json", "examples/dspec.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.deepEqual(
+      report.projections[0].artifacts.map((artifact) => artifact.locale),
+      ["en", "ja"],
+    );
+  });
+
+  it("checks sample webapp localized projection artifacts", () => {
+    const result = run(["generated", "check", "--json", "examples/sample-webapp-2026.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.summary.projections, 1);
+    assert.equal(report.summary.artifacts, 2);
+    assert.deepEqual(
+      report.projections[0].artifacts.map((artifact) => artifact.locale),
+      ["en", "ja"],
+    );
+  });
+
+  it("dogfoods single-locale and monorepo Projection holdouts", () => {
+    const cases = [
+      ["fixtures/projection-holdout-single-locale.pkl", 1, 1, 2],
+      ["fixtures/projection-holdout-monorepo.pkl", 2, 4, 6],
+    ];
+
+    for (const [file, projections, artifacts, initialChanges] of cases) {
+      const dir = mkdtempSync(join(tmpdir(), "dspec-projection-holdout-"));
+      try {
+        const preview = run([
+          "generate",
+          "--dry-run",
+          "--json",
+          "--generated-at",
+          "2026-07-15T00:00:00.000Z",
+          "--root",
+          dir,
+          file,
+        ]);
+        assert.equal(preview.status, 0, `${file}\n${preview.stderr}`);
+        assert.equal(JSON.parse(preview.stdout).changed, initialChanges);
+        assert.equal(existsSync(join(dir, "generated")), false);
+
+        const generated = run([
+          "generate",
+          "--json",
+          "--generated-at",
+          "2026-07-15T00:00:00.000Z",
+          "--root",
+          dir,
+          file,
+        ]);
+        assert.equal(generated.status, 0, `${file}\n${generated.stderr}`);
+        const generatedReport = JSON.parse(generated.stdout);
+        assert.equal(generatedReport.summary.projections, projections);
+        assert.equal(generatedReport.summary.artifacts, artifacts);
+
+        const checked = run(["generated", "check", "--json", "--root", dir, file]);
+        assert.equal(checked.status, 0, `${file}\n${checked.stderr}`);
+        assert.equal(JSON.parse(checked.stdout).summary.provenance, projections);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    }
   });
 
   it("keeps generated source map artifact in sync", () => {
@@ -2912,12 +3547,19 @@ profile: d.AppProfile = new {
     assert.equal(artifact, emitted.stdout);
   });
 
-  it("runs full check through Nix in GitHub Actions", () => {
+  it("splits fast and formal GitHub Actions gates with caches", () => {
     const source = readFileSync(join(root, ".github", "workflows", "check.yml"), "utf8");
+    const taskfile = readFileSync(join(root, "Taskfile.pkl"), "utf8");
 
-    assert.match(source, /nix develop path:\$PWD -c pkf run check/);
-    assert.match(source, /pkf run devshell:tools/);
-    assert.match(source, /pkf run devshell:formal/);
+    assert.match(source, /^  fast:/m);
+    assert.match(source, /^  formal:/m);
+    assert.match(source, /cache: "pnpm"/);
+    assert.match(source, /magic-nix-cache-action@[a-f0-9]{40}/);
+    assert.match(source, /pkf run check:fast/);
+    assert.match(source, /nix develop path:\$PWD -c pkf run check:formal/);
+    assert.match(source, /cancel-in-progress: \$\{\{ github\.ref != 'refs\/heads\/main' \}\}/);
+    assert.match(taskfile, /name = "check:fast"/);
+    assert.match(taskfile, /name = "check:formal"/);
   });
 
   it("declares formal backend tools in Nix devShell", () => {
@@ -2945,7 +3587,7 @@ profile: d.AppProfile = new {
   it("requires formal backend tools when requested", () => {
     const result = run(["verify-generated", "--json", "--require-formal-tools", "fixtures/typed-ast.pkl"]);
     const report = JSON.parse(result.stdout);
-    const skipped = [report.backends.tlaSany, report.backends.tlaTlc, report.backends.alloyAnalyzer]
+    const skipped = [report.backends.lean, report.backends.tlaSany, report.backends.tlaTlc, report.backends.alloyAnalyzer]
       .filter((backend) => backend.status === "skip");
 
     if (skipped.length > 0) {
@@ -2967,6 +3609,8 @@ profile: d.AppProfile = new {
     assert.match(source, /name = "devshell:formal"/);
     assert.match(source, /devshell-smoke --json --strict --require-store-path/);
     assert.match(source, /verify-generated --require-formal-tools fixtures\/typed-ast\.pkl/);
+    assert.match(source, /evidence create --require-formal-tools .* fixtures\/typed-ast\.pkl/);
+    assert.match(source, /node --test --test-name-pattern='Lean eq\|composed Lean implication' test\/cli\.test\.mjs/);
     assert.match(source, /name = "dogfood"/);
     assert.match(source, /name = "spec-reading:dogfood"/);
     assert.match(source, /name = "spec-reading:report-fixtures"/);
@@ -3032,7 +3676,11 @@ profile: d.AppProfile = new {
     assert.equal(lean.status, 0, lean.stderr);
     assert.equal(tla.status, 0, tla.stderr);
     assert.match(quickcheck.stdout, /"ast": \{\n\s+"op": "atom",\n\s+"name": "approvedHasAutomatedCheck"/);
+    assert.match(quickcheck.stdout, /export const clauseAstSemanticsVersion = "1\.0"/);
+    assert.match(quickcheck.stdout, /"astSemanticsVersion": "1\.0"/);
+    assert.match(lean.stdout, /def clauseAstSemanticsVersion : String := "1\.0"/);
     assert.match(lean.stdout, /Expr\.atom "approvedHasAutomatedCheck" \["rule"\]/);
+    assert.match(tla.stdout, /ClauseAstSemanticsVersion == "1\.0"/);
     assert.match(tla.stdout, /approvedHasAutomatedCheck\(rule\)/);
   });
 
@@ -3247,12 +3895,26 @@ profile: d.AppProfile = new {
     assert.equal(report.model.id, "typed-ast-fixture");
     assert.equal(report.status, "pass");
     assert.equal(report.backends.quickcheck.status, "pass");
-    assert.equal(report.backends.lean.status, "pass");
+    assert.match(report.backends.lean.status, /^(pass|skip)$/);
     assert.equal(report.backends.tlaSyntax.status, "pass");
     assert.equal(report.backends.alloySyntax.status, "pass");
     assert.match(report.backends.tlaSany.status, /^(pass|skip)$/);
     assert.match(report.backends.tlaTlc.status, /^(pass|skip)$/);
     assert.match(report.backends.alloyAnalyzer.status, /^(pass|skip)$/);
+  });
+
+  it("skips unavailable formal tools unless they are required", () => {
+    const model = loadModel("fixtures/typed-ast.pkl");
+    const toolAvailable = () => false;
+    const report = verifyGeneratedReport(model, { toolAvailable });
+
+    assert.equal(report.status, "pass");
+    assert.equal(report.backends.quickcheck.status, "pass");
+    assert.equal(report.backends.lean.status, "skip");
+    assert.throws(
+      () => verifyGenerated(model, { requireFormalTools: true, toolAvailable }),
+      /required formal backend skipped: lean \(lean\)/,
+    );
   });
 
   it("keeps verify-generated JSON report fixture in sync", () => {
@@ -3270,7 +3932,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.model.id, "dspec-self");
     assert.equal(report.status, "fail");
-    assert.ok(report.counterexamples.length >= 2);
+    assert.ok(report.counterexamples.length >= 1);
 
     const quickcheck = report.counterexamples.find((entry) => entry.backend === "quickcheck");
     assert.equal(quickcheck.generated, "quickcheck.approvedRuleIds.COVERAGE-MISSING-CHECK");
@@ -3281,10 +3943,6 @@ profile: d.AppProfile = new {
     assert.match(quickcheck.rule.text, /DSpec 自己仕様/);
     assert.match(quickcheck.message, /automated check/);
 
-    const lean = report.counterexamples.find((entry) => entry.backend === "lean");
-    assert.equal(lean.generated, "lean.RuleId.COVERAGE_MISSING_CHECK");
-    assert.equal(lean.source.ruleId, "COVERAGE-MISSING-CHECK");
-
     const model = loadModel("fixtures/coverage-missing-check.pkl");
     const normalized = normalizeCounterexamples(
       model,
@@ -3292,12 +3950,16 @@ profile: d.AppProfile = new {
         model: { id: model.id, version: model.version },
         status: "fail",
         backends: {
+          lean: { status: "fail", message: "AutomatedSupport is false" },
           tlaTlc: { status: "fail", message: "Error: The invariant of CoverageInvariant is equal to FALSE" },
           alloyAnalyzer: { status: "fail", message: "check ApprovedRulesHaveChecks found a failure" },
         },
       },
       "ja",
     );
+    const lean = normalized.counterexamples.find((entry) => entry.backend === "lean");
+    assert.equal(lean.generated, "lean.RuleId.COVERAGE_MISSING_CHECK");
+    assert.equal(lean.source.ruleId, "COVERAGE-MISSING-CHECK");
     const tla = normalized.counterexamples.find((entry) => entry.backend === "tlaTlc");
     assert.equal(tla.generated, "tla.Checks[COVERAGE-MISSING-CHECK]");
     assert.equal(tla.source.ruleId, "COVERAGE-MISSING-CHECK");
@@ -3347,6 +4009,20 @@ profile: d.AppProfile = new {
       normalizeCounterexamplesFixtureProjection,
       1,
     );
+  });
+
+  it("keeps optional formal witnesses out of portable counterexample fixtures", () => {
+    const projection = normalizeCounterexamplesFixtureProjection({
+      model: { id: "fixture", version: "1" },
+      status: "fail",
+      locale: "ja",
+      counterexamples: [
+        { backend: "quickcheck", generated: "quickcheck.rule" },
+        { backend: "lean", generated: "lean.RuleId.RULE" },
+      ],
+    });
+
+    assert.deepEqual(projection.counterexamples.map((entry) => entry.backend), ["quickcheck"]);
   });
 
   it("normalizes DB migration counterexamples to source patterns", () => {
@@ -3488,7 +4164,9 @@ profile: d.AppProfile = new {
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
     assert.match(report.backends.quickcheck.message, /approved-rules-have-automated-checks/);
-    assert.equal(report.backends.lean.status, "fail");
+    if (report.backends.lean.status !== "skip") {
+      assert.equal(report.backends.lean.status, "fail");
+    }
     if (report.backends.tlaTlc.status !== "skip") {
       assert.equal(report.backends.tlaTlc.status, "fail");
     }
@@ -3582,7 +4260,7 @@ profile: d.AppProfile = new {
     assert.match(report.backends.quickcheck.message, /runtime-dependency-trace-within-timeout/);
   });
 
-  it("compiles generated Lean output", () => {
+  it("compiles generated Lean output", { skip: !hasLean }, () => {
     const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
@@ -3767,7 +4445,8 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 846);
+    assert.equal(report.references, 1016);
+    assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
     assert.deepEqual(report.errors, []);
   });
 
@@ -3786,7 +4465,7 @@ profile: d.AppProfile = new {
     const result = run(["coverage", "examples/dspec.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: dspec-self coverage \(65\/65 approved rules\)/);
+    assert.match(result.stdout, /ok: dspec-self coverage \(69\/69 approved rules\)/);
   });
 
   it("reports domain model element coverage", () => {
@@ -3840,9 +4519,350 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.covered, 65);
-    assert.equal(report.total, 65);
+    assert.equal(report.covered, 69);
+    assert.equal(report.total, 69);
+    assert.deepEqual(report.assurance.requirements, {
+      reference: 69,
+      executed: 4,
+      "mutation-tested": 1,
+      bounded: 0,
+      proved: 0,
+    });
     assert.deepEqual(report.errors, []);
+  });
+
+  it("reports explicit assurance claims", () => {
+    const result = run(["coverage", "--json", "fixtures/assurance-levels.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(report.assurance, {
+      kinds: ["reference", "executed", "mutation-tested", "bounded", "proved"],
+      rules: { satisfied: 1, total: 1 },
+      targets: {
+        total: 3,
+        byKind: {
+          reference: 3,
+          executed: 1,
+          "mutation-tested": 1,
+          bounded: 1,
+          proved: 1,
+        },
+      },
+      requirements: {
+        reference: 1,
+        executed: 1,
+        "mutation-tested": 1,
+        bounded: 1,
+        proved: 1,
+      },
+    });
+  });
+
+  it("preserves assurance requirements in generated QuickCheck properties", () => {
+    const emitted = run(["emit", "quickcheck", "fixtures/assurance-levels.pkl"]);
+
+    assert.equal(emitted.status, 0, emitted.stderr);
+    assert.match(emitted.stdout, /"requiredAssurances": \[/);
+    assert.match(emitted.stdout, /"mutation-tested"/);
+    assert.match(emitted.stdout, /propertyApprovedRulesHaveRequiredAssurances/);
+    assert.match(emitted.stdout, /approved-rules-have-required-assurances/);
+
+    const verified = run(["verify-generated", "fixtures/assurance-levels.pkl"]);
+    assert.equal(verified.status, 0, verified.stderr);
+    assert.match(verified.stdout, /ok: assurance-levels generated quickcheck/);
+
+    const missing = verifyGeneratedReport(loadModel("fixtures/assurance-required-missing.pkl"));
+    assert.equal(missing.status, "fail");
+    assert.equal(missing.backends.quickcheck.status, "fail");
+    assert.match(missing.backends.quickcheck.message, /approved-rules-have-required-assurances/);
+
+    const normalized = run(["normalize-counterexamples", "--json", "fixtures/assurance-required-missing.pkl"]);
+    assert.notEqual(normalized.status, 0);
+    const counterexample = JSON.parse(normalized.stdout).counterexamples[0];
+    assert.equal(counterexample.property, "approved-rules-have-required-assurances");
+    assert.equal(counterexample.rule.id, "ASSURANCE-REQUIRED-MISSING");
+    assert.match(counterexample.message, /required assurance/);
+  });
+
+  it("renders assurance claims for human review", () => {
+    const result = run(["emit", "markdown", "fixtures/assurance-levels.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /- requiredAssurances: reference, executed, mutation-tested, bounded, proved/);
+    assert.match(
+      result.stdout,
+      /- check: node test\/cli\.test\.mjs#scores generated app profile mutations \[reference, executed, mutation-tested\]/,
+    );
+    assert.match(result.stdout, /- assuranceEvidence: mutation-tested -> fixtures\/reports\/score-app-profile-mutations\.json/);
+  });
+
+  it("rejects missing required assurances", () => {
+    const result = run(["coverage", "--json", "fixtures/assurance-required-missing.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(report.assurance.rules, { satisfied: 0, total: 1 });
+    assert.match(result.stderr, /approved rule is missing required assurance: ASSURANCE-REQUIRED-MISSING -> bounded/);
+  });
+
+  it("rejects incompatible assurance backends", () => {
+    const result = run(["check", "fixtures/assurance-backend-invalid.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /incompatible check assurance: ASSURANCE-BACKEND-INVALID -> proved requires lean backend, got node/);
+  });
+
+  it("rejects assurances without evidence", () => {
+    const result = run(["check", "fixtures/assurance-evidence-missing.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /missing check assurance evidence: ASSURANCE-EVIDENCE-MISSING -> executed/);
+  });
+
+  it("creates and verifies typed assurance evidence manifests", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-assurance-evidence-"));
+    const manifestPath = join(dir, "evidence.json");
+    try {
+      const created = run([
+        "evidence",
+        "create",
+        "--json",
+        "--executed-at",
+        "2026-07-14T00:00:00Z",
+        "--output",
+        manifestPath,
+        "fixtures/typed-ast.pkl",
+      ]);
+
+      assert.equal(created.status, 0, created.stderr);
+      const creation = JSON.parse(created.stdout);
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      assert.equal(creation.status, "pass");
+      assert.equal(manifest.schemaVersion, "1.0");
+      assert.equal(manifest.executedAt, "2026-07-14T00:00:00Z");
+      assert.equal(manifest.model.id, "typed-ast-fixture");
+      assert.match(manifest.model.digest, /^sha256:[a-f0-9]{64}$/);
+      assert.match(manifest.sourceMapDigest, /^sha256:[a-f0-9]{64}$/);
+      assert.deepEqual(manifest.artifacts.map((artifact) => artifact.id), ["alloy", "lean", "quickcheck", "tla"]);
+      assert.ok(manifest.artifacts.every((artifact) => artifact.scope === "generator"));
+      assert.ok(manifest.clauseBindings.length > 0);
+      const binding = manifest.clauseBindings[0];
+      assert.match(binding.astDigest, /^sha256:[a-f0-9]{64}$/);
+      assert.ok(binding.backends.some((backend) => backend.backend === "lean" && backend.support === "structural"));
+      assert.ok(binding.backends.some((backend) => backend.backend === "tla" && backend.support === "textual"));
+      assert.ok(binding.backends.some((backend) => backend.backend === "alloy" && backend.support === "unmapped"));
+      assert.ok(binding.backends.every((backend) => backend.support !== "semantic"));
+
+      const verified = run(["evidence", "verify", "--json", "fixtures/typed-ast.pkl", manifestPath]);
+      assert.equal(verified.status, 0, verified.stderr);
+      assert.equal(JSON.parse(verified.stdout).status, "pass");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("detects and refreshes stale assurance evidence manifests", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-assurance-refresh-"));
+    const manifestPath = join(dir, "evidence.json");
+    try {
+      const created = run([
+        "evidence",
+        "create",
+        "--output",
+        manifestPath,
+        "--executed-at",
+        "2026-07-14T00:00:00Z",
+        "fixtures/typed-ast.pkl",
+      ]);
+      assert.equal(created.status, 0, created.stderr);
+
+      const staleModel = JSON.parse(readFileSync(manifestPath, "utf8"));
+      staleModel.model.digest = `sha256:${"0".repeat(64)}`;
+      writeFileSync(manifestPath, stableJson(staleModel));
+      const modelDrift = run(["evidence", "verify", "--json", "fixtures/typed-ast.pkl", manifestPath]);
+      assert.notEqual(modelDrift.status, 0);
+      assert.match(modelDrift.stderr, /stale evidence model digest/);
+
+      const refreshed = run([
+        "evidence",
+        "refresh",
+        "--json",
+        "--executed-at",
+        "2026-07-15T00:00:00Z",
+        "fixtures/typed-ast.pkl",
+        manifestPath,
+      ]);
+      assert.equal(refreshed.status, 0, refreshed.stderr);
+      assert.equal(JSON.parse(refreshed.stdout).status, "pass");
+
+      const freshManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      const staleTool = structuredClone(freshManifest);
+      staleTool.artifacts.find((artifact) => artifact.id === "quickcheck").tool.version = "v0.0.0";
+      writeFileSync(manifestPath, stableJson(staleTool));
+      const toolDrift = run(["evidence", "verify", "--json", "fixtures/typed-ast.pkl", manifestPath]);
+      assert.notEqual(toolDrift.status, 0);
+      assert.match(toolDrift.stderr, /stale evidence tool version: node/);
+
+      const missingToolVersion = structuredClone(freshManifest);
+      missingToolVersion.artifacts.find((artifact) => artifact.id === "quickcheck").tool.version = null;
+      writeFileSync(manifestPath, stableJson(missingToolVersion));
+      const missingVersion = run(["evidence", "verify", "--json", "fixtures/typed-ast.pkl", manifestPath]);
+      assert.notEqual(missingVersion.status, 0);
+      assert.match(missingVersion.stderr, /stale evidence tool version: node/);
+
+      const forgedResult = structuredClone(freshManifest);
+      forgedResult.artifacts.find((artifact) => artifact.id === "quickcheck").result = "fail";
+      writeFileSync(manifestPath, stableJson(forgedResult));
+      const resultDrift = run(["evidence", "verify", "--json", "fixtures/typed-ast.pkl", manifestPath]);
+      assert.notEqual(resultDrift.status, 0);
+      assert.match(resultDrift.stderr, /invalid assurance evidence artifact result: quickcheck/);
+
+      const forgedScope = structuredClone(freshManifest);
+      forgedScope.artifacts.find((artifact) => artifact.id === "lean").scope = "clause";
+      writeFileSync(manifestPath, stableJson(forgedScope));
+      const scopeDrift = run(["evidence", "verify", "--json", "fixtures/typed-ast.pkl", manifestPath]);
+      assert.notEqual(scopeDrift.status, 0);
+      assert.match(scopeDrift.stderr, /invalid assurance evidence artifact scope: lean/);
+
+      const malformedArtifact = structuredClone(freshManifest);
+      malformedArtifact.artifacts[0] = null;
+      writeFileSync(manifestPath, stableJson(malformedArtifact));
+      const malformed = run(["evidence", "verify", "--json", "fixtures/typed-ast.pkl", manifestPath]);
+      assert.notEqual(malformed.status, 0);
+      assert.match(malformed.stderr, /invalid assurance evidence artifact at index 0/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects formal assurance when backend binding is structural only", () => {
+    const result = run(["check", "fixtures/assurance-formal-unsupported.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /formal assurance requires semantic Clause\.ast support: ASSURANCE-FORMAL-UNSUPPORTED -> proved lean must\[0\] \(structural\)/,
+    );
+  });
+
+  it("proves Lean eq clauses with clause-scoped evidence", { skip: !hasLean }, () => {
+    const manifestPath = "/tmp/dspec-assurance-formal-lean-eq.json";
+    try {
+      rmSync(manifestPath, { force: true });
+      const missing = run(["check", "fixtures/assurance-formal-lean-eq.pkl"]);
+      assert.notEqual(missing.status, 0);
+      assert.match(missing.stderr, /missing formal assurance evidence manifest/);
+
+      const created = run([
+        "evidence",
+        "create",
+        "--json",
+        "--executed-at",
+        "2026-07-15T00:00:00Z",
+        "--output",
+        manifestPath,
+        "fixtures/assurance-formal-lean-eq.pkl",
+      ]);
+
+      assert.equal(created.status, 0, created.stderr);
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      const selector = "lean.theorem.clause_ASSURANCE_FORMAL_LEAN_EQ_must_0";
+      const artifact = manifest.artifacts.find((entry) => entry.id === "lean-clause-ASSURANCE-FORMAL-LEAN-EQ-must-0");
+      assert.equal(artifact.scope, "clause");
+      assert.equal(artifact.result, "pass");
+      assert.equal(artifact.theorem, "clause_ASSURANCE_FORMAL_LEAN_EQ_must_0");
+      assert.deepEqual(artifact.propertyIds, [selector]);
+      const binding = manifest.clauseBindings.find(
+        (entry) => entry.ruleId === "ASSURANCE-FORMAL-LEAN-EQ" && entry.selector === "must[0]",
+      );
+      const lean = binding.backends.find((entry) => entry.backend === "lean");
+      assert.equal(lean.support, "semantic");
+      assert.ok(lean.generatedSelectors.includes(selector));
+
+      const checked = run(["check", "fixtures/assurance-formal-lean-eq.pkl"]);
+      assert.equal(checked.status, 0, checked.stderr);
+    } finally {
+      rmSync(manifestPath, { force: true });
+    }
+  });
+
+  it("keeps Lean eq semantic proofs load-bearing", { skip: !hasLean }, () => {
+    const result = run([
+      "evidence",
+      "create",
+      "--executed-at",
+      "2026-07-15T00:00:00Z",
+      "fixtures/assurance-formal-lean-eq-broken.pkl",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /generated verification failed:/);
+    assert.match(result.stderr, /unsolved goals/);
+  });
+
+  it("proves composed Lean implication clauses with clause-scoped evidence", { skip: !hasLean }, () => {
+    const manifestPath = "/tmp/dspec-assurance-formal-lean-implies.json";
+    try {
+      rmSync(manifestPath, { force: true });
+      const created = run([
+        "evidence",
+        "create",
+        "--json",
+        "--executed-at",
+        "2026-07-15T00:00:00Z",
+        "--output",
+        manifestPath,
+        "fixtures/assurance-formal-lean-implies.pkl",
+      ]);
+
+      assert.equal(created.status, 0, created.stderr);
+      const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      const selector = "lean.theorem.clause_ASSURANCE_FORMAL_LEAN_IMPLIES_must_0";
+      const binding = manifest.clauseBindings.find(
+        (entry) => entry.ruleId === "ASSURANCE-FORMAL-LEAN-IMPLIES" && entry.selector === "must[0]",
+      );
+      assert.deepEqual(binding.operators, ["eq", "implies"]);
+      const lean = binding.backends.find((entry) => entry.backend === "lean");
+      assert.equal(lean.support, "semantic");
+      assert.ok(lean.generatedSelectors.includes(selector));
+      assert.ok(manifest.artifacts.some(
+        (entry) => entry.scope === "clause" && entry.propertyIds.includes(selector) && entry.result === "pass",
+      ));
+
+      const checked = run(["check", "fixtures/assurance-formal-lean-implies.pkl"]);
+      assert.equal(checked.status, 0, checked.stderr);
+    } finally {
+      rmSync(manifestPath, { force: true });
+    }
+  });
+
+  it("keeps composed Lean implication proofs load-bearing", { skip: !hasLean }, () => {
+    const result = run([
+      "evidence",
+      "create",
+      "--executed-at",
+      "2026-07-15T00:00:00Z",
+      "fixtures/assurance-formal-lean-implies-broken.pkl",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /generated verification failed:/);
+    assert.match(result.stderr, /unsolved goals/);
+  });
+
+  it("rejects legacy references as formal assurance evidence", () => {
+    const result = run(["check", "fixtures/assurance-levels.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(
+      result.stderr,
+      /formal assurance requires evidence manifest: ASSURANCE-LEVELS -> bounded fixtures\/backend-drift\/Spec\.tla#BackendInvariant/,
+    );
+    assert.match(
+      result.stderr,
+      /formal assurance requires evidence manifest: ASSURANCE-LEVELS -> proved fixtures\/backend-drift\/Proof\.lean#backend_anchor/,
+    );
   });
 
   it("keeps coverage JSON report fixture in sync", () => {

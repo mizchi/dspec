@@ -1,0 +1,36 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-required-missing"
+  name = d.text("不足する保証", "missing assurance")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.assurance", "entity", "保証", "assurance")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-REQUIRED-MISSING"
+      kind = "obligation"
+      text = d.text("bounded 検証を要求する", "require bounded verification")
+      terms {
+        "concept.assurance"
+      }
+      must {
+        d.clause("check.is.bounded", "check は bounded である", "the check is bounded")
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "reference"
+        "bounded"
+      }
+      checks {
+        d.nodeCheck("test/cli.test.mjs#reports explicit assurance claims")
+      }
+    }
+  }
+}

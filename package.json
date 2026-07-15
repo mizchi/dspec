@@ -1,16 +1,44 @@
 {
   "name": "@mizchi/dspec",
   "version": "0.0.0",
-  "private": true,
+  "description": "Typed, executable specification toolkit built around Pkl",
   "type": "module",
+  "license": "MIT",
+  "author": "mizchi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mizchi/dspec.git"
+  },
+  "homepage": "https://github.com/mizchi/dspec#readme",
+  "bugs": {
+    "url": "https://github.com/mizchi/dspec/issues"
+  },
+  "files": [
+    "dspec",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./src/core/index.mjs",
+    "./clause-ast": "./src/core/clause-ast.mjs",
+    "./assurance-evidence": "./src/core/assurance-evidence.mjs",
+    "./real-app": "./src/core/real-app.mjs",
+    "./projection": "./src/core/projection.mjs",
+    "./schema": "./dspec/Schema.pkl"
+  },
   "bin": {
     "dspec": "./src/cli.mjs"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "check": "pkl eval examples/rbac.pkl >/dev/null && pkl eval examples/dspec.pkl >/dev/null && node src/cli.mjs drift examples/dspec.pkl && node src/cli.mjs coverage examples/dspec.pkl && node src/cli.mjs score-app-profile-mutations --json fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs emit markdown --locale ja examples/dspec.pkl | diff -u generated/dspec.md - && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl | diff -u generated/source-map.json - && node src/cli.mjs emit quickcheck examples/dspec.pkl >/dev/null && node src/cli.mjs emit alloy examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla-cfg examples/dspec.pkl >/dev/null && node src/cli.mjs emit lean examples/dspec.pkl >/dev/null && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs verify-generated --json examples/dspec.pkl >/dev/null && node src/cli.mjs verify-generated examples/dspec.pkl && node --test",
+    "check": "pkl eval examples/rbac.pkl >/dev/null && pkl eval examples/dspec.pkl >/dev/null && node src/cli.mjs drift examples/dspec.pkl && node src/cli.mjs coverage examples/dspec.pkl && node src/cli.mjs score-app-profile-mutations --json fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs generated check examples/dspec.pkl && node src/cli.mjs generated check examples/sample-webapp-2026.pkl && node src/cli.mjs generated check fixtures/projection-holdout-single-locale.pkl && node src/cli.mjs generated check fixtures/projection-holdout-monorepo.pkl && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl | diff -u generated/source-map.json - && node src/cli.mjs emit quickcheck examples/dspec.pkl >/dev/null && node src/cli.mjs emit alloy examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla-cfg examples/dspec.pkl >/dev/null && node src/cli.mjs emit lean examples/dspec.pkl >/dev/null && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs verify-generated --json examples/dspec.pkl >/dev/null && node src/cli.mjs verify-generated examples/dspec.pkl && node --test",
     "test": "node --test"
   },
   "engines": {
     "node": ">=24"
-  }
+  },
+  "packageManager": "pnpm@10.33.0"
 }

@@ -1,0 +1,12 @@
+import "../dspec/Schema.pkl" as d
+
+specReadingAgentRunner: d.SpecReadingAgentRunner = new {
+  id = "invalid-fixture-agent"
+  provider = "process-fixture"
+  model = "invalid-output-v1"
+  command {
+    "node"
+    "agents/spec-reading-invalid-agent.mjs"
+  }
+  timeoutMs = 5000
+}

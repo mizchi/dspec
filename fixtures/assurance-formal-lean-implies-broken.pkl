@@ -1,0 +1,77 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-formal-lean-implies-broken"
+  name = d.text("Broken Lean implication formal assurance", "Broken Lean implication formal assurance")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.balance", "quantity", "残高", "Balance")
+    d.term("concept.account", "entity", "口座", "Account")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-FORMAL-LEAN-IMPLIES-BROKEN"
+      kind = "invariant"
+      text = d.text("自己不等価でないことは任意の等式を含意する", "Not being unequal to oneself implies an arbitrary equality")
+      terms {
+        "concept.balance"
+        "concept.account"
+      }
+      must {
+        new d.Clause {
+          expr = "not(balance != balance) -> (balance == account)"
+          ast = new d.ExprAst {
+            op = "implies"
+            children {
+              new d.ExprAst {
+                op = "not"
+                children {
+                  new d.ExprAst {
+                    op = "neq"
+                    args {
+                      "balance"
+                      "balance"
+                    }
+                  }
+                }
+              }
+              new d.ExprAst {
+                op = "eq"
+                args {
+                  "balance"
+                  "account"
+                }
+              }
+            }
+          }
+        }
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "reference"
+        "proved"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "lean"
+          ref = "generated:lean#clause_ASSURANCE_FORMAL_LEAN_IMPLIES_BROKEN_must_0"
+          covers {
+            "must[0]"
+          }
+          assurances {
+            "reference"
+            "proved"
+          }
+          assuranceEvidence {
+            ["proved"] = "/tmp/dspec-assurance-formal-lean-implies-broken.json"
+          }
+        }
+      }
+    }
+  }
+}

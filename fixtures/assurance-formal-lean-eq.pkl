@@ -1,0 +1,58 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-formal-lean-eq"
+  name = d.text("Lean equality formal assurance", "Lean equality formal assurance")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.balance", "quantity", "残高", "Balance")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-FORMAL-LEAN-EQ"
+      kind = "invariant"
+      text = d.text("残高は自身と等しい", "Balance equals itself")
+      terms {
+        "concept.balance"
+      }
+      must {
+        new d.Clause {
+          expr = "balance == balance"
+          ast = new d.ExprAst {
+            op = "eq"
+            args {
+              "balance"
+              "balance"
+            }
+          }
+        }
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "reference"
+        "proved"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "lean"
+          ref = "generated:lean#clause_ASSURANCE_FORMAL_LEAN_EQ_must_0"
+          covers {
+            "must[0]"
+          }
+          assurances {
+            "reference"
+            "proved"
+          }
+          assuranceEvidence {
+            ["proved"] = "/tmp/dspec-assurance-formal-lean-eq.json"
+          }
+        }
+      }
+    }
+  }
+}

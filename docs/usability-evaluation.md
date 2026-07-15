@@ -1,8 +1,9 @@
 # dspec Usability Evaluation
 
-Date: 2026-07-10
+Date: 2026-07-15
 
-Latest concrete dogfood run: `docs/dogfooding-2026-07-10.md`.
+Latest concrete dogfood runs: `docs/dogfooding-2026-07-14-mnemo.md` and
+`docs/dogfooding-2026-07-15-projection.md`.
 
 ## Verdict
 
@@ -22,6 +23,21 @@ It works today as:
 - a current RBAC example that uses the RBAC preset pack while preserving
   project-specific review text and check targets
 - a localized source for human-readable spec output
+- first-class generated artifact projections whose locale matrix, output path,
+  exact freshness, and provenance path are declared next to the model in the
+  same typed source entrypoint
+- a second Projection dogfood entrypoint over the real-app sample model, with
+  checked-in Japanese and English review artifacts
+- a read-only Projection plan with structured argv, deterministic digests, and
+  create/update/remove/unchanged actions that agents can inspect before writes
+- generation-root-locked staged Projection writes with rollback, plus
+  per-projection provenance that binds model, contract, emitter, timestamp, and
+  generated artifact digests
+- owner-aware stale-lock recovery that refuses live local generators and makes
+  unsafe active foreign/unknown-owner recovery explicit with `--force`; a
+  renewed 15-minute lease permits conservative cross-host crash recovery
+- single-locale/deep-path and multi-projection monorepo holdouts that exercise
+  ownership independently of the self-model layout
 - an i18n contract that checks required localized labels and glossary label
   drift against stable vocabulary terms
 - a cheap consistency gate for duplicate ids, broken references, direct
@@ -38,14 +54,24 @@ It works today as:
   digests, and aggregates sample plus holdout suites
 - a coverage gate that requires every approved active rule to have an automated
   check target
+- typed assurance claims that distinguish resolvable references from executed,
+  mutation-tested, bounded, and proved support, require evidence for stronger
+  claims, expose the assurance distribution in check/drift/coverage reports,
+  survive QuickCheck projection, and participate in compatibility classification
+- typed assurance evidence manifests with model/artifact/tool freshness checks,
+  refresh workflow, and per-operator Clause/backend applicability records
 - a domain coverage gate that requires tracked domain pattern elements to be
   grounded in approved rules by stable ids
 - stable JSON reports for check, drift, coverage, and domain coverage gates,
   including failing error arrays for external agents and CI consumers
 - a spec-diff impact report that maps changed terms/rules to generated
-  selectors and implementation refs for review routing
+  selectors and implementation refs for review routing, and compares
+  Projection outputs to return artifact actions plus regeneration argv and a
+  shell-formatted display command
 - compatibility fixtures for check, drift, coverage, and impact JSON report
   shapes under `fixtures/reports/`
+- stable generate and generated-check JSON report fixtures for external agents
+  and alternative CLI implementations
 - optional clause-level coverage that requires `CheckTarget.covers` to support
   every `when` / `must` / `mustNot` clause for selected rules
 - deterministic projections to Markdown, QuickCheck-style JS, Alloy, TLA+, and
@@ -92,7 +118,9 @@ It works today as:
 - a JSON verification report from `dspec verify-generated --json`
 - a load-bearing negative fixture proving generated backend checks fail when
   an approved rule lacks support
-- a checked-in Markdown review artifact at `generated/dspec.md`
+- checked-in Japanese and English Markdown review artifacts under
+  `generated/examples/`, materialized by `dspec generate` and guarded by
+  `dspec generated check`
 - a checked-in source-map artifact at `generated/source-map.json` that maps
   generated selectors back to `Rule`, `Clause`, and `CheckTarget` source paths
 - a checked-in generated manifest at `generated/manifest.json` that records
@@ -116,8 +144,14 @@ It works today as:
 
 It is not yet enough as:
 
-- a semantic checker for the full meaning of `Clause.ast`
-- a proof-producing source generator for implementation or backend proofs
+- a general source of bounded or proved business-clause assurance; only a
+  Lean fragment composed from `eq`, `neq`, `not`, and `implies` currently has a
+  semantic satisfaction theorem, and the self model deliberately reports zero
+  `bounded` and zero `proved` targets
+- a semantic checker for the full meaning of `Clause.ast`; the applicability
+  matrix reports semantic support only for that Lean equality fragment
+- a proof-producing source generator for application implementation proofs;
+  the Lean theorem currently proves the Clause proposition under `ClauseEnv`
 - a deep TLC/Alloy model-checking workflow with meaningful bounded scopes and
   counterexample interpretation beyond the current smoke checks
 - structured trace valuation for TLA+/Alloy beyond generated-selector witness
@@ -424,7 +458,8 @@ replace the checker later without changing the Pkl authoring surface.
 `check --json`, `drift --json`, `coverage --json`, `impact --json`,
 `spec-change compat --json`, `spec-change scaffold`,
 `spec-change review --json`,
-`verify-generated --json`, `emit source-map`, and
+`generate --json`, `generated check --json`, `verify-generated --json`,
+`emit source-map`, and
 `normalize-counterexamples --json` are now the first artifact contracts.
 `fixtures/reports/` fixes the check/drift/coverage/impact, spec compatibility,
 spec change review, app change replay, backend verification, and counterexample

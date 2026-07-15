@@ -1,5 +1,15 @@
 import "../dspec/Schema.pkl" as d
 
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "impact-markdown"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/impact/{locale}/impact.md"
+    provenance = "generated/impact/impact.provenance.json"
+  }
+}
+
 model: d.Model = new {
   id = "impact-fixture"
   name = d.text("Impact fixture", "Impact fixture")

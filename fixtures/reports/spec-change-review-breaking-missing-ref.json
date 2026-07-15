@@ -83,6 +83,9 @@
       "errors": [],
       "id": "impact",
       "impacts": 1,
+      "projectionArtifacts": 0,
+      "regenerateArgv": null,
+      "regenerateCommand": null,
       "status": "pass",
       "summary": "1 changes, 1 impacts"
     },

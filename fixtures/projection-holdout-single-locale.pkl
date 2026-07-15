@@ -1,0 +1,27 @@
+import "../dspec/Schema.pkl" as d
+
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "single-locale-review"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/holdouts/single-locale/review/{locale}/specification.md"
+    provenance = "generated/holdouts/single-locale/specification.provenance.json"
+    freshness = "exact"
+  }
+}
+
+model: d.Model = new {
+  id = "projection-holdout-single-locale"
+  name = new d.LocalizedText {
+    default = "単一 locale Projection holdout"
+    labels {
+      ["ja"] = "単一 locale Projection holdout"
+    }
+  }
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+  }
+}

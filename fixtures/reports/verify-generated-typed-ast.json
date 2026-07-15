@@ -7,7 +7,7 @@
       "status": "pass"
     },
     "lean": {
-      "status": "pass"
+      "status": "available-or-skip"
     },
     "quickcheck": {
       "status": "pass"

@@ -1,0 +1,31 @@
+import "../dspec/Schema.pkl" as d
+
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "monorepo-app-docs"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/holdouts/monorepo/apps/docs/{locale}/platform.md"
+    provenance = "generated/holdouts/monorepo/apps/docs/platform.provenance.json"
+    freshness = "exact"
+  }
+  new d.Projection {
+    id = "monorepo-contract-docs"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/holdouts/monorepo/packages/contracts/docs/{locale}/contracts.md"
+    provenance = "generated/holdouts/monorepo/packages/contracts/docs/contracts.provenance.json"
+    freshness = "exact"
+  }
+}
+
+model: d.Model = new {
+  id = "projection-holdout-monorepo"
+  name = d.text("モノレポ Projection holdout", "Monorepo Projection holdout")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+}

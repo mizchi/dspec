@@ -1,0 +1,14 @@
+import "../dspec/Schema.pkl" as d
+import "impact-after.pkl" as base
+
+projections = new {
+  new d.Projection {
+    id = "impact-markdown"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/impact-v2/{locale}/impact.md"
+    provenance = "generated/impact-v2/impact.provenance.json"
+  }
+}
+
+model: d.Model = base.model

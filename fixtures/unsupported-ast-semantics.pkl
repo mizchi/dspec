@@ -1,0 +1,7 @@
+import "../dspec/Schema.pkl" as d
+import "../examples/dspec.pkl" as base
+
+model: d.Model = (base.model) {
+  id = "unsupported-ast-semantics"
+  clauseAstSemanticsVersion = "2.0"
+}

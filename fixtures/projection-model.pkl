@@ -1,0 +1,23 @@
+import "../dspec/Schema.pkl" as d
+
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "localized-markdown"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/projection/{locale}/projection-model.md"
+    provenance = "generated/projection/projection-model.provenance.json"
+    freshness = "exact"
+  }
+}
+
+model: d.Model = new {
+  id = "projection-model"
+  name = d.text("Projection fixture", "Projection fixture")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "artifacts": [
+    {
+      "bytes": 777,
+      "digest": "sha256:1dcdc62433fc047b7fdff720188c4e7ad1c576705fea98e9d556dfca9b7a84c2",
+      "locale": "en",
+      "path": "generated/holdouts/monorepo/apps/docs/en/platform.md"
+    },
+    {
+      "bytes": 781,
+      "digest": "sha256:b1403495ef30149938872e74c5282860f9d816cd7701bf31ba52dca2894ad1df",
+      "locale": "ja",
+      "path": "generated/holdouts/monorepo/apps/docs/ja/platform.md"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/markdown",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-15T00:00:00.000Z",
+  "model": {
+    "digest": "sha256:fcaa104884c84a09e54da547b2bf911b1e58a347b4436d153a8e5ad9c9e9500c",
+    "id": "projection-holdout-monorepo",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "freshness": "exact",
+    "id": "monorepo-app-docs",
+    "kind": "markdown",
+    "matrix": "locales",
+    "output": "generated/holdouts/monorepo/apps/docs/{locale}/platform.md",
+    "provenance": "generated/holdouts/monorepo/apps/docs/platform.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

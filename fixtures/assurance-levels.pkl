@@ -1,0 +1,73 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-levels"
+  name = d.text("保証水準", "assurance levels")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.assurance", "entity", "保証", "assurance")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-LEVELS"
+      kind = "obligation"
+      text = d.text("保証の種類を明示する", "declare assurance kinds")
+      terms {
+        "concept.assurance"
+      }
+      must {
+        d.clause("checks.declare.assurance", "check は保証を宣言する", "checks declare assurance")
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "reference"
+        "executed"
+        "mutation-tested"
+        "bounded"
+        "proved"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#scores generated app profile mutations"
+          assurances {
+            "reference"
+            "executed"
+            "mutation-tested"
+          }
+          assuranceEvidence {
+            ["executed"] = "Taskfile.pkl#test"
+            ["mutation-tested"] = "fixtures/reports/score-app-profile-mutations.json"
+          }
+        }
+        new d.CheckTarget {
+          backend = "tla"
+          ref = "fixtures/backend-drift/Spec.tla#BackendInvariant"
+          assurances {
+            "reference"
+            "bounded"
+          }
+          assuranceEvidence {
+            ["bounded"] = "fixtures/backend-drift/Spec.tla#BackendInvariant"
+          }
+        }
+        new d.CheckTarget {
+          backend = "lean"
+          ref = "fixtures/backend-drift/Proof.lean#backend_anchor"
+          assurances {
+            "reference"
+            "proved"
+          }
+          assuranceEvidence {
+            ["proved"] = "fixtures/backend-drift/Proof.lean#backend_anchor"
+          }
+        }
+      }
+    }
+  }
+}

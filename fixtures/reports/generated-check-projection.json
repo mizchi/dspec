@@ -1,0 +1,52 @@
+{
+  "errors": [],
+  "model": {
+    "id": "projection-model",
+    "version": "0.1.0"
+  },
+  "projections": [
+    {
+      "artifacts": [
+        {
+          "bytes": 557,
+          "digest": "sha256:eaf8347cb2213d93301ba8f746468c5d6761bd7ddcd107a667dfb4662057bf02",
+          "locale": "en",
+          "path": "generated/projection/en/projection-model.md",
+          "status": "current"
+        },
+        {
+          "bytes": 557,
+          "digest": "sha256:fcc6ae4ac75d89a0890d7993a603a1a1b3aeed3ab2a39cd98f2d8a0bb7e78891",
+          "locale": "ja",
+          "path": "generated/projection/ja/projection-model.md",
+          "status": "current"
+        }
+      ],
+      "freshness": "exact",
+      "id": "localized-markdown",
+      "kind": "markdown",
+      "matrix": "locales",
+      "output": "generated/projection/{locale}/projection-model.md",
+      "provenance": {
+        "digest": "sha256:6dd10b91a372fb9c8f615e125ceb86d01c12cbb729865390c9235bb667c8d3a3",
+        "generatedAt": "2026-07-15T00:00:00.000Z",
+        "path": "generated/projection/projection-model.provenance.json",
+        "schemaVersion": "1.0",
+        "status": "current"
+      },
+      "source": "self",
+      "unexpected": []
+    }
+  ],
+  "status": "pass",
+  "summary": {
+    "artifacts": 2,
+    "missing": 0,
+    "projections": 1,
+    "provenance": 1,
+    "provenanceMissing": 0,
+    "provenanceStale": 0,
+    "stale": 0,
+    "unexpected": 0
+  }
+}

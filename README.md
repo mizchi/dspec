@@ -23,6 +23,16 @@ node src/cli.mjs devshell-smoke --json
 node src/cli.mjs verify-generated examples/dspec.pkl
 node src/cli.mjs verify-generated --json examples/dspec.pkl
 node src/cli.mjs verify-generated --json --require-formal-tools fixtures/typed-ast.pkl
+node src/cli.mjs evidence create --output evidence.json fixtures/typed-ast.pkl
+node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl evidence.json
+node src/cli.mjs evidence refresh fixtures/typed-ast.pkl evidence.json
+node src/cli.mjs generate --dry-run --json examples/dspec.pkl
+node src/cli.mjs generate examples/dspec.pkl
+node src/cli.mjs generated check examples/dspec.pkl
+node src/cli.mjs generate examples/sample-webapp-2026.pkl
+node src/cli.mjs generated check examples/sample-webapp-2026.pkl
+# Crash recovery only; refuses a live local owner without --force.
+node src/cli.mjs generated unlock --root .
 ```
 
 The dev shell provides Node.js 24, pnpm, Pkl, Lean via elan, Z3, TLA+, and Alloy 6.
@@ -61,6 +71,8 @@ node src/cli.mjs domain-coverage examples/sample-webapp-2026.pkl
 node src/cli.mjs domain-coverage --json fixtures/domain-coverage-orphan.pkl
 node src/cli.mjs import-real-app --json fixtures/sample-webapp-2026
 node src/cli.mjs import-real-app --pkl fixtures/sample-webapp-2026
+node src/cli.mjs evaluate-real-app-import --json fixtures/import-real-app-eval-mnemo.pkl
+node src/cli.mjs evaluate-real-app-import --json fixtures/import-real-app-eval-iac.pkl
 node src/cli.mjs reconcile-real-app --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json
 node src/cli.mjs reverse-coverage --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json
 node src/cli.mjs scaffold-app-profile --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl fixtures/sample-webapp-2026
@@ -87,6 +99,7 @@ node src/cli.mjs spec-reading-eval --prompt fixtures/spec-reading-eval-sample-we
 node src/cli.mjs spec-reading-eval --prompt --locale en fixtures/spec-reading-eval-sample-webapp.pkl
 node src/cli.mjs spec-reading-eval --json --refresh-digests fixtures/spec-reading-eval-stale-digest.pkl
 node src/cli.mjs spec-reading-eval --json --score fixtures/spec-reading-eval-answers.json --write-run /tmp/dspec-spec-reading-run.json fixtures/spec-reading-eval-sample-webapp.pkl
+node src/cli.mjs spec-reading-eval --json --runner fixtures/spec-reading-agent-runner.pkl --write-run /tmp/dspec-spec-reading-agent-run.json fixtures/spec-reading-eval-sample-webapp.pkl
 node src/cli.mjs spec-reading-eval --markdown --score fixtures/spec-reading-eval-answers.json fixtures/spec-reading-eval-sample-webapp.pkl
 node src/cli.mjs spec-change compat --json fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl
 node src/cli.mjs spec-change scaffold fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl
@@ -114,6 +127,9 @@ node src/cli.mjs emit runtime-collector fixtures/runtime-model.pkl
 node src/cli.mjs emit runtime-collector-fixture fixtures/runtime-model.pkl
 node src/cli.mjs verify-generated examples/dspec.pkl
 node src/cli.mjs verify-generated --json examples/dspec.pkl
+node src/cli.mjs evidence create --output /tmp/dspec-evidence.json fixtures/typed-ast.pkl
+node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl /tmp/dspec-evidence.json
+node src/cli.mjs evidence refresh fixtures/typed-ast.pkl /tmp/dspec-evidence.json
 node src/cli.mjs collect-runtime-evidence fixtures/runtime-evidence-collector.json
 node src/cli.mjs collect-runtime-evidence --pkl fixtures/runtime-evidence-collector.json
 node src/cli.mjs verify-runtime-evidence fixtures/runtime-evidence-collector.json
@@ -179,13 +195,30 @@ It models the current implementation boundary:
   `node $OLDPWD`, pipes, and inline backticks.
 - `coverage` requires approved active rules to have automated check targets,
   and can require clause-level support through `Rule.coverage = "clause"` plus
-  `CheckTarget.covers`.
+  `CheckTarget.covers`. `CheckTarget.assurances` distinguishes a resolvable
+  `reference` from `executed`, `mutation-tested`, `bounded`, and `proved`
+  support. Stronger claims require `assuranceEvidence`, and
+  `Rule.requiredAssurances` makes missing assurance fail coverage. QuickCheck
+  output preserves these fields and rechecks them as a generated property;
+  compatibility review classifies added requirements as narrowing and removed
+  requirements as widening.
 - `domain-coverage` requires tracked domain pattern elements to be grounded in
   approved rules by stable ids, so orphan Cloud/Data/Release/Runtime model
   facts are caught before they become unreviewed spec master data.
 - `import-real-app` extracts observed facts from a real application checkout:
-  Hono API routes, Zod contract schemas, GitHub Actions workflows, flaker, and
-  VRT config.
+  Hono API routes, Zod contract schemas, GitHub Actions workflows, flaker/VRT
+  config, Cloudflare Wrangler JSONC, Pulumi declarations, Terraform/OpenTofu
+  planned resources, and application-owned Kubernetes manifests. IaC
+  declarations are observations, not deployment proofs. Unknown encryption,
+  deletion, criticality, retry, and idempotency guarantees remain false or
+  unset in generated Pkl drafts.
+- `evaluate-real-app-import` compares normalized importer facts with a typed
+  Pkl gold set and reports missing/unexpected facts plus precision and recall.
+  The mnemo holdout records source commit, file digests, sanitization, vendored
+  config noise, and E2E environment classification.
+  The normalization, fact comparison, and conservative domain projection are
+  also available as filesystem-free functions from `src/core/real-app.mjs`;
+  the CLI is an adapter over the same core output.
 - `reconcile-real-app` compares those observed facts with a hand-authored
   Cloud/Data/Release/Runtime model, catching implementation-to-domain mapping
   drift such as a missing release gate.
@@ -243,8 +276,10 @@ It models the current implementation boundary:
   shape for real-app artifact reconciliation; `reverse-coverage --json`,
   `check-app-profile --json`, profile suite reports, and scaffold diff reports
   use it for observed-to-spec coverage and bundled app gates.
-- `impact --json` compares two spec models and maps changed terms/rules to
-  affected generated selectors and implementation references.
+- `impact --json` compares two spec entrypoints and maps changed
+  terms/rules/projections to affected generated selectors, implementation
+  references, owned artifact `regenerate`/`remove` actions, and the after-side
+  `dspec generate` command.
 - `spec-change compat --json` compares two spec models and classifies the
   change as `compatible`, `breaking`, `narrowing`, `widening`, or `unknown`,
   with one decision per changed term/rule/domain element.
@@ -275,6 +310,11 @@ It models the current implementation boundary:
   updates, `--refresh-digests --apply` writes them back to the Pkl gold set,
   `--write-run` records the sub-agent prompt and score report, and
   `spec-reading-eval-suite` aggregates sample and holdout evaluation sets.
+  `--runner <runner.pkl>` invokes a provider-neutral process adapter: prompt on
+  stdin, answers JSON on stdout. The typed runner records provider/model
+  identity and argv without embedding an SDK. Its deterministic artifact keeps
+  runner, prompt, and answer digests, exit status, raw stdout/stderr, and the
+  ordinary score report; environment variables and secrets are not recorded.
   `coverage-spec-reading-eval-suite` checks that a suite covers required
   labels, evidence kinds, model kinds, tags, and paraphrase locales.
   `metamorphic-spec-reading-eval` verifies that answer order, evidence order,
@@ -285,7 +325,7 @@ It models the current implementation boundary:
   `--markdown --score` emits a sub-agent run report with gold-fix candidates.
 - `fixtures/reports/*.json` fixes the check/drift/coverage/impact,
   domain-coverage, real-app import/reconciliation, app-profile mutation score,
-  app change replay, spec reading evaluation, spec compatibility, spec change
+  app change replay, spec reading evaluation and agent runs, spec compatibility, spec change
   review, verify-generated, and normalized-counterexample report shapes as
   compatibility artifacts for future checker implementations.
   `fixtures/spec-change-scaffold-*.pkl` does the same for deterministic
@@ -330,24 +370,66 @@ It models the current implementation boundary:
   TLA+ TLC, plus Alloy analyzer smoke checks when those tools are available.
 - `verify-generated --json` emits a deterministic backend-status report for CI
   artifacts and future drift/coverage ingestion.
-- `generated/dspec.md` is the checked-in Markdown review artifact generated
-  from `examples/dspec.pkl`; each rule includes review metadata such as source
-  path, coverage mode, clause selectors, checks, and implementation refs. The
-  top-level review summary records approved-rule, automated-check,
-  implementation-ref, domain-element, and runtime-evidence counts.
+- `evidence create` executes the generated backends and records a typed
+  evidence manifest containing model, source-map, and generated-artifact
+  digests, tool versions, results, execution time, and Clause selectors.
+  `evidence verify` rejects stale model/artifact/tool/result/binding data, while
+  `evidence refresh` re-executes and replaces the manifest.
+- Clause/backend applicability is recorded per AST operator as `unmapped`,
+  `textual`, `structural`, or `semantic`. Lean has a semantic path for Clauses
+  composed only from `eq`, `neq`, `not`, and `implies`: it generates a
+  satisfaction theorem and a clause-scoped artifact, so a passing manifest can
+  authorize `proved` for that selector. Lean `atom`, `and`, `or`, and quantifier
+  operators remain structural, TLA+ remains textual, and Alloy remains
+  unmapped.
+- the top-level `projections` entrypoint contract declares generated artifact
+  ownership next to the source model. The current `self-markdown` projection
+  expands `locales` into
+  `generated/examples/{locale}/dspec.md` with exact freshness: `generate`
+  creates missing or stale outputs and removes output-template matches for
+  undeclared locales, while `generated check` reports drift without writing.
+  Each projection also declares a `provenance` path that binds the model,
+  projection, emitter version, stable generation time, and artifact digests.
+- `generate --dry-run --json` returns the same create/update/remove/unchanged
+  plan without touching the filesystem. The planner lives in the public pure
+  `@mizchi/dspec/projection` core; the CLI applies its plan as a staged
+  transaction and rolls back already committed paths if a later commit fails.
+  A generation-root lock serializes concurrent writers and is released on both
+  success and rollback. The lock records PID, hostname, acquisition time, and
+  a private ownership token. A 15-minute lease is renewed while staging and
+  committing. `generated unlock` removes a dead local owner or an expired
+  lease; active foreign/unknown owners require an explicit `--force`.
+  Machine consumers should use `regenerateArgv` rather than parsing the
+  shell-formatted `regenerateCommand` returned by impact reports.
+- `generated/examples/ja/dspec.md` and `generated/examples/en/dspec.md` are the
+  checked-in localized Markdown review artifacts owned by that projection;
+  each rule includes review metadata such as source path, coverage mode,
+  clause selectors, checks, and implementation refs. The top-level review
+  summary records approved-rule, automated-check, implementation-ref,
+  projection, domain-element, and runtime-evidence counts.
+- `generated/examples/{ja,en}/sample-webapp-2026.md` applies the same contract
+  to the real-app dogfood model, so Projection behavior is not validated only
+  against dspec's unusually large self specification.
+- `generated/holdouts/` exercises a deeply nested single-locale layout and a
+  monorepo layout with two independent projections, preventing the planner and
+  ownership checks from specializing to the self-model path shape.
 - `generated/source-map.json` maps generated selectors back to source `Rule`,
   `Clause`, and `CheckTarget` paths.
 - `generated/manifest.json` records SHA-256 freshness hashes for primary
   generated artifacts.
+- `fixtures/reports/generate-projection.json` and
+  `fixtures/reports/generated-check-projection.json` lock the machine-readable
+  Projection materialization and freshness report contracts.
 - `normalize-counterexamples` turns generated backend failures into `Rule.id`,
   source path, generated selector, and reviewable explanation records. When
   TLA+/Alloy output contains generated selectors, the source map resolves them
   back to concrete spec records.
 - `flake.nix` provides the devShell used to put Z3 and the TLA+/Alloy tools on
   `PATH`.
-- `.github/workflows/check.yml` runs `pkf run devshell:tools`,
-  `pkf run devshell:formal`, and `pkf run check` inside the Nix devShell so
-  required tool smoke and optional local backend checks become CI gates.
+- `.github/workflows/check.yml` runs an Ubuntu `check:fast` job with pnpm,
+  Pkl, and pkfire CAS caches in parallel with a macOS/Nix `check:formal` job.
+  The formal job requires devShell tools plus Lean/TLA+/Alloy execution while
+  the fast job provides earlier schema, report, test, and dogfood feedback.
 - `Clause.expr` remains a compatibility/display string, while `Clause.ast`
   carries the typed expression structure used by deterministic projections
   when present.
@@ -365,7 +447,12 @@ project has more than one first-party model.
 
 ## Model Shape
 
-`Model` is the master record.
+Each Pkl entrypoint exposes a typed `model` and may expose a typed top-level
+`projections` listing. Keeping ownership at the entrypoint boundary means a
+module that imports and amends `base.model` derives the logical specification
+without inheriting where the base entrypoint materializes generated files.
+
+`Model` is the logical master record.
 
 - `vocabulary`: language-independent domain terms with localized labels.
 - `rules`: spec atoms such as `permission`, `prohibition`, `obligation`,
@@ -387,6 +474,15 @@ project has more than one first-party model.
   `dependencies`, `signals`, `runbooks`, `alerts`, `slos`, `telemetry`,
   `alertPolicies`, `runbookExecutions`, and `dependencyTraces`.
 
+The top-level `projections` listing contains typed ownership and freshness
+contracts for generated artifacts. The first supported shape is
+`kind = "markdown"`, `matrix = "locales"`, and `freshness = "exact"`;
+`output` must contain one `{locale}` placeholder and stay below the selected
+generation root. `provenance` is a required, non-templated JSON path below the
+same root and must not collide with any generated output. Repeated generation
+preserves its `generatedAt` value while all deterministic inputs are current;
+`--generated-at <iso>` exists for reproducible fixtures and first generation.
+
 Domain preset packs under `dspec/domains/` are authoring helpers over this
 shape. They do not add a separate semantics layer; they return ordinary Core IR
 records so drift detection, coverage, Markdown rendering, QuickCheck, Lean,
@@ -398,11 +494,31 @@ QuickCheck, TLA+, and Lean outputs. The current implementation still falls back
 to `expr` when `ast` is absent, which keeps older specs readable while giving
 new specs a deterministic projection surface.
 
-`Clause.ast` currently defines a minimal first-order boolean fragment:
+`Model.clauseAstSemanticsVersion` versions the interpretation contract for all
+typed clauses in a model. Version `1.0` defines a minimal first-order boolean
+fragment:
 uninterpreted `atom` predicates, symbolic `eq`/`neq`, boolean
 `not`/`and`/`or`/`implies`, and single-child `exists`/`forall` binders.
 `dspec check` rejects nodes that use fields outside the selected operator's
-semantics.
+semantics or models that request an unsupported semantics version. QuickCheck,
+TLA+, and Lean projections carry the version explicitly. The executable
+reference semantics and conformance tests live in `src/core/clause-ast.mjs` and
+`test/clause-ast-core.test.mjs`.
+
+`src/core/assurance-evidence.mjs` separately records how each operator reaches
+each backend. A `bounded` or `proved` target must select concrete clauses, those
+clauses must carry `Clause.ast`, every selected operator must have `semantic`
+backend support, and the referenced evidence manifest must contain a passing
+clause-scoped artifact. File or theorem anchors alone are rejected.
+The pure manifest/digest/support helpers are exported from `@mizchi/dspec` and
+`@mizchi/dspec/assurance-evidence` for non-CLI integrations.
+
+The semantic implementation is deliberately narrow. Generated Lean defines a
+partial `ClauseEnv`, resolves `eq`/`neq` operands, recursively interprets `not`
+and `implies`, and proves the selected `must` Clause for every environment.
+`eq(x, x)` and `eq(x, y) -> eq(x, y)` succeed; an arbitrary non-reflexive
+conclusion does not produce evidence without an actual proof. This proves the
+Clause proposition, not the behavior of application code.
 
 `patterns.db` is the first domain pattern. It separates DB structure from
 transaction and migration behavior: tables declare columns, primary keys,
@@ -566,7 +682,7 @@ does not see globally:
   `fixtures/release-model-broken.pkl`
 - generated Runtime safety and evidence checks are load-bearing against
   `fixtures/runtime-model-broken.pkl`
-- generated Markdown review artifact drift via `generated/dspec.md`
+- localized generated Markdown review artifact drift under `generated/examples/`
 - generated source-map artifact drift via `generated/source-map.json`
 - JSON verification report shape via `dspec verify-generated --json`
 - counterexample normalization from generated backend failures to source
@@ -577,13 +693,16 @@ These are deliberately cheap checks, but they are now load-bearing: a fixture
 with an unsupported approved rule fails generated QuickCheck and Lean, and in
 the Nix shell also fails the TLA+/Alloy backend gates. The normalizer maps
 those failures back to spec source records. The useful next step is to split the
-checker into a reusable core so the current Node CLI and a future MoonBit
-implementation can share fixtures and expected diagnostics.
+remaining checker and generators into reusable core modules. Clause AST
+semantics and real-app normalization already have filesystem-independent core
+APIs; most validation, report, and emitter logic still lives in the Node CLI.
 
 ## Evaluation
 
-See `docs/usability-evaluation.md` for the current usability assessment and
-`docs/dogfooding-2026-07-10.md` for the latest concrete dogfood run.
+See `docs/usability-evaluation.md` for the current usability assessment,
+`docs/dogfooding-2026-07-14-mnemo.md` for the latest external importer run, and
+`docs/dogfooding-2026-07-14-assurance.md` for the latest self-spec assurance
+review.
 `examples/dspec.pkl` is now usable as the prototype's active self-spec ledger;
 the remaining gap is full backend semantics for `Clause.ast`,
 backend-specific proof/model-check generation beyond the current QuickCheck,

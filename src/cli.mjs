@@ -1,10 +1,44 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import {
+  CLAUSE_AST_SEMANTICS_VERSION,
+  validateClauseAst,
+} from "./core/clause-ast.mjs";
+import {
+  ASSURANCE_EVIDENCE_SCHEMA_VERSION,
+  assuranceDigest,
+  assuranceEvidenceSnapshot,
+  clauseBackendSupport,
+  expressionOperators,
+  verifyAssuranceEvidenceManifest,
+} from "./core/assurance-evidence.mjs";
+import {
+  RealAppCoreError,
+  evaluateRealAppImport,
+  importInfrastructureDocuments,
+  infrastructureBindingId,
+  infrastructureCloudNodeKind,
+  infrastructureDataStore,
+  infrastructureDependencyKind,
+  infrastructureService,
+  realAppObservedDomain,
+} from "./core/real-app.mjs";
+import {
+  createProjectionSnapshot,
+  planProjectionChanges,
+  projectionGenerateArgv,
+  projectionPlanReport,
+  projectionProvenanceDocument,
+  projectionStableJson,
+  validateProjectionContracts,
+} from "./core/projection.mjs";
+import { applyProjectionTransaction, recoverProjectionLock } from "./projection-filesystem.mjs";
 
 const TOP_LEVEL_COMMANDS = [
   { name: "check", usage: "dspec check [--json] <model.pkl>" },
@@ -13,6 +47,9 @@ const TOP_LEVEL_COMMANDS = [
   { name: "domain-coverage", usage: "dspec domain-coverage [--json] <model.pkl>" },
   { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
+  { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
+  { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
+  { name: "generated", usage: "dspec generated <check|unlock> ..." },
   {
     name: "emit",
     usage:
@@ -24,6 +61,7 @@ const TOP_LEVEL_COMMANDS = [
   { name: "import-db-schema", usage: "dspec import-db-schema [--json] <schema.sql>" },
   { name: "check-sql-queries", usage: "dspec check-sql-queries [--json] <model.pkl> <queries.sql>" },
   { name: "import-real-app", usage: "dspec import-real-app [--json|--pkl] <app-root>" },
+  { name: "evaluate-real-app-import", usage: "dspec evaluate-real-app-import [--json] <evaluation.pkl>" },
   { name: "reconcile-real-app", usage: "dspec reconcile-real-app [--json] <model.pkl> <observed.json>" },
   { name: "reverse-coverage", usage: "dspec reverse-coverage [--json] <model.pkl> <observed.json>" },
   { name: "check-app-profile", usage: "dspec check-app-profile [--json|--markdown] [--fix [--dry-run]] <profile.pkl...>" },
@@ -43,7 +81,7 @@ const TOP_LEVEL_COMMANDS = [
   {
     name: "spec-reading-eval",
     usage:
-      "dspec spec-reading-eval [--json|--markdown|--prompt] [--locale <locale>] [--score <answers.json>] [--write-run <report.json>] [--refresh-digests [--apply]] <eval.pkl>",
+      "dspec spec-reading-eval [--json|--markdown|--prompt] [--locale <locale>] [--score <answers.json>|--runner <runner.pkl>] [--write-run <report.json>] [--refresh-digests [--apply]] <eval.pkl>",
   },
   { name: "spec-reading-eval-suite", usage: "dspec spec-reading-eval-suite [--json|--markdown] <suite.pkl>" },
   { name: "import-runtime-evidence", usage: "dspec import-runtime-evidence [--json] <evidence.json>" },
@@ -78,6 +116,21 @@ Typical flow:
   dspec spec-change compat --json before.pkl after.pkl
   dspec spec-change scaffold --output review.pkl before.pkl after.pkl
   dspec spec-change review --json review.pkl
+`;
+}
+
+function evidenceUsage() {
+  return `usage:
+  dspec evidence create [--json] [--output <manifest.json>] [--executed-at <iso>] [--require-formal-tools] <model.pkl>
+  dspec evidence verify [--json] <model.pkl> <manifest.json>
+  dspec evidence refresh [--json] [--executed-at <iso>] [--require-formal-tools] <model.pkl> <manifest.json>
+`;
+}
+
+function generatedUsage() {
+  return `usage:
+  dspec generated check [--json] [--root <dir>] <model.pkl>
+  dspec generated unlock [--json] [--force] [--root <dir>]
 `;
 }
 
@@ -156,7 +209,7 @@ function loadModel(file) {
   if (!document || typeof document !== "object" || !document.model) {
     throw new CommandError(`missing top-level model: ${file}`);
   }
-  return document.model;
+  return { ...document.model, projections: list(document.projections) };
 }
 
 function loadAppProfile(file) {
@@ -183,6 +236,14 @@ function loadAppProfileChangeReplayCorpus(file) {
   return document.corpus;
 }
 
+function loadRealAppImportEvaluation(file) {
+  const document = evalPklJson(file);
+  if (!document || typeof document !== "object" || !document.realAppImportEval) {
+    throw new CommandError(`missing top-level realAppImportEval: ${file}`);
+  }
+  return document.realAppImportEval;
+}
+
 function loadSpecChangeReview(file) {
   const document = evalPklJson(file);
   if (!document || typeof document !== "object" || !document.review) {
@@ -205,6 +266,14 @@ function loadSpecReadingEvaluationSuite(file) {
     throw new CommandError(`missing top-level specReadingEvalSuite: ${file}`);
   }
   return document.specReadingEvalSuite;
+}
+
+function loadSpecReadingAgentRunner(file) {
+  const document = evalPklJson(file);
+  if (!document || typeof document !== "object" || !document.specReadingAgentRunner) {
+    throw new CommandError(`missing top-level specReadingAgentRunner: ${file}`);
+  }
+  return document.specReadingAgentRunner;
 }
 
 function list(value) {
@@ -267,6 +336,187 @@ function readJsonFile(path, label) {
 
 function automatedCheckTargets(rule) {
   return list(rule.checks).filter((target) => target.backend !== "manual" && target.backend !== "runtime");
+}
+
+const CHECK_ASSURANCE_KINDS = ["reference", "executed", "mutation-tested", "bounded", "proved"];
+
+const CHECK_ASSURANCE_BACKENDS = {
+  executed: ["node", "pkl", "lean", "alloy", "tla", "rego", "cue", "playwright", "runtime"],
+  "mutation-tested": ["node", "playwright"],
+  bounded: ["alloy", "tla"],
+  proved: ["lean"],
+};
+
+function checkTargetAssurances(target) {
+  const declared = list(target.assurances);
+  return [...new Set(declared.length > 0 ? declared : ["reference"])];
+}
+
+function ruleRequiredAssurances(rule) {
+  const required = list(rule.requiredAssurances);
+  return [...new Set(required.length > 0 ? required : ["reference"])];
+}
+
+function clauseForSelector(rule, selector) {
+  const match = /^(when|must|mustNot)\[([0-9]+)\]$/.exec(selector);
+  if (!match) return null;
+  return list(rule[match[1]])[Number(match[2])] ?? null;
+}
+
+function leanClauseTheoremName(ruleId, selector) {
+  const normalizedSelector = sanitizeIdentifier(selector).replace(/_+$/, "");
+  return `clause_${sanitizeIdentifier(ruleId)}_${normalizedSelector}`;
+}
+
+function leanClauseArtifactId(ruleId, selector) {
+  return `lean-clause-${ruleId}-${selector.replace(/[^A-Za-z0-9]+/g, "-").replace(/-+$/, "")}`;
+}
+
+function leanSemanticClauseProofs(model) {
+  const proofs = new Map();
+  for (const rule of sortedRules(model).filter((candidate) => candidate.reviewStatus === "approved" && !candidate.deprecated)) {
+    for (const target of list(rule.checks)) {
+      if (target.backend !== "lean" || !checkTargetAssurances(target).includes("proved")) continue;
+      for (const selector of list(target.covers)) {
+        const match = /^(must|mustNot)\[([0-9]+)\]$/.exec(selector);
+        const clause = clauseForSelector(rule, selector);
+        if (!match || !clause?.ast) continue;
+        if (clauseBackendSupport("lean", expressionOperators(clause.ast)) !== "semantic") continue;
+        const theorem = leanClauseTheoremName(rule.id, selector);
+        proofs.set(`${rule.id}:${selector}`, {
+          rule,
+          selector,
+          field: match[1],
+          index: Number(match[2]),
+          clause,
+          theorem,
+          artifactId: leanClauseArtifactId(rule.id, selector),
+          generatedSelector: `lean.theorem.${theorem}`,
+        });
+      }
+    }
+  }
+  return [...proofs.values()];
+}
+
+function validateCheckTargetAssuranceDeclarations(errors, model, rule, { requireFormalEvidence = false } = {}) {
+  for (const target of list(rule.checks)) {
+    const assurances = checkTargetAssurances(target);
+    const assuranceSet = new Set(assurances);
+    const evidence = target.assuranceEvidence ?? {};
+
+    if (!assuranceSet.has("reference")) {
+      errors.push(`check target assurance must include reference: ${rule.id} -> ${target.ref}`);
+    }
+
+    for (const kind of assurances) {
+      const allowedBackends = CHECK_ASSURANCE_BACKENDS[kind];
+      if (allowedBackends && !allowedBackends.includes(target.backend)) {
+        errors.push(
+          `incompatible check assurance: ${rule.id} -> ${kind} requires ${allowedBackends.join("/")} backend, got ${target.backend}`,
+        );
+      }
+      if (kind !== "reference" && !evidence[kind]) {
+        errors.push(`missing check assurance evidence: ${rule.id} -> ${kind}`);
+      }
+      if (requireFormalEvidence && (kind === "bounded" || kind === "proved")) {
+        if (list(target.covers).length === 0) {
+          errors.push(`formal assurance requires clause selectors: ${rule.id} -> ${kind} ${target.backend}`);
+        }
+        for (const selector of list(target.covers)) {
+          const clause = clauseForSelector(rule, selector);
+          if (!clause?.ast) {
+            errors.push(`formal assurance requires typed Clause.ast: ${rule.id} -> ${kind} ${target.backend} ${selector}`);
+            continue;
+          }
+          const support = clauseBackendSupport(target.backend, expressionOperators(clause.ast));
+          if (support !== "semantic") {
+            errors.push(
+              `formal assurance requires semantic Clause.ast support: ${rule.id} -> ${kind} ${target.backend} ${selector} (${support})`,
+            );
+          }
+        }
+        const evidenceRef = evidence[kind];
+        if (evidenceRef) {
+          const { path, anchor } = splitRef(evidenceRef);
+          if (anchor || !path.endsWith(".json")) {
+            errors.push(`formal assurance requires evidence manifest: ${rule.id} -> ${kind} ${evidenceRef}`);
+          } else if (!existsSync(resolve(path))) {
+            errors.push(`missing formal assurance evidence manifest: ${rule.id} -> ${kind} ${evidenceRef}`);
+          } else {
+            let manifest;
+            try {
+              manifest = readJsonFile(path, "assurance evidence manifest");
+            } catch (error) {
+              errors.push(`invalid formal assurance evidence manifest: ${rule.id} -> ${kind}: ${error.message}`);
+              continue;
+            }
+            const report = assuranceEvidenceVerificationReport(model, manifest);
+            for (const error of report.errors) {
+              errors.push(`invalid formal assurance evidence manifest: ${rule.id} -> ${kind}: ${error}`);
+            }
+            for (const selector of list(target.covers)) {
+              const binding = list(report.manifest?.clauseBindings).find(
+                (entry) => entry?.ruleId === rule.id && entry.selector === selector,
+              );
+              const backendBinding = list(binding?.backends).find((entry) => entry?.backend === target.backend);
+              if (!backendBinding || backendBinding.support !== "semantic" || list(backendBinding.generatedSelectors).length === 0) {
+                errors.push(`formal assurance lacks semantic manifest binding: ${rule.id} -> ${kind} ${target.backend} ${selector}`);
+                continue;
+              }
+              const generatedSelectors = new Set(backendBinding.generatedSelectors);
+              const artifact = list(report.manifest?.artifacts).find(
+                (entry) => entry?.backend === target.backend
+                  && entry.scope === "clause"
+                  && entry.result === "pass"
+                  && list(entry.propertyIds).some((propertyId) => generatedSelectors.has(propertyId)),
+              );
+              if (!artifact) {
+                errors.push(`formal assurance lacks passing clause artifact: ${rule.id} -> ${kind} ${target.backend} ${selector}`);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    for (const kind of Object.keys(evidence)) {
+      if (!assuranceSet.has(kind)) {
+        errors.push(`undeclared check assurance evidence: ${rule.id} -> ${kind}`);
+      }
+    }
+  }
+}
+
+function assuranceSummary(model) {
+  const rules = activeApprovedRules(model);
+  const targets = rules.flatMap(automatedCheckTargets);
+  const byKind = Object.fromEntries(CHECK_ASSURANCE_KINDS.map((kind) => [kind, 0]));
+  const requirements = Object.fromEntries(CHECK_ASSURANCE_KINDS.map((kind) => [kind, 0]));
+
+  for (const target of targets) {
+    for (const kind of new Set(checkTargetAssurances(target))) {
+      byKind[kind] += 1;
+    }
+  }
+
+  let satisfied = 0;
+  for (const rule of rules) {
+    const ruleTargets = automatedCheckTargets(rule);
+    const available = new Set(ruleTargets.flatMap(checkTargetAssurances));
+    const required = [...new Set(ruleRequiredAssurances(rule))];
+    for (const kind of required) requirements[kind] += 1;
+    if (ruleTargets.length > 0 && required.every((kind) => available.has(kind))) {
+      satisfied += 1;
+    }
+  }
+
+  return {
+    kinds: CHECK_ASSURANCE_KINDS,
+    rules: { satisfied, total: rules.length },
+    targets: { total: targets.length, byKind },
+    requirements,
+  };
 }
 
 function clauseExpr(clause) {
@@ -355,48 +605,7 @@ function activeApprovedRules(model) {
 }
 
 function validateExprAst(errors, context, ast) {
-  if (!ast) return;
-
-  const children = list(ast.children);
-  const args = list(ast.args);
-  const hasName = ast.name !== null && ast.name !== undefined;
-  const fail = (message) => errors.push(`invalid expr ast: ${context} ${message}`);
-  const rejectName = () => {
-    if (hasName) fail(`${ast.op} does not accept name`);
-  };
-  const rejectArgs = () => {
-    if (args.length > 0) fail(`${ast.op} does not accept args`);
-  };
-  const rejectChildren = () => {
-    if (children.length > 0) fail(`${ast.op} does not accept children`);
-  };
-
-  if (ast.op === "atom") {
-    if (!hasName) fail("atom expects name");
-    rejectChildren();
-  } else if (ast.op === "eq" || ast.op === "neq") {
-    rejectName();
-    rejectChildren();
-    if (args.length !== 2) fail(`${ast.op} expects exactly 2 args`);
-  } else if (ast.op === "not") {
-    rejectName();
-    rejectArgs();
-    if (children.length !== 1) fail("not expects exactly 1 child");
-  } else if (ast.op === "and" || ast.op === "or") {
-    rejectName();
-    rejectArgs();
-    if (children.length === 0) fail(`${ast.op} expects at least 1 child`);
-  } else if (ast.op === "implies") {
-    rejectName();
-    rejectArgs();
-    if (children.length !== 2) fail("implies expects exactly 2 children");
-  } else if (ast.op === "exists" || ast.op === "forall") {
-    if (!hasName) fail(`${ast.op} expects bound variable name`);
-    rejectArgs();
-    if (children.length !== 1) fail(`${ast.op} expects exactly 1 child`);
-  }
-
-  children.forEach((child, index) => validateExprAst(errors, `${context}.${ast.op}[${index}]`, child));
+  errors.push(...validateClauseAst(ast, { context }));
 }
 
 function validateClauseAsts(errors, rule, fieldName) {
@@ -423,6 +632,14 @@ function releasePattern(model) {
 
 function runtimePattern(model) {
   return model.patterns?.runtime ?? null;
+}
+
+function projections(model) {
+  return list(model.projections);
+}
+
+function validateProjections(errors, model) {
+  errors.push(...validateProjectionContracts(model));
 }
 
 function domainPacks(model) {
@@ -1092,7 +1309,7 @@ function validateCheckTargetCoverageSelectors(errors, rule) {
   }
 }
 
-function validate(model) {
+function validate(model, { requireFormalEvidence = false } = {}) {
   const errors = [];
   const terms = list(model.vocabulary);
   const rules = list(model.rules);
@@ -1105,6 +1322,10 @@ function validate(model) {
   const termIds = new Set(terms.map((term) => term.id));
   const ruleIds = new Set(rules.map((rule) => rule.id));
   const locales = new Set(list(model.locales));
+
+  if (model.clauseAstSemanticsVersion !== CLAUSE_AST_SEMANTICS_VERSION) {
+    errors.push(`unsupported Clause.ast semantics version: ${model.clauseAstSemanticsVersion}`);
+  }
 
   if (!locales.has(model.primaryLocale)) {
     errors.push(`primary locale is not listed in locales: ${model.primaryLocale}`);
@@ -1147,6 +1368,7 @@ function validate(model) {
     validateClauseAsts(errors, rule, "must");
     validateClauseAsts(errors, rule, "mustNot");
     validateCheckTargetCoverageSelectors(errors, rule);
+    validateCheckTargetAssuranceDeclarations(errors, model, rule, { requireFormalEvidence });
 
     const verificationCount = list(rule.checks).length + list(rule.implementedBy).length;
     if (rule.reviewStatus === "approved" && !rule.deprecated && verificationCount === 0) {
@@ -1161,6 +1383,7 @@ function validate(model) {
   validateRuntimeModel(errors, model);
   validateDomainPacks(errors, model);
   validateI18nContract(errors, model);
+  validateProjections(errors, model);
 
   return errors;
 }
@@ -1230,11 +1453,18 @@ function validateRuntimeCheckTarget(rule, target, path, anchor) {
   }
 }
 
-function validateCheckTarget(rule, target) {
+function validateCheckTargetRef(rule, target) {
   const { path, anchor } = splitRef(target.ref);
 
   if (target.backend === "manual") {
     return [`manual check target is not machine-verifiable: ${rule.id} -> ${target.ref}`];
+  }
+
+  if (target.backend === "lean" && path === "generated:lean") {
+    const generatedTheorems = list(target.covers).map((selector) => leanClauseTheoremName(rule.id, selector));
+    return anchor && generatedTheorems.includes(anchor)
+      ? []
+      : [`missing generated lean check target symbol: ${rule.id} -> ${target.ref}`];
   }
 
   if (!existsSync(resolve(path))) {
@@ -1308,28 +1538,46 @@ function validateCheckTarget(rule, target) {
   return [];
 }
 
-function validateCheckTargets(model, rules = list(model.rules)) {
+function validateCheckTarget(rule, target, { allowMissingFormalEvidence = false } = {}) {
+  const errors = validateCheckTargetRef(rule, target);
+  for (const [kind, evidenceRef] of Object.entries(target.assuranceEvidence ?? {})) {
+    const { path, anchor } = splitRef(evidenceRef);
+    if (!existsSync(resolve(path))) {
+      if (allowMissingFormalEvidence && (kind === "bounded" || kind === "proved") && !anchor && path.endsWith(".json")) {
+        continue;
+      }
+      errors.push(`missing check assurance evidence path: ${rule.id} -> ${kind} ${evidenceRef}`);
+      continue;
+    }
+    if (anchor && !readTextFile(path).includes(anchor)) {
+      errors.push(`missing check assurance evidence anchor: ${rule.id} -> ${kind} ${evidenceRef}`);
+    }
+  }
+  return errors;
+}
+
+function validateCheckTargets(model, rules = list(model.rules), options = {}) {
   const errors = [];
   let count = 0;
 
   for (const rule of rules) {
     for (const target of list(rule.checks)) {
-      count += 1;
-      errors.push(...validateCheckTarget(rule, target));
+      count += 1 + Object.keys(target.assuranceEvidence ?? {}).length;
+      errors.push(...validateCheckTarget(rule, target, options));
     }
   }
 
   return { errors, count };
 }
 
-function validateDrift(model) {
+function validateDrift(model, options = {}) {
   const modelErrors = validate(model);
   if (modelErrors.length > 0) {
     return { errors: modelErrors, count: 0 };
   }
 
   const implementations = validateImplementationRefs(model);
-  const checks = validateCheckTargets(model);
+  const checks = validateCheckTargets(model, list(model.rules), options);
   const packs = validateDomainPackRefs(model);
   return {
     errors: [...implementations.errors, ...checks.errors, ...packs.errors],
@@ -1337,8 +1585,8 @@ function validateDrift(model) {
   };
 }
 
-function validateCoverage(model) {
-  const drift = validateDrift(model);
+function validateCoverage(model, options = {}) {
+  const drift = validateDrift(model, options);
   if (drift.errors.length > 0) {
     return {
       errors: drift.errors,
@@ -1355,6 +1603,15 @@ function validateCoverage(model) {
     const targets = list(rule.checks).filter((target) => target.backend !== "manual" && target.backend !== "runtime");
     if (targets.length === 0) {
       errors.push(`approved rule has no automated check target: ${rule.id}`);
+      continue;
+    }
+    const availableAssurances = new Set(targets.flatMap(checkTargetAssurances));
+    const missingAssurances = [...new Set(ruleRequiredAssurances(rule))]
+      .filter((kind) => !availableAssurances.has(kind));
+    if (missingAssurances.length > 0) {
+      for (const kind of missingAssurances) {
+        errors.push(`approved rule is missing required assurance: ${rule.id} -> ${kind}`);
+      }
       continue;
     }
     if (rule.coverage === "clause") {
@@ -1439,6 +1696,94 @@ function parseVerifyGeneratedArgs(args) {
   return { file, json, requireFormalTools };
 }
 
+function parseEvidenceCreateArgs(args) {
+  let json = false;
+  let outputFile = null;
+  let executedAt = null;
+  let requireFormalTools = false;
+  const files = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--require-formal-tools") {
+      requireFormalTools = true;
+      continue;
+    }
+    if (arg === "--output") {
+      outputFile = args[index + 1];
+      index += 1;
+      if (!outputFile) throw new CommandError("--output requires a manifest path\n");
+      continue;
+    }
+    if (arg === "--executed-at") {
+      executedAt = args[index + 1];
+      index += 1;
+      if (!executedAt) throw new CommandError("--executed-at requires an ISO timestamp\n");
+      continue;
+    }
+    files.push(arg);
+  }
+  if (files.length !== 1) throw new CommandError(evidenceUsage());
+  return {
+    modelFile: files[0],
+    json,
+    outputFile,
+    executedAt: executedAt ?? new Date().toISOString(),
+    requireFormalTools,
+  };
+}
+
+function parseEvidenceVerifyArgs(args) {
+  let json = false;
+  const files = [];
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    files.push(arg);
+  }
+  if (files.length !== 2) throw new CommandError(evidenceUsage());
+  return { modelFile: files[0], manifestFile: files[1], json };
+}
+
+function parseEvidenceRefreshArgs(args) {
+  let json = false;
+  let executedAt = null;
+  let requireFormalTools = false;
+  const files = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--require-formal-tools") {
+      requireFormalTools = true;
+      continue;
+    }
+    if (arg === "--executed-at") {
+      executedAt = args[index + 1];
+      index += 1;
+      if (!executedAt) throw new CommandError("--executed-at requires an ISO timestamp\n");
+      continue;
+    }
+    files.push(arg);
+  }
+  if (files.length !== 2) throw new CommandError(evidenceUsage());
+  return {
+    modelFile: files[0],
+    manifestFile: files[1],
+    json,
+    executedAt: executedAt ?? new Date().toISOString(),
+    requireFormalTools,
+  };
+}
+
 function parseDevshellSmokeArgs(args) {
   let json = false;
   let strict = false;
@@ -1483,6 +1828,75 @@ function parseJsonReportArgs(args) {
     throw new CommandError(usage());
   }
   return { file, json };
+}
+
+function parseProjectionArgs(args, usageText = usage(), { allowGenerationOptions = false } = {}) {
+  let file = null;
+  let dryRun = false;
+  let generatedAt = null;
+  let json = false;
+  let root = ".";
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--dry-run" && allowGenerationOptions) {
+      dryRun = true;
+      continue;
+    }
+    if (arg === "--generated-at" && allowGenerationOptions) {
+      generatedAt = args[index + 1];
+      if (!generatedAt) throw new CommandError(usageText);
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(generatedAt)) {
+        throw new CommandError(`invalid --generated-at: ${generatedAt}`);
+      }
+      index += 1;
+      continue;
+    }
+    if (arg === "--root") {
+      root = args[index + 1];
+      if (!root) throw new CommandError(usageText);
+      index += 1;
+      continue;
+    }
+    if (!file) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(`unexpected argument: ${arg}\n${usageText}`);
+  }
+
+  if (!file) throw new CommandError(usageText);
+  return { file, dryRun, generatedAt, json, root };
+}
+
+function parseProjectionUnlockArgs(args, usageText = generatedUsage()) {
+  let force = false;
+  let json = false;
+  let root = ".";
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--force") {
+      force = true;
+      continue;
+    }
+    if (arg === "--root") {
+      root = args[index + 1];
+      if (!root) throw new CommandError(usageText);
+      index += 1;
+      continue;
+    }
+    throw new CommandError(`unexpected argument: ${arg}\n${usageText}`);
+  }
+  return { force, json, root };
 }
 
 function parseImpactArgs(args) {
@@ -1554,6 +1968,7 @@ function parseSpecReadingEvalArgs(args) {
   let markdown = false;
   let prompt = false;
   let scoreFile = null;
+  let runnerFile = null;
   let locale = null;
   let refreshDigests = false;
   let apply = false;
@@ -1587,6 +2002,11 @@ function parseSpecReadingEvalArgs(args) {
       index += 1;
       continue;
     }
+    if (arg === "--runner") {
+      runnerFile = args[index + 1];
+      index += 1;
+      continue;
+    }
     if (arg === "--write-run") {
       writeRunFile = args[index + 1];
       index += 1;
@@ -1603,18 +2023,20 @@ function parseSpecReadingEvalArgs(args) {
   if (
     files.length !== 1 ||
     [json, markdown, prompt].filter(Boolean).length > 1 ||
-    (prompt && scoreFile) ||
+    (prompt && (scoreFile || runnerFile)) ||
     (prompt && refreshDigests) ||
-    (refreshDigests && scoreFile) ||
+    (refreshDigests && (scoreFile || runnerFile)) ||
+    (scoreFile && runnerFile) ||
     (apply && !refreshDigests) ||
-    (writeRunFile && !scoreFile) ||
+    (writeRunFile && !scoreFile && !runnerFile) ||
     (!scoreFile && args.includes("--score")) ||
+    (!runnerFile && args.includes("--runner")) ||
     (!writeRunFile && args.includes("--write-run")) ||
     (!locale && args.includes("--locale"))
   ) {
     throw new CommandError(usage());
   }
-  return { file: files[0], json, markdown, prompt, scoreFile, locale, refreshDigests, apply, writeRunFile };
+  return { file: files[0], json, markdown, prompt, scoreFile, runnerFile, locale, refreshDigests, apply, writeRunFile };
 }
 
 function parseSpecReadingEvalSuiteArgs(args) {
@@ -2504,6 +2926,38 @@ function parseTomlString(source, key) {
   return source.match(new RegExp(`^${escapeRegex(key)}\\s*=\\s*"([^"]*)"`, "m"))?.[1] ?? null;
 }
 
+function portablePath(path) {
+  return path.replaceAll("\\", "/");
+}
+
+function walkAppFiles(root, { skip = new Set([".git", "node_modules", ".direnv", ".mooncakes", "dist", "coverage"]) } = {}) {
+  const absoluteRoot = resolve(root);
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      if (skip.has(entry.name)) continue;
+      const absolute = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        visit(absolute);
+      } else if (entry.isFile()) {
+        files.push(portablePath(relative(absoluteRoot, absolute)));
+      }
+    }
+  };
+  visit(absoluteRoot);
+  return files.sort();
+}
+
+function importInfrastructure(root) {
+  const documents = walkAppFiles(root).map((path) => ({ path, source: readOptionalText(root, path) }));
+  try {
+    return importInfrastructureDocuments(documents);
+  } catch (error) {
+    if (error instanceof RealAppCoreError) throw new CommandError(error.message);
+    throw error;
+  }
+}
+
 function importRealApp(root) {
   const appTs = readOptionalText(root, "apps/api/src/app.ts");
   const contractsTs = readOptionalText(root, "packages/contracts/src/index.ts");
@@ -2521,15 +2975,17 @@ function importRealApp(root) {
   const schemas = parseZodSchemas(contractsTs);
   const routes = parseHonoRoutes(appTs);
   const scripts = Object.keys(packageJson.scripts ?? {}).sort();
+  const infrastructure = importInfrastructure(root);
   return {
     id: appRootId(root),
     root: String(root).replace(/\/+$/, ""),
     routes,
     contracts: {
-      path: "packages/contracts/src/index.ts",
+      path: existsSync(appRootFile(root, "packages/contracts/src/index.ts")) ? "packages/contracts/src/index.ts" : null,
       schemas,
     },
     workflows,
+    infrastructure,
     quality: {
       flaker: {
         path: existsSync(appRootFile(root, "flaker.toml")) ? "flaker.toml" : null,
@@ -2548,72 +3004,23 @@ function importRealApp(root) {
   };
 }
 
-function realAppObservedDomain(app) {
-  const routePaths = new Set(list(app.routes).map((route) => route.path));
-  const schemas = new Set(list(app.contracts?.schemas));
-  const workflowGates = sortedUnique(list(app.workflows).flatMap((workflow) => workflow.gates));
-  const workflowIds = new Set(list(app.workflows).map((workflow) => workflow.id));
-  const hasWorkflowText = (pattern) => list(app.workflows).some((workflow) => {
-    const corpus = [...workflow.steps, ...workflow.repositories, ...workflow.artifacts, ...workflow.gates].join("\n").toLowerCase();
-    return pattern.test(corpus);
-  });
-  const hasDashboard = list(app.scripts).some((script) => script.includes("dashboard")) || list(app.quality?.vrt?.routes).length > 0;
-  const hasApi = list(app.routes).length > 0;
-  const hasContracts = schemas.size > 0;
-  const hasFlaker = Boolean(app.quality?.flaker?.path) || hasWorkflowText(/flaker/);
-  const hasVrt = Boolean(app.quality?.vrt?.path) || hasWorkflowText(/\bvrt\b/);
-  const hasArtifacts = hasWorkflowText(/artifact/);
-  const hasApiMemory = hasApi;
-
-  return {
-    cloud: {
-      nodes: sortedUnique([
-        hasDashboard ? "public-client" : null,
-        hasDashboard ? "dashboard" : null,
-        hasApi ? "api" : null,
-        hasContracts ? "contracts" : null,
-        list(app.workflows).length > 0 ? "github-actions" : null,
-        hasFlaker ? "flaker" : null,
-        hasVrt ? "vrt" : null,
-      ]),
-      flows: sortedUnique([
-        hasDashboard ? "public-to-dashboard" : null,
-        hasDashboard && hasApi ? "dashboard-to-api" : null,
-        hasApi && hasContracts ? "api-to-contracts" : null,
-        hasFlaker ? "github-actions-to-flaker" : null,
-        hasVrt ? "github-actions-to-vrt" : null,
-      ]),
-    },
-    data: {
-      datasets: sortedUnique([
-        schemas.has("dashboardSnapshotSchema") ? "dashboard-snapshot" : null,
-        schemas.has("incidentSchema") ? "incident" : null,
-        schemas.has("serviceDetailSchema") ? "service-detail" : null,
-      ]),
-      stores: sortedUnique([
-        hasApiMemory ? "api-memory" : null,
-        hasDashboard ? "dashboard-cache" : null,
-        hasArtifacts ? "github-actions-artifacts" : null,
-        app.quality?.flaker?.storage ? "flaker-duckdb" : null,
-      ]),
-      flows: sortedUnique([
-        routePaths.has("/api/dashboard") && schemas.has("dashboardSnapshotSchema") ? "api-to-dashboard-data" : null,
-        hasFlaker && hasArtifacts ? "ci-to-flaker-data" : null,
-      ]),
-    },
-    release: {
-      services: sortedUnique([hasApi ? "api" : null, hasDashboard ? "dashboard" : null]),
-      gates: workflowGates.filter((gate) => gate !== "flaker"),
-      steps: sortedUnique([...workflowIds]),
-    },
-    runtime: {
-      services: sortedUnique([hasApi ? "api" : null, hasDashboard ? "dashboard" : null]),
-      dependencies: sortedUnique([hasDashboard && hasApi ? "dashboard-to-api" : null]),
-      slos: sortedUnique([hasDashboard ? "dashboard-availability" : null]),
-    },
-  };
+function realAppImportEvaluationAppRoot(evaluation, file) {
+  if (isAbsolute(evaluation.appRoot)) return evaluation.appRoot;
+  if (existsSync(resolve(evaluation.appRoot))) return evaluation.appRoot;
+  return resolve(dirname(resolve(file)), evaluation.appRoot);
 }
 
+function realAppImportEvaluationReport(evaluation, file) {
+  const app = importRealApp(realAppImportEvaluationAppRoot(evaluation, file));
+  return evaluateRealAppImport(evaluation, app);
+}
+
+function renderRealAppImportEvaluationReport(report) {
+  if (report.status === "pass") {
+    return `ok: ${report.evaluation.id} real app import precision ${report.summary.precision} recall ${report.summary.recall}\n`;
+  }
+  return `${report.errors.join("\n")}\n`;
+}
 function emitPklRecord(lines, indent, className, fields) {
   lines.push(`${indent}new d.${className} {`);
   for (const [field, value] of Object.entries(fields)) {
@@ -2628,6 +3035,13 @@ function emitPklRecord(lines, indent, className, fields) {
 
 function emitRealAppPkl(app) {
   const domain = realAppObservedDomain(app);
+  const infrastructureResources = list(app.infrastructure?.resources);
+  const infrastructureById = new Map(infrastructureResources.map((resource) => [resource.id, resource]));
+  const infrastructureBindings = new Map(
+    infrastructureResources
+      .filter((resource) => resource.owner)
+      .map((resource) => [infrastructureBindingId(resource), resource]),
+  );
   const lines = ["patterns = new d.PatternCatalog {", "  cloud = new d.CloudModel {"];
   lines.push("    zones {");
   emitPklRecord(lines, "      ", "CloudZone", { id: "public", exposure: "public" });
@@ -2637,7 +3051,14 @@ function emitRealAppPkl(app) {
   lines.push("    nodes {");
   const nodeKind = { "public-client": "internet", dashboard: "service", api: "service", contracts: "service", "github-actions": "service", flaker: "service", vrt: "service" };
   const nodeZone = { "public-client": "public", dashboard: "public", api: "private", contracts: "private", "github-actions": "ci", flaker: "ci", vrt: "ci" };
-  for (const id of domain.cloud.nodes) emitPklRecord(lines, "      ", "CloudNode", { id, kind: nodeKind[id] ?? "service", zone: nodeZone[id] ?? "private" });
+  for (const id of domain.cloud.nodes) {
+    const resource = infrastructureById.get(id);
+    emitPklRecord(lines, "      ", "CloudNode", {
+      id,
+      kind: resource ? infrastructureCloudNodeKind(resource) : nodeKind[id] ?? "service",
+      zone: nodeZone[id] ?? "private",
+    });
+  }
   lines.push("    }");
   lines.push("    flows {");
   const flowDefaults = {
@@ -2647,7 +3068,13 @@ function emitRealAppPkl(app) {
     "github-actions-to-flaker": { from: "github-actions", to: "flaker", action: "run" },
     "github-actions-to-vrt": { from: "github-actions", to: "vrt", action: "snapshot" },
   };
-  for (const id of domain.cloud.flows) emitPklRecord(lines, "      ", "CloudFlow", { id, ...flowDefaults[id] });
+  for (const id of domain.cloud.flows) {
+    const resource = infrastructureBindings.get(id);
+    const fields = resource
+      ? { from: resource.owner, to: resource.id, action: "bind" }
+      : flowDefaults[id];
+    emitPklRecord(lines, "      ", "CloudFlow", { id, ...fields });
+  }
   lines.push("    }", "  }", "  data = new d.DataModel {", "    policies {");
   emitPklRecord(lines, "      ", "DataPolicy", { id: "public-policy", classification: "public", maxRetentionDays: 365 });
   emitPklRecord(lines, "      ", "DataPolicy", { id: "operational-policy", classification: "internal", maxRetentionDays: 90 });
@@ -2655,7 +3082,15 @@ function emitRealAppPkl(app) {
   const datasetClass = { "dashboard-snapshot": "public", incident: "internal", "service-detail": "internal" };
   for (const id of domain.data.datasets) emitPklRecord(lines, "      ", "DataSet", { id, classification: datasetClass[id] ?? "internal", retentionDays: id === "dashboard-snapshot" ? 30 : 90 });
   lines.push("    }", "    stores {");
-  for (const id of domain.data.stores) emitPklRecord(lines, "      ", "DataStore", { id, region: "local", encrypted: true, deletionSupported: true });
+  for (const id of domain.data.stores) {
+    const resource = infrastructureById.get(id);
+    emitPklRecord(lines, "      ", "DataStore", {
+      id,
+      region: resource?.environment ?? "local",
+      encrypted: resource ? false : true,
+      deletionSupported: resource ? false : true,
+    });
+  }
   lines.push("    }", "    flows {");
   const dataFlowDefaults = {
     "api-to-dashboard-data": { dataset: "dashboard-snapshot", from: "api-memory", to: "dashboard-cache", purpose: "operator-dashboard" },
@@ -2663,15 +3098,29 @@ function emitRealAppPkl(app) {
   };
   for (const id of domain.data.flows) emitPklRecord(lines, "      ", "DataFlow", { id, ...dataFlowDefaults[id] });
   lines.push("    }", "  }", "  release = new d.ReleaseModel {", "    services {");
-  for (const id of domain.release.services) emitPklRecord(lines, "      ", "ReleaseService", { id, critical: true });
+  for (const id of domain.release.services) emitPklRecord(lines, "      ", "ReleaseService", { id, critical: !infrastructureById.has(id) });
   lines.push("    }", "    environments {");
-  emitPklRecord(lines, "      ", "ReleaseEnvironment", { id: "ci", production: false });
+  for (const id of domain.release.environments) {
+    emitPklRecord(lines, "      ", "ReleaseEnvironment", { id, production: id === "production" || id.endsWith("/production") });
+  }
   lines.push("    }", "    gates {");
   for (const id of domain.release.gates) emitPklRecord(lines, "      ", "ReleaseGate", { id, kind: "test" });
   lines.push("    }", "  }", "  runtime = new d.RuntimeModel {", "    services {");
-  for (const id of domain.runtime.services) emitPklRecord(lines, "      ", "RuntimeService", { id, critical: true });
+  for (const id of domain.runtime.services) emitPklRecord(lines, "      ", "RuntimeService", { id, critical: !infrastructureById.has(id) });
   lines.push("    }", "    dependencies {");
-  for (const id of domain.runtime.dependencies) emitPklRecord(lines, "      ", "RuntimeDependency", { id, service: "dashboard", target: "api", kind: "http", timeoutMs: 2000, retryable: true, idempotent: true });
+  for (const id of domain.runtime.dependencies) {
+    const resource = infrastructureBindings.get(id);
+    emitPklRecord(lines, "      ", "RuntimeDependency", resource
+      ? {
+          id,
+          service: resource.owner,
+          target: resource.id,
+          kind: infrastructureDependencyKind(resource),
+          retryable: false,
+          idempotent: false,
+        }
+      : { id, service: "dashboard", target: "api", kind: "http", timeoutMs: 2000, retryable: true, idempotent: true });
+  }
   lines.push("    }", "  }", "}");
   return `${lines.join("\n")}\n`;
 }
@@ -4894,6 +5343,79 @@ function specReadingEvalScoreReport(evaluation, answersFile, options = {}) {
   return specReadingEvalScoreReportFromAnswers(evaluation, specReadingAnswersById(answersFile), answersFile, options);
 }
 
+function specReadingAgentAnswers(stdout) {
+  try {
+    const document = JSON.parse(stdout);
+    if (!Array.isArray(document?.answers)) {
+      return { answers: new Map(), errors: ["agent stdout must contain an answers array"] };
+    }
+    const answers = new Map();
+    const errors = [];
+    for (const answer of document.answers) {
+      if (!answer?.id) {
+        errors.push("agent answer is missing id");
+        continue;
+      }
+      if (answers.has(answer.id)) errors.push(`duplicate agent answer: ${answer.id}`);
+      answers.set(answer.id, answer);
+    }
+    return { answers, errors };
+  } catch (error) {
+    return { answers: new Map(), errors: [`failed to parse agent stdout: ${error.message}`] };
+  }
+}
+
+function specReadingAgentReport(evaluation, runner, runnerFile, options = {}) {
+  const command = list(runner.command);
+  const prompt = renderSpecReadingEvalPrompt(evaluation, options);
+  const executionErrors = [];
+  let result = { status: null, signal: null, stdout: "", stderr: "" };
+  if (command.length === 0) {
+    executionErrors.push("spec reading agent runner command must not be empty");
+  } else {
+    result = spawnSync(command[0], command.slice(1), {
+      cwd: dirname(resolve(runnerFile)),
+      input: prompt,
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+      timeout: runner.timeoutMs,
+    });
+    if (result.error) executionErrors.push(`spec reading agent process failed: ${result.error.message}`);
+    if (result.status !== 0) executionErrors.push(`spec reading agent exited with status ${result.status ?? "unknown"}`);
+  }
+
+  const rawStdout = result.stdout ?? "";
+  const rawStderr = result.stderr ?? "";
+  const parsed = specReadingAgentAnswers(rawStdout);
+  const report = specReadingEvalScoreReportFromAnswers(
+    evaluation,
+    parsed.answers,
+    `runner:${runner.id}`,
+    options,
+  );
+  const agentErrors = [...executionErrors, ...parsed.errors];
+  const errors = [...report.errors, ...agentErrors];
+  const runnerIdentity = { id: runner.id, provider: runner.provider, model: runner.model };
+  return {
+    ...report,
+    status: reportStatus(errors),
+    agentRun: {
+      contractVersion: "spec-reading-agent-process-v1",
+      runner: runnerIdentity,
+      runnerDigest: sha256Digest(stableJson({ ...runnerIdentity, command, timeoutMs: runner.timeoutMs })),
+      command,
+      timeoutMs: runner.timeoutMs,
+      promptDigest: sha256Digest(prompt),
+      answerDigest: sha256Digest(rawStdout),
+      exitCode: result.status ?? null,
+      signal: result.signal ?? null,
+      rawStdout,
+      rawStderr,
+    },
+    errors,
+  };
+}
+
 function specReadingGoldAnswers(evaluation) {
   return list(evaluation.cases).map((entry) => ({
     id: entry.id,
@@ -6297,6 +6819,7 @@ function exprAstProjection(ast) {
 function clauseProjection(clause) {
   return {
     expr: clause.expr,
+    astSemanticsVersion: clause.ast ? CLAUSE_AST_SEMANTICS_VERSION : null,
     ast: exprAstProjection(clause.ast),
   };
 }
@@ -6334,8 +6857,20 @@ function ruleClauseExprs(rule) {
   return ruleClauses(rule).map((clause) => exprToLean(clause.ast, clause.expr));
 }
 
+function emitLeanClauseTheorem(proof) {
+  const satisfaction = `Satisfies env (${exprToLean(proof.clause.ast, proof.clause.expr)})`;
+  const proposition = proof.field === "mustNot" ? `¬ ${satisfaction}` : satisfaction;
+  return `theorem ${proof.theorem} : ∀ env : ClauseEnv, ${proposition} := by
+  intro env
+  simp [Satisfies]`;
+}
+
 function modelSource() {
   return { kind: "model", path: "model" };
+}
+
+function projectionSource(projection, index) {
+  return { kind: "projection", projectionId: projection.id, path: `projections[${index}]` };
 }
 
 function ruleSource(rule, ruleIndex) {
@@ -6552,6 +7087,13 @@ function emitSourceMapObject(model, requestedLocale) {
 
   for (const term of sortedTerms(model)) {
     artifacts.markdown.push(generatedEntry(`markdown.term.${term.id}`, { kind: "term", termId: term.id, path: `model.vocabulary[${list(model.vocabulary).findIndex((candidate) => candidate.id === term.id)}]` }));
+  }
+
+  for (const projection of projections(model).slice().sort(byId)) {
+    const index = projections(model).findIndex((candidate) => candidate.id === projection.id);
+    artifacts.markdown.push(
+      generatedEntry(`markdown.projection.${projection.id}`, projectionSource(projection, index), { locale }),
+    );
   }
 
   const db = dbPattern(model);
@@ -7055,8 +7597,19 @@ function emitSourceMapObject(model, requestedLocale) {
     }
   });
 
+  for (const proof of leanSemanticClauseProofs(model)) {
+    const ruleIndex = originalRuleIndex.get(proof.rule.id);
+    artifacts.lean.push(
+      generatedEntry(
+        proof.generatedSelector,
+        clauseSource(proof.rule, ruleIndex, proof.field, proof.index),
+      ),
+    );
+  }
+
   for (const generated of [
     "quickcheck.propertyApprovedRulesHaveAutomatedChecks",
+    "quickcheck.propertyApprovedRulesHaveRequiredAssurances",
     "alloy.assert.ApprovedRulesHaveChecks",
     "alloy.assert.ActiveApprovedRulesHaveAutomatedSupport",
     "tla.CoverageInvariant",
@@ -7302,6 +7855,10 @@ function generatedSelectorForRule(backend, rule) {
 }
 
 function generatedSelectorForPolicy(backend, property = "approved-rules-have-automated-checks") {
+  if (property === "approved-rules-have-required-assurances") {
+    if (backend === "quickcheck") return "quickcheck.propertyApprovedRulesHaveRequiredAssurances";
+    return null;
+  }
   if (property === "db-transaction-preserves-invariants") {
     if (backend === "quickcheck") return "quickcheck.propertyDbTransactionsPreserveInvariants";
     if (backend.startsWith("tla")) return "tla.DbInvariantPreserved";
@@ -7435,6 +7992,7 @@ function generatedSelectorForPolicy(backend, property = "approved-rules-have-aut
 }
 
 function inferCounterexampleProperty(backend, message) {
+  if (message.includes("approved-rules-have-required-assurances")) return "approved-rules-have-required-assurances";
   if (message.includes("approved-rules-have-automated-checks")) return "approved-rules-have-automated-checks";
   if (message.includes("db-transaction-preserves-invariants") || message.includes("DbInvariantPreserved") || message.includes("DbTransactionsPreserveInvariants")) {
     return "db-transaction-preserves-invariants";
@@ -7477,6 +8035,9 @@ function inferCounterexampleProperty(backend, message) {
 }
 
 function counterexampleMessage(property) {
+  if (property === "approved-rules-have-required-assurances") {
+    return "approved rule lacks a required assurance kind";
+  }
   if (property === "approved-rules-have-automated-checks") {
     return "approved rule lacks automated check support";
   }
@@ -7824,12 +8385,15 @@ function runtimeEvidenceRecordCount(model) {
 }
 
 function markdownReviewSummary(model) {
+  const assurance = assuranceSummary(model);
   return {
     approvedRules: activeApprovedRules(model).length,
     automatedCheckTargets: sortedRules(model).reduce((count, rule) => count + automatedCheckTargets(rule).length, 0),
     implementationRefs: sortedRules(model).reduce((count, rule) => count + list(rule.implementedBy).length, 0),
+    projections: projections(model).length,
     domainElements: domainCoverageElements(model).length,
     runtimeEvidenceRecords: runtimeEvidenceRecordCount(model),
+    assuranceTargets: assurance.targets.byKind,
   };
 }
 
@@ -7848,12 +8412,28 @@ function emitMarkdown(model, requestedLocale) {
     `- approvedRules: \`${reviewSummary.approvedRules}\``,
     `- automatedCheckTargets: \`${reviewSummary.automatedCheckTargets}\``,
     `- implementationRefs: \`${reviewSummary.implementationRefs}\``,
+    `- projections: \`${reviewSummary.projections}\``,
     `- domainElements: \`${reviewSummary.domainElements}\``,
     `- runtimeEvidenceRecords: \`${reviewSummary.runtimeEvidenceRecords}\``,
-    "",
-    "## Vocabulary",
+    `- assuranceTargets: \`${CHECK_ASSURANCE_KINDS.map((kind) => `${kind}=${reviewSummary.assuranceTargets[kind]}`).join(", ")}\``,
     "",
   ];
+
+  if (projections(model).length > 0) {
+    lines.push("## Projections", "");
+    for (const projection of projections(model).slice().sort(byId)) {
+      lines.push(`### ${projection.id}`);
+      lines.push("");
+      lines.push(`- kind: \`${projection.kind}\``);
+      lines.push(`- source: \`${projection.source}\``);
+      lines.push(`- matrix: \`${projection.matrix}\``);
+      lines.push(`- output: \`${projection.output}\``);
+      lines.push(`- freshness: \`${projection.freshness}\``);
+      lines.push("");
+    }
+  }
+
+  lines.push("## Vocabulary", "");
 
   for (const term of sortedTerms(model)) {
     lines.push(`- \`${term.id}\` (${term.kind}): ${text(term.text, locale)}`);
@@ -7868,6 +8448,7 @@ function emitMarkdown(model, requestedLocale) {
     lines.push(`- kind: ${rule.kind}`);
     lines.push(`- status: ${rule.reviewStatus}`);
     lines.push(`- priority: ${rule.priority}`);
+    lines.push(`- requiredAssurances: ${ruleRequiredAssurances(rule).join(", ")}`);
     for (const termId of list(rule.terms).sort()) {
       lines.push(`- term: \`${termId}\``);
     }
@@ -7881,7 +8462,11 @@ function emitMarkdown(model, requestedLocale) {
       lines.push(`- mustNot: \`${clauseExpr(clause)}\``);
     }
     for (const target of list(rule.checks)) {
-      lines.push(`- check: ${target.backend} ${target.ref}`);
+      lines.push(`- check: ${target.backend} ${target.ref} [${checkTargetAssurances(target).join(", ")}]`);
+      for (const kind of CHECK_ASSURANCE_KINDS) {
+        const evidenceRef = target.assuranceEvidence?.[kind];
+        if (evidenceRef) lines.push(`- assuranceEvidence: ${kind} -> ${evidenceRef}`);
+      }
     }
     for (const ref of list(rule.implementedBy)) {
       const symbol = ref.symbol ? `#${ref.symbol}` : "";
@@ -8350,6 +8935,260 @@ function emitMarkdown(model, requestedLocale) {
   return `${lines.join("\n").trimEnd()}\n`;
 }
 
+function normalizedGeneratedPath(path) {
+  return path.replaceAll("\\", "/");
+}
+
+function walkGeneratedFiles(root) {
+  if (!existsSync(root)) return [];
+  const files = [];
+  for (const entry of readdirSync(root, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) files.push(...walkGeneratedFiles(path));
+    else if (entry.isFile()) files.push(path);
+  }
+  return files;
+}
+
+function projectionPathMatcher(projection) {
+  const [prefix, suffix] = projection.output.split("{locale}");
+  return new RegExp(`^${escapeRegex(prefix)}([^/]+)${escapeRegex(suffix)}$`);
+}
+
+function projectionScanRoot(root, projection) {
+  const prefix = projection.output.split("{locale}")[0];
+  const slash = prefix.lastIndexOf("/");
+  const relativeRoot = slash === -1 ? "." : prefix.slice(0, slash) || ".";
+  return resolve(root, relativeRoot);
+}
+
+function projectionActualPaths(root, projection) {
+  const matcher = projectionPathMatcher(projection);
+  return walkGeneratedFiles(projectionScanRoot(root, projection))
+    .map((path) => normalizedGeneratedPath(relative(resolve(root), path)))
+    .filter((path) => matcher.test(path))
+    .sort();
+}
+
+function projectionSnapshot(model) {
+  return createProjectionSnapshot(model, {
+    renderMarkdown: (sourceModel, locale) => emitMarkdown(sourceModel, locale),
+  });
+}
+
+function projectionObservations(snapshot, { root = process.cwd() } = {}) {
+  const observations = [];
+  for (const projection of snapshot.projections) {
+    const expected = new Set(projection.artifacts.map((artifact) => artifact.path));
+    const matcher = projectionPathMatcher(projection);
+    for (const path of projectionActualPaths(root, projection)) {
+      const matched = matcher.exec(path);
+      observations.push({
+        content: readFileSync(resolve(root, path), "utf8"),
+        kind: "artifact",
+        locale: matched?.[1] ?? null,
+        path,
+        projectionId: projection.id,
+        unexpected: !expected.has(path),
+      });
+    }
+    if (existsSync(resolve(root, projection.provenancePath))) {
+      observations.push({
+        content: readFileSync(resolve(root, projection.provenancePath), "utf8"),
+        kind: "provenance",
+        path: projection.provenancePath,
+        projectionId: projection.id,
+      });
+    }
+  }
+  return observations;
+}
+
+function projectionChangePlan(model, { generatedAt = new Date().toISOString(), root = process.cwd() } = {}) {
+  const snapshot = projectionSnapshot(model);
+  return planProjectionChanges(snapshot, projectionObservations(snapshot, { root }), { generatedAt });
+}
+
+function generatedProjectionReport(model, { generatedAt = new Date().toISOString(), root = process.cwd() } = {}) {
+  const validationErrors = validate(model);
+  if (validationErrors.length > 0) {
+    return {
+      model: modelReport(model),
+      status: "fail",
+      summary: {
+        projections: projections(model).length,
+        artifacts: 0,
+        missing: 0,
+        stale: 0,
+        unexpected: 0,
+        provenance: 0,
+        provenanceMissing: 0,
+        provenanceStale: 0,
+      },
+      projections: [],
+      errors: validationErrors,
+    };
+  }
+
+  const plan = projectionChangePlan(model, { generatedAt, root });
+  const errors = [];
+  let missing = 0;
+  let stale = 0;
+  let unexpected = 0;
+  let provenanceMissing = 0;
+  let provenanceStale = 0;
+  const projectionReports = plan.projections.map((projection) => {
+    const projectionActions = plan.actions.filter((action) => action.projectionId === projection.id);
+    const artifactActions = projectionActions.filter((action) => action.kind === "artifact");
+    const artifacts = projection.artifacts.map((artifact) => {
+      const action = artifactActions.find((candidate) => candidate.path === artifact.path);
+      if (action.action === "create") {
+        missing += 1;
+        errors.push(`missing generated artifact: ${projection.id} -> ${artifact.path}`);
+        return { bytes: artifact.bytes, digest: artifact.digest, locale: artifact.locale, path: artifact.path, status: "missing" };
+      }
+      if (action.action === "update") {
+        stale += 1;
+        errors.push(`stale generated artifact: ${projection.id} -> ${artifact.path}`);
+        return { bytes: artifact.bytes, digest: artifact.digest, locale: artifact.locale, path: artifact.path, status: "stale" };
+      }
+      return { bytes: artifact.bytes, digest: artifact.digest, locale: artifact.locale, path: artifact.path, status: "current" };
+    });
+    const unexpectedPaths = artifactActions.filter((action) => action.action === "remove").map((action) => action.path);
+    for (const path of unexpectedPaths) {
+      unexpected += 1;
+      errors.push(`unexpected generated artifact: ${projection.id} -> ${path}`);
+    }
+    const provenanceAction = projectionActions.find((action) => action.kind === "provenance");
+    const provenanceDocument = provenanceAction.desiredContent ? JSON.parse(provenanceAction.desiredContent) : null;
+    let provenanceStatus = "current";
+    if (provenanceAction.action === "create") {
+      provenanceStatus = "missing";
+      provenanceMissing += 1;
+      errors.push(`missing projection provenance: ${projection.id} -> ${projection.provenancePath}`);
+    } else if (provenanceAction.action === "update") {
+      provenanceStatus = "stale";
+      provenanceStale += 1;
+      errors.push(`stale projection provenance: ${projection.id} -> ${projection.provenancePath}`);
+    }
+    return {
+      id: projection.id,
+      kind: projection.kind,
+      source: projection.source,
+      matrix: projection.matrix,
+      output: projection.output,
+      provenance: {
+        digest: provenanceAction.afterDigest,
+        generatedAt: provenanceDocument?.generatedAt ?? null,
+        path: projection.provenancePath,
+        schemaVersion: provenanceDocument?.schemaVersion ?? null,
+        status: provenanceStatus,
+      },
+      freshness: projection.freshness,
+      artifacts,
+      unexpected: unexpectedPaths,
+    };
+  });
+
+  return {
+    model: modelReport(model),
+    status: reportStatus(errors),
+    summary: {
+      projections: projectionReports.length,
+      artifacts: projectionReports.reduce((count, projection) => count + projection.artifacts.length, 0),
+      missing,
+      stale,
+      unexpected,
+      provenance: projectionReports.length,
+      provenanceMissing,
+      provenanceStale,
+    },
+    projections: projectionReports,
+    errors,
+  };
+}
+
+function pruneEmptyGeneratedDirectories(root) {
+  if (!existsSync(root)) return;
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (entry.isDirectory()) pruneEmptyGeneratedDirectories(join(root, entry.name));
+  }
+  if (readdirSync(root).length === 0) rmSync(root, { recursive: true });
+}
+
+function generateProjectionArtifacts(
+  model,
+  {
+    dryRun = false,
+    generatedAt = new Date().toISOString(),
+    root = process.cwd(),
+  } = {},
+) {
+  const validationErrors = validate(model);
+  if (validationErrors.length > 0) {
+    return {
+      changed: 0,
+      dryRun,
+      emitter: null,
+      errors: validationErrors,
+      model: modelReport(model),
+      plan: [],
+      projections: [],
+      provenance: [],
+      status: "fail",
+      summary: { projections: projections(model).length, artifacts: 0, changed: 0, actions: { create: 0, remove: 0, unchanged: 0, update: 0 } },
+      transaction: { status: dryRun ? "preview" : "not-started", writes: 0, removes: 0 },
+    };
+  }
+
+  const plan = projectionChangePlan(model, { generatedAt, root });
+  const projected = projectionPlanReport(plan);
+  const transaction = dryRun
+    ? {
+        status: "preview",
+        writes: plan.actions.filter((action) => ["create", "update"].includes(action.action)).length,
+        removes: plan.actions.filter((action) => action.action === "remove").length,
+      }
+    : applyProjectionTransaction(plan.actions, { root });
+
+  if (!dryRun) {
+    for (const projection of plan.projections) {
+      const scanRoot = projectionScanRoot(root, projection);
+      if (!existsSync(scanRoot)) continue;
+      for (const entry of readdirSync(scanRoot, { withFileTypes: true })) {
+        if (entry.isDirectory()) pruneEmptyGeneratedDirectories(join(scanRoot, entry.name));
+      }
+    }
+  }
+
+  const verification = dryRun ? { status: "pass", errors: [] } : generatedProjectionReport(model, { generatedAt, root });
+  return {
+    changed: plan.summary.changed,
+    dryRun,
+    emitter: projected.emitter,
+    errors: verification.errors,
+    model: modelReport(model),
+    plan: projected.actions,
+    projections: projected.projections,
+    provenance: projected.provenance,
+    status: verification.status,
+    summary: projected.summary,
+    transaction,
+  };
+}
+
+function renderGeneratedProjectionReport(report, action) {
+  if (report.status === "fail") return `${report.errors.join("\n")}\n`;
+  if (action === "generate") {
+    if (report.dryRun) {
+      return `ok: ${report.model.id} generation plan (${report.changed} changes, no files written)\n`;
+    }
+    const projectionLabel = report.summary.projections === 1 ? "projection" : "projections";
+    return `ok: ${report.model.id} generated ${report.summary.artifacts} artifacts from ${report.summary.projections} ${projectionLabel} (${report.changed} changed)\n`;
+  }
+  return `ok: ${report.model.id} generated artifacts (${report.summary.artifacts} current)\n`;
+}
+
 function dbProjection(model) {
   const db = dbPattern(model);
   if (!db) {
@@ -8716,10 +9555,15 @@ function ruleProjection(rule) {
     id: rule.id,
     kind: rule.kind,
     status: rule.reviewStatus,
+    requiredAssurances: ruleRequiredAssurances(rule),
     checks: list(rule.checks).map((target) => ({
       backend: target.backend,
       ref: target.ref,
       automated: target.backend !== "manual" && target.backend !== "runtime",
+      assurances: checkTargetAssurances(target),
+      assuranceEvidence: Object.fromEntries(
+        Object.entries(target.assuranceEvidence ?? {}).sort(([left], [right]) => left.localeCompare(right)),
+      ),
     })),
     terms: list(rule.terms).slice().sort(),
     when: list(rule.when).map(clauseProjection),
@@ -8739,6 +9583,7 @@ import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export const modelId = ${JSON.stringify(model.id)};
+export const clauseAstSemanticsVersion = ${JSON.stringify(model.clauseAstSemanticsVersion)};
 export const rules = ${JSON.stringify(rules, null, 2)};
 export const approvedRuleIds = ${JSON.stringify(approved, null, 2)};
 export const dbModel = ${JSON.stringify(dbProjection(model), null, 2)};
@@ -8764,6 +9609,17 @@ export function shrinkRuleId(ruleId) {
 export function propertyApprovedRulesHaveAutomatedChecks(ruleId) {
   const rule = rules.find((candidate) => candidate.id === ruleId);
   return Boolean(rule && rule.status === "approved" && rule.checks.some((check) => check.automated));
+}
+
+export function propertyApprovedRulesHaveRequiredAssurances(ruleId) {
+  const rule = rules.find((candidate) => candidate.id === ruleId);
+  if (!rule || rule.status !== "approved") return false;
+  const available = new Set(
+    rule.checks
+      .filter((check) => check.automated)
+      .flatMap((check) => check.assurances),
+  );
+  return rule.requiredAssurances.every((assurance) => available.has(assurance));
 }
 
 export function* generateDbTransactions() {
@@ -9088,8 +9944,11 @@ export function propertyRuntimeDependencyTracesWithinTimeout(trace) {
 export function checkAllProperties() {
   const failures = [];
   for (const ruleId of generateApprovedRuleIds()) {
-    if (!propertyApprovedRulesHaveAutomatedChecks(ruleId)) {
+    const hasAutomatedChecks = propertyApprovedRulesHaveAutomatedChecks(ruleId);
+    if (!hasAutomatedChecks) {
       failures.push({ property: "approved-rules-have-automated-checks", value: ruleId, shrinks: shrinkRuleId(ruleId) });
+    } else if (!propertyApprovedRulesHaveRequiredAssurances(ruleId)) {
+      failures.push({ property: "approved-rules-have-required-assurances", value: ruleId, shrinks: shrinkRuleId(ruleId) });
     }
   }
   for (const transaction of generateDbTransactions()) {
@@ -10364,6 +11223,8 @@ function emitTla(model) {
   return `---- MODULE ${moduleName} ----
 EXTENDS Sequences, FiniteSets, Naturals, TLC
 
+ClauseAstSemanticsVersion == ${JSON.stringify(model.clauseAstSemanticsVersion)}
+
 Rules == ${allRuleSet}
 
 ActiveApprovedRules == ${ruleSet}
@@ -10694,7 +11555,10 @@ function emitLean(model) {
   const clauses = approved
     .map((rule) => `  | RuleId.${sanitizeIdentifier(rule.id)} => [${ruleClauseExprs(rule).join(", ")}]`)
     .join("\n");
+  const clauseTheorems = leanSemanticClauseProofs(model).map(emitLeanClauseTheorem).join("\n\n");
   return `namespace DSpec.Generated
+
+def clauseAstSemanticsVersion : String := ${JSON.stringify(model.clauseAstSemanticsVersion)}
 
 inductive Expr where
   | opaque : String -> Expr
@@ -10709,6 +11573,18 @@ inductive Expr where
   | forall_ : String -> Expr -> Expr
 deriving Repr
 
+abbrev ClauseEnv := String -> Option String
+
+def resolveClauseValue (env : ClauseEnv) (name : String) : String :=
+  (env name).getD name
+
+def Satisfies (env : ClauseEnv) : Expr -> Prop
+  | .eq left right => resolveClauseValue env left = resolveClauseValue env right
+  | .neq left right => resolveClauseValue env left ≠ resolveClauseValue env right
+  | .not child => ¬ Satisfies env child
+  | .impl left right => Satisfies env left -> Satisfies env right
+  | _ => False
+
 inductive RuleId where
 ${constructors}
 deriving DecidableEq, Repr
@@ -10720,6 +11596,8 @@ ${clauses}
 
 def checks : RuleId -> List String
 ${checks}
+
+${clauseTheorems}
 
 def AutomatedSupport (r : RuleId) : Bool := decide ((checks r).length > 0)
 
@@ -11082,27 +11960,28 @@ function syntaxBackend(source, validate) {
   return errors.length > 0 ? failBackend(errors.join("\n")) : passBackend();
 }
 
-function runOptionalToolBackend(command, args, unavailableReason) {
-  if (!hasTool(command)) return skipBackend(unavailableReason);
+function runOptionalToolBackend(command, args, unavailableReason, toolAvailable = hasTool) {
+  if (!toolAvailable(command)) return skipBackend(unavailableReason);
   return runGeneratedToolResult(command, args);
 }
 
-function verifyGeneratedTlaWithSany(tlaPath) {
-  return runOptionalToolBackend("tlasany", [tlaPath], "tlasany not found on PATH");
+function verifyGeneratedTlaWithSany(tlaPath, toolAvailable) {
+  return runOptionalToolBackend("tlasany", [tlaPath], "tlasany not found on PATH", toolAvailable);
 }
 
-function verifyGeneratedTlaWithTlc(tlaPath, cfgPath) {
-  return runOptionalToolBackend("tlc", ["-cleanup", "-config", cfgPath, tlaPath], "tlc not found on PATH");
+function verifyGeneratedTlaWithTlc(tlaPath, cfgPath, toolAvailable) {
+  return runOptionalToolBackend("tlc", ["-cleanup", "-config", cfgPath, tlaPath], "tlc not found on PATH", toolAvailable);
 }
 
-function verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath) {
-  if (!hasTool("alloy6")) return skipBackend("alloy6 not found on PATH");
+function verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath, toolAvailable) {
+  if (!toolAvailable("alloy6")) return skipBackend("alloy6 not found on PATH");
   const commands = runGeneratedToolResult("alloy6", ["commands", alloyPath]);
   if (commands.status !== "pass") return commands;
   return runGeneratedToolResult("alloy6", ["exec", "-q", "-t", "none", "-o", outputPath, "-f", alloyPath]);
 }
 
-function verifyGeneratedReport(model) {
+function verifyGeneratedReport(model, options = {}) {
+  const toolAvailable = options.toolAvailable ?? hasTool;
   const dir = mkdtempSync(join(tmpdir(), "dspec-generated-"));
   const backends = {};
   try {
@@ -11112,7 +11991,7 @@ function verifyGeneratedReport(model) {
 
     const leanPath = join(dir, "model.lean");
     writeFileSync(leanPath, emitLean(model));
-    backends.lean = runGeneratedToolResult("lean", [leanPath]);
+    backends.lean = runOptionalToolBackend("lean", [leanPath], "lean not found on PATH", toolAvailable);
 
     const tlaSource = emitTla(model);
     const alloySource = emitAlloy(model);
@@ -11124,13 +12003,13 @@ function verifyGeneratedReport(model) {
     const cfgPath = join(dir, `${moduleName}.cfg`);
     writeFileSync(tlaPath, tlaSource);
     writeFileSync(cfgPath, emitTlaConfig(model));
-    backends.tlaSany = verifyGeneratedTlaWithSany(tlaPath);
-    backends.tlaTlc = verifyGeneratedTlaWithTlc(tlaPath, cfgPath);
+    backends.tlaSany = verifyGeneratedTlaWithSany(tlaPath, toolAvailable);
+    backends.tlaTlc = verifyGeneratedTlaWithTlc(tlaPath, cfgPath, toolAvailable);
 
     const alloyPath = join(dir, "model.als");
     const outputPath = join(dir, "alloy-out");
     writeFileSync(alloyPath, alloySource);
-    backends.alloyAnalyzer = verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath);
+    backends.alloyAnalyzer = verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath, toolAvailable);
 
     const failed = Object.values(backends).some((backend) => backend.status === "fail");
     return {
@@ -11146,6 +12025,175 @@ function verifyGeneratedReport(model) {
   }
 }
 
+function assuranceArtifactSources(model) {
+  const sources = {
+    alloy: emitAlloy(model),
+    lean: emitLean(model),
+    quickcheck: emitQuickcheck(model),
+    tla: emitTla(model),
+  };
+  for (const proof of leanSemanticClauseProofs(model)) {
+    sources[proof.artifactId] = sources.lean;
+  }
+  return sources;
+}
+
+function assuranceArtifactResults(verification) {
+  return {
+    alloy: verification.backends.alloyAnalyzer,
+    lean: verification.backends.lean,
+    quickcheck: verification.backends.quickcheck,
+    tla: verification.backends.tlaTlc,
+  };
+}
+
+function assuranceEvidenceExpected(model, verification = verifyGeneratedReport(model)) {
+  const sourceMap = emitSourceMapObject(model, model.primaryLocale);
+  const snapshot = assuranceEvidenceSnapshot(model, sourceMap, assuranceArtifactSources(model));
+  const results = assuranceArtifactResults(verification);
+  return {
+    ...snapshot,
+    artifactDefinitions: Object.fromEntries(
+      assuranceEvidenceArtifactDefinitions(model).map((definition) => [
+        definition.id,
+        { ...definition, result: results[definition.backend].status },
+      ]),
+    ),
+  };
+}
+
+function commandVersion(command, args) {
+  if (!hasTool(command)) return null;
+  const result = spawnSync(command, args, { encoding: "utf8", timeout: 10000 });
+  if (result.error || result.status !== 0) return null;
+  const output = `${result.stdout ?? ""}\n${result.stderr ?? ""}`.trim();
+  return output.split("\n").map((line) => line.trim()).find(Boolean) ?? null;
+}
+
+function currentAssuranceToolVersions() {
+  return {
+    node: process.version,
+    lean: commandVersion("lean", ["--version"]),
+    tlc: commandVersion("tlc", ["-help"]),
+    alloy6: commandVersion("alloy6", ["version"]),
+  };
+}
+
+function assuranceEvidenceArtifactDefinitions(model) {
+  const generatorArtifacts = [
+    {
+      id: "alloy",
+      backend: "alloy",
+      tool: "alloy6",
+      scope: "generator",
+      propertyIds: ["alloy.assert.ApprovedRulesHaveChecks", "alloy.assert.ActiveApprovedRulesHaveAutomatedSupport"],
+      bounds: { command: "check ApprovedRulesHaveChecks" },
+    },
+    {
+      id: "lean",
+      backend: "lean",
+      tool: "lean",
+      scope: "generator",
+      propertyIds: ["lean.theorem.coverage_invariant"],
+      theorem: "coverage_invariant",
+      bounds: {},
+    },
+    {
+      id: "quickcheck",
+      backend: "quickcheck",
+      tool: "node",
+      scope: "generator",
+      propertyIds: [
+        "quickcheck.propertyApprovedRulesHaveAutomatedChecks",
+        "quickcheck.propertyApprovedRulesHaveRequiredAssurances",
+      ],
+      bounds: {},
+    },
+    {
+      id: "tla",
+      backend: "tla",
+      tool: "tlc",
+      scope: "generator",
+      propertyIds: ["tla.CoverageInvariant", "tla.WorkflowInvariant"],
+      bounds: { configDigest: assuranceDigest(emitTlaConfig(model)) },
+    },
+  ];
+  const clauseArtifacts = leanSemanticClauseProofs(model).map((proof) => ({
+    id: proof.artifactId,
+    backend: "lean",
+    tool: "lean",
+    scope: "clause",
+    propertyIds: [proof.generatedSelector],
+    theorem: proof.theorem,
+    bounds: {},
+  }));
+  return [...generatorArtifacts, ...clauseArtifacts];
+}
+
+function assuranceEvidenceArtifacts(model, verification, expected, toolVersions) {
+  const results = assuranceArtifactResults(verification);
+  const definitions = assuranceEvidenceArtifactDefinitions(model);
+  return definitions.map((definition) => ({
+    id: definition.id,
+    backend: definition.backend,
+    scope: definition.scope,
+    propertyIds: definition.propertyIds,
+    digest: expected.artifactDigests[definition.id],
+    result: results[definition.backend].status,
+    tool: {
+      name: definition.tool,
+      version: toolVersions[definition.tool],
+    },
+    theorem: definition.theorem ?? null,
+    bounds: definition.bounds,
+  }));
+}
+
+function createAssuranceEvidenceManifest(model, options = {}) {
+  const executedAt = options.executedAt ?? new Date().toISOString();
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(executedAt)) {
+    throw new CommandError(`invalid --executed-at timestamp: ${executedAt}\n`);
+  }
+  const verification = verifyGeneratedReport(model);
+  assertVerifyGeneratedReport(verification, { requireFormalTools: options.requireFormalTools });
+  const expected = assuranceEvidenceExpected(model, verification);
+  const toolVersions = currentAssuranceToolVersions();
+  return {
+    schemaVersion: ASSURANCE_EVIDENCE_SCHEMA_VERSION,
+    executedAt,
+    model: expected.model,
+    sourceMapDigest: expected.sourceMapDigest,
+    artifacts: assuranceEvidenceArtifacts(model, verification, expected, toolVersions),
+    clauseBindings: expected.clauseBindings,
+  };
+}
+
+function assuranceEvidenceVerificationReport(model, manifest) {
+  const expected = assuranceEvidenceExpected(model);
+  const verification = verifyAssuranceEvidenceManifest(manifest, expected, currentAssuranceToolVersions());
+  return {
+    model: { id: model.id, version: model.version },
+    manifest,
+    status: verification.status,
+    summary: {
+      artifacts: list(manifest?.artifacts).length,
+      clauseBindings: list(manifest?.clauseBindings).length,
+    },
+    errors: verification.errors,
+    warnings: verification.warnings,
+  };
+}
+
+function writeAssuranceEvidenceManifest(path, manifest) {
+  mkdirSync(dirname(resolve(path)), { recursive: true });
+  writeFileSync(path, stableJson(manifest));
+  return {
+    path,
+    bytes: Buffer.byteLength(stableJson(manifest), "utf8"),
+    digest: assuranceDigest(manifest),
+  };
+}
+
 function backendFailureMessage(report) {
   for (const [name, backend] of Object.entries(report.backends)) {
     if (backend.status === "fail") {
@@ -11157,6 +12205,7 @@ function backendFailureMessage(report) {
 
 function formalToolSkipFailures(report) {
   return [
+    ["lean", "lean"],
     ["tlaSany", "tlasany"],
     ["tlaTlc", "tlc"],
     ["alloyAnalyzer", "alloy6"],
@@ -11181,15 +12230,17 @@ function assertVerifyGeneratedReport(report, options = {}) {
 }
 
 function verifyGenerated(model, options = {}) {
-  const report = verifyGeneratedReport(model);
+  const report = verifyGeneratedReport(model, options);
   assertVerifyGeneratedReport(report, options);
 
   const lines = [
     `ok: ${model.id} generated quickcheck`,
-    `ok: ${model.id} generated lean`,
     `ok: ${model.id} generated tla syntax`,
     `ok: ${model.id} generated alloy syntax`,
   ];
+  if (report.backends.lean.status === "pass") {
+    lines.push(`ok: ${model.id} generated lean`);
+  }
   if (report.backends.tlaSany.status === "pass") {
     lines.push(`ok: ${model.id} generated tla sany`);
   }
@@ -11217,7 +12268,7 @@ function reportStatus(errors) {
 }
 
 function checkReport(model) {
-  const errors = validate(model);
+  const errors = validate(model, { requireFormalEvidence: true });
   return {
     model: modelReport(model),
     status: reportStatus(errors),
@@ -11225,7 +12276,9 @@ function checkReport(model) {
       terms: list(model.vocabulary).length,
       rules: list(model.rules).length,
       decisions: list(model.decisions).length,
+      projections: projections(model).length,
     },
+    assurance: assuranceSummary(model),
     errors,
   };
 }
@@ -11236,6 +12289,7 @@ function driftReport(model) {
     model: modelReport(model),
     status: reportStatus(drift.errors),
     references: drift.count,
+    assurance: assuranceSummary(model),
     errors: drift.errors,
   };
 }
@@ -11247,6 +12301,7 @@ function coverageReport(model) {
     status: reportStatus(coverage.errors),
     covered: coverage.covered,
     total: coverage.total,
+    assurance: assuranceSummary(model),
     errors: coverage.errors,
   };
 }
@@ -11401,7 +12456,67 @@ function renderDomainCoverageReport(report) {
   return `${report.errors.join("\n")}\n`;
 }
 
-function impactReport(beforeModel, afterModel) {
+function projectionMaterializations(model) {
+  const snapshot = projectionSnapshot(model);
+  return snapshot.projections.flatMap((projection) => [
+    ...projection.artifacts.map((artifact) => ({
+      content: artifact.content,
+      kind: projection.kind,
+      locale: artifact.locale,
+      path: artifact.path,
+      projectionId: projection.id,
+    })),
+    {
+      content: projectionStableJson(
+        projectionProvenanceDocument(snapshot, projection, "1970-01-01T00:00:00.000Z"),
+      ),
+      kind: "provenance",
+      locale: null,
+      path: projection.provenancePath,
+      projectionId: projection.id,
+    },
+  ]);
+}
+
+function shellQuoteArg(arg) {
+  return /^[A-Za-z0-9_./:=+-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", `'"'"'`)}'`;
+}
+
+function renderArgv(argv) {
+  return argv.map(shellQuoteArg).join(" ");
+}
+
+function projectionImpactReport(beforeModel, afterModel, afterFile) {
+  const beforeArtifacts = new Map(projectionMaterializations(beforeModel).map((artifact) => [artifact.path, artifact]));
+  const afterArtifacts = new Map(projectionMaterializations(afterModel).map((artifact) => [artifact.path, artifact]));
+  const artifacts = [];
+
+  for (const artifact of beforeArtifacts.values()) {
+    if (!afterArtifacts.has(artifact.path)) {
+      const { content: _content, ...entry } = artifact;
+      artifacts.push({ action: "remove", ...entry });
+    }
+  }
+  for (const artifact of afterArtifacts.values()) {
+    const before = beforeArtifacts.get(artifact.path);
+    if (!before || before.content !== artifact.content) {
+      const { content: _content, ...entry } = artifact;
+      artifacts.push({ action: "regenerate", ...entry });
+    }
+  }
+
+  artifacts.sort((left, right) => left.path.localeCompare(right.path) || left.action.localeCompare(right.action));
+  const regenerateArgv = artifacts.some((artifact) => artifact.action === "regenerate") && afterFile
+    ? projectionGenerateArgv(afterFile)
+    : null;
+  return {
+    artifacts,
+    regenerateArgv,
+    regenerateCommand: regenerateArgv ? renderArgv(regenerateArgv) : null,
+  };
+}
+
+function impactReport(beforeModel, afterModel, { afterFile = null } = {}) {
   const beforeErrors = validate(beforeModel).map((error) => `before: ${error}`);
   const afterErrors = validate(afterModel).map((error) => `after: ${error}`);
   const errors = [...beforeErrors, ...afterErrors];
@@ -11412,10 +12527,11 @@ function impactReport(beforeModel, afterModel) {
 
   if (errors.length > 0) {
     return {
-      changed: { terms: [], rules: [] },
+      changed: { projections: [], terms: [], rules: [] },
       errors,
       impacts: [],
       model,
+      projectionImpact: { artifacts: [], regenerateArgv: null, regenerateCommand: null },
       status: "fail",
     };
   }
@@ -11423,6 +12539,7 @@ function impactReport(beforeModel, afterModel) {
   const beforeSourceMap = emitSourceMapObject(beforeModel, beforeModel.primaryLocale);
   const afterSourceMap = emitSourceMapObject(afterModel, afterModel.primaryLocale);
   const changed = {
+    projections: diffItems(projections(beforeModel), projections(afterModel)),
     terms: diffItems(beforeModel.vocabulary, afterModel.vocabulary),
     rules: diffItems(beforeModel.rules, afterModel.rules),
   };
@@ -11466,6 +12583,7 @@ function impactReport(beforeModel, afterModel) {
     errors: [],
     impacts,
     model,
+    projectionImpact: projectionImpactReport(beforeModel, afterModel, afterFile),
     status: "pass",
   };
 }
@@ -11474,7 +12592,7 @@ function renderImpactReport(report) {
   if (report.status === "fail") {
     return `spec impact failed\n${report.errors.join("\n")}\n`;
   }
-  const changeCount = report.changed.terms.length + report.changed.rules.length;
+  const changeCount = report.changed.projections.length + report.changed.terms.length + report.changed.rules.length;
   const lines = [`ok: spec impact (${changeCount} changes)`];
   for (const impact of report.impacts) {
     lines.push(`- ${impact.kind} ${impact.id} ${impact.change}`);
@@ -11487,6 +12605,12 @@ function renderImpactReport(report) {
     if (impact.implementationRefs.length > 0) {
       lines.push(`  implementation refs: ${impact.implementationRefs.map((ref) => `${ref.path}${ref.symbol ? `#${ref.symbol}` : ""}`).join(", ")}`);
     }
+  }
+  for (const artifact of report.projectionImpact.artifacts) {
+    lines.push(`- generated artifact ${artifact.action}: ${artifact.path}`);
+  }
+  if (report.projectionImpact.regenerateCommand) {
+    lines.push(`- regenerate: ${report.projectionImpact.regenerateCommand}`);
   }
   return `${lines.join("\n")}\n`;
 }
@@ -11584,6 +12708,38 @@ function classifyModifiedApprovedRule(before, after) {
   }
   if (removed.length > 0) {
     return decision(`rule:${after.id}:modified`, "widening", "approved rule lost clauses", { added, removed });
+  }
+  const addedAssurances = setDifference(
+    new Set(ruleRequiredAssurances(after)),
+    new Set(ruleRequiredAssurances(before)),
+  );
+  const removedAssurances = setDifference(
+    new Set(ruleRequiredAssurances(before)),
+    new Set(ruleRequiredAssurances(after)),
+  );
+  if (addedAssurances.length > 0 && removedAssurances.length > 0) {
+    return decision(
+      `rule:${after.id}:modified`,
+      "unknown",
+      "approved rule assurance requirements were both added and removed",
+      { addedAssurances, removedAssurances },
+    );
+  }
+  if (addedAssurances.length > 0) {
+    return decision(
+      `rule:${after.id}:modified`,
+      "narrowing",
+      "approved rule gained assurance requirements",
+      { addedAssurances, removedAssurances },
+    );
+  }
+  if (removedAssurances.length > 0) {
+    return decision(
+      `rule:${after.id}:modified`,
+      "widening",
+      "approved rule lost assurance requirements",
+      { addedAssurances, removedAssurances },
+    );
   }
   if (ruleTextualSignature(before) !== ruleTextualSignature(after)) {
     return decision(`rule:${after.id}:modified`, "compatible", "approved rule support metadata or text changed without changing clauses");
@@ -11829,7 +12985,7 @@ function specChangeCheckStep(id, report) {
 }
 
 function specChangeImpactStep(report) {
-  const changes = list(report.changed.terms).length + list(report.changed.rules).length;
+  const changes = list(report.changed.projections).length + list(report.changed.terms).length + list(report.changed.rules).length;
   return stepReport(
     "impact",
     report.status,
@@ -11838,6 +12994,9 @@ function specChangeImpactStep(report) {
     {
       changes,
       impacts: list(report.impacts).length,
+      projectionArtifacts: list(report.projectionImpact?.artifacts).length,
+      regenerateArgv: report.projectionImpact?.regenerateArgv ?? null,
+      regenerateCommand: report.projectionImpact?.regenerateCommand ?? null,
     },
   );
 }
@@ -12016,7 +13175,8 @@ function specChangeReviewReport(review, reviewFile) {
     const afterModel = loadModel(afterFile);
     const checkBefore = checkReport(beforeModel);
     const checkAfter = checkReport(afterModel);
-    const impact = impactReport(beforeModel, afterModel);
+    const impactAfterFile = normalizedGeneratedPath(relative(executionRoot, afterFile));
+    const impact = impactReport(beforeModel, afterModel, { afterFile: impactAfterFile });
     const compatibility = specCompatibilityReport(beforeModel, afterModel);
     const coverageAfter = coverageReport(afterModel);
     const availableSteps = new Map([
@@ -12312,6 +13472,157 @@ function runSpecChangeCommand(args) {
   throw new CommandError(`unknown spec-change subcommand: ${subcommand}\n${specChangeUsage()}`);
 }
 
+function assertModelCoverage(model) {
+  const coverage = validateCoverage(model, { allowMissingFormalEvidence: true });
+  if (coverage.errors.length > 0) {
+    throw new CommandError(`${coverage.errors.join("\n")}\n`);
+  }
+}
+
+function runEvidenceCreate(args) {
+  const options = parseEvidenceCreateArgs(args);
+  const model = loadModel(options.modelFile);
+  assertModelCoverage(model);
+  const manifest = createAssuranceEvidenceManifest(model, options);
+  const output = options.outputFile ? writeAssuranceEvidenceManifest(options.outputFile, manifest) : null;
+  if (options.json) {
+    process.stdout.write(stableJson({ status: "pass", model: modelReport(model), output, manifest }));
+    return;
+  }
+  if (output) {
+    process.stdout.write(`ok: wrote assurance evidence manifest ${output.path}\n`);
+    return;
+  }
+  process.stdout.write(stableJson(manifest));
+}
+
+function runEvidenceVerify(args) {
+  const options = parseEvidenceVerifyArgs(args);
+  const model = loadModel(options.modelFile);
+  const manifest = readJsonFile(options.manifestFile, "assurance evidence manifest");
+  const report = assuranceEvidenceVerificationReport(model, manifest);
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    assertReportOk(report);
+    return;
+  }
+  assertReportOk(report);
+  process.stdout.write(`ok: ${model.id} assurance evidence (${report.summary.artifacts} artifacts, ${report.summary.clauseBindings} clause bindings)\n`);
+}
+
+function runEvidenceRefresh(args) {
+  const options = parseEvidenceRefreshArgs(args);
+  const model = loadModel(options.modelFile);
+  assertModelCoverage(model);
+  const before = existsSync(resolve(options.manifestFile))
+    ? assuranceDigest(readFileSync(resolve(options.manifestFile), "utf8"))
+    : null;
+  const manifest = createAssuranceEvidenceManifest(model, options);
+  const output = writeAssuranceEvidenceManifest(options.manifestFile, manifest);
+  const report = {
+    status: "pass",
+    model: modelReport(model),
+    changed: before !== assuranceDigest(stableJson(manifest)),
+    output,
+    manifest,
+  };
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    return;
+  }
+  process.stdout.write(`ok: refreshed assurance evidence manifest ${output.path}\n`);
+}
+
+function runEvidenceCommand(args) {
+  const [subcommand, ...rest] = args;
+  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    process.stdout.write(evidenceUsage());
+    return;
+  }
+  if (subcommand === "create") {
+    runEvidenceCreate(rest);
+    return;
+  }
+  if (subcommand === "verify") {
+    runEvidenceVerify(rest);
+    return;
+  }
+  if (subcommand === "refresh") {
+    runEvidenceRefresh(rest);
+    return;
+  }
+  throw new CommandError(`unknown evidence subcommand: ${subcommand}\n${evidenceUsage()}`);
+}
+
+function runGenerateCommand(args) {
+  const options = parseProjectionArgs(
+    args,
+    topLevelCommandHelp(topLevelCommand("generate")),
+    { allowGenerationOptions: true },
+  );
+  const model = loadModel(options.file);
+  const report = generateProjectionArtifacts(model, {
+    dryRun: options.dryRun,
+    generatedAt: options.generatedAt ?? new Date().toISOString(),
+    root: options.root,
+  });
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    assertReportOk(report);
+    return;
+  }
+  const rendered = renderGeneratedProjectionReport(report, "generate");
+  if (report.status === "fail") throw new CommandError(rendered);
+  process.stdout.write(rendered);
+}
+
+function runGeneratedCommand(args) {
+  const [subcommand, ...rest] = args;
+  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    process.stdout.write(generatedUsage());
+    return;
+  }
+  if (!["check", "unlock"].includes(subcommand)) {
+    throw new CommandError(`unknown generated subcommand: ${subcommand}\n${generatedUsage()}`);
+  }
+  if (hasHelpFlag(rest)) {
+    process.stdout.write(generatedUsage());
+    return;
+  }
+  if (subcommand === "unlock") {
+    const options = parseProjectionUnlockArgs(rest);
+    let report;
+    try {
+      report = recoverProjectionLock(options.root, { force: options.force });
+    } catch (error) {
+      throw new CommandError(`${error.message}\n`);
+    }
+    if (options.json) {
+      process.stdout.write(stableJson(report));
+      return;
+    }
+    if (report.status === "absent") {
+      process.stdout.write("ok: no Projection generation lock\n");
+      return;
+    }
+    process.stdout.write(
+      `ok: recovered Projection generation lock (${report.previous.liveness}, lease ${report.previous.lease.status}${report.forced ? ", forced" : ""})\n`,
+    );
+    return;
+  }
+  const options = parseProjectionArgs(rest, generatedUsage());
+  const model = loadModel(options.file);
+  const report = generatedProjectionReport(model, { root: options.root });
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    assertReportOk(report);
+    return;
+  }
+  const rendered = renderGeneratedProjectionReport(report, "check");
+  if (report.status === "fail") throw new CommandError(rendered);
+  process.stdout.write(rendered);
+}
+
 function emit(target, model, locale) {
   if (target === "markdown") return emitMarkdown(model, locale);
   if (target === "json") return stableJson({ model });
@@ -12336,7 +13647,7 @@ async function run(argv) {
     throw new CommandError(`unknown command: ${command}\n${usage()}`);
   }
 
-  if (command !== "spec-change" && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+  if (!["spec-change", "evidence", "generated"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     process.stdout.write(topLevelCommandHelp(commandSpec));
     return;
   }
@@ -12401,7 +13712,7 @@ async function run(argv) {
     const { beforeFile, afterFile, json } = parseImpactArgs(args);
     const beforeModel = loadModel(beforeFile);
     const afterModel = loadModel(afterFile);
-    const report = impactReport(beforeModel, afterModel);
+    const report = impactReport(beforeModel, afterModel, { afterFile });
     if (json) {
       process.stdout.write(stableJson(report));
       assertReportOk(report);
@@ -12414,6 +13725,21 @@ async function run(argv) {
 
   if (command === "spec-change") {
     runSpecChangeCommand(args);
+    return;
+  }
+
+  if (command === "evidence") {
+    runEvidenceCommand(args);
+    return;
+  }
+
+  if (command === "generate") {
+    runGenerateCommand(args);
+    return;
+  }
+
+  if (command === "generated") {
+    runGeneratedCommand(args);
     return;
   }
 
@@ -12507,6 +13833,22 @@ async function run(argv) {
   if (command === "import-real-app") {
     const { root, json, pkl } = parseImportRealAppArgs(args);
     process.stdout.write(importRealAppFile(root, { json, pkl }));
+    return;
+  }
+
+  if (command === "evaluate-real-app-import") {
+    const { file, json } = parseJsonReportArgs(args);
+    const report = realAppImportEvaluationReport(loadRealAppImportEvaluation(file), file);
+    if (json) {
+      process.stdout.write(stableJson(report));
+      assertReportOk(report);
+      return;
+    }
+    const rendered = renderRealAppImportEvaluationReport(report);
+    if (report.status === "fail") {
+      throw new CommandError(rendered);
+    }
+    process.stdout.write(rendered);
     return;
   }
 
@@ -12741,7 +14083,7 @@ async function run(argv) {
   }
 
   if (command === "spec-reading-eval") {
-    const { file, json, markdown, prompt, scoreFile, locale, refreshDigests, apply, writeRunFile } = parseSpecReadingEvalArgs(args);
+    const { file, json, markdown, prompt, scoreFile, runnerFile, locale, refreshDigests, apply, writeRunFile } = parseSpecReadingEvalArgs(args);
     const evaluation = loadSpecReadingEvaluation(file);
     const modelFile = specReadingModelFile(evaluation, file);
     if (prompt) {
@@ -12767,9 +14109,16 @@ async function run(argv) {
       process.stdout.write(rendered);
       return;
     }
-    const report = scoreFile
-      ? specReadingEvalScoreReport(evaluation, scoreFile, { locale, file, modelFile })
-      : specReadingEvalReport(evaluation, { locale, file, modelFile });
+    const report = runnerFile
+      ? specReadingAgentReport(
+          evaluation,
+          loadSpecReadingAgentRunner(runnerFile),
+          runnerFile,
+          { locale, file, modelFile },
+        )
+      : scoreFile
+        ? specReadingEvalScoreReport(evaluation, scoreFile, { locale, file, modelFile })
+        : specReadingEvalReport(evaluation, { locale, file, modelFile });
     if (writeRunFile) {
       mkdirSync(dirname(resolve(writeRunFile)), { recursive: true });
       writeFileSync(resolve(writeRunFile), stableJson(report));
@@ -12920,6 +14269,8 @@ export {
   checkSqlQueriesReport,
   domainCoverageReport,
   emitDbSchemaPkl,
+  generateProjectionArtifacts,
+  generatedProjectionReport,
   importDbSchema,
   normalizeCounterexamples,
   topLevelCommandRegistry,

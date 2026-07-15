@@ -1,0 +1,72 @@
+{
+  "app": {
+    "id": "holdout-iac-app"
+  },
+  "errors": [],
+  "evaluation": {
+    "appRoot": "fixtures/holdout-iac-app",
+    "id": "terraform-kubernetes-holdout"
+  },
+  "matched": [
+    {
+      "id": "kubernetes/production",
+      "kind": "infrastructure-environment"
+    },
+    {
+      "id": "production",
+      "kind": "infrastructure-environment"
+    },
+    {
+      "id": "kubernetes/production/cron-job/nightly-reconcile",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "kubernetes/production/deployment/payments-api",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "kubernetes/production/secret/payments-api-secrets",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "kubernetes/production/service/payments-api",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "terraform/aws_db_instance.primary",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "terraform/aws_s3_bucket.assets",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "terraform/module.queue.aws_sqs_queue.jobs",
+      "kind": "infrastructure-resource"
+    },
+    {
+      "id": "kubernetes/production/nightly-reconcile",
+      "kind": "infrastructure-schedule"
+    },
+    {
+      "id": "infra/k8s/payments.yaml",
+      "kind": "infrastructure-source"
+    },
+    {
+      "id": "infra/terraform-plan.json",
+      "kind": "infrastructure-source"
+    }
+  ],
+  "missing": [],
+  "status": "pass",
+  "summary": {
+    "expected": 12,
+    "matched": 12,
+    "missing": 0,
+    "observed": 12,
+    "precision": 1,
+    "recall": 1,
+    "unexpected": 0
+  },
+  "unexpected": []
+}

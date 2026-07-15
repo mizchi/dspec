@@ -12,6 +12,7 @@ typealias Version = String(matches(Regex(#"^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9_.
 typealias IsoDate = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}$"#)))
 typealias Expr = String(length > 0)
 typealias ExprOp = "atom" | "not" | "and" | "or" | "implies" | "eq" | "neq" | "exists" | "forall"
+typealias ClauseAstSemanticsVersion = String(matches(Regex(#"^[0-9]+\.[0-9]+$"#)))
 typealias DbColumnType = "id" | "string" | "int" | "bool" | "datetime" | "decimal"
 typealias CloudZoneExposure = "public" | "private" | "restricted"
 typealias CloudNodeKind =
@@ -51,6 +52,15 @@ typealias AppProfileScenarioCategory =
   "release-gate" | "route" | "contract-schema" | "workflow" | "data-store" | "runtime-dependency"
 typealias AppProfileScenarioExpectation = "pass" | "fail"
 typealias AppProfileChangeDrift = "no-drift" | "implementation-missing" | "spec-missing" | "mixed"
+typealias RealAppImportFactKind =
+  "route"
+    | "contract-path"
+    | "contract-schema"
+    | "workflow"
+    | "infrastructure-source"
+    | "infrastructure-environment"
+    | "infrastructure-resource"
+    | "infrastructure-schedule"
 typealias SpecReadingExpectation = "entailed" | "contradicted" | "not-supported"
 typealias SpecCompatibility = "compatible" | "breaking" | "narrowing" | "widening" | "unknown"
 typealias SpecChangeReviewStep =
@@ -91,6 +101,15 @@ typealias SpecKind =
     | "equivalence"
 typealias Backend =
   "node" | "pkl" | "lean" | "alloy" | "tla" | "rego" | "cue" | "playwright" | "runtime" | "manual"
+typealias CheckAssuranceKind = "reference" | "executed" | "mutation-tested" | "bounded" | "proved"
+typealias AssuranceEvidenceSchemaVersion = "1.0"
+typealias AssuranceEvidenceScope = "generator" | "clause"
+typealias AssuranceEvidenceResult = "pass" | "fail" | "skip"
+typealias AssuranceEvidenceTimestamp = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"#)))
+typealias ClauseBackendSupport = "unmapped" | "textual" | "structural" | "semantic"
+typealias ProjectionKind = "markdown"
+typealias ProjectionMatrix = "locales"
+typealias ProjectionFreshness = "exact"
 
 /// A language-independent text node.
 ///
@@ -184,6 +203,63 @@ class CheckTarget {
   ref: String(length > 0)
   mode: "generated" | "linked" | "manual" = "linked"
   covers: Listing<String(matches(Regex(#"^(when|must|mustNot)\[[0-9]+\]$"#)))> = new {}
+  /// Epistemic claims made by this target. `reference` only means that `ref`
+  /// resolves; stronger claims require an entry in `assuranceEvidence`.
+  assurances: Listing<CheckAssuranceKind> = new { "reference" }
+  assuranceEvidence: Mapping<CheckAssuranceKind, String(length > 0)> = new {}
+}
+
+/// Identity of a model captured by an assurance evidence run.
+class AssuranceEvidenceModel {
+  id: Identifier
+  version: Version
+  digest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+}
+
+/// Tool identity recorded when a generated backend is executed.
+class AssuranceEvidenceTool {
+  name: String(length > 0)
+  version: String? = null
+}
+
+/// One generated artifact execution. Generator-scoped execution is not a
+/// proof of the source business clauses.
+class AssuranceEvidenceArtifact {
+  id: Identifier
+  backend: "quickcheck" | "lean" | "tla" | "alloy"
+  scope: AssuranceEvidenceScope
+  propertyIds: Listing<String(length > 0)> = new {}
+  digest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  result: AssuranceEvidenceResult
+  tool: AssuranceEvidenceTool
+  theorem: String? = null
+  bounds: Mapping<String, String(length > 0)> = new {}
+}
+
+/// Backend applicability for one source Clause.ast selector.
+class AssuranceEvidenceClauseBackend {
+  backend: "quickcheck" | "lean" | "tla" | "alloy"
+  support: ClauseBackendSupport
+  generatedSelectors: Listing<String(length > 0)> = new {}
+}
+
+class AssuranceEvidenceClauseBinding {
+  ruleId: Identifier
+  selector: String(matches(Regex(#"^(when|must|mustNot)\[[0-9]+\]$"#)))
+  astDigest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  operators: Listing<ExprOp> = new {}
+  backends: Listing<AssuranceEvidenceClauseBackend> = new {}
+}
+
+/// Deterministic verification evidence. `executedAt` is supplied by the run;
+/// all freshness decisions use digests rather than wall-clock age.
+class AssuranceEvidenceManifest {
+  schemaVersion: AssuranceEvidenceSchemaVersion
+  executedAt: AssuranceEvidenceTimestamp
+  model: AssuranceEvidenceModel
+  sourceMapDigest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  artifacts: Listing<AssuranceEvidenceArtifact> = new {}
+  clauseBindings: Listing<AssuranceEvidenceClauseBinding> = new {}
 }
 
 function linkedCheck(checkBackend: Backend, checkRef: String): CheckTarget = new {
@@ -203,6 +279,21 @@ class ImplementationRef {
   kind: "code" | "test" | "runtime" | "doc" | "proof" | "model"
   path: String(length > 0)
   symbol: String? = null
+}
+
+/// A deterministic materialized view of the entrypoint's model.
+///
+/// The first supported matrix expands one Markdown artifact for every declared
+/// model locale. `output` must contain exactly one `{locale}` placeholder.
+/// `provenance` owns the deterministic manifest for the materialized view.
+class Projection {
+  id: Identifier
+  kind: ProjectionKind
+  source: "self" = "self"
+  matrix: ProjectionMatrix
+  output: String(length > 0)
+  provenance: String(length > 0)
+  freshness: ProjectionFreshness = "exact"
 }
 
 function codeRef(refPath: String, refSymbol: String): ImplementationRef = new {
@@ -286,6 +377,17 @@ class AppProfileChangeReplayCorpus {
   cases: Listing<AppProfileChangeReplayCase> = new {}
 }
 
+class RealAppImportFact {
+  kind: RealAppImportFactKind
+  id: String(length > 0)
+}
+
+class RealAppImportEvaluation {
+  id: Identifier
+  appRoot: String(length > 0)
+  expectedFacts: Listing<RealAppImportFact> = new {}
+}
+
 class SpecReadingEvidence {
   ref: String(length > 0)
   note: LocalizedText? = null
@@ -308,6 +410,19 @@ class SpecReadingEvaluation {
   locale: Locale? = null
   rubricVersion: String(length > 0) = "spec-reading-rubric-v1"
   cases: Listing<SpecReadingCase> = new {}
+}
+
+/// Provider-neutral process adapter for a spec-reading agent.
+///
+/// The process receives the evaluation prompt on stdin and must emit the
+/// documented answers JSON object on stdout. `command` is argv, not a shell
+/// expression, so providers can be swapped without changing score semantics.
+class SpecReadingAgentRunner {
+  id: Identifier
+  provider: String(length > 0)
+  model: String(length > 0)
+  command: Listing<String(length > 0)>
+  timeoutMs: Int(this > 0) = 120000
 }
 
 class SpecReadingEvaluationSuite {
@@ -339,6 +454,7 @@ class Rule {
   priority: Int(this >= 0) = 100
   reviewStatus: ReviewStatus = "draft"
   coverage: RuleCoverageMode = "rule"
+  requiredAssurances: Listing<CheckAssuranceKind> = new { "reference" }
   deprecated: Boolean = false
   checks: Listing<CheckTarget> = new {}
   implementedBy: Listing<ImplementationRef> = new {}
@@ -662,6 +778,7 @@ class Model {
   id: Identifier
   name: LocalizedText
   version: Version
+  clauseAstSemanticsVersion: ClauseAstSemanticsVersion = "1.0"
   primaryLocale: Locale
   locales: Listing<Locale>
   vocabulary: Listing<Term> = new {}

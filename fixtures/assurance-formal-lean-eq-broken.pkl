@@ -1,0 +1,60 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "assurance-formal-lean-eq-broken"
+  name = d.text("Broken Lean equality formal assurance", "Broken Lean equality formal assurance")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("concept.balance", "quantity", "残高", "Balance")
+    d.term("concept.account", "entity", "口座", "Account")
+  }
+  rules {
+    new d.Rule {
+      id = "ASSURANCE-FORMAL-LEAN-EQ-BROKEN"
+      kind = "invariant"
+      text = d.text("残高は口座と等しい", "Balance equals account")
+      terms {
+        "concept.balance"
+        "concept.account"
+      }
+      must {
+        new d.Clause {
+          expr = "balance == account"
+          ast = new d.ExprAst {
+            op = "eq"
+            args {
+              "balance"
+              "account"
+            }
+          }
+        }
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "reference"
+        "proved"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "lean"
+          ref = "generated:lean#clause_ASSURANCE_FORMAL_LEAN_EQ_BROKEN_must_0"
+          covers {
+            "must[0]"
+          }
+          assurances {
+            "reference"
+            "proved"
+          }
+          assuranceEvidence {
+            ["proved"] = "/tmp/dspec-assurance-formal-lean-eq-broken.json"
+          }
+        }
+      }
+    }
+  }
+}
