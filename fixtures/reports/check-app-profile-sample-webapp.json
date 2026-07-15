@@ -6,6 +6,7 @@
       "status": "pass",
       "summary": {
         "decisions": 0,
+        "projections": 1,
         "rules": 4,
         "terms": 27
       }

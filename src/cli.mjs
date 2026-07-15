@@ -29,6 +29,16 @@ import {
   infrastructureService,
   realAppObservedDomain,
 } from "./core/real-app.mjs";
+import {
+  createProjectionSnapshot,
+  planProjectionChanges,
+  projectionGenerateArgv,
+  projectionPlanReport,
+  projectionProvenanceDocument,
+  projectionStableJson,
+  validateProjectionContracts,
+} from "./core/projection.mjs";
+import { applyProjectionTransaction, recoverProjectionLock } from "./projection-filesystem.mjs";
 
 const TOP_LEVEL_COMMANDS = [
   { name: "check", usage: "dspec check [--json] <model.pkl>" },
@@ -38,6 +48,8 @@ const TOP_LEVEL_COMMANDS = [
   { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
   { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
+  { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
+  { name: "generated", usage: "dspec generated <check|unlock> ..." },
   {
     name: "emit",
     usage:
@@ -112,6 +124,13 @@ function evidenceUsage() {
   dspec evidence create [--json] [--output <manifest.json>] [--executed-at <iso>] [--require-formal-tools] <model.pkl>
   dspec evidence verify [--json] <model.pkl> <manifest.json>
   dspec evidence refresh [--json] [--executed-at <iso>] [--require-formal-tools] <model.pkl> <manifest.json>
+`;
+}
+
+function generatedUsage() {
+  return `usage:
+  dspec generated check [--json] [--root <dir>] <model.pkl>
+  dspec generated unlock [--json] [--force] [--root <dir>]
 `;
 }
 
@@ -190,7 +209,7 @@ function loadModel(file) {
   if (!document || typeof document !== "object" || !document.model) {
     throw new CommandError(`missing top-level model: ${file}`);
   }
-  return document.model;
+  return { ...document.model, projections: list(document.projections) };
 }
 
 function loadAppProfile(file) {
@@ -613,6 +632,14 @@ function releasePattern(model) {
 
 function runtimePattern(model) {
   return model.patterns?.runtime ?? null;
+}
+
+function projections(model) {
+  return list(model.projections);
+}
+
+function validateProjections(errors, model) {
+  errors.push(...validateProjectionContracts(model));
 }
 
 function domainPacks(model) {
@@ -1356,6 +1383,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
   validateRuntimeModel(errors, model);
   validateDomainPacks(errors, model);
   validateI18nContract(errors, model);
+  validateProjections(errors, model);
 
   return errors;
 }
@@ -1800,6 +1828,75 @@ function parseJsonReportArgs(args) {
     throw new CommandError(usage());
   }
   return { file, json };
+}
+
+function parseProjectionArgs(args, usageText = usage(), { allowGenerationOptions = false } = {}) {
+  let file = null;
+  let dryRun = false;
+  let generatedAt = null;
+  let json = false;
+  let root = ".";
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--dry-run" && allowGenerationOptions) {
+      dryRun = true;
+      continue;
+    }
+    if (arg === "--generated-at" && allowGenerationOptions) {
+      generatedAt = args[index + 1];
+      if (!generatedAt) throw new CommandError(usageText);
+      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(generatedAt)) {
+        throw new CommandError(`invalid --generated-at: ${generatedAt}`);
+      }
+      index += 1;
+      continue;
+    }
+    if (arg === "--root") {
+      root = args[index + 1];
+      if (!root) throw new CommandError(usageText);
+      index += 1;
+      continue;
+    }
+    if (!file) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(`unexpected argument: ${arg}\n${usageText}`);
+  }
+
+  if (!file) throw new CommandError(usageText);
+  return { file, dryRun, generatedAt, json, root };
+}
+
+function parseProjectionUnlockArgs(args, usageText = generatedUsage()) {
+  let force = false;
+  let json = false;
+  let root = ".";
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--force") {
+      force = true;
+      continue;
+    }
+    if (arg === "--root") {
+      root = args[index + 1];
+      if (!root) throw new CommandError(usageText);
+      index += 1;
+      continue;
+    }
+    throw new CommandError(`unexpected argument: ${arg}\n${usageText}`);
+  }
+  return { force, json, root };
 }
 
 function parseImpactArgs(args) {
@@ -6772,6 +6869,10 @@ function modelSource() {
   return { kind: "model", path: "model" };
 }
 
+function projectionSource(projection, index) {
+  return { kind: "projection", projectionId: projection.id, path: `projections[${index}]` };
+}
+
 function ruleSource(rule, ruleIndex) {
   return { kind: "rule", ruleId: rule.id, path: `model.rules[${ruleIndex}]` };
 }
@@ -6986,6 +7087,13 @@ function emitSourceMapObject(model, requestedLocale) {
 
   for (const term of sortedTerms(model)) {
     artifacts.markdown.push(generatedEntry(`markdown.term.${term.id}`, { kind: "term", termId: term.id, path: `model.vocabulary[${list(model.vocabulary).findIndex((candidate) => candidate.id === term.id)}]` }));
+  }
+
+  for (const projection of projections(model).slice().sort(byId)) {
+    const index = projections(model).findIndex((candidate) => candidate.id === projection.id);
+    artifacts.markdown.push(
+      generatedEntry(`markdown.projection.${projection.id}`, projectionSource(projection, index), { locale }),
+    );
   }
 
   const db = dbPattern(model);
@@ -8282,6 +8390,7 @@ function markdownReviewSummary(model) {
     approvedRules: activeApprovedRules(model).length,
     automatedCheckTargets: sortedRules(model).reduce((count, rule) => count + automatedCheckTargets(rule).length, 0),
     implementationRefs: sortedRules(model).reduce((count, rule) => count + list(rule.implementedBy).length, 0),
+    projections: projections(model).length,
     domainElements: domainCoverageElements(model).length,
     runtimeEvidenceRecords: runtimeEvidenceRecordCount(model),
     assuranceTargets: assurance.targets.byKind,
@@ -8303,13 +8412,28 @@ function emitMarkdown(model, requestedLocale) {
     `- approvedRules: \`${reviewSummary.approvedRules}\``,
     `- automatedCheckTargets: \`${reviewSummary.automatedCheckTargets}\``,
     `- implementationRefs: \`${reviewSummary.implementationRefs}\``,
+    `- projections: \`${reviewSummary.projections}\``,
     `- domainElements: \`${reviewSummary.domainElements}\``,
     `- runtimeEvidenceRecords: \`${reviewSummary.runtimeEvidenceRecords}\``,
     `- assuranceTargets: \`${CHECK_ASSURANCE_KINDS.map((kind) => `${kind}=${reviewSummary.assuranceTargets[kind]}`).join(", ")}\``,
     "",
-    "## Vocabulary",
-    "",
   ];
+
+  if (projections(model).length > 0) {
+    lines.push("## Projections", "");
+    for (const projection of projections(model).slice().sort(byId)) {
+      lines.push(`### ${projection.id}`);
+      lines.push("");
+      lines.push(`- kind: \`${projection.kind}\``);
+      lines.push(`- source: \`${projection.source}\``);
+      lines.push(`- matrix: \`${projection.matrix}\``);
+      lines.push(`- output: \`${projection.output}\``);
+      lines.push(`- freshness: \`${projection.freshness}\``);
+      lines.push("");
+    }
+  }
+
+  lines.push("## Vocabulary", "");
 
   for (const term of sortedTerms(model)) {
     lines.push(`- \`${term.id}\` (${term.kind}): ${text(term.text, locale)}`);
@@ -8809,6 +8933,260 @@ function emitMarkdown(model, requestedLocale) {
   }
 
   return `${lines.join("\n").trimEnd()}\n`;
+}
+
+function normalizedGeneratedPath(path) {
+  return path.replaceAll("\\", "/");
+}
+
+function walkGeneratedFiles(root) {
+  if (!existsSync(root)) return [];
+  const files = [];
+  for (const entry of readdirSync(root, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    const path = join(root, entry.name);
+    if (entry.isDirectory()) files.push(...walkGeneratedFiles(path));
+    else if (entry.isFile()) files.push(path);
+  }
+  return files;
+}
+
+function projectionPathMatcher(projection) {
+  const [prefix, suffix] = projection.output.split("{locale}");
+  return new RegExp(`^${escapeRegex(prefix)}([^/]+)${escapeRegex(suffix)}$`);
+}
+
+function projectionScanRoot(root, projection) {
+  const prefix = projection.output.split("{locale}")[0];
+  const slash = prefix.lastIndexOf("/");
+  const relativeRoot = slash === -1 ? "." : prefix.slice(0, slash) || ".";
+  return resolve(root, relativeRoot);
+}
+
+function projectionActualPaths(root, projection) {
+  const matcher = projectionPathMatcher(projection);
+  return walkGeneratedFiles(projectionScanRoot(root, projection))
+    .map((path) => normalizedGeneratedPath(relative(resolve(root), path)))
+    .filter((path) => matcher.test(path))
+    .sort();
+}
+
+function projectionSnapshot(model) {
+  return createProjectionSnapshot(model, {
+    renderMarkdown: (sourceModel, locale) => emitMarkdown(sourceModel, locale),
+  });
+}
+
+function projectionObservations(snapshot, { root = process.cwd() } = {}) {
+  const observations = [];
+  for (const projection of snapshot.projections) {
+    const expected = new Set(projection.artifacts.map((artifact) => artifact.path));
+    const matcher = projectionPathMatcher(projection);
+    for (const path of projectionActualPaths(root, projection)) {
+      const matched = matcher.exec(path);
+      observations.push({
+        content: readFileSync(resolve(root, path), "utf8"),
+        kind: "artifact",
+        locale: matched?.[1] ?? null,
+        path,
+        projectionId: projection.id,
+        unexpected: !expected.has(path),
+      });
+    }
+    if (existsSync(resolve(root, projection.provenancePath))) {
+      observations.push({
+        content: readFileSync(resolve(root, projection.provenancePath), "utf8"),
+        kind: "provenance",
+        path: projection.provenancePath,
+        projectionId: projection.id,
+      });
+    }
+  }
+  return observations;
+}
+
+function projectionChangePlan(model, { generatedAt = new Date().toISOString(), root = process.cwd() } = {}) {
+  const snapshot = projectionSnapshot(model);
+  return planProjectionChanges(snapshot, projectionObservations(snapshot, { root }), { generatedAt });
+}
+
+function generatedProjectionReport(model, { generatedAt = new Date().toISOString(), root = process.cwd() } = {}) {
+  const validationErrors = validate(model);
+  if (validationErrors.length > 0) {
+    return {
+      model: modelReport(model),
+      status: "fail",
+      summary: {
+        projections: projections(model).length,
+        artifacts: 0,
+        missing: 0,
+        stale: 0,
+        unexpected: 0,
+        provenance: 0,
+        provenanceMissing: 0,
+        provenanceStale: 0,
+      },
+      projections: [],
+      errors: validationErrors,
+    };
+  }
+
+  const plan = projectionChangePlan(model, { generatedAt, root });
+  const errors = [];
+  let missing = 0;
+  let stale = 0;
+  let unexpected = 0;
+  let provenanceMissing = 0;
+  let provenanceStale = 0;
+  const projectionReports = plan.projections.map((projection) => {
+    const projectionActions = plan.actions.filter((action) => action.projectionId === projection.id);
+    const artifactActions = projectionActions.filter((action) => action.kind === "artifact");
+    const artifacts = projection.artifacts.map((artifact) => {
+      const action = artifactActions.find((candidate) => candidate.path === artifact.path);
+      if (action.action === "create") {
+        missing += 1;
+        errors.push(`missing generated artifact: ${projection.id} -> ${artifact.path}`);
+        return { bytes: artifact.bytes, digest: artifact.digest, locale: artifact.locale, path: artifact.path, status: "missing" };
+      }
+      if (action.action === "update") {
+        stale += 1;
+        errors.push(`stale generated artifact: ${projection.id} -> ${artifact.path}`);
+        return { bytes: artifact.bytes, digest: artifact.digest, locale: artifact.locale, path: artifact.path, status: "stale" };
+      }
+      return { bytes: artifact.bytes, digest: artifact.digest, locale: artifact.locale, path: artifact.path, status: "current" };
+    });
+    const unexpectedPaths = artifactActions.filter((action) => action.action === "remove").map((action) => action.path);
+    for (const path of unexpectedPaths) {
+      unexpected += 1;
+      errors.push(`unexpected generated artifact: ${projection.id} -> ${path}`);
+    }
+    const provenanceAction = projectionActions.find((action) => action.kind === "provenance");
+    const provenanceDocument = provenanceAction.desiredContent ? JSON.parse(provenanceAction.desiredContent) : null;
+    let provenanceStatus = "current";
+    if (provenanceAction.action === "create") {
+      provenanceStatus = "missing";
+      provenanceMissing += 1;
+      errors.push(`missing projection provenance: ${projection.id} -> ${projection.provenancePath}`);
+    } else if (provenanceAction.action === "update") {
+      provenanceStatus = "stale";
+      provenanceStale += 1;
+      errors.push(`stale projection provenance: ${projection.id} -> ${projection.provenancePath}`);
+    }
+    return {
+      id: projection.id,
+      kind: projection.kind,
+      source: projection.source,
+      matrix: projection.matrix,
+      output: projection.output,
+      provenance: {
+        digest: provenanceAction.afterDigest,
+        generatedAt: provenanceDocument?.generatedAt ?? null,
+        path: projection.provenancePath,
+        schemaVersion: provenanceDocument?.schemaVersion ?? null,
+        status: provenanceStatus,
+      },
+      freshness: projection.freshness,
+      artifacts,
+      unexpected: unexpectedPaths,
+    };
+  });
+
+  return {
+    model: modelReport(model),
+    status: reportStatus(errors),
+    summary: {
+      projections: projectionReports.length,
+      artifacts: projectionReports.reduce((count, projection) => count + projection.artifacts.length, 0),
+      missing,
+      stale,
+      unexpected,
+      provenance: projectionReports.length,
+      provenanceMissing,
+      provenanceStale,
+    },
+    projections: projectionReports,
+    errors,
+  };
+}
+
+function pruneEmptyGeneratedDirectories(root) {
+  if (!existsSync(root)) return;
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    if (entry.isDirectory()) pruneEmptyGeneratedDirectories(join(root, entry.name));
+  }
+  if (readdirSync(root).length === 0) rmSync(root, { recursive: true });
+}
+
+function generateProjectionArtifacts(
+  model,
+  {
+    dryRun = false,
+    generatedAt = new Date().toISOString(),
+    root = process.cwd(),
+  } = {},
+) {
+  const validationErrors = validate(model);
+  if (validationErrors.length > 0) {
+    return {
+      changed: 0,
+      dryRun,
+      emitter: null,
+      errors: validationErrors,
+      model: modelReport(model),
+      plan: [],
+      projections: [],
+      provenance: [],
+      status: "fail",
+      summary: { projections: projections(model).length, artifacts: 0, changed: 0, actions: { create: 0, remove: 0, unchanged: 0, update: 0 } },
+      transaction: { status: dryRun ? "preview" : "not-started", writes: 0, removes: 0 },
+    };
+  }
+
+  const plan = projectionChangePlan(model, { generatedAt, root });
+  const projected = projectionPlanReport(plan);
+  const transaction = dryRun
+    ? {
+        status: "preview",
+        writes: plan.actions.filter((action) => ["create", "update"].includes(action.action)).length,
+        removes: plan.actions.filter((action) => action.action === "remove").length,
+      }
+    : applyProjectionTransaction(plan.actions, { root });
+
+  if (!dryRun) {
+    for (const projection of plan.projections) {
+      const scanRoot = projectionScanRoot(root, projection);
+      if (!existsSync(scanRoot)) continue;
+      for (const entry of readdirSync(scanRoot, { withFileTypes: true })) {
+        if (entry.isDirectory()) pruneEmptyGeneratedDirectories(join(scanRoot, entry.name));
+      }
+    }
+  }
+
+  const verification = dryRun ? { status: "pass", errors: [] } : generatedProjectionReport(model, { generatedAt, root });
+  return {
+    changed: plan.summary.changed,
+    dryRun,
+    emitter: projected.emitter,
+    errors: verification.errors,
+    model: modelReport(model),
+    plan: projected.actions,
+    projections: projected.projections,
+    provenance: projected.provenance,
+    status: verification.status,
+    summary: projected.summary,
+    transaction,
+  };
+}
+
+function renderGeneratedProjectionReport(report, action) {
+  if (report.status === "fail") return `${report.errors.join("\n")}\n`;
+  if (action === "generate") {
+    if (report.dryRun) {
+      return `ok: ${report.model.id} generation plan (${report.changed} changes, no files written)\n`;
+    }
+    const projectionLabel = report.summary.projections === 1 ? "projection" : "projections";
+    return `ok: ${report.model.id} generated ${report.summary.artifacts} artifacts from ${report.summary.projections} ${projectionLabel} (${report.changed} changed)\n`;
+  }
+  return `ok: ${report.model.id} generated artifacts (${report.summary.artifacts} current)\n`;
 }
 
 function dbProjection(model) {
@@ -11894,6 +12272,7 @@ function checkReport(model) {
       terms: list(model.vocabulary).length,
       rules: list(model.rules).length,
       decisions: list(model.decisions).length,
+      projections: projections(model).length,
     },
     assurance: assuranceSummary(model),
     errors,
@@ -12073,7 +12452,67 @@ function renderDomainCoverageReport(report) {
   return `${report.errors.join("\n")}\n`;
 }
 
-function impactReport(beforeModel, afterModel) {
+function projectionMaterializations(model) {
+  const snapshot = projectionSnapshot(model);
+  return snapshot.projections.flatMap((projection) => [
+    ...projection.artifacts.map((artifact) => ({
+      content: artifact.content,
+      kind: projection.kind,
+      locale: artifact.locale,
+      path: artifact.path,
+      projectionId: projection.id,
+    })),
+    {
+      content: projectionStableJson(
+        projectionProvenanceDocument(snapshot, projection, "1970-01-01T00:00:00.000Z"),
+      ),
+      kind: "provenance",
+      locale: null,
+      path: projection.provenancePath,
+      projectionId: projection.id,
+    },
+  ]);
+}
+
+function shellQuoteArg(arg) {
+  return /^[A-Za-z0-9_./:=+-]+$/.test(arg) ? arg : `'${arg.replaceAll("'", `'"'"'`)}'`;
+}
+
+function renderArgv(argv) {
+  return argv.map(shellQuoteArg).join(" ");
+}
+
+function projectionImpactReport(beforeModel, afterModel, afterFile) {
+  const beforeArtifacts = new Map(projectionMaterializations(beforeModel).map((artifact) => [artifact.path, artifact]));
+  const afterArtifacts = new Map(projectionMaterializations(afterModel).map((artifact) => [artifact.path, artifact]));
+  const artifacts = [];
+
+  for (const artifact of beforeArtifacts.values()) {
+    if (!afterArtifacts.has(artifact.path)) {
+      const { content: _content, ...entry } = artifact;
+      artifacts.push({ action: "remove", ...entry });
+    }
+  }
+  for (const artifact of afterArtifacts.values()) {
+    const before = beforeArtifacts.get(artifact.path);
+    if (!before || before.content !== artifact.content) {
+      const { content: _content, ...entry } = artifact;
+      artifacts.push({ action: "regenerate", ...entry });
+    }
+  }
+
+  artifacts.sort((left, right) => left.path.localeCompare(right.path) || left.action.localeCompare(right.action));
+  const regenerateArgv = artifacts.some((artifact) => artifact.action === "regenerate") && afterFile
+    ? projectionGenerateArgv(afterFile)
+    : null;
+  return {
+    artifacts,
+    regenerateArgv,
+    regenerateCommand: regenerateArgv ? renderArgv(regenerateArgv) : null,
+  };
+}
+
+function impactReport(beforeModel, afterModel, { afterFile = null } = {}) {
   const beforeErrors = validate(beforeModel).map((error) => `before: ${error}`);
   const afterErrors = validate(afterModel).map((error) => `after: ${error}`);
   const errors = [...beforeErrors, ...afterErrors];
@@ -12084,10 +12523,11 @@ function impactReport(beforeModel, afterModel) {
 
   if (errors.length > 0) {
     return {
-      changed: { terms: [], rules: [] },
+      changed: { projections: [], terms: [], rules: [] },
       errors,
       impacts: [],
       model,
+      projectionImpact: { artifacts: [], regenerateArgv: null, regenerateCommand: null },
       status: "fail",
     };
   }
@@ -12095,6 +12535,7 @@ function impactReport(beforeModel, afterModel) {
   const beforeSourceMap = emitSourceMapObject(beforeModel, beforeModel.primaryLocale);
   const afterSourceMap = emitSourceMapObject(afterModel, afterModel.primaryLocale);
   const changed = {
+    projections: diffItems(projections(beforeModel), projections(afterModel)),
     terms: diffItems(beforeModel.vocabulary, afterModel.vocabulary),
     rules: diffItems(beforeModel.rules, afterModel.rules),
   };
@@ -12138,6 +12579,7 @@ function impactReport(beforeModel, afterModel) {
     errors: [],
     impacts,
     model,
+    projectionImpact: projectionImpactReport(beforeModel, afterModel, afterFile),
     status: "pass",
   };
 }
@@ -12146,7 +12588,7 @@ function renderImpactReport(report) {
   if (report.status === "fail") {
     return `spec impact failed\n${report.errors.join("\n")}\n`;
   }
-  const changeCount = report.changed.terms.length + report.changed.rules.length;
+  const changeCount = report.changed.projections.length + report.changed.terms.length + report.changed.rules.length;
   const lines = [`ok: spec impact (${changeCount} changes)`];
   for (const impact of report.impacts) {
     lines.push(`- ${impact.kind} ${impact.id} ${impact.change}`);
@@ -12159,6 +12601,12 @@ function renderImpactReport(report) {
     if (impact.implementationRefs.length > 0) {
       lines.push(`  implementation refs: ${impact.implementationRefs.map((ref) => `${ref.path}${ref.symbol ? `#${ref.symbol}` : ""}`).join(", ")}`);
     }
+  }
+  for (const artifact of report.projectionImpact.artifacts) {
+    lines.push(`- generated artifact ${artifact.action}: ${artifact.path}`);
+  }
+  if (report.projectionImpact.regenerateCommand) {
+    lines.push(`- regenerate: ${report.projectionImpact.regenerateCommand}`);
   }
   return `${lines.join("\n")}\n`;
 }
@@ -12533,7 +12981,7 @@ function specChangeCheckStep(id, report) {
 }
 
 function specChangeImpactStep(report) {
-  const changes = list(report.changed.terms).length + list(report.changed.rules).length;
+  const changes = list(report.changed.projections).length + list(report.changed.terms).length + list(report.changed.rules).length;
   return stepReport(
     "impact",
     report.status,
@@ -12542,6 +12990,9 @@ function specChangeImpactStep(report) {
     {
       changes,
       impacts: list(report.impacts).length,
+      projectionArtifacts: list(report.projectionImpact?.artifacts).length,
+      regenerateArgv: report.projectionImpact?.regenerateArgv ?? null,
+      regenerateCommand: report.projectionImpact?.regenerateCommand ?? null,
     },
   );
 }
@@ -12720,7 +13171,8 @@ function specChangeReviewReport(review, reviewFile) {
     const afterModel = loadModel(afterFile);
     const checkBefore = checkReport(beforeModel);
     const checkAfter = checkReport(afterModel);
-    const impact = impactReport(beforeModel, afterModel);
+    const impactAfterFile = normalizedGeneratedPath(relative(executionRoot, afterFile));
+    const impact = impactReport(beforeModel, afterModel, { afterFile: impactAfterFile });
     const compatibility = specCompatibilityReport(beforeModel, afterModel);
     const coverageAfter = coverageReport(afterModel);
     const availableSteps = new Map([
@@ -13098,6 +13550,75 @@ function runEvidenceCommand(args) {
   throw new CommandError(`unknown evidence subcommand: ${subcommand}\n${evidenceUsage()}`);
 }
 
+function runGenerateCommand(args) {
+  const options = parseProjectionArgs(
+    args,
+    topLevelCommandHelp(topLevelCommand("generate")),
+    { allowGenerationOptions: true },
+  );
+  const model = loadModel(options.file);
+  const report = generateProjectionArtifacts(model, {
+    dryRun: options.dryRun,
+    generatedAt: options.generatedAt ?? new Date().toISOString(),
+    root: options.root,
+  });
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    assertReportOk(report);
+    return;
+  }
+  const rendered = renderGeneratedProjectionReport(report, "generate");
+  if (report.status === "fail") throw new CommandError(rendered);
+  process.stdout.write(rendered);
+}
+
+function runGeneratedCommand(args) {
+  const [subcommand, ...rest] = args;
+  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    process.stdout.write(generatedUsage());
+    return;
+  }
+  if (!["check", "unlock"].includes(subcommand)) {
+    throw new CommandError(`unknown generated subcommand: ${subcommand}\n${generatedUsage()}`);
+  }
+  if (hasHelpFlag(rest)) {
+    process.stdout.write(generatedUsage());
+    return;
+  }
+  if (subcommand === "unlock") {
+    const options = parseProjectionUnlockArgs(rest);
+    let report;
+    try {
+      report = recoverProjectionLock(options.root, { force: options.force });
+    } catch (error) {
+      throw new CommandError(`${error.message}\n`);
+    }
+    if (options.json) {
+      process.stdout.write(stableJson(report));
+      return;
+    }
+    if (report.status === "absent") {
+      process.stdout.write("ok: no Projection generation lock\n");
+      return;
+    }
+    process.stdout.write(
+      `ok: recovered Projection generation lock (${report.previous.liveness}, lease ${report.previous.lease.status}${report.forced ? ", forced" : ""})\n`,
+    );
+    return;
+  }
+  const options = parseProjectionArgs(rest, generatedUsage());
+  const model = loadModel(options.file);
+  const report = generatedProjectionReport(model, { root: options.root });
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    assertReportOk(report);
+    return;
+  }
+  const rendered = renderGeneratedProjectionReport(report, "check");
+  if (report.status === "fail") throw new CommandError(rendered);
+  process.stdout.write(rendered);
+}
+
 function emit(target, model, locale) {
   if (target === "markdown") return emitMarkdown(model, locale);
   if (target === "json") return stableJson({ model });
@@ -13122,7 +13643,7 @@ async function run(argv) {
     throw new CommandError(`unknown command: ${command}\n${usage()}`);
   }
 
-  if (!["spec-change", "evidence"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+  if (!["spec-change", "evidence", "generated"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     process.stdout.write(topLevelCommandHelp(commandSpec));
     return;
   }
@@ -13187,7 +13708,7 @@ async function run(argv) {
     const { beforeFile, afterFile, json } = parseImpactArgs(args);
     const beforeModel = loadModel(beforeFile);
     const afterModel = loadModel(afterFile);
-    const report = impactReport(beforeModel, afterModel);
+    const report = impactReport(beforeModel, afterModel, { afterFile });
     if (json) {
       process.stdout.write(stableJson(report));
       assertReportOk(report);
@@ -13205,6 +13726,16 @@ async function run(argv) {
 
   if (command === "evidence") {
     runEvidenceCommand(args);
+    return;
+  }
+
+  if (command === "generate") {
+    runGenerateCommand(args);
+    return;
+  }
+
+  if (command === "generated") {
+    runGeneratedCommand(args);
     return;
   }
 
@@ -13734,7 +14265,8 @@ export {
   checkSqlQueriesReport,
   domainCoverageReport,
   emitDbSchemaPkl,
-  emitMarkdown,
+  generateProjectionArtifacts,
+  generatedProjectionReport,
   importDbSchema,
   normalizeCounterexamples,
   topLevelCommandRegistry,

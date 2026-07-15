@@ -1,0 +1,23 @@
+import "../dspec/Schema.pkl" as d
+
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "localized-markdown"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/projection/projection-model.md"
+    provenance = "generated/projection/invalid.provenance.json"
+    freshness = "exact"
+  }
+}
+
+model: d.Model = new {
+  id = "projection-invalid-template"
+  name = d.text("Invalid projection fixture", "Invalid projection fixture")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+}

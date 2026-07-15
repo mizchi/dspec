@@ -24,9 +24,9 @@
         "executed": 4,
         "mutation-tested": 1,
         "proved": 0,
-        "reference": 302
+        "reference": 326
       },
-      "total": 302
+      "total": 326
     }
   },
   "errors": [],
@@ -37,7 +37,8 @@
   "status": "pass",
   "summary": {
     "decisions": 2,
+    "projections": 1,
     "rules": 71,
-    "terms": 103
+    "terms": 109
   }
 }

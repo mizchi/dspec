@@ -24,9 +24,9 @@
         "executed": 4,
         "mutation-tested": 1,
         "proved": 0,
-        "reference": 302
+        "reference": 326
       },
-      "total": 302
+      "total": 326
     }
   },
   "errors": [],
@@ -34,6 +34,6 @@
     "id": "dspec-self",
     "version": "0.1.0"
   },
-  "references": 962,
+  "references": 1016,
   "status": "pass"
 }

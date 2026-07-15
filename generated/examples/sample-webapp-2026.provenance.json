@@ -1,0 +1,36 @@
+{
+  "artifacts": [
+    {
+      "bytes": 10477,
+      "digest": "sha256:37f5194fbeb4ea79cad1f802429f1feead6cc3bbcf6918d0339007384cb9be7a",
+      "locale": "en",
+      "path": "generated/examples/en/sample-webapp-2026.md"
+    },
+    {
+      "bytes": 10506,
+      "digest": "sha256:a872b836354149caa75106325624c9f4b0e3b31958f15ec92faa457b8a14e477",
+      "locale": "ja",
+      "path": "generated/examples/ja/sample-webapp-2026.md"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/markdown",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-15T00:00:00.000Z",
+  "model": {
+    "digest": "sha256:61ca80a851331610b6d68f3a5e77268a4f3350ec17cc593e9e56b01794e501cd",
+    "id": "sample-webapp-2026",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "freshness": "exact",
+    "id": "sample-webapp-markdown",
+    "kind": "markdown",
+    "matrix": "locales",
+    "output": "generated/examples/{locale}/sample-webapp-2026.md",
+    "provenance": "generated/examples/sample-webapp-2026.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

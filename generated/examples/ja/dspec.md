@@ -7,11 +7,22 @@
 ## Review Summary
 
 - approvedRules: `69`
-- automatedCheckTargets: `302`
-- implementationRefs: `637`
+- automatedCheckTargets: `326`
+- implementationRefs: `667`
+- projections: `1`
 - domainElements: `0`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=302, executed=4, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=326, executed=4, mutation-tested=1, bounded=0, proved=0`
+
+## Projections
+
+### self-markdown
+
+- kind: `markdown`
+- source: `self`
+- matrix: `locales`
+- output: `generated/examples/{locale}/dspec.md`
+- freshness: `exact`
 
 ## Vocabulary
 
@@ -43,6 +54,10 @@
 - `artifact.failure_suggestion` (entity): 失敗時の次アクション
 - `artifact.formal_backend` (entity): 形式手法 backend 形式
 - `artifact.generated_manifest` (entity): generated artifact manifest
+- `artifact.generation_lease` (entity): 生成 lock lease
+- `artifact.generation_lock` (entity): 生成 root 排他 lock
+- `artifact.generation_plan` (entity): 生成 action plan
+- `artifact.generation_transaction` (entity): 生成 transaction
 - `artifact.generator` (action): 決定的生成器
 - `artifact.i18n_contract` (entity): i18n semantic contract
 - `artifact.impact_report` (entity): spec diff impact report
@@ -54,6 +69,8 @@
 - `artifact.pkl_model` (entity): Pkl 仕様モデル
 - `artifact.profile_scaffold` (action): app profile authoring scaffold
 - `artifact.profile_scaffold_diff` (action): app profile scaffold drift diff
+- `artifact.projection` (entity): 型付き生成 projection
+- `artifact.projection_provenance` (entity): Projection provenance manifest
 - `artifact.quickcheck` (entity): QuickCheck 形式の性質テスト
 - `artifact.real_app_importer` (action): real application artifact importer
 - `artifact.real_app_model` (entity): real application dogfood model
@@ -1770,29 +1787,101 @@ Lean は等価性 fragment の Clause を満足関係と clause 定理として�
 - status: approved
 - priority: 100
 - requiredAssurances: reference
+- term: `artifact.generation_lease`
+- term: `artifact.generation_lock`
+- term: `artifact.generation_plan`
+- term: `artifact.generation_transaction`
 - term: `artifact.generator`
 - term: `artifact.markdown`
-- must: `for locale in examples/dspec.pkl.locales: generated/examples/{locale}/dspec.md == emit(markdown, locale, examples/dspec.pkl)`
+- term: `artifact.projection`
+- term: `artifact.projection_provenance`
+- must: `projection(self-markdown).artifacts == locales.map(locale -> generated/examples/{locale}/dspec.md)`
+- must: `derive(entrypoint.model).projections == []`
 - must: `emit(markdown).rules.include(source, coverage, selectors, checks, implementations)`
-- must: `emit(markdown).reviewSummary.includes(approvedRules + automatedChecks + implementationRefs + domainElements + runtimeEvidenceRecords)`
-- check: node test/cli.test.mjs#keeps localized generated markdown review artifacts in sync [reference]
-- check: node test/cli.test.mjs#generates markdown for every declared dspec locale [reference]
+- must: `emit(markdown).reviewSummary.includes(approvedRules + automatedChecks + implementationRefs + projections + domainElements + runtimeEvidenceRecords)`
+- must: `plan(projection, observedState) -> {create, update, remove, unchanged} without filesystem mutation`
+- must: `generate(dryRun).writes == 0 && generate(plan).argv is List<String>`
+- must: `provenance == modelDigest + projectionId + emitterVersion + stableGeneratedAt + artifactDigests`
+- must: `transaction.failure -> rollback(allCommittedPaths)`
+- must: `concurrent(generate(root), generate(root)) -> atMostOneCommitter && failure.releases(lock(root))`
+- must: `lockOwner == {pid, hostname, acquiredAt, heartbeatAt, leaseMs, token}`
+- must: `unlock(lock) requires dead(owner) || expired(lease) || force`
+- must: `transaction(stage|commit) -> renew(lock.lease)`
+- check: node test/cli.test.mjs#checks dspec's localized projection artifacts [reference]
+- check: node test/cli.test.mjs#checks sample webapp localized projection artifacts [reference]
+- check: node test/cli.test.mjs#does not inherit entrypoint projection ownership through model amendments [reference]
+- check: node test/cli.test.mjs#generates and checks localized projection artifacts [reference]
+- check: node test/cli.test.mjs#keeps generate projection JSON report fixture in sync [reference]
+- check: node test/cli.test.mjs#keeps generated check projection JSON report fixture in sync [reference]
+- check: node test/cli.test.mjs#rejects projection locale matrices without a locale output placeholder [reference]
+- check: node test/cli.test.mjs#previews Projection generation without writing [reference]
+- check: node test/cli.test.mjs#rejects invalid Projection generation timestamps as command errors [reference]
+- check: node test/cli.test.mjs#writes and checks Projection provenance without changing its stable generation time [reference]
+- check: node test/cli.test.mjs#dogfoods single-locale and monorepo Projection holdouts [reference]
+- check: node test/projection-core.test.mjs#builds deterministic Projection snapshots and provenance [reference]
+- check: node test/projection-core.test.mjs#isolates Projection snapshots from renderer mutation [reference]
+- check: node test/projection-core.test.mjs#plans create, update, remove, and unchanged actions without filesystem access [reference]
+- check: node test/projection-core.test.mjs#preserves provenance generation time while its deterministic inputs stay current [reference]
+- check: node test/projection-core.test.mjs#represents generation commands as argv [reference]
+- check: node test/projection-core.test.mjs#rejects unsafe or colliding provenance contracts [reference]
+- check: node test/projection-transaction.test.mjs#commits a staged Projection transaction [reference]
+- check: node test/projection-transaction.test.mjs#rolls back every committed path when a Projection transaction fails [reference]
+- check: node test/projection-transaction.test.mjs#serializes Projection transactions and releases the lock after failure [reference]
+- check: node test/projection-transaction.test.mjs#records Projection lock ownership and recovers only stale owners [reference]
+- check: node test/projection-transaction.test.mjs#protects active foreign Projection leases and recovers expired leases [reference]
+- check: node test/projection-transaction.test.mjs#renews Projection leases while staging and committing [reference]
+- check: node test/cli.test.mjs#recovers stale Projection generation locks without overriding live owners [reference]
 - check: node test/cli.test.mjs#emits deterministic markdown [reference]
-- implementation: code src/cli.mjs#emitMarkdown
+- implementation: code src/cli.mjs#loadModel
 - implementation: code src/cli.mjs#markdownReviewSummary
-- implementation: code scripts/generate-localized-markdown.mjs#generateLocalizedMarkdown
+- implementation: code src/cli.mjs#generateProjectionArtifacts
+- implementation: code src/cli.mjs#generatedProjectionReport
+- implementation: code src/core/projection.mjs#createProjectionSnapshot
+- implementation: code src/core/projection.mjs#planProjectionChanges
+- implementation: code src/core/projection.mjs#projectionPlanReport
+- implementation: code src/core/projection.mjs#projectionGenerateArgv
+- implementation: code src/core/projection.mjs#projectionProvenanceDocument
+- implementation: code src/core/projection.mjs#validateProjectionContracts
+- implementation: code src/projection-filesystem.mjs#applyProjectionTransaction
+- implementation: code src/projection-filesystem.mjs#acquireProjectionLock
+- implementation: code src/projection-filesystem.mjs#inspectProjectionLock
+- implementation: code src/projection-filesystem.mjs#recoverProjectionLock
+- implementation: code src/projection-filesystem.mjs#projectionLockLease
+- implementation: code src/projection-filesystem.mjs#renewProjectionLockLease
+- implementation: code dspec/Schema.pkl#Projection
+- implementation: model examples/sample-webapp-2026.pkl
+- implementation: model fixtures/projection-holdout-single-locale.pkl
+- implementation: model fixtures/projection-holdout-monorepo.pkl
+- implementation: model fixtures/reports/generate-projection.json
+- implementation: model fixtures/reports/generated-check-projection.json
 - implementation: doc generated/examples/ja/dspec.md
 - implementation: doc generated/examples/en/dspec.md
+- implementation: doc generated/examples/ja/sample-webapp-2026.md
+- implementation: doc generated/examples/en/sample-webapp-2026.md
+- implementation: doc generated/examples/dspec.provenance.json
+- implementation: doc generated/examples/sample-webapp-2026.provenance.json
+- implementation: doc generated/holdouts/single-locale/specification.provenance.json
+- implementation: doc generated/holdouts/monorepo/apps/docs/platform.provenance.json
+- implementation: doc generated/holdouts/monorepo/packages/contracts/docs/contracts.provenance.json
 
 #### Review
 
 - source: model.rules[62]
 - coverage: rule
-- automatedChecks: 3
-- implementationRefs: 5
+- automatedChecks: 25
+- implementationRefs: 31
 - selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[0]
 - selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[1]
 - selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[2]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[3]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[4]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[5]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[6]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[7]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[8]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[9]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[10]
+- selector: DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[11]
 
 ### DSPEC-MBT-BOUNDARY
 
@@ -2762,7 +2851,7 @@ spec compatibility classifier は before/after spec を compatible/breaking/narr
 
 ### DSPEC-SPEC-DIFF-IMPACT
 
-spec diff impact report は変更された term/rule から生成 selector と実装参照への影響を返す
+spec diff impact report は変更された term/rule/projection から生成 selector、owned artifact、実装参照への影響を返す
 
 - kind: obligation
 - status: approved
@@ -2770,28 +2859,37 @@ spec diff impact report は変更された term/rule から生成 selector と�
 - requiredAssurances: reference
 - term: `artifact.impact_report`
 - term: `artifact.json_report`
+- term: `artifact.projection`
 - term: `artifact.source_map`
 - term: `concept.rule`
 - term: `concept.term`
 - term: `concept.verification_target`
 - must: `impact.diff.detects(term, rule).added_removed_modified`
 - must: `impact.changedTerm.rules -> generatedSelectors + implementationRefs`
+- must: `impact.projections -> changed + artifacts(action, path, locale) + regenerateCommand`
 - check: node test/cli.test.mjs#emits spec diff impact reports [reference]
+- check: node test/cli.test.mjs#reports removed and regenerated artifacts for projection path changes [reference]
+- check: node test/cli.test.mjs#reports portable projection actions through spec-change review [reference]
 - implementation: code src/cli.mjs#parseImpactArgs
 - implementation: code src/cli.mjs#impactReport
+- implementation: code src/cli.mjs#projectionMaterializations
+- implementation: code src/cli.mjs#projectionImpactReport
 - implementation: code src/cli.mjs#diffItems
 - implementation: code src/cli.mjs#sourceMapEntries
 - implementation: model fixtures/impact-before.pkl
 - implementation: model fixtures/impact-after.pkl
+- implementation: model fixtures/impact-projection-after.pkl
+- implementation: model fixtures/spec-change-review-projection.pkl
 
 #### Review
 
 - source: model.rules[56]
 - coverage: rule
-- automatedChecks: 1
-- implementationRefs: 6
+- automatedChecks: 3
+- implementationRefs: 10
 - selector: DSPEC-SPEC-DIFF-IMPACT.must[0]
 - selector: DSPEC-SPEC-DIFF-IMPACT.must[1]
+- selector: DSPEC-SPEC-DIFF-IMPACT.must[2]
 
 ### DSPEC-SPEC-READING-EVAL
 

@@ -29,3 +29,18 @@ export {
   realAppImportFacts,
   realAppObservedDomain,
 } from "./real-app.mjs";
+
+export {
+  MARKDOWN_PROJECTION_EMITTER,
+  PROJECTION_PROVENANCE_SCHEMA_VERSION,
+  createProjectionSnapshot,
+  isSafeProjectionPath,
+  planProjectionChanges,
+  projectionDigest,
+  projectionGenerateArgv,
+  projectionOutputPath,
+  projectionPlanReport,
+  projectionProvenanceDocument,
+  projectionStableJson,
+  validateProjectionContracts,
+} from "./projection.mjs";

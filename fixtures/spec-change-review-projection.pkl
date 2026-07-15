@@ -1,0 +1,10 @@
+import "../dspec/Schema.pkl" as d
+
+review: d.SpecChangeReview = new {
+  id = "spec-change-review-projection"
+  beforeModelPath = "impact-before.pkl"
+  afterModelPath = "impact-projection-after.pkl"
+  requiredSteps {
+    "impact"
+  }
+}

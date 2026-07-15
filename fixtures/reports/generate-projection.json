@@ -1,0 +1,106 @@
+{
+  "changed": 3,
+  "dryRun": false,
+  "emitter": {
+    "name": "dspec/markdown",
+    "version": "1.0"
+  },
+  "errors": [],
+  "model": {
+    "id": "projection-model",
+    "version": "0.1.0"
+  },
+  "plan": [
+    {
+      "action": "create",
+      "afterBytes": 557,
+      "afterDigest": "sha256:eaf8347cb2213d93301ba8f746468c5d6761bd7ddcd107a667dfb4662057bf02",
+      "beforeBytes": null,
+      "beforeDigest": null,
+      "kind": "artifact",
+      "locale": "en",
+      "path": "generated/projection/en/projection-model.md",
+      "projectionId": "localized-markdown",
+      "reason": "missing"
+    },
+    {
+      "action": "create",
+      "afterBytes": 557,
+      "afterDigest": "sha256:fcc6ae4ac75d89a0890d7993a603a1a1b3aeed3ab2a39cd98f2d8a0bb7e78891",
+      "beforeBytes": null,
+      "beforeDigest": null,
+      "kind": "artifact",
+      "locale": "ja",
+      "path": "generated/projection/ja/projection-model.md",
+      "projectionId": "localized-markdown",
+      "reason": "missing"
+    },
+    {
+      "action": "create",
+      "afterBytes": 1031,
+      "afterDigest": "sha256:6dd10b91a372fb9c8f615e125ceb86d01c12cbb729865390c9235bb667c8d3a3",
+      "beforeBytes": null,
+      "beforeDigest": null,
+      "kind": "provenance",
+      "locale": null,
+      "path": "generated/projection/projection-model.provenance.json",
+      "projectionId": "localized-markdown",
+      "reason": "missing-provenance"
+    }
+  ],
+  "projections": [
+    {
+      "artifacts": [
+        {
+          "bytes": 557,
+          "digest": "sha256:eaf8347cb2213d93301ba8f746468c5d6761bd7ddcd107a667dfb4662057bf02",
+          "locale": "en",
+          "path": "generated/projection/en/projection-model.md"
+        },
+        {
+          "bytes": 557,
+          "digest": "sha256:fcc6ae4ac75d89a0890d7993a603a1a1b3aeed3ab2a39cd98f2d8a0bb7e78891",
+          "locale": "ja",
+          "path": "generated/projection/ja/projection-model.md"
+        }
+      ],
+      "freshness": "exact",
+      "id": "localized-markdown",
+      "kind": "markdown",
+      "matrix": "locales",
+      "output": "generated/projection/{locale}/projection-model.md",
+      "provenance": "generated/projection/projection-model.provenance.json",
+      "source": "self"
+    }
+  ],
+  "provenance": [
+    {
+      "emitter": {
+        "name": "dspec/markdown",
+        "version": "1.0"
+      },
+      "generatedAt": "2026-07-15T00:00:00.000Z",
+      "modelDigest": "sha256:fc1887a05ae14acccf72ef896f926c7f8c497514604389e47680758c8f951dbf",
+      "path": "generated/projection/projection-model.provenance.json",
+      "projectionId": "localized-markdown",
+      "schemaVersion": "1.0"
+    }
+  ],
+  "status": "pass",
+  "summary": {
+    "actions": {
+      "create": 3,
+      "remove": 0,
+      "unchanged": 0,
+      "update": 0
+    },
+    "artifacts": 2,
+    "changed": 3,
+    "projections": 1
+  },
+  "transaction": {
+    "removes": 0,
+    "status": "committed",
+    "writes": 3
+  }
+}

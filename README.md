@@ -26,6 +26,13 @@ node src/cli.mjs verify-generated --json --require-formal-tools fixtures/typed-a
 node src/cli.mjs evidence create --output evidence.json fixtures/typed-ast.pkl
 node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl evidence.json
 node src/cli.mjs evidence refresh fixtures/typed-ast.pkl evidence.json
+node src/cli.mjs generate --dry-run --json examples/dspec.pkl
+node src/cli.mjs generate examples/dspec.pkl
+node src/cli.mjs generated check examples/dspec.pkl
+node src/cli.mjs generate examples/sample-webapp-2026.pkl
+node src/cli.mjs generated check examples/sample-webapp-2026.pkl
+# Crash recovery only; refuses a live local owner without --force.
+node src/cli.mjs generated unlock --root .
 ```
 
 The dev shell provides Node.js 24, pnpm, Pkl, Lean via elan, Z3, TLA+, and Alloy 6.
@@ -269,8 +276,10 @@ It models the current implementation boundary:
   shape for real-app artifact reconciliation; `reverse-coverage --json`,
   `check-app-profile --json`, profile suite reports, and scaffold diff reports
   use it for observed-to-spec coverage and bundled app gates.
-- `impact --json` compares two spec models and maps changed terms/rules to
-  affected generated selectors and implementation references.
+- `impact --json` compares two spec entrypoints and maps changed
+  terms/rules/projections to affected generated selectors, implementation
+  references, owned artifact `regenerate`/`remove` actions, and the after-side
+  `dspec generate` command.
 - `spec-change compat --json` compares two spec models and classifies the
   change as `compatible`, `breaking`, `narrowing`, `widening`, or `unknown`,
   with one decision per changed term/rule/domain element.
@@ -373,16 +382,44 @@ It models the current implementation boundary:
   authorize `proved` for that selector. Lean `atom`, `and`, `or`, and quantifier
   operators remain structural, TLA+ remains textual, and Alloy remains
   unmapped.
+- the top-level `projections` entrypoint contract declares generated artifact
+  ownership next to the source model. The current `self-markdown` projection
+  expands `locales` into
+  `generated/examples/{locale}/dspec.md` with exact freshness: `generate`
+  creates missing or stale outputs and removes output-template matches for
+  undeclared locales, while `generated check` reports drift without writing.
+  Each projection also declares a `provenance` path that binds the model,
+  projection, emitter version, stable generation time, and artifact digests.
+- `generate --dry-run --json` returns the same create/update/remove/unchanged
+  plan without touching the filesystem. The planner lives in the public pure
+  `@mizchi/dspec/projection` core; the CLI applies its plan as a staged
+  transaction and rolls back already committed paths if a later commit fails.
+  A generation-root lock serializes concurrent writers and is released on both
+  success and rollback. The lock records PID, hostname, acquisition time, and
+  a private ownership token. A 15-minute lease is renewed while staging and
+  committing. `generated unlock` removes a dead local owner or an expired
+  lease; active foreign/unknown owners require an explicit `--force`.
+  Machine consumers should use `regenerateArgv` rather than parsing the
+  shell-formatted `regenerateCommand` returned by impact reports.
 - `generated/examples/ja/dspec.md` and `generated/examples/en/dspec.md` are the
-  checked-in localized Markdown review artifacts generated from
-  `examples/dspec.pkl`; each rule includes review metadata such as source path,
-  coverage mode, clause selectors, checks, and implementation refs. The
-  top-level review summary records approved-rule, automated-check,
-  implementation-ref, domain-element, and runtime-evidence counts.
+  checked-in localized Markdown review artifacts owned by that projection;
+  each rule includes review metadata such as source path, coverage mode,
+  clause selectors, checks, and implementation refs. The top-level review
+  summary records approved-rule, automated-check, implementation-ref,
+  projection, domain-element, and runtime-evidence counts.
+- `generated/examples/{ja,en}/sample-webapp-2026.md` applies the same contract
+  to the real-app dogfood model, so Projection behavior is not validated only
+  against dspec's unusually large self specification.
+- `generated/holdouts/` exercises a deeply nested single-locale layout and a
+  monorepo layout with two independent projections, preventing the planner and
+  ownership checks from specializing to the self-model path shape.
 - `generated/source-map.json` maps generated selectors back to source `Rule`,
   `Clause`, and `CheckTarget` paths.
 - `generated/manifest.json` records SHA-256 freshness hashes for primary
   generated artifacts.
+- `fixtures/reports/generate-projection.json` and
+  `fixtures/reports/generated-check-projection.json` lock the machine-readable
+  Projection materialization and freshness report contracts.
 - `normalize-counterexamples` turns generated backend failures into `Rule.id`,
   source path, generated selector, and reviewable explanation records. When
   TLA+/Alloy output contains generated selectors, the source map resolves them
@@ -410,7 +447,12 @@ project has more than one first-party model.
 
 ## Model Shape
 
-`Model` is the master record.
+Each Pkl entrypoint exposes a typed `model` and may expose a typed top-level
+`projections` listing. Keeping ownership at the entrypoint boundary means a
+module that imports and amends `base.model` derives the logical specification
+without inheriting where the base entrypoint materializes generated files.
+
+`Model` is the logical master record.
 
 - `vocabulary`: language-independent domain terms with localized labels.
 - `rules`: spec atoms such as `permission`, `prohibition`, `obligation`,
@@ -431,6 +473,15 @@ project has more than one first-party model.
 - `patterns.runtime`: optional runtime safety model with `services`,
   `dependencies`, `signals`, `runbooks`, `alerts`, `slos`, `telemetry`,
   `alertPolicies`, `runbookExecutions`, and `dependencyTraces`.
+
+The top-level `projections` listing contains typed ownership and freshness
+contracts for generated artifacts. The first supported shape is
+`kind = "markdown"`, `matrix = "locales"`, and `freshness = "exact"`;
+`output` must contain one `{locale}` placeholder and stay below the selected
+generation root. `provenance` is a required, non-templated JSON path below the
+same root and must not collide with any generated output. Repeated generation
+preserves its `generatedAt` value while all deterministic inputs are current;
+`--generated-at <iso>` exists for reproducible fixtures and first generation.
 
 Domain preset packs under `dspec/domains/` are authoring helpers over this
 shape. They do not add a separate semantics layer; they return ordinary Core IR

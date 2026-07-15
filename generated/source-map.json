@@ -2256,6 +2256,226 @@
         }
       },
       {
+        "generated": "alloy.sig.C_42_3",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_4",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_5",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 5,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_6",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 6,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_7",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 7,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_8",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 8,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_9",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 9,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_10",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 10,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_11",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 11,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_12",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 12,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[12]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_13",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 13,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[13]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_14",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 14,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[14]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_15",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 15,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[15]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_16",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 16,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[16]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_17",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 17,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[17]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_18",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 18,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[18]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_19",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 19,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[19]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_20",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 20,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[20]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_21",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 21,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[21]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_22",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 22,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[22]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_23",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 23,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[23]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_42_24",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 24,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[24]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
         "generated": "alloy.sig.R_DSPEC_MBT_BOUNDARY",
         "sortedRuleIndex": 43,
         "source": {
@@ -3329,6 +3549,26 @@
           "index": 0,
           "kind": "checkTarget",
           "path": "model.rules[56].checks[0]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_65_1",
+        "sortedRuleIndex": 65,
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[1]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_65_2",
+        "sortedRuleIndex": 65,
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[2]",
           "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
         }
       },
@@ -7607,6 +7847,204 @@
         }
       },
       {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[5]",
+        "source": {
+          "index": 5,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[6]",
+        "source": {
+          "index": 6,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[7]",
+        "source": {
+          "index": 7,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[8]",
+        "source": {
+          "index": 8,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[9]",
+        "source": {
+          "index": 9,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[10]",
+        "source": {
+          "index": 10,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[11]",
+        "source": {
+          "index": 11,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[12]",
+        "source": {
+          "index": 12,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[12]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[13]",
+        "source": {
+          "index": 13,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[13]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[14]",
+        "source": {
+          "index": 14,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[14]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[15]",
+        "source": {
+          "index": 15,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[15]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[16]",
+        "source": {
+          "index": 16,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[16]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[17]",
+        "source": {
+          "index": 17,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[17]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[18]",
+        "source": {
+          "index": 18,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[18]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[19]",
+        "source": {
+          "index": 19,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[19]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[20]",
+        "source": {
+          "index": 20,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[20]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[21]",
+        "source": {
+          "index": 21,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[21]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[22]",
+        "source": {
+          "index": 22,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[22]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[23]",
+        "source": {
+          "index": 23,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[23]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_MARKDOWN_REVIEW_ARTIFACT[24]",
+        "source": {
+          "index": 24,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[24]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
         "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[0]",
         "source": {
           "field": "must",
@@ -7633,6 +8071,96 @@
           "index": 2,
           "kind": "clause",
           "path": "model.rules[62].must[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[3]",
+        "source": {
+          "field": "must",
+          "index": 3,
+          "kind": "clause",
+          "path": "model.rules[62].must[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[4]",
+        "source": {
+          "field": "must",
+          "index": 4,
+          "kind": "clause",
+          "path": "model.rules[62].must[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[5]",
+        "source": {
+          "field": "must",
+          "index": 5,
+          "kind": "clause",
+          "path": "model.rules[62].must[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[6]",
+        "source": {
+          "field": "must",
+          "index": 6,
+          "kind": "clause",
+          "path": "model.rules[62].must[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[7]",
+        "source": {
+          "field": "must",
+          "index": 7,
+          "kind": "clause",
+          "path": "model.rules[62].must[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[8]",
+        "source": {
+          "field": "must",
+          "index": 8,
+          "kind": "clause",
+          "path": "model.rules[62].must[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[9]",
+        "source": {
+          "field": "must",
+          "index": 9,
+          "kind": "clause",
+          "path": "model.rules[62].must[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[10]",
+        "source": {
+          "field": "must",
+          "index": 10,
+          "kind": "clause",
+          "path": "model.rules[62].must[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_MARKDOWN_REVIEW_ARTIFACT.must[11]",
+        "source": {
+          "field": "must",
+          "index": 11,
+          "kind": "clause",
+          "path": "model.rules[62].must[11]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -9814,6 +10342,24 @@
         }
       },
       {
+        "generated": "lean.checks.DSPEC_SPEC_DIFF_IMPACT[1]",
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[1]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_SPEC_DIFF_IMPACT[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[2]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
         "generated": "lean.clauseExprs.DSPEC_SPEC_DIFF_IMPACT.must[0]",
         "source": {
           "field": "must",
@@ -9830,6 +10376,16 @@
           "index": 1,
           "kind": "clause",
           "path": "model.rules[56].must[1]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_SPEC_DIFF_IMPACT.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[56].must[2]",
           "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
         }
       },
@@ -10507,7 +11063,7 @@
         "generated": "markdown.term.artifact.app_profile",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[26]",
+          "path": "model.vocabulary[27]",
           "termId": "artifact.app_profile"
         }
       },
@@ -10515,7 +11071,7 @@
         "generated": "markdown.term.artifact.app_profile_scenario",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[27]",
+          "path": "model.vocabulary[28]",
           "termId": "artifact.app_profile_scenario"
         }
       },
@@ -10523,7 +11079,7 @@
         "generated": "markdown.term.artifact.app_profile_suite",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[28]",
+          "path": "model.vocabulary[29]",
           "termId": "artifact.app_profile_suite"
         }
       },
@@ -10531,7 +11087,7 @@
         "generated": "markdown.term.artifact.assurance_evidence_manifest",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[57]",
+          "path": "model.vocabulary[63]",
           "termId": "artifact.assurance_evidence_manifest"
         }
       },
@@ -10539,7 +11095,7 @@
         "generated": "markdown.term.artifact.authoring_shorthand",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[14]",
+          "path": "model.vocabulary[15]",
           "termId": "artifact.authoring_shorthand"
         }
       },
@@ -10547,7 +11103,7 @@
         "generated": "markdown.term.artifact.breaking_change_policy",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[54]",
+          "path": "model.vocabulary[55]",
           "termId": "artifact.breaking_change_policy"
         }
       },
@@ -10579,7 +11135,7 @@
         "generated": "markdown.term.artifact.cloud_topology_pattern",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[35]",
+          "path": "model.vocabulary[36]",
           "termId": "artifact.cloud_topology_pattern"
         }
       },
@@ -10587,7 +11143,7 @@
         "generated": "markdown.term.artifact.command_example",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[17]",
+          "path": "model.vocabulary[18]",
           "termId": "artifact.command_example"
         }
       },
@@ -10595,7 +11151,7 @@
         "generated": "markdown.term.artifact.command_registry",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[18]",
+          "path": "model.vocabulary[19]",
           "termId": "artifact.command_registry"
         }
       },
@@ -10603,7 +11159,7 @@
         "generated": "markdown.term.artifact.compat_report",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[51]",
+          "path": "model.vocabulary[52]",
           "termId": "artifact.compat_report"
         }
       },
@@ -10627,7 +11183,7 @@
         "generated": "markdown.term.artifact.data_governance_pattern",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[36]",
+          "path": "model.vocabulary[37]",
           "termId": "artifact.data_governance_pattern"
         }
       },
@@ -10635,7 +11191,7 @@
         "generated": "markdown.term.artifact.db_model_pattern",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[33]",
+          "path": "model.vocabulary[34]",
           "termId": "artifact.db_model_pattern"
         }
       },
@@ -10643,7 +11199,7 @@
         "generated": "markdown.term.artifact.db_schema_importer",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[34]",
+          "path": "model.vocabulary[35]",
           "termId": "artifact.db_schema_importer"
         }
       },
@@ -10651,7 +11207,7 @@
         "generated": "markdown.term.artifact.dogfood_task",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[16]",
+          "path": "model.vocabulary[17]",
           "termId": "artifact.dogfood_task"
         }
       },
@@ -10667,7 +11223,7 @@
         "generated": "markdown.term.artifact.domain_preset_pack",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[15]",
+          "path": "model.vocabulary[16]",
           "termId": "artifact.domain_preset_pack"
         }
       },
@@ -10683,7 +11239,7 @@
         "generated": "markdown.term.artifact.drift_guard_evaluation",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[31]",
+          "path": "model.vocabulary[32]",
           "termId": "artifact.drift_guard_evaluation"
         }
       },
@@ -10691,7 +11247,7 @@
         "generated": "markdown.term.artifact.evidence_quality_summary",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[32]",
+          "path": "model.vocabulary[33]",
           "termId": "artifact.evidence_quality_summary"
         }
       },
@@ -10707,7 +11263,7 @@
         "generated": "markdown.term.artifact.formal_backend",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[59]",
+          "path": "model.vocabulary[65]",
           "termId": "artifact.formal_backend"
         }
       },
@@ -10715,8 +11271,40 @@
         "generated": "markdown.term.artifact.generated_manifest",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[56]",
+          "path": "model.vocabulary[57]",
           "termId": "artifact.generated_manifest"
+        }
+      },
+      {
+        "generated": "markdown.term.artifact.generation_lease",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[62]",
+          "termId": "artifact.generation_lease"
+        }
+      },
+      {
+        "generated": "markdown.term.artifact.generation_lock",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[61]",
+          "termId": "artifact.generation_lock"
+        }
+      },
+      {
+        "generated": "markdown.term.artifact.generation_plan",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[58]",
+          "termId": "artifact.generation_plan"
+        }
+      },
+      {
+        "generated": "markdown.term.artifact.generation_transaction",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[60]",
+          "termId": "artifact.generation_transaction"
         }
       },
       {
@@ -10739,7 +11327,7 @@
         "generated": "markdown.term.artifact.impact_report",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[50]",
+          "path": "model.vocabulary[51]",
           "termId": "artifact.impact_report"
         }
       },
@@ -10747,7 +11335,7 @@
         "generated": "markdown.term.artifact.json_report",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[49]",
+          "path": "model.vocabulary[50]",
           "termId": "artifact.json_report"
         }
       },
@@ -10755,7 +11343,7 @@
         "generated": "markdown.term.artifact.markdown",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[45]",
+          "path": "model.vocabulary[46]",
           "termId": "artifact.markdown"
         }
       },
@@ -10763,7 +11351,7 @@
         "generated": "markdown.term.artifact.nix_dev_shell",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[60]",
+          "path": "model.vocabulary[66]",
           "termId": "artifact.nix_dev_shell"
         }
       },
@@ -10771,7 +11359,7 @@
         "generated": "markdown.term.artifact.observed_app_facts",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[23]",
+          "path": "model.vocabulary[24]",
           "termId": "artifact.observed_app_facts"
         }
       },
@@ -10779,7 +11367,7 @@
         "generated": "markdown.term.artifact.package_release",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[20]",
+          "path": "model.vocabulary[21]",
           "termId": "artifact.package_release"
         }
       },
@@ -10795,7 +11383,7 @@
         "generated": "markdown.term.artifact.profile_scaffold",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[29]",
+          "path": "model.vocabulary[30]",
           "termId": "artifact.profile_scaffold"
         }
       },
@@ -10803,15 +11391,31 @@
         "generated": "markdown.term.artifact.profile_scaffold_diff",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[30]",
+          "path": "model.vocabulary[31]",
           "termId": "artifact.profile_scaffold_diff"
+        }
+      },
+      {
+        "generated": "markdown.term.artifact.projection",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[14]",
+          "termId": "artifact.projection"
+        }
+      },
+      {
+        "generated": "markdown.term.artifact.projection_provenance",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[59]",
+          "termId": "artifact.projection_provenance"
         }
       },
       {
         "generated": "markdown.term.artifact.quickcheck",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[47]",
+          "path": "model.vocabulary[48]",
           "termId": "artifact.quickcheck"
         }
       },
@@ -10819,7 +11423,7 @@
         "generated": "markdown.term.artifact.real_app_importer",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[22]",
+          "path": "model.vocabulary[23]",
           "termId": "artifact.real_app_importer"
         }
       },
@@ -10827,7 +11431,7 @@
         "generated": "markdown.term.artifact.real_app_model",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[21]",
+          "path": "model.vocabulary[22]",
           "termId": "artifact.real_app_model"
         }
       },
@@ -10835,7 +11439,7 @@
         "generated": "markdown.term.artifact.reconciliation_oracle",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[24]",
+          "path": "model.vocabulary[25]",
           "termId": "artifact.reconciliation_oracle"
         }
       },
@@ -10843,7 +11447,7 @@
         "generated": "markdown.term.artifact.release_safety_pattern",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[37]",
+          "path": "model.vocabulary[38]",
           "termId": "artifact.release_safety_pattern"
         }
       },
@@ -10859,7 +11463,7 @@
         "generated": "markdown.term.artifact.report_fixture",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[55]",
+          "path": "model.vocabulary[56]",
           "termId": "artifact.report_fixture"
         }
       },
@@ -10867,7 +11471,7 @@
         "generated": "markdown.term.artifact.reverse_coverage_oracle",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[25]",
+          "path": "model.vocabulary[26]",
           "termId": "artifact.reverse_coverage_oracle"
         }
       },
@@ -10875,7 +11479,7 @@
         "generated": "markdown.term.artifact.runtime_collector_fixture",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[44]",
+          "path": "model.vocabulary[45]",
           "termId": "artifact.runtime_collector_fixture"
         }
       },
@@ -10883,7 +11487,7 @@
         "generated": "markdown.term.artifact.runtime_collector_manifest",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[43]",
+          "path": "model.vocabulary[44]",
           "termId": "artifact.runtime_collector_manifest"
         }
       },
@@ -10891,7 +11495,7 @@
         "generated": "markdown.term.artifact.runtime_evidence_collector",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[41]",
+          "path": "model.vocabulary[42]",
           "termId": "artifact.runtime_evidence_collector"
         }
       },
@@ -10899,7 +11503,7 @@
         "generated": "markdown.term.artifact.runtime_evidence_importer",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[40]",
+          "path": "model.vocabulary[41]",
           "termId": "artifact.runtime_evidence_importer"
         }
       },
@@ -10907,7 +11511,7 @@
         "generated": "markdown.term.artifact.runtime_evidence_pattern",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[39]",
+          "path": "model.vocabulary[40]",
           "termId": "artifact.runtime_evidence_pattern"
         }
       },
@@ -10915,7 +11519,7 @@
         "generated": "markdown.term.artifact.runtime_evidence_verifier",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[42]",
+          "path": "model.vocabulary[43]",
           "termId": "artifact.runtime_evidence_verifier"
         }
       },
@@ -10923,7 +11527,7 @@
         "generated": "markdown.term.artifact.runtime_safety_pattern",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[38]",
+          "path": "model.vocabulary[39]",
           "termId": "artifact.runtime_safety_pattern"
         }
       },
@@ -10939,7 +11543,7 @@
         "generated": "markdown.term.artifact.source_map",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[48]",
+          "path": "model.vocabulary[49]",
           "termId": "artifact.source_map"
         }
       },
@@ -10947,7 +11551,7 @@
         "generated": "markdown.term.artifact.spec_change_review",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[52]",
+          "path": "model.vocabulary[53]",
           "termId": "artifact.spec_change_review"
         }
       },
@@ -10955,7 +11559,7 @@
         "generated": "markdown.term.artifact.spec_change_review_scaffold",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[53]",
+          "path": "model.vocabulary[54]",
           "termId": "artifact.spec_change_review_scaffold"
         }
       },
@@ -10963,7 +11567,7 @@
         "generated": "markdown.term.artifact.spec_reading_eval",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[19]",
+          "path": "model.vocabulary[20]",
           "termId": "artifact.spec_reading_eval"
         }
       },
@@ -10971,7 +11575,7 @@
         "generated": "markdown.term.artifact.sql_query_oracle",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[46]",
+          "path": "model.vocabulary[47]",
           "termId": "artifact.sql_query_oracle"
         }
       },
@@ -10979,7 +11583,7 @@
         "generated": "markdown.term.backend.pkl",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[101]",
+          "path": "model.vocabulary[107]",
           "termId": "backend.pkl"
         }
       },
@@ -10987,7 +11591,7 @@
         "generated": "markdown.term.backend.pkl_mbt",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[102]",
+          "path": "model.vocabulary[108]",
           "termId": "backend.pkl_mbt"
         }
       },
@@ -10995,7 +11599,7 @@
         "generated": "markdown.term.concept.clause_backend_support",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[58]",
+          "path": "model.vocabulary[64]",
           "termId": "concept.clause_backend_support"
         }
       },
@@ -11003,7 +11607,7 @@
         "generated": "markdown.term.concept.clause_expr",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[65]",
+          "path": "model.vocabulary[71]",
           "termId": "concept.clause_expr"
         }
       },
@@ -11011,7 +11615,7 @@
         "generated": "markdown.term.concept.cloud_flow",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[72]",
+          "path": "model.vocabulary[78]",
           "termId": "concept.cloud_flow"
         }
       },
@@ -11019,7 +11623,7 @@
         "generated": "markdown.term.concept.cloud_node",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[71]",
+          "path": "model.vocabulary[77]",
           "termId": "concept.cloud_node"
         }
       },
@@ -11027,7 +11631,7 @@
         "generated": "markdown.term.concept.cloud_policy",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[73]",
+          "path": "model.vocabulary[79]",
           "termId": "concept.cloud_policy"
         }
       },
@@ -11035,7 +11639,7 @@
         "generated": "markdown.term.concept.cloud_zone",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[74]",
+          "path": "model.vocabulary[80]",
           "termId": "concept.cloud_zone"
         }
       },
@@ -11043,7 +11647,7 @@
         "generated": "markdown.term.concept.data_flow",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[79]",
+          "path": "model.vocabulary[85]",
           "termId": "concept.data_flow"
         }
       },
@@ -11051,7 +11655,7 @@
         "generated": "markdown.term.concept.data_placement",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[78]",
+          "path": "model.vocabulary[84]",
           "termId": "concept.data_placement"
         }
       },
@@ -11059,7 +11663,7 @@
         "generated": "markdown.term.concept.data_policy",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[75]",
+          "path": "model.vocabulary[81]",
           "termId": "concept.data_policy"
         }
       },
@@ -11067,7 +11671,7 @@
         "generated": "markdown.term.concept.data_set",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[76]",
+          "path": "model.vocabulary[82]",
           "termId": "concept.data_set"
         }
       },
@@ -11075,7 +11679,7 @@
         "generated": "markdown.term.concept.data_store",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[77]",
+          "path": "model.vocabulary[83]",
           "termId": "concept.data_store"
         }
       },
@@ -11083,7 +11687,7 @@
         "generated": "markdown.term.concept.db_invariant",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[67]",
+          "path": "model.vocabulary[73]",
           "termId": "concept.db_invariant"
         }
       },
@@ -11091,7 +11695,7 @@
         "generated": "markdown.term.concept.db_mapping",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[70]",
+          "path": "model.vocabulary[76]",
           "termId": "concept.db_mapping"
         }
       },
@@ -11099,7 +11703,7 @@
         "generated": "markdown.term.concept.db_migration",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[69]",
+          "path": "model.vocabulary[75]",
           "termId": "concept.db_migration"
         }
       },
@@ -11107,7 +11711,7 @@
         "generated": "markdown.term.concept.db_transaction",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[68]",
+          "path": "model.vocabulary[74]",
           "termId": "concept.db_transaction"
         }
       },
@@ -11115,7 +11719,7 @@
         "generated": "markdown.term.concept.expr_ast",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[66]",
+          "path": "model.vocabulary[72]",
           "termId": "concept.expr_ast"
         }
       },
@@ -11123,7 +11727,7 @@
         "generated": "markdown.term.concept.inferon",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[99]",
+          "path": "model.vocabulary[105]",
           "termId": "concept.inferon"
         }
       },
@@ -11131,7 +11735,7 @@
         "generated": "markdown.term.concept.localized_text",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[62]",
+          "path": "model.vocabulary[68]",
           "termId": "concept.localized_text"
         }
       },
@@ -11139,7 +11743,7 @@
         "generated": "markdown.term.concept.release_environment",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[81]",
+          "path": "model.vocabulary[87]",
           "termId": "concept.release_environment"
         }
       },
@@ -11147,7 +11751,7 @@
         "generated": "markdown.term.concept.release_gate",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[82]",
+          "path": "model.vocabulary[88]",
           "termId": "concept.release_gate"
         }
       },
@@ -11155,7 +11759,7 @@
         "generated": "markdown.term.concept.release_migration",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[84]",
+          "path": "model.vocabulary[90]",
           "termId": "concept.release_migration"
         }
       },
@@ -11163,7 +11767,7 @@
         "generated": "markdown.term.concept.release_rollback",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[83]",
+          "path": "model.vocabulary[89]",
           "termId": "concept.release_rollback"
         }
       },
@@ -11171,7 +11775,7 @@
         "generated": "markdown.term.concept.release_service",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[80]",
+          "path": "model.vocabulary[86]",
           "termId": "concept.release_service"
         }
       },
@@ -11179,7 +11783,7 @@
         "generated": "markdown.term.concept.release_step",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[85]",
+          "path": "model.vocabulary[91]",
           "termId": "concept.release_step"
         }
       },
@@ -11187,7 +11791,7 @@
         "generated": "markdown.term.concept.rule",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[63]",
+          "path": "model.vocabulary[69]",
           "termId": "concept.rule"
         }
       },
@@ -11195,7 +11799,7 @@
         "generated": "markdown.term.concept.runtime_alert",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[90]",
+          "path": "model.vocabulary[96]",
           "termId": "concept.runtime_alert"
         }
       },
@@ -11203,7 +11807,7 @@
         "generated": "markdown.term.concept.runtime_alert_policy",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[93]",
+          "path": "model.vocabulary[99]",
           "termId": "concept.runtime_alert_policy"
         }
       },
@@ -11211,7 +11815,7 @@
         "generated": "markdown.term.concept.runtime_dependency",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[87]",
+          "path": "model.vocabulary[93]",
           "termId": "concept.runtime_dependency"
         }
       },
@@ -11219,7 +11823,7 @@
         "generated": "markdown.term.concept.runtime_dependency_trace",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[95]",
+          "path": "model.vocabulary[101]",
           "termId": "concept.runtime_dependency_trace"
         }
       },
@@ -11227,7 +11831,7 @@
         "generated": "markdown.term.concept.runtime_evidence_collection",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[97]",
+          "path": "model.vocabulary[103]",
           "termId": "concept.runtime_evidence_collection"
         }
       },
@@ -11235,7 +11839,7 @@
         "generated": "markdown.term.concept.runtime_evidence_import",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[96]",
+          "path": "model.vocabulary[102]",
           "termId": "concept.runtime_evidence_import"
         }
       },
@@ -11243,7 +11847,7 @@
         "generated": "markdown.term.concept.runtime_runbook",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[89]",
+          "path": "model.vocabulary[95]",
           "termId": "concept.runtime_runbook"
         }
       },
@@ -11251,7 +11855,7 @@
         "generated": "markdown.term.concept.runtime_runbook_execution",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[94]",
+          "path": "model.vocabulary[100]",
           "termId": "concept.runtime_runbook_execution"
         }
       },
@@ -11259,7 +11863,7 @@
         "generated": "markdown.term.concept.runtime_service",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[86]",
+          "path": "model.vocabulary[92]",
           "termId": "concept.runtime_service"
         }
       },
@@ -11267,7 +11871,7 @@
         "generated": "markdown.term.concept.runtime_signal",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[88]",
+          "path": "model.vocabulary[94]",
           "termId": "concept.runtime_signal"
         }
       },
@@ -11275,7 +11879,7 @@
         "generated": "markdown.term.concept.runtime_slo",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[91]",
+          "path": "model.vocabulary[97]",
           "termId": "concept.runtime_slo"
         }
       },
@@ -11283,7 +11887,7 @@
         "generated": "markdown.term.concept.runtime_telemetry",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[92]",
+          "path": "model.vocabulary[98]",
           "termId": "concept.runtime_telemetry"
         }
       },
@@ -11291,7 +11895,7 @@
         "generated": "markdown.term.concept.stable_id",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[61]",
+          "path": "model.vocabulary[67]",
           "termId": "concept.stable_id"
         }
       },
@@ -11299,7 +11903,7 @@
         "generated": "markdown.term.concept.support",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[100]",
+          "path": "model.vocabulary[106]",
           "termId": "concept.support"
         }
       },
@@ -11307,7 +11911,7 @@
         "generated": "markdown.term.concept.term",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[64]",
+          "path": "model.vocabulary[70]",
           "termId": "concept.term"
         }
       },
@@ -11315,8 +11919,17 @@
         "generated": "markdown.term.concept.verification_target",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[98]",
+          "path": "model.vocabulary[104]",
           "termId": "concept.verification_target"
+        }
+      },
+      {
+        "generated": "markdown.projection.self-markdown",
+        "locale": "ja",
+        "source": {
+          "kind": "projection",
+          "path": "projections[0]",
+          "projectionId": "self-markdown"
         }
       },
       {
@@ -17755,6 +18368,96 @@
         }
       },
       {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[3]",
+        "source": {
+          "field": "must",
+          "index": 3,
+          "kind": "clause",
+          "path": "model.rules[62].must[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[4]",
+        "source": {
+          "field": "must",
+          "index": 4,
+          "kind": "clause",
+          "path": "model.rules[62].must[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[5]",
+        "source": {
+          "field": "must",
+          "index": 5,
+          "kind": "clause",
+          "path": "model.rules[62].must[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[6]",
+        "source": {
+          "field": "must",
+          "index": 6,
+          "kind": "clause",
+          "path": "model.rules[62].must[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[7]",
+        "source": {
+          "field": "must",
+          "index": 7,
+          "kind": "clause",
+          "path": "model.rules[62].must[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[8]",
+        "source": {
+          "field": "must",
+          "index": 8,
+          "kind": "clause",
+          "path": "model.rules[62].must[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[9]",
+        "source": {
+          "field": "must",
+          "index": 9,
+          "kind": "clause",
+          "path": "model.rules[62].must[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[10]",
+        "source": {
+          "field": "must",
+          "index": 10,
+          "kind": "clause",
+          "path": "model.rules[62].must[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[11]",
+        "source": {
+          "field": "must",
+          "index": 11,
+          "kind": "clause",
+          "path": "model.rules[62].must[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
         "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[0]",
         "source": {
           "index": 0,
@@ -17778,6 +18481,204 @@
           "index": 2,
           "kind": "checkTarget",
           "path": "model.rules[62].checks[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[5]",
+        "source": {
+          "index": 5,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[6]",
+        "source": {
+          "index": 6,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[7]",
+        "source": {
+          "index": 7,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[8]",
+        "source": {
+          "index": 8,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[9]",
+        "source": {
+          "index": 9,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[10]",
+        "source": {
+          "index": 10,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[11]",
+        "source": {
+          "index": 11,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[12]",
+        "source": {
+          "index": 12,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[12]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[13]",
+        "source": {
+          "index": 13,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[13]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[14]",
+        "source": {
+          "index": 14,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[14]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[15]",
+        "source": {
+          "index": 15,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[15]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[16]",
+        "source": {
+          "index": 16,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[16]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[17]",
+        "source": {
+          "index": 17,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[17]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[18]",
+        "source": {
+          "index": 18,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[18]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[19]",
+        "source": {
+          "index": 19,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[19]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[20]",
+        "source": {
+          "index": 20,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[20]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[21]",
+        "source": {
+          "index": 21,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[21]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[22]",
+        "source": {
+          "index": 22,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[22]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[23]",
+        "source": {
+          "index": 23,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[23]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[24]",
+        "source": {
+          "index": 24,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[24]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -17823,6 +18724,240 @@
           "index": 4,
           "kind": "implementationRef",
           "path": "model.rules[62].implementedBy[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[5]",
+        "source": {
+          "index": 5,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[6]",
+        "source": {
+          "index": 6,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[7]",
+        "source": {
+          "index": 7,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[8]",
+        "source": {
+          "index": 8,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[9]",
+        "source": {
+          "index": 9,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[10]",
+        "source": {
+          "index": 10,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[11]",
+        "source": {
+          "index": 11,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[12]",
+        "source": {
+          "index": 12,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[12]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[13]",
+        "source": {
+          "index": 13,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[13]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[14]",
+        "source": {
+          "index": 14,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[14]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[15]",
+        "source": {
+          "index": 15,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[15]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[16]",
+        "source": {
+          "index": 16,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[16]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[17]",
+        "source": {
+          "index": 17,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[17]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[18]",
+        "source": {
+          "index": 18,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[18]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[19]",
+        "source": {
+          "index": 19,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[19]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[20]",
+        "source": {
+          "index": 20,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[20]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[21]",
+        "source": {
+          "index": 21,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[21]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[22]",
+        "source": {
+          "index": 22,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[22]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[23]",
+        "source": {
+          "index": 23,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[23]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[24]",
+        "source": {
+          "index": 24,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[24]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[25]",
+        "source": {
+          "index": 25,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[25]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[26]",
+        "source": {
+          "index": 26,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[26]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[27]",
+        "source": {
+          "index": 27,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[27]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[28]",
+        "source": {
+          "index": 28,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[28]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[29]",
+        "source": {
+          "index": 29,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[29]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[30]",
+        "source": {
+          "index": 30,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[30]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -21651,11 +22786,39 @@
         }
       },
       {
+        "generated": "markdown.rule.DSPEC-SPEC-DIFF-IMPACT.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[56].must[2]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
         "generated": "markdown.rule.DSPEC-SPEC-DIFF-IMPACT.checks[0]",
         "source": {
           "index": 0,
           "kind": "checkTarget",
           "path": "model.rules[56].checks[0]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-SPEC-DIFF-IMPACT.checks[1]",
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[1]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-SPEC-DIFF-IMPACT.checks[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[2]",
           "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
         }
       },
@@ -21710,6 +22873,42 @@
           "index": 5,
           "kind": "implementationRef",
           "path": "model.rules[56].implementedBy[5]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-SPEC-DIFF-IMPACT.implementedBy[6]",
+        "source": {
+          "index": 6,
+          "kind": "implementationRef",
+          "path": "model.rules[56].implementedBy[6]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-SPEC-DIFF-IMPACT.implementedBy[7]",
+        "source": {
+          "index": 7,
+          "kind": "implementationRef",
+          "path": "model.rules[56].implementedBy[7]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-SPEC-DIFF-IMPACT.implementedBy[8]",
+        "source": {
+          "index": 8,
+          "kind": "implementationRef",
+          "path": "model.rules[56].implementedBy[8]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-SPEC-DIFF-IMPACT.implementedBy[9]",
+        "source": {
+          "index": 9,
+          "kind": "implementationRef",
+          "path": "model.rules[56].implementedBy[9]",
           "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
         }
       },
@@ -29213,6 +30412,96 @@
         }
       },
       {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[3]",
+        "source": {
+          "field": "must",
+          "index": 3,
+          "kind": "clause",
+          "path": "model.rules[62].must[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[4]",
+        "source": {
+          "field": "must",
+          "index": 4,
+          "kind": "clause",
+          "path": "model.rules[62].must[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[5]",
+        "source": {
+          "field": "must",
+          "index": 5,
+          "kind": "clause",
+          "path": "model.rules[62].must[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[6]",
+        "source": {
+          "field": "must",
+          "index": 6,
+          "kind": "clause",
+          "path": "model.rules[62].must[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[7]",
+        "source": {
+          "field": "must",
+          "index": 7,
+          "kind": "clause",
+          "path": "model.rules[62].must[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[8]",
+        "source": {
+          "field": "must",
+          "index": 8,
+          "kind": "clause",
+          "path": "model.rules[62].must[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[9]",
+        "source": {
+          "field": "must",
+          "index": 9,
+          "kind": "clause",
+          "path": "model.rules[62].must[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[10]",
+        "source": {
+          "field": "must",
+          "index": 10,
+          "kind": "clause",
+          "path": "model.rules[62].must[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.must[11]",
+        "source": {
+          "field": "must",
+          "index": 11,
+          "kind": "clause",
+          "path": "model.rules[62].must[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
         "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[0]",
         "source": {
           "index": 0,
@@ -29236,6 +30525,204 @@
           "index": 2,
           "kind": "checkTarget",
           "path": "model.rules[62].checks[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[5]",
+        "source": {
+          "index": 5,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[6]",
+        "source": {
+          "index": 6,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[7]",
+        "source": {
+          "index": 7,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[8]",
+        "source": {
+          "index": 8,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[9]",
+        "source": {
+          "index": 9,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[10]",
+        "source": {
+          "index": 10,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[11]",
+        "source": {
+          "index": 11,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[12]",
+        "source": {
+          "index": 12,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[12]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[13]",
+        "source": {
+          "index": 13,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[13]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[14]",
+        "source": {
+          "index": 14,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[14]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[15]",
+        "source": {
+          "index": 15,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[15]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[16]",
+        "source": {
+          "index": 16,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[16]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[17]",
+        "source": {
+          "index": 17,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[17]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[18]",
+        "source": {
+          "index": 18,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[18]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[19]",
+        "source": {
+          "index": 19,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[19]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[20]",
+        "source": {
+          "index": 20,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[20]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[21]",
+        "source": {
+          "index": 21,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[21]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[22]",
+        "source": {
+          "index": 22,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[22]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[23]",
+        "source": {
+          "index": 23,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[23]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.checks[24]",
+        "source": {
+          "index": 24,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[24]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -29281,6 +30768,240 @@
           "index": 4,
           "kind": "implementationRef",
           "path": "model.rules[62].implementedBy[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[5]",
+        "source": {
+          "index": 5,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[6]",
+        "source": {
+          "index": 6,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[7]",
+        "source": {
+          "index": 7,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[8]",
+        "source": {
+          "index": 8,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[9]",
+        "source": {
+          "index": 9,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[10]",
+        "source": {
+          "index": 10,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[11]",
+        "source": {
+          "index": 11,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[12]",
+        "source": {
+          "index": 12,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[12]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[13]",
+        "source": {
+          "index": 13,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[13]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[14]",
+        "source": {
+          "index": 14,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[14]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[15]",
+        "source": {
+          "index": 15,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[15]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[16]",
+        "source": {
+          "index": 16,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[16]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[17]",
+        "source": {
+          "index": 17,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[17]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[18]",
+        "source": {
+          "index": 18,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[18]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[19]",
+        "source": {
+          "index": 19,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[19]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[20]",
+        "source": {
+          "index": 20,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[20]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[21]",
+        "source": {
+          "index": 21,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[21]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[22]",
+        "source": {
+          "index": 22,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[22]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[23]",
+        "source": {
+          "index": 23,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[23]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[24]",
+        "source": {
+          "index": 24,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[24]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[25]",
+        "source": {
+          "index": 25,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[25]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[26]",
+        "source": {
+          "index": 26,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[26]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[27]",
+        "source": {
+          "index": 27,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[27]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[28]",
+        "source": {
+          "index": 28,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[28]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[29]",
+        "source": {
+          "index": 29,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[29]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-MARKDOWN-REVIEW-ARTIFACT.implementedBy[30]",
+        "source": {
+          "index": 30,
+          "kind": "implementationRef",
+          "path": "model.rules[62].implementedBy[30]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -33109,11 +34830,39 @@
         }
       },
       {
+        "generated": "quickcheck.rules.DSPEC-SPEC-DIFF-IMPACT.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[56].must[2]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
         "generated": "quickcheck.rules.DSPEC-SPEC-DIFF-IMPACT.checks[0]",
         "source": {
           "index": 0,
           "kind": "checkTarget",
           "path": "model.rules[56].checks[0]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-SPEC-DIFF-IMPACT.checks[1]",
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[1]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-SPEC-DIFF-IMPACT.checks[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[2]",
           "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
         }
       },
@@ -33168,6 +34917,42 @@
           "index": 5,
           "kind": "implementationRef",
           "path": "model.rules[56].implementedBy[5]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-SPEC-DIFF-IMPACT.implementedBy[6]",
+        "source": {
+          "index": 6,
+          "kind": "implementationRef",
+          "path": "model.rules[56].implementedBy[6]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-SPEC-DIFF-IMPACT.implementedBy[7]",
+        "source": {
+          "index": 7,
+          "kind": "implementationRef",
+          "path": "model.rules[56].implementedBy[7]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-SPEC-DIFF-IMPACT.implementedBy[8]",
+        "source": {
+          "index": 8,
+          "kind": "implementationRef",
+          "path": "model.rules[56].implementedBy[8]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-SPEC-DIFF-IMPACT.implementedBy[9]",
+        "source": {
+          "index": 9,
+          "kind": "implementationRef",
+          "path": "model.rules[56].implementedBy[9]",
           "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
         }
       },
@@ -38727,6 +40512,204 @@
         }
       },
       {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][5]",
+        "source": {
+          "index": 5,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][6]",
+        "source": {
+          "index": 6,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][7]",
+        "source": {
+          "index": 7,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][8]",
+        "source": {
+          "index": 8,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][9]",
+        "source": {
+          "index": 9,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][10]",
+        "source": {
+          "index": 10,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][11]",
+        "source": {
+          "index": 11,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[11]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][12]",
+        "source": {
+          "index": 12,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[12]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][13]",
+        "source": {
+          "index": 13,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[13]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][14]",
+        "source": {
+          "index": 14,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[14]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][15]",
+        "source": {
+          "index": 15,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[15]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][16]",
+        "source": {
+          "index": 16,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[16]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][17]",
+        "source": {
+          "index": 17,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[17]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][18]",
+        "source": {
+          "index": 18,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[18]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][19]",
+        "source": {
+          "index": 19,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[19]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][20]",
+        "source": {
+          "index": 20,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[20]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][21]",
+        "source": {
+          "index": 21,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[21]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][22]",
+        "source": {
+          "index": 22,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[22]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][23]",
+        "source": {
+          "index": 23,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[23]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-MARKDOWN-REVIEW-ARTIFACT][24]",
+        "source": {
+          "index": 24,
+          "kind": "checkTarget",
+          "path": "model.rules[62].checks[24]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
         "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[0]",
         "source": {
           "field": "must",
@@ -38753,6 +40736,96 @@
           "index": 2,
           "kind": "clause",
           "path": "model.rules[62].must[2]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[3]",
+        "source": {
+          "field": "must",
+          "index": 3,
+          "kind": "clause",
+          "path": "model.rules[62].must[3]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[4]",
+        "source": {
+          "field": "must",
+          "index": 4,
+          "kind": "clause",
+          "path": "model.rules[62].must[4]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[5]",
+        "source": {
+          "field": "must",
+          "index": 5,
+          "kind": "clause",
+          "path": "model.rules[62].must[5]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[6]",
+        "source": {
+          "field": "must",
+          "index": 6,
+          "kind": "clause",
+          "path": "model.rules[62].must[6]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[7]",
+        "source": {
+          "field": "must",
+          "index": 7,
+          "kind": "clause",
+          "path": "model.rules[62].must[7]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[8]",
+        "source": {
+          "field": "must",
+          "index": 8,
+          "kind": "clause",
+          "path": "model.rules[62].must[8]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[9]",
+        "source": {
+          "field": "must",
+          "index": 9,
+          "kind": "clause",
+          "path": "model.rules[62].must[9]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[10]",
+        "source": {
+          "field": "must",
+          "index": 10,
+          "kind": "clause",
+          "path": "model.rules[62].must[10]",
+          "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-MARKDOWN-REVIEW-ARTIFACT].must[11]",
+        "source": {
+          "field": "must",
+          "index": 11,
+          "kind": "clause",
+          "path": "model.rules[62].must[11]",
           "ruleId": "DSPEC-MARKDOWN-REVIEW-ARTIFACT"
         }
       },
@@ -40934,6 +43007,24 @@
         }
       },
       {
+        "generated": "tla.Checks[DSPEC-SPEC-DIFF-IMPACT][1]",
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[1]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-SPEC-DIFF-IMPACT][2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[56].checks[2]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
         "generated": "tla.RuleClauses[DSPEC-SPEC-DIFF-IMPACT].must[0]",
         "source": {
           "field": "must",
@@ -40950,6 +43041,16 @@
           "index": 1,
           "kind": "clause",
           "path": "model.rules[56].must[1]",
+          "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-SPEC-DIFF-IMPACT].must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[56].must[2]",
           "ruleId": "DSPEC-SPEC-DIFF-IMPACT"
         }
       },

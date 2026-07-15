@@ -1,9 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
-import { tmpdir } from "node:os";
+import { hostname, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -2410,7 +2410,7 @@ profile: d.AppProfile = new {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: dspec-self/);
-    assert.match(result.stdout, /103 terms, 71 rules/);
+    assert.match(result.stdout, /109 terms, 71 rules/);
   });
 
   it("emits check JSON reports", () => {
@@ -2420,7 +2420,8 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.summary.terms, 103);
+    assert.equal(report.summary.terms, 109);
+    assert.equal(report.summary.projections, 1);
     assert.equal(report.summary.rules, 71);
     assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
     assert.equal(report.assurance.targets.byKind.executed, 4);
@@ -2482,8 +2483,12 @@ profile: d.AppProfile = new {
     assert.match(result.stdout, /- approvedRules: `\d+`/);
     assert.match(result.stdout, /- automatedCheckTargets: `\d+`/);
     assert.match(result.stdout, /- implementationRefs: `\d+`/);
+    assert.match(result.stdout, /- projections: `1`/);
     assert.match(result.stdout, /- domainElements: `\d+`/);
     assert.match(result.stdout, /- runtimeEvidenceRecords: `\d+`/);
+    assert.match(result.stdout, /## Projections/);
+    assert.match(result.stdout, /### self-markdown/);
+    assert.match(result.stdout, /- output: `generated\/examples\/\{locale\}\/dspec\.md`/);
     assert.match(result.stdout, /### DSPEC-EMIT-MARKDOWN/);
     assert.match(result.stdout, /- status: approved/);
     assert.match(result.stdout, /- check: node test\/cli\.test\.mjs#emits deterministic markdown/);
@@ -2564,6 +2569,35 @@ profile: d.AppProfile = new {
     assert.deepEqual(report.model.after, { id: "impact-fixture", version: "0.1.1" });
     assert.deepEqual(report.changed.terms, [{ id: "action.view", change: "modified" }]);
     assert.deepEqual(report.changed.rules, [{ id: "IMPACT-AUDIT", change: "added" }]);
+    assert.deepEqual(report.changed.projections, []);
+    assert.deepEqual(report.projectionImpact.regenerateArgv, ["dspec", "generate", "fixtures/impact-after.pkl"]);
+    assert.equal(report.projectionImpact.regenerateCommand, "dspec generate fixtures/impact-after.pkl");
+    assert.deepEqual(
+      report.projectionImpact.artifacts,
+      [
+        {
+          action: "regenerate",
+          kind: "markdown",
+          locale: "en",
+          path: "generated/impact/en/impact.md",
+          projectionId: "impact-markdown",
+        },
+        {
+          action: "regenerate",
+          kind: "provenance",
+          locale: null,
+          path: "generated/impact/impact.provenance.json",
+          projectionId: "impact-markdown",
+        },
+        {
+          action: "regenerate",
+          kind: "markdown",
+          locale: "ja",
+          path: "generated/impact/ja/impact.md",
+          projectionId: "impact-markdown",
+        },
+      ],
+    );
 
     const termImpact = report.impacts.find((impact) => impact.kind === "term" && impact.id === "action.view");
     assert.ok(termImpact);
@@ -2583,6 +2617,31 @@ profile: d.AppProfile = new {
       ["impact", "--json", "fixtures/impact-before.pkl", "fixtures/impact-after.pkl"],
       "fixtures/reports/impact.json",
     );
+  });
+
+  it("reports removed and regenerated artifacts for projection path changes", () => {
+    const result = run([
+      "impact",
+      "--json",
+      "fixtures/impact-before.pkl",
+      "fixtures/impact-projection-after.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(report.changed.projections, [{ id: "impact-markdown", change: "modified" }]);
+    assert.ok(report.projectionImpact.artifacts.some(
+      (artifact) => artifact.action === "remove" && artifact.path === "generated/impact/en/impact.md",
+    ));
+    assert.ok(report.projectionImpact.artifacts.some(
+      (artifact) => artifact.action === "regenerate" && artifact.path === "generated/impact-v2/en/impact.md",
+    ));
+    assert.deepEqual(report.projectionImpact.regenerateArgv, [
+      "dspec",
+      "generate",
+      "fixtures/impact-projection-after.pkl",
+    ]);
+    assert.equal(report.projectionImpact.regenerateCommand, "dspec generate fixtures/impact-projection-after.pkl");
   });
 
   it("classifies spec compatibility changes", () => {
@@ -2683,6 +2742,22 @@ profile: d.AppProfile = new {
     assert.equal(report.status, "pass");
     assert.equal(report.review.id, "spec-change-review-narrowing");
     assert.equal(report.classification, "narrowing");
+  });
+
+  it("reports portable projection actions through spec-change review", () => {
+    const reviewFile = join(root, "fixtures", "spec-change-review-projection.pkl");
+    const result = spawnSync(process.execPath, [cli, "spec-change", "review", "--json", reviewFile], {
+      cwd: tmpdir(),
+      encoding: "utf8",
+    });
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    const impact = report.steps.find((step) => step.id === "impact");
+    assert.ok(impact);
+    assert.equal(impact.projectionArtifacts, 6);
+    assert.deepEqual(impact.regenerateArgv, ["dspec", "generate", "fixtures/impact-projection-after.pkl"]);
+    assert.equal(impact.regenerateCommand, "dspec generate fixtures/impact-projection-after.pkl");
   });
 
   it("renders a spec change procedure for review", () => {
@@ -3148,42 +3223,309 @@ profile: d.AppProfile = new {
     }
   });
 
-  it("keeps localized generated markdown review artifacts in sync", () => {
-    const emittedModel = run(["emit", "json", "examples/dspec.pkl"]);
-    assert.equal(emittedModel.status, 0, emittedModel.stderr);
-    const locales = JSON.parse(emittedModel.stdout).model.locales.toSorted();
-    const generatedLocales = readdirSync(join(root, "generated", "examples")).toSorted();
-    assert.deepEqual(generatedLocales, locales);
+  it("accepts localized generated projection contracts", () => {
+    const result = run(["check", "fixtures/projection-model.pkl"]);
+    const sourceMapResult = run(["emit", "source-map", "fixtures/projection-model.pkl"]);
 
-    for (const locale of locales) {
-      const emitted = run(["emit", "markdown", "--locale", locale, "examples/dspec.pkl"]);
-      const artifact = readFileSync(join(root, "generated", "examples", locale, "dspec.md"), "utf8");
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(sourceMapResult.status, 0, sourceMapResult.stderr);
+    const sourceMap = JSON.parse(sourceMapResult.stdout);
+    assert.ok(sourceMap.artifacts.markdown.some(
+      (entry) => entry.generated === "markdown.projection.localized-markdown"
+        && entry.source.path === "projections[0]",
+    ));
+  });
 
-      assert.equal(emitted.status, 0, emitted.stderr);
-      assert.equal(artifact, emitted.stdout);
+  it("does not inherit entrypoint projection ownership through model amendments", () => {
+    const checked = run(["check", "--json", "fixtures/projection-derived-model.pkl"]);
+    const generated = run(["generated", "check", "--json", "fixtures/projection-derived-model.pkl"]);
+
+    assert.equal(checked.status, 0, checked.stderr);
+    assert.equal(JSON.parse(checked.stdout).summary.projections, 0);
+    assert.equal(generated.status, 0, generated.stderr);
+    assert.equal(JSON.parse(generated.stdout).summary.projections, 0);
+  });
+
+  it("generates and checks localized projection artifacts", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-"));
+    const generatedPath = join(dir, "generated", "projection");
+    try {
+      const generated = run(["generate", "--json", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.equal(generated.status, 0, generated.stderr);
+      const generatedReport = JSON.parse(generated.stdout);
+      assert.equal(generatedReport.status, "pass");
+      assert.equal(generatedReport.summary.artifacts, 2);
+      assert.equal(generatedReport.projections[0].source, "self");
+      assert.deepEqual(readdirSync(generatedPath).toSorted(), ["en", "ja", "projection-model.provenance.json"]);
+
+      const checked = run(["generated", "check", "--json", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.equal(checked.status, 0, checked.stderr);
+      assert.equal(JSON.parse(checked.stdout).status, "pass");
+
+      rmSync(join(generatedPath, "en", "projection-model.md"));
+      const missing = run(["generated", "check", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.notEqual(missing.status, 0);
+      assert.match(missing.stderr, /missing generated artifact: localized-markdown -> generated\/projection\/en\/projection-model\.md/);
+      assert.equal(run(["generate", "--root", dir, "fixtures/projection-model.pkl"]).status, 0);
+
+      writeFileSync(join(generatedPath, "en", "projection-model.md"), "stale\n");
+      const stale = run(["generated", "check", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.notEqual(stale.status, 0);
+      assert.match(stale.stderr, /stale generated artifact: localized-markdown -> generated\/projection\/en\/projection-model\.md/);
+
+      mkdirSync(join(generatedPath, "fr"), { recursive: true });
+      writeFileSync(join(generatedPath, "fr", "projection-model.md"), "extra\n");
+      const extra = run(["generated", "check", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.notEqual(extra.status, 0);
+      assert.match(extra.stderr, /unexpected generated artifact: localized-markdown -> generated\/projection\/fr\/projection-model\.md/);
+
+      const repaired = run(["generate", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.equal(repaired.status, 0, repaired.stderr);
+      assert.deepEqual(readdirSync(generatedPath).toSorted(), ["en", "ja", "projection-model.provenance.json"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 
-  it("generates markdown for every declared dspec locale", () => {
-    const dir = mkdtempSync(join(tmpdir(), "dspec-localized-markdown-"));
-    const output = join(dir, "examples");
+  it("previews Projection generation without writing", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-preview-"));
     try {
-      const generated = spawnSync(
-        process.execPath,
-        [join(root, "scripts", "generate-localized-markdown.mjs"), "examples/dspec.pkl", output],
-        { cwd: root, encoding: "utf8" },
-      );
-      const emittedModel = run(["emit", "json", "examples/dspec.pkl"]);
-      const locales = JSON.parse(emittedModel.stdout).model.locales.toSorted();
+      const result = run([
+        "generate",
+        "--dry-run",
+        "--json",
+        "--generated-at",
+        "2026-07-15T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
 
-      assert.equal(generated.status, 0, generated.stderr);
-      assert.deepEqual(readdirSync(output).toSorted(), locales);
-      for (const locale of locales) {
-        const emitted = run(["emit", "markdown", "--locale", locale, "examples/dspec.pkl"]);
-        assert.equal(readFileSync(join(output, locale, "dspec.md"), "utf8"), emitted.stdout);
-      }
+      assert.equal(result.status, 0, result.stderr);
+      const report = JSON.parse(result.stdout);
+      assert.equal(report.dryRun, true);
+      assert.equal(report.transaction.status, "preview");
+      assert.deepEqual(report.summary.actions, { create: 3, remove: 0, unchanged: 0, update: 0 });
+      assert.equal(existsSync(join(dir, "generated")), false);
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects invalid Projection generation timestamps as command errors", () => {
+    const result = run([
+      "generate",
+      "--dry-run",
+      "--generated-at",
+      "not-an-iso-timestamp",
+      "fixtures/projection-model.pkl",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /invalid --generated-at: not-an-iso-timestamp/);
+    assert.doesNotMatch(result.stderr, /TypeError|\n\s+at /);
+  });
+
+  it("writes and checks Projection provenance without changing its stable generation time", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-provenance-"));
+    const provenancePath = join(dir, "generated", "projection", "projection-model.provenance.json");
+    try {
+      const first = run([
+        "generate",
+        "--json",
+        "--generated-at",
+        "2026-07-15T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+      assert.equal(first.status, 0, first.stderr);
+      const provenance = JSON.parse(readFileSync(provenancePath, "utf8"));
+      assert.equal(provenance.schemaVersion, "1.0");
+      assert.equal(provenance.generatedAt, "2026-07-15T00:00:00.000Z");
+      assert.equal(provenance.projection.id, "localized-markdown");
+      assert.match(provenance.model.digest, /^sha256:[a-f0-9]{64}$/);
+      assert.deepEqual(provenance.emitter, { name: "dspec/markdown", version: "1.0" });
+
+      const repeated = run([
+        "generate",
+        "--json",
+        "--generated-at",
+        "2027-01-01T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+      assert.equal(repeated.status, 0, repeated.stderr);
+      assert.equal(JSON.parse(repeated.stdout).changed, 0);
+      assert.equal(JSON.parse(readFileSync(provenancePath, "utf8")).generatedAt, "2026-07-15T00:00:00.000Z");
+
+      writeFileSync(provenancePath, "{}\n");
+      const stale = run(["generated", "check", "--root", dir, "fixtures/projection-model.pkl"]);
+      assert.notEqual(stale.status, 0);
+      assert.match(stale.stderr, /stale projection provenance: localized-markdown/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("recovers stale Projection generation locks without overriding live owners", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-unlock-"));
+    const lock = join(dir, ".dspec-projection.lock");
+    const writeOwner = (pid, token) => {
+      const now = new Date().toISOString();
+      mkdirSync(lock);
+      writeFileSync(join(lock, "owner.json"), `${JSON.stringify({
+        schemaVersion: "2.0",
+        token,
+        pid,
+        hostname: hostname(),
+        acquiredAt: now,
+        heartbeatAt: now,
+        leaseMs: 900_000,
+      }, null, 2)}\n`);
+    };
+
+    try {
+      writeOwner(2_147_483_647, "stale-cli-owner");
+      const stale = run(["generated", "unlock", "--json", "--root", dir]);
+      assert.equal(stale.status, 0, stale.stderr);
+      assert.equal(JSON.parse(stale.stdout).status, "recovered");
+      assert.equal(existsSync(lock), false);
+
+      writeOwner(process.pid, "live-cli-owner");
+      const live = run(["generated", "unlock", "--root", dir]);
+      assert.notEqual(live.status, 0);
+      assert.match(live.stderr, /Projection generation lock has a live owner/);
+      assert.equal(existsSync(lock), true);
+
+      const forced = run(["generated", "unlock", "--json", "--force", "--root", dir]);
+      assert.equal(forced.status, 0, forced.stderr);
+      assert.equal(JSON.parse(forced.stdout).forced, true);
+      assert.equal(existsSync(lock), false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps generate projection JSON report fixture in sync", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-generate-report-"));
+    try {
+      const result = run([
+        "generate",
+        "--json",
+        "--generated-at",
+        "2026-07-15T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+      const expected = readFileSync(join(root, "fixtures", "reports", "generate-projection.json"), "utf8");
+
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout, expected);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps generated check projection JSON report fixture in sync", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-generated-check-report-"));
+    try {
+      const generated = run([
+        "generate",
+        "--generated-at",
+        "2026-07-15T00:00:00.000Z",
+        "--root",
+        dir,
+        "fixtures/projection-model.pkl",
+      ]);
+      const result = run(["generated", "check", "--json", "--root", dir, "fixtures/projection-model.pkl"]);
+      const expected = readFileSync(join(root, "fixtures", "reports", "generated-check-projection.json"), "utf8");
+
+      assert.equal(generated.status, 0, generated.stderr);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout, expected);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects projection locale matrices without a locale output placeholder", () => {
+    const result = run(["check", "fixtures/projection-invalid-template.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /projection output must contain exactly one \{locale\}: localized-markdown/);
+  });
+
+  it("checks dspec's localized projection artifacts", () => {
+    const result = run(["generated", "check", "--json", "examples/dspec.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.deepEqual(
+      report.projections[0].artifacts.map((artifact) => artifact.locale),
+      ["en", "ja"],
+    );
+  });
+
+  it("checks sample webapp localized projection artifacts", () => {
+    const result = run(["generated", "check", "--json", "examples/sample-webapp-2026.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.summary.projections, 1);
+    assert.equal(report.summary.artifacts, 2);
+    assert.deepEqual(
+      report.projections[0].artifacts.map((artifact) => artifact.locale),
+      ["en", "ja"],
+    );
+  });
+
+  it("dogfoods single-locale and monorepo Projection holdouts", () => {
+    const cases = [
+      ["fixtures/projection-holdout-single-locale.pkl", 1, 1, 2],
+      ["fixtures/projection-holdout-monorepo.pkl", 2, 4, 6],
+    ];
+
+    for (const [file, projections, artifacts, initialChanges] of cases) {
+      const dir = mkdtempSync(join(tmpdir(), "dspec-projection-holdout-"));
+      try {
+        const preview = run([
+          "generate",
+          "--dry-run",
+          "--json",
+          "--generated-at",
+          "2026-07-15T00:00:00.000Z",
+          "--root",
+          dir,
+          file,
+        ]);
+        assert.equal(preview.status, 0, `${file}\n${preview.stderr}`);
+        assert.equal(JSON.parse(preview.stdout).changed, initialChanges);
+        assert.equal(existsSync(join(dir, "generated")), false);
+
+        const generated = run([
+          "generate",
+          "--json",
+          "--generated-at",
+          "2026-07-15T00:00:00.000Z",
+          "--root",
+          dir,
+          file,
+        ]);
+        assert.equal(generated.status, 0, `${file}\n${generated.stderr}`);
+        const generatedReport = JSON.parse(generated.stdout);
+        assert.equal(generatedReport.summary.projections, projections);
+        assert.equal(generatedReport.summary.artifacts, artifacts);
+
+        const checked = run(["generated", "check", "--json", "--root", dir, file]);
+        assert.equal(checked.status, 0, `${file}\n${checked.stderr}`);
+        assert.equal(JSON.parse(checked.stdout).summary.provenance, projections);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
     }
   });
 
@@ -4070,7 +4412,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 962);
+    assert.equal(report.references, 1016);
     assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
     assert.deepEqual(report.errors, []);
   });

@@ -8,6 +8,17 @@ local function text(ja: String, en: String): d.LocalizedText = new {
   }
 }
 
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "self-markdown"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/examples/{locale}/dspec.md"
+    provenance = "generated/examples/dspec.provenance.json"
+    freshness = "exact"
+  }
+}
+
 model: d.Model = new {
   id = "dspec-self"
   name = text("DSpec 自己仕様", "DSpec self specification")
@@ -17,7 +28,6 @@ model: d.Model = new {
     "ja"
     "en"
   }
-
   vocabulary {
     new d.Term {
       id = "actor.spec_author"
@@ -78,6 +88,7 @@ model: d.Model = new {
       kind = "action"
       text = text("決定的生成器", "deterministic generator")
     }
+    d.term("artifact.projection", "entity", "型付き生成 projection", "typed generated projection")
     d.term("artifact.authoring_shorthand", "action", "authoring shorthand", "authoring shorthand")
     d.term("artifact.domain_preset_pack", "entity", "domain preset pack", "domain preset pack")
     new d.Term {
@@ -288,6 +299,31 @@ model: d.Model = new {
       "entity",
       "generated artifact manifest",
       "generated artifact manifest",
+    )
+    d.term("artifact.generation_plan", "entity", "生成 action plan", "generation action plan")
+    d.term(
+      "artifact.projection_provenance",
+      "entity",
+      "Projection provenance manifest",
+      "Projection provenance manifest",
+    )
+    d.term(
+      "artifact.generation_transaction",
+      "entity",
+      "生成 transaction",
+      "generation transaction",
+    )
+    d.term(
+      "artifact.generation_lock",
+      "entity",
+      "生成 root 排他 lock",
+      "generation-root exclusion lock",
+    )
+    d.term(
+      "artifact.generation_lease",
+      "entity",
+      "生成 lock lease",
+      "generation lock lease",
     )
     d.term(
       "artifact.assurance_evidence_manifest",
@@ -5010,13 +5046,14 @@ model: d.Model = new {
       kind = "obligation"
       text =
         text(
-          "spec diff impact report は変更された term/rule から生成 selector と実装参照への影響を返す",
-          "Spec diff impact reports map changed terms and rules to affected generated selectors and implementation references",
+          "spec diff impact report は変更された term/rule/projection から生成 selector、owned artifact、実装参照への影響を返す",
+          "Spec diff impact reports map changed terms, rules, and projections to affected generated selectors, owned artifacts, and implementation references",
         )
       terms {
         "artifact.impact_report"
         "artifact.json_report"
         "artifact.source_map"
+        "artifact.projection"
         "concept.term"
         "concept.rule"
         "concept.verification_target"
@@ -5032,18 +5069,29 @@ model: d.Model = new {
           "変更された term は参照 rule、生成 selector、implementation refs に展開される",
           "changed terms expand to referencing rules, generated selectors, and implementation refs",
         )
+        d.clause(
+          "impact.projections -> changed + artifacts(action, path, locale) + regenerateCommand",
+          "impact は projection 差分と regenerate/remove 対象 artifact、および再生成コマンドを返す",
+          "impact returns projection changes, regenerate/remove artifact targets, and a regeneration command",
+        )
       }
       reviewStatus = "approved"
       checks {
         d.nodeCheck("test/cli.test.mjs#emits spec diff impact reports")
+        d.nodeCheck("test/cli.test.mjs#reports removed and regenerated artifacts for projection path changes")
+        d.nodeCheck("test/cli.test.mjs#reports portable projection actions through spec-change review")
       }
       implementedBy {
         d.codeRef("src/cli.mjs", "parseImpactArgs")
         d.codeRef("src/cli.mjs", "impactReport")
+        d.codeRef("src/cli.mjs", "projectionMaterializations")
+        d.codeRef("src/cli.mjs", "projectionImpactReport")
         d.codeRef("src/cli.mjs", "diffItems")
         d.codeRef("src/cli.mjs", "sourceMapEntries")
         d.modelRef("fixtures/impact-before.pkl")
         d.modelRef("fixtures/impact-after.pkl")
+        d.modelRef("fixtures/impact-projection-after.pkl")
+        d.modelRef("fixtures/spec-change-review-projection.pkl")
       }
     }
 
@@ -5460,44 +5508,129 @@ model: d.Model = new {
       terms {
         "artifact.markdown"
         "artifact.generator"
+        "artifact.projection"
+        "artifact.generation_plan"
+        "artifact.projection_provenance"
+        "artifact.generation_transaction"
+        "artifact.generation_lock"
+        "artifact.generation_lease"
       }
       must {
         new d.Clause {
-          expr = "for locale in examples/dspec.pkl.locales: generated/examples/{locale}/dspec.md == emit(markdown, locale, examples/dspec.pkl)"
+          expr = "projection(self-markdown).artifacts == locales.map(locale -> generated/examples/{locale}/dspec.md)"
           text =
             text(
-              "generated/examples/{locale}/dspec.md は各 locale の emit markdown の現在出力と一致する",
-              "generated/examples/{locale}/dspec.md matches the current emit markdown output for each locale",
+              "self-markdown projection は各 locale の Markdown を exact freshness で管理する",
+              "the self-markdown projection manages Markdown for every locale with exact freshness",
             )
         }
+        d.clause(
+          "derive(entrypoint.model).projections == []",
+          "entrypoint の model を派生しても生成物 ownership は継承しない",
+          "deriving an entrypoint model does not inherit generated artifact ownership",
+        )
         d.clause(
           "emit(markdown).rules.include(source, coverage, selectors, checks, implementations)",
           "Markdown は各 rule の source、coverage、clause selector、check、implementation を review 情報として含む",
           "Markdown includes source, coverage, clause selectors, checks, and implementations as per-rule review metadata",
         )
         d.clause(
-          "emit(markdown).reviewSummary.includes(approvedRules + automatedChecks + implementationRefs + domainElements + runtimeEvidenceRecords)",
-          "Markdown は review summary として rule/check/ref/domain/evidence の集計を含む",
-          "Markdown includes review-summary counts for rules, checks, refs, domain elements, and evidence records",
+          "emit(markdown).reviewSummary.includes(approvedRules + automatedChecks + implementationRefs + projections + domainElements + runtimeEvidenceRecords)",
+          "Markdown は review summary として rule/check/ref/projection/domain/evidence の集計を含む",
+          "Markdown includes review-summary counts for rules, checks, refs, projections, domain elements, and evidence records",
+        )
+        d.clause(
+          "plan(projection, observedState) -> {create, update, remove, unchanged} without filesystem mutation",
+          "Projection planner は filesystem を変更せず create/update/remove/unchanged と digest を返す",
+          "the Projection planner returns create, update, remove, unchanged, and digests without mutating the filesystem",
+        )
+        d.clause(
+          "generate(dryRun).writes == 0 && generate(plan).argv is List<String>",
+          "dry-run は書き込まず、再生成コマンドは shell 文字列ではなく argv でも表現する",
+          "dry-run performs no writes and regeneration commands are also represented as argv rather than only shell text",
+        )
+        d.clause(
+          "provenance == modelDigest + projectionId + emitterVersion + stableGeneratedAt + artifactDigests",
+          "provenance は model/projection/emitter/artifact digest と安定した生成時刻を束縛する",
+          "provenance binds model, projection, emitter, artifact digests, and a stable generation time",
+        )
+        d.clause(
+          "transaction.failure -> rollback(allCommittedPaths)",
+          "staging 後の commit が失敗した場合は更新済み path をすべて rollback する",
+          "a commit failure after staging rolls back every already committed path",
+        )
+        d.clause(
+          "concurrent(generate(root), generate(root)) -> atMostOneCommitter && failure.releases(lock(root))",
+          "同一 root の生成 transaction は排他され、失敗後も lock を解放する",
+          "generation transactions for the same root are mutually exclusive and release the lock after failure",
+        )
+        d.clause(
+          "lockOwner == {pid, hostname, acquiredAt, heartbeatAt, leaseMs, token}",
+          "lock は所有者情報と期限付きheartbeatを記録する",
+          "locks record ownership and a leased heartbeat",
+        )
+        d.clause(
+          "unlock(lock) requires dead(owner) || expired(lease) || force",
+          "通常回復は停止済みownerまたは期限切れleaseだけを解除する",
+          "normal recovery removes only dead owners or expired leases",
+        )
+        d.clause(
+          "transaction(stage|commit) -> renew(lock.lease)",
+          "transaction は staging と commit の進行中にleaseを更新する",
+          "transactions renew the lease while staging and committing",
         )
       }
       reviewStatus = "approved"
       checks {
-        new d.CheckTarget {
-          backend = "node"
-          ref = "test/cli.test.mjs#keeps localized generated markdown review artifacts in sync"
-        }
-        d.nodeCheck("test/cli.test.mjs#generates markdown for every declared dspec locale")
+        d.nodeCheck("test/cli.test.mjs#checks dspec's localized projection artifacts")
+        d.nodeCheck("test/cli.test.mjs#checks sample webapp localized projection artifacts")
+        d.nodeCheck("test/cli.test.mjs#does not inherit entrypoint projection ownership through model amendments")
+        d.nodeCheck("test/cli.test.mjs#generates and checks localized projection artifacts")
+        d.nodeCheck("test/cli.test.mjs#keeps generate projection JSON report fixture in sync")
+        d.nodeCheck("test/cli.test.mjs#keeps generated check projection JSON report fixture in sync")
+        d.nodeCheck("test/cli.test.mjs#rejects projection locale matrices without a locale output placeholder")
+        d.nodeCheck("test/cli.test.mjs#previews Projection generation without writing")
+        d.nodeCheck("test/cli.test.mjs#rejects invalid Projection generation timestamps as command errors")
+        d.nodeCheck("test/cli.test.mjs#writes and checks Projection provenance without changing its stable generation time")
+        d.nodeCheck("test/cli.test.mjs#dogfoods single-locale and monorepo Projection holdouts")
+        d.nodeCheck("test/projection-core.test.mjs#builds deterministic Projection snapshots and provenance")
+        d.nodeCheck("test/projection-core.test.mjs#isolates Projection snapshots from renderer mutation")
+        d.nodeCheck("test/projection-core.test.mjs#plans create, update, remove, and unchanged actions without filesystem access")
+        d.nodeCheck("test/projection-core.test.mjs#preserves provenance generation time while its deterministic inputs stay current")
+        d.nodeCheck("test/projection-core.test.mjs#represents generation commands as argv")
+        d.nodeCheck("test/projection-core.test.mjs#rejects unsafe or colliding provenance contracts")
+        d.nodeCheck("test/projection-transaction.test.mjs#commits a staged Projection transaction")
+        d.nodeCheck("test/projection-transaction.test.mjs#rolls back every committed path when a Projection transaction fails")
+        d.nodeCheck("test/projection-transaction.test.mjs#serializes Projection transactions and releases the lock after failure")
+        d.nodeCheck("test/projection-transaction.test.mjs#records Projection lock ownership and recovers only stale owners")
+        d.nodeCheck("test/projection-transaction.test.mjs#protects active foreign Projection leases and recovers expired leases")
+        d.nodeCheck("test/projection-transaction.test.mjs#renews Projection leases while staging and committing")
+        d.nodeCheck("test/cli.test.mjs#recovers stale Projection generation locks without overriding live owners")
         d.nodeCheck("test/cli.test.mjs#emits deterministic markdown")
       }
       implementedBy {
-        new d.ImplementationRef {
-          kind = "code"
-          path = "src/cli.mjs"
-          symbol = "emitMarkdown"
-        }
+        d.codeRef("src/cli.mjs", "loadModel")
         d.codeRef("src/cli.mjs", "markdownReviewSummary")
-        d.codeRef("scripts/generate-localized-markdown.mjs", "generateLocalizedMarkdown")
+        d.codeRef("src/cli.mjs", "generateProjectionArtifacts")
+        d.codeRef("src/cli.mjs", "generatedProjectionReport")
+        d.codeRef("src/core/projection.mjs", "createProjectionSnapshot")
+        d.codeRef("src/core/projection.mjs", "planProjectionChanges")
+        d.codeRef("src/core/projection.mjs", "projectionPlanReport")
+        d.codeRef("src/core/projection.mjs", "projectionGenerateArgv")
+        d.codeRef("src/core/projection.mjs", "projectionProvenanceDocument")
+        d.codeRef("src/core/projection.mjs", "validateProjectionContracts")
+        d.codeRef("src/projection-filesystem.mjs", "applyProjectionTransaction")
+        d.codeRef("src/projection-filesystem.mjs", "acquireProjectionLock")
+        d.codeRef("src/projection-filesystem.mjs", "inspectProjectionLock")
+        d.codeRef("src/projection-filesystem.mjs", "recoverProjectionLock")
+        d.codeRef("src/projection-filesystem.mjs", "projectionLockLease")
+        d.codeRef("src/projection-filesystem.mjs", "renewProjectionLockLease")
+        d.codeRef("dspec/Schema.pkl", "Projection")
+        d.modelRef("examples/sample-webapp-2026.pkl")
+        d.modelRef("fixtures/projection-holdout-single-locale.pkl")
+        d.modelRef("fixtures/projection-holdout-monorepo.pkl")
+        d.modelRef("fixtures/reports/generate-projection.json")
+        d.modelRef("fixtures/reports/generated-check-projection.json")
         new d.ImplementationRef {
           kind = "doc"
           path = "generated/examples/ja/dspec.md"
@@ -5505,6 +5638,34 @@ model: d.Model = new {
         new d.ImplementationRef {
           kind = "doc"
           path = "generated/examples/en/dspec.md"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/examples/ja/sample-webapp-2026.md"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/examples/en/sample-webapp-2026.md"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/examples/dspec.provenance.json"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/examples/sample-webapp-2026.provenance.json"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/holdouts/single-locale/specification.provenance.json"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/holdouts/monorepo/apps/docs/platform.provenance.json"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/holdouts/monorepo/packages/contracts/docs/contracts.provenance.json"
         }
       }
     }

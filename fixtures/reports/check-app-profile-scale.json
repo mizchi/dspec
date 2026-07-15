@@ -10,6 +10,7 @@
           "status": "pass",
           "summary": {
             "decisions": 0,
+            "projections": 1,
             "rules": 4,
             "terms": 27
           }
@@ -80,6 +81,7 @@
           "status": "pass",
           "summary": {
             "decisions": 0,
+            "projections": 1,
             "rules": 4,
             "terms": 27
           }
@@ -150,6 +152,7 @@
           "status": "pass",
           "summary": {
             "decisions": 0,
+            "projections": 1,
             "rules": 4,
             "terms": 27
           }
@@ -220,6 +223,7 @@
           "status": "pass",
           "summary": {
             "decisions": 0,
+            "projections": 1,
             "rules": 4,
             "terms": 27
           }
@@ -290,6 +294,7 @@
           "status": "pass",
           "summary": {
             "decisions": 0,
+            "projections": 1,
             "rules": 4,
             "terms": 27
           }
@@ -360,6 +365,7 @@
           "status": "pass",
           "summary": {
             "decisions": 0,
+            "projections": 1,
             "rules": 4,
             "terms": 27
           }
@@ -430,6 +436,7 @@
           "status": "pass",
           "summary": {
             "decisions": 0,
+            "projections": 1,
             "rules": 4,
             "terms": 27
           }
@@ -500,6 +507,7 @@
           "status": "pass",
           "summary": {
             "decisions": 0,
+            "projections": 1,
             "rules": 4,
             "terms": 27
           }

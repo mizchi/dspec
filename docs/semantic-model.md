@@ -19,6 +19,11 @@ For the current prototype:
   claims into the same `Term`, `Rule`, and `Clause.ast` units.
 - `i18n.requiredLocales` and `i18n.glossary` are support obligations for the
   human-language surface of stable vocabulary ids.
+- `Projection` is a source-level ownership contract for deterministic support
+  artifacts. Its matrix determines the artifact instances, its output template
+  names them, and its freshness policy determines which filesystem states are
+  valid. Its provenance artifact binds those bytes to the source model,
+  projection contract, emitter version, and stable generation time.
 - `CheckTarget` and `ImplementationRef` are support evidence.
 - `CheckTarget.assurances` assigns explicit epistemic kinds to that support:
   `reference`, `executed`, `mutation-tested`, `bounded`, and `proved`. These
@@ -68,7 +73,10 @@ For the current prototype:
   artifacts for CI and external agents.
 - `impact --json` projects source-model diffs through source maps so changed
   terms and rules can be routed to affected generated selectors and
-  implementation references.
+  implementation references. It separately compares entrypoint Projection
+  materializations by generated content, reports `regenerate` and `remove`
+  paths, and returns the after-side generation argv plus a shell-formatted
+  display command.
 - `spec-change compat --json` classifies the same before/after model pair as
   compatible, breaking, narrowing, widening, or unknown, with a decision record
   for each changed term, rule, or domain element.
@@ -85,6 +93,24 @@ For the current prototype:
   regression guards rather than compatibility aliases.
 - `emit` commands are deterministic projections from the source model into
   review or verification sites.
+- `generate` materializes the entrypoint's top-level `projections`. A pure core
+  first snapshots model plus rendered artifacts, validates ownership, and
+  produces create/update/remove/unchanged actions with before/after digests.
+  `generate --dry-run --json` exposes that plan without filesystem mutation.
+  The filesystem adapter stages all writes, checks preconditions, commits the
+  plan, and rolls back committed paths if a later operation fails. An atomic
+  generation-root lock serializes writers; preconditions are checked only
+  after the lock is held and the lock is released on every exit path. Lock
+  metadata records PID, hostname, acquisition time, and an ownership token.
+  A bounded lease adds `heartbeatAt` and `leaseMs`; staging and commit renew the
+  heartbeat. `generated unlock` checks same-host process liveness, protects an
+  active foreign lease, and normally removes only a dead owner or expired
+  lease. Unknown active ownership requires `--force`.
+- `generated check` compares declared artifact and provenance bytes with the
+  filesystem without writing. The initial `markdown x locales x exact`
+  contract rejects missing, stale, and template-matching undeclared-locale
+  artifacts. An unchanged deterministic input preserves provenance
+  `generatedAt`, avoiding time-only drift.
 - `verify-generated` checks that selected generated support artifacts are
   executable, compilable, syntactically well-shaped, or accepted by installed
   backend tools.
@@ -112,7 +138,18 @@ This gives dspec three layers:
 2. **Support sites**: tests, implementation symbols, proof files, generated
    backend models.
 3. **Channels**: deterministic emitters such as Markdown, QuickCheck, Alloy,
-   TLA+, Lean, and source maps.
+   TLA+, Lean, and source maps. A `Projection` promotes a selected channel from
+   an ad hoc command into a source-owned materialization contract.
+
+Projection ownership is intentionally scoped to paths matched by its output
+template. Exact freshness does not delete arbitrary files next to generated
+artifacts. Ownership lives next to `model` at the Pkl entrypoint boundary,
+rather than inside `Model`: importing and amending `base.model` therefore does
+not inherit the base module's materialization destinations. Planning remains a
+pure projection over a snapshot; filesystem observation and transactional
+application are separate adapters. This makes the same plan reusable by the
+CLI, agents, and future editors without granting the semantic core write
+authority.
 
 Domain preset packs sit at the authoring boundary of the source base. They are
 not independent truth systems: `dspec/domains/Rbac.pkl` and

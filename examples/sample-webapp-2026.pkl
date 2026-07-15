@@ -12,6 +12,17 @@ local function clause(clauseExpr: String): d.Clause = new {
   expr = clauseExpr
 }
 
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "sample-webapp-markdown"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/examples/{locale}/sample-webapp-2026.md"
+    provenance = "generated/examples/sample-webapp-2026.provenance.json"
+    freshness = "exact"
+  }
+}
+
 model: d.Model = new {
   id = "sample-webapp-2026"
   name = text("sample-webapp-2026 仕様", "sample-webapp-2026 spec")

@@ -1,0 +1,30 @@
+{
+  "artifacts": [
+    {
+      "bytes": 605,
+      "digest": "sha256:a5d21cebc122ed787de4be1192a34fd8556984eb74d766c572a95a5163f84fce",
+      "locale": "ja",
+      "path": "generated/holdouts/single-locale/review/ja/specification.md"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/markdown",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-15T00:00:00.000Z",
+  "model": {
+    "digest": "sha256:1562f3e491daa498ac974d3e738a695d6059dbb4ea9f720413003092abee01df",
+    "id": "projection-holdout-single-locale",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "freshness": "exact",
+    "id": "single-locale-review",
+    "kind": "markdown",
+    "matrix": "locales",
+    "output": "generated/holdouts/single-locale/review/{locale}/specification.md",
+    "provenance": "generated/holdouts/single-locale/specification.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

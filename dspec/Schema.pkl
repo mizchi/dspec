@@ -107,6 +107,9 @@ typealias AssuranceEvidenceScope = "generator" | "clause"
 typealias AssuranceEvidenceResult = "pass" | "fail" | "skip"
 typealias AssuranceEvidenceTimestamp = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"#)))
 typealias ClauseBackendSupport = "unmapped" | "textual" | "structural" | "semantic"
+typealias ProjectionKind = "markdown"
+typealias ProjectionMatrix = "locales"
+typealias ProjectionFreshness = "exact"
 
 /// A language-independent text node.
 ///
@@ -276,6 +279,21 @@ class ImplementationRef {
   kind: "code" | "test" | "runtime" | "doc" | "proof" | "model"
   path: String(length > 0)
   symbol: String? = null
+}
+
+/// A deterministic materialized view of the entrypoint's model.
+///
+/// The first supported matrix expands one Markdown artifact for every declared
+/// model locale. `output` must contain exactly one `{locale}` placeholder.
+/// `provenance` owns the deterministic manifest for the materialized view.
+class Projection {
+  id: Identifier
+  kind: ProjectionKind
+  source: "self" = "self"
+  matrix: ProjectionMatrix
+  output: String(length > 0)
+  provenance: String(length > 0)
+  freshness: ProjectionFreshness = "exact"
 }
 
 function codeRef(refPath: String, refSymbol: String): ImplementationRef = new {

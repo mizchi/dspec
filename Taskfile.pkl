@@ -34,6 +34,8 @@ local jsSources: Listing<String> = new {
 
 local reviewArtifacts: Listing<String> = new {
   "generated/examples/**/*.md"
+  "generated/holdouts/**/*.md"
+  "generated/**/*.provenance.json"
   "generated/source-map.json"
   "generated/manifest.json"
 }
@@ -179,21 +181,25 @@ local emitSmoke: Task = new {
 
 local markdownGenerate: Task = new {
   name = "markdown:generate"
-  description = "Generate localized Markdown review artifacts for the dspec self specification"
-  cmd = "node scripts/generate-localized-markdown.mjs examples/dspec.pkl generated/examples"
+  description = "Generate localized Markdown review artifacts for declared dogfood entrypoints"
+  cmd =
+    "node src/cli.mjs generate examples/dspec.pkl && node src/cli.mjs generate examples/sample-webapp-2026.pkl && node src/cli.mjs generate fixtures/projection-holdout-single-locale.pkl && node src/cli.mjs generate fixtures/projection-holdout-monorepo.pkl"
   inputs = new {
     ...pklSources
     ...jsSources
   }
   outputs {
     "generated/examples/**/*.md"
+    "generated/holdouts/**/*.md"
+    "generated/**/*.provenance.json"
   }
 }
 
 local markdownReview: Task = new {
   name = "markdown:review"
-  description = "Check localized generated Markdown review artifacts"
-  cmd = "node scripts/generate-localized-markdown.mjs --check examples/dspec.pkl generated/examples"
+  description = "Check localized generated Markdown review artifacts for dogfood entrypoints"
+  cmd =
+    "node src/cli.mjs generated check examples/dspec.pkl && node src/cli.mjs generated check examples/sample-webapp-2026.pkl && node src/cli.mjs generated check fixtures/projection-holdout-single-locale.pkl && node src/cli.mjs generated check fixtures/projection-holdout-monorepo.pkl"
   inputs = new {
     ...pklSources
     ...jsSources

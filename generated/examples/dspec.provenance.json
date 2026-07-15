@@ -1,0 +1,36 @@
+{
+  "artifacts": [
+    {
+      "bytes": 146145,
+      "digest": "sha256:8a55236b77686af338cec2fd20e858ed516e7afdd50ce5f686d464e476ea85b6",
+      "locale": "en",
+      "path": "generated/examples/en/dspec.md"
+    },
+    {
+      "bytes": 146414,
+      "digest": "sha256:786c6c219919bb395c7d9a98ae1f3a004843e1b21e65e025d75848b9a8f9d3b6",
+      "locale": "ja",
+      "path": "generated/examples/ja/dspec.md"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/markdown",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-15T00:00:00.000Z",
+  "model": {
+    "digest": "sha256:cccc633435645fa8eee5a634f9c85c8f76cdfaebeb388d2fd631c92193bf4fd3",
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "freshness": "exact",
+    "id": "self-markdown",
+    "kind": "markdown",
+    "matrix": "locales",
+    "output": "generated/examples/{locale}/dspec.md",
+    "provenance": "generated/examples/dspec.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

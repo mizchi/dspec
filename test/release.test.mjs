@@ -16,9 +16,11 @@ test("defines the v0.1 public package boundary", () => {
   assert.equal(pkg.exports["./clause-ast"], "./src/core/clause-ast.mjs");
   assert.equal(pkg.exports["./assurance-evidence"], "./src/core/assurance-evidence.mjs");
   assert.equal(pkg.exports["./real-app"], "./src/core/real-app.mjs");
+  assert.equal(pkg.exports["./projection"], "./src/core/projection.mjs");
   assert.equal(pkg.exports["./schema"], "./dspec/Schema.pkl");
   assert.equal(typeof core.assuranceEvidenceSnapshot, "function");
   assert.equal(typeof core.verifyAssuranceEvidenceManifest, "function");
+  assert.equal(typeof core.planProjectionChanges, "function");
 });
 
 test("defines explicit release and compatibility policy", () => {

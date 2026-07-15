@@ -24,9 +24,9 @@
         "executed": 4,
         "mutation-tested": 1,
         "proved": 0,
-        "reference": 302
+        "reference": 326
       },
-      "total": 302
+      "total": 326
     }
   },
   "covered": 69,
