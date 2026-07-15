@@ -11960,27 +11960,28 @@ function syntaxBackend(source, validate) {
   return errors.length > 0 ? failBackend(errors.join("\n")) : passBackend();
 }
 
-function runOptionalToolBackend(command, args, unavailableReason) {
-  if (!hasTool(command)) return skipBackend(unavailableReason);
+function runOptionalToolBackend(command, args, unavailableReason, toolAvailable = hasTool) {
+  if (!toolAvailable(command)) return skipBackend(unavailableReason);
   return runGeneratedToolResult(command, args);
 }
 
-function verifyGeneratedTlaWithSany(tlaPath) {
-  return runOptionalToolBackend("tlasany", [tlaPath], "tlasany not found on PATH");
+function verifyGeneratedTlaWithSany(tlaPath, toolAvailable) {
+  return runOptionalToolBackend("tlasany", [tlaPath], "tlasany not found on PATH", toolAvailable);
 }
 
-function verifyGeneratedTlaWithTlc(tlaPath, cfgPath) {
-  return runOptionalToolBackend("tlc", ["-cleanup", "-config", cfgPath, tlaPath], "tlc not found on PATH");
+function verifyGeneratedTlaWithTlc(tlaPath, cfgPath, toolAvailable) {
+  return runOptionalToolBackend("tlc", ["-cleanup", "-config", cfgPath, tlaPath], "tlc not found on PATH", toolAvailable);
 }
 
-function verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath) {
-  if (!hasTool("alloy6")) return skipBackend("alloy6 not found on PATH");
+function verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath, toolAvailable) {
+  if (!toolAvailable("alloy6")) return skipBackend("alloy6 not found on PATH");
   const commands = runGeneratedToolResult("alloy6", ["commands", alloyPath]);
   if (commands.status !== "pass") return commands;
   return runGeneratedToolResult("alloy6", ["exec", "-q", "-t", "none", "-o", outputPath, "-f", alloyPath]);
 }
 
-function verifyGeneratedReport(model) {
+function verifyGeneratedReport(model, options = {}) {
+  const toolAvailable = options.toolAvailable ?? hasTool;
   const dir = mkdtempSync(join(tmpdir(), "dspec-generated-"));
   const backends = {};
   try {
@@ -11990,7 +11991,7 @@ function verifyGeneratedReport(model) {
 
     const leanPath = join(dir, "model.lean");
     writeFileSync(leanPath, emitLean(model));
-    backends.lean = runGeneratedToolResult("lean", [leanPath]);
+    backends.lean = runOptionalToolBackend("lean", [leanPath], "lean not found on PATH", toolAvailable);
 
     const tlaSource = emitTla(model);
     const alloySource = emitAlloy(model);
@@ -12002,13 +12003,13 @@ function verifyGeneratedReport(model) {
     const cfgPath = join(dir, `${moduleName}.cfg`);
     writeFileSync(tlaPath, tlaSource);
     writeFileSync(cfgPath, emitTlaConfig(model));
-    backends.tlaSany = verifyGeneratedTlaWithSany(tlaPath);
-    backends.tlaTlc = verifyGeneratedTlaWithTlc(tlaPath, cfgPath);
+    backends.tlaSany = verifyGeneratedTlaWithSany(tlaPath, toolAvailable);
+    backends.tlaTlc = verifyGeneratedTlaWithTlc(tlaPath, cfgPath, toolAvailable);
 
     const alloyPath = join(dir, "model.als");
     const outputPath = join(dir, "alloy-out");
     writeFileSync(alloyPath, alloySource);
-    backends.alloyAnalyzer = verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath);
+    backends.alloyAnalyzer = verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath, toolAvailable);
 
     const failed = Object.values(backends).some((backend) => backend.status === "fail");
     return {
@@ -12204,6 +12205,7 @@ function backendFailureMessage(report) {
 
 function formalToolSkipFailures(report) {
   return [
+    ["lean", "lean"],
     ["tlaSany", "tlasany"],
     ["tlaTlc", "tlc"],
     ["alloyAnalyzer", "alloy6"],
@@ -12228,15 +12230,17 @@ function assertVerifyGeneratedReport(report, options = {}) {
 }
 
 function verifyGenerated(model, options = {}) {
-  const report = verifyGeneratedReport(model);
+  const report = verifyGeneratedReport(model, options);
   assertVerifyGeneratedReport(report, options);
 
   const lines = [
     `ok: ${model.id} generated quickcheck`,
-    `ok: ${model.id} generated lean`,
     `ok: ${model.id} generated tla syntax`,
     `ok: ${model.id} generated alloy syntax`,
   ];
+  if (report.backends.lean.status === "pass") {
+    lines.push(`ok: ${model.id} generated lean`);
+  }
   if (report.backends.tlaSany.status === "pass") {
     lines.push(`ok: ${model.id} generated tla sany`);
   }

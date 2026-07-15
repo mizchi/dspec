@@ -11,6 +11,7 @@ import {
   topLevelCommandRegistry,
   validateGeneratedAlloy,
   validateGeneratedTla,
+  verifyGenerated,
   verifyGeneratedReport,
 } from "../src/cli.mjs";
 import { normalizeCounterexamplesFixtureProjection } from "../scripts/project-normalize-counterexamples-fixture.mjs";
@@ -18,6 +19,7 @@ import { verifyGeneratedFixtureProjection } from "../scripts/project-verify-gene
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const cli = join(root, "src", "cli.mjs");
+const hasLean = spawnSync("which", ["lean"]).status === 0;
 const hasTlasany = spawnSync("which", ["tlasany"]).status === 0;
 const hasTlc = spawnSync("which", ["tlc"]).status === 0;
 const hasAlloy6 = spawnSync("which", ["alloy6"]).status === 0;
@@ -3892,12 +3894,26 @@ profile: d.AppProfile = new {
     assert.equal(report.model.id, "typed-ast-fixture");
     assert.equal(report.status, "pass");
     assert.equal(report.backends.quickcheck.status, "pass");
-    assert.equal(report.backends.lean.status, "pass");
+    assert.match(report.backends.lean.status, /^(pass|skip)$/);
     assert.equal(report.backends.tlaSyntax.status, "pass");
     assert.equal(report.backends.alloySyntax.status, "pass");
     assert.match(report.backends.tlaSany.status, /^(pass|skip)$/);
     assert.match(report.backends.tlaTlc.status, /^(pass|skip)$/);
     assert.match(report.backends.alloyAnalyzer.status, /^(pass|skip)$/);
+  });
+
+  it("skips unavailable formal tools unless they are required", () => {
+    const model = loadModel("fixtures/typed-ast.pkl");
+    const toolAvailable = () => false;
+    const report = verifyGeneratedReport(model, { toolAvailable });
+
+    assert.equal(report.status, "pass");
+    assert.equal(report.backends.quickcheck.status, "pass");
+    assert.equal(report.backends.lean.status, "skip");
+    assert.throws(
+      () => verifyGenerated(model, { requireFormalTools: true, toolAvailable }),
+      /required formal backend skipped: lean \(lean\)/,
+    );
   });
 
   it("keeps verify-generated JSON report fixture in sync", () => {
@@ -4133,7 +4149,9 @@ profile: d.AppProfile = new {
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
     assert.match(report.backends.quickcheck.message, /approved-rules-have-automated-checks/);
-    assert.equal(report.backends.lean.status, "fail");
+    if (report.backends.lean.status !== "skip") {
+      assert.equal(report.backends.lean.status, "fail");
+    }
     if (report.backends.tlaTlc.status !== "skip") {
       assert.equal(report.backends.tlaTlc.status, "fail");
     }
@@ -4227,7 +4245,7 @@ profile: d.AppProfile = new {
     assert.match(report.backends.quickcheck.message, /runtime-dependency-trace-within-timeout/);
   });
 
-  it("compiles generated Lean output", () => {
+  it("compiles generated Lean output", { skip: !hasLean }, () => {
     const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
