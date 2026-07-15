@@ -21,26 +21,6 @@
         "path": "model.rules[0]",
         "ruleId": "COVERAGE-MISSING-CHECK"
       }
-    },
-    {
-      "backend": "lean",
-      "evidence": {
-        "message": "<generated>/model.lean:51:14: error: Tactic `decide` proved that the proposition\n  AutomatedSupport RuleId.COVERAGE_MISSING_CHECK = true\nis false\n<generated>/model.lean:55:14: error: Tactic `decide` proved that the proposition\n  (checks RuleId.COVERAGE_MISSING_CHECK).length > 0\nis false\n"
-      },
-      "generated": "lean.RuleId.COVERAGE_MISSING_CHECK",
-      "message": "approved rule lacks automated check support",
-      "property": "approved-rules-have-automated-checks",
-      "rule": {
-        "id": "COVERAGE-MISSING-CHECK",
-        "kind": "invariant",
-        "status": "approved",
-        "text": "DSpec 自己仕様"
-      },
-      "source": {
-        "kind": "rule",
-        "path": "model.rules[0]",
-        "ruleId": "COVERAGE-MISSING-CHECK"
-      }
     }
   ],
   "locale": "ja",

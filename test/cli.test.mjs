@@ -3931,7 +3931,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.model.id, "dspec-self");
     assert.equal(report.status, "fail");
-    assert.ok(report.counterexamples.length >= 2);
+    assert.ok(report.counterexamples.length >= 1);
 
     const quickcheck = report.counterexamples.find((entry) => entry.backend === "quickcheck");
     assert.equal(quickcheck.generated, "quickcheck.approvedRuleIds.COVERAGE-MISSING-CHECK");
@@ -3942,10 +3942,6 @@ profile: d.AppProfile = new {
     assert.match(quickcheck.rule.text, /DSpec 自己仕様/);
     assert.match(quickcheck.message, /automated check/);
 
-    const lean = report.counterexamples.find((entry) => entry.backend === "lean");
-    assert.equal(lean.generated, "lean.RuleId.COVERAGE_MISSING_CHECK");
-    assert.equal(lean.source.ruleId, "COVERAGE-MISSING-CHECK");
-
     const model = loadModel("fixtures/coverage-missing-check.pkl");
     const normalized = normalizeCounterexamples(
       model,
@@ -3953,12 +3949,16 @@ profile: d.AppProfile = new {
         model: { id: model.id, version: model.version },
         status: "fail",
         backends: {
+          lean: { status: "fail", message: "AutomatedSupport is false" },
           tlaTlc: { status: "fail", message: "Error: The invariant of CoverageInvariant is equal to FALSE" },
           alloyAnalyzer: { status: "fail", message: "check ApprovedRulesHaveChecks found a failure" },
         },
       },
       "ja",
     );
+    const lean = normalized.counterexamples.find((entry) => entry.backend === "lean");
+    assert.equal(lean.generated, "lean.RuleId.COVERAGE_MISSING_CHECK");
+    assert.equal(lean.source.ruleId, "COVERAGE-MISSING-CHECK");
     const tla = normalized.counterexamples.find((entry) => entry.backend === "tlaTlc");
     assert.equal(tla.generated, "tla.Checks[COVERAGE-MISSING-CHECK]");
     assert.equal(tla.source.ruleId, "COVERAGE-MISSING-CHECK");
@@ -4008,6 +4008,20 @@ profile: d.AppProfile = new {
       normalizeCounterexamplesFixtureProjection,
       1,
     );
+  });
+
+  it("keeps optional formal witnesses out of portable counterexample fixtures", () => {
+    const projection = normalizeCounterexamplesFixtureProjection({
+      model: { id: "fixture", version: "1" },
+      status: "fail",
+      locale: "ja",
+      counterexamples: [
+        { backend: "quickcheck", generated: "quickcheck.rule" },
+        { backend: "lean", generated: "lean.RuleId.RULE" },
+      ],
+    });
+
+    assert.deepEqual(projection.counterexamples.map((entry) => entry.backend), ["quickcheck"]);
   });
 
   it("normalizes DB migration counterexamples to source patterns", () => {

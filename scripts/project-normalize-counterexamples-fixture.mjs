@@ -13,7 +13,7 @@ function stableJson(value) {
 }
 
 export function normalizeCounterexamplesFixtureProjection(report) {
-  const stableBackends = new Set(["quickcheck", "lean"]);
+  const stableBackends = new Set(["quickcheck"]);
   return {
     model: report.model,
     status: report.status,
