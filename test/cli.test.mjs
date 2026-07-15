@@ -3587,7 +3587,7 @@ profile: d.AppProfile = new {
   it("requires formal backend tools when requested", () => {
     const result = run(["verify-generated", "--json", "--require-formal-tools", "fixtures/typed-ast.pkl"]);
     const report = JSON.parse(result.stdout);
-    const skipped = [report.backends.tlaSany, report.backends.tlaTlc, report.backends.alloyAnalyzer]
+    const skipped = [report.backends.lean, report.backends.tlaSany, report.backends.tlaTlc, report.backends.alloyAnalyzer]
       .filter((backend) => backend.status === "skip");
 
     if (skipped.length > 0) {
@@ -3610,6 +3610,7 @@ profile: d.AppProfile = new {
     assert.match(source, /devshell-smoke --json --strict --require-store-path/);
     assert.match(source, /verify-generated --require-formal-tools fixtures\/typed-ast\.pkl/);
     assert.match(source, /evidence create --require-formal-tools .* fixtures\/typed-ast\.pkl/);
+    assert.match(source, /node --test --test-name-pattern='Lean eq\|composed Lean implication' test\/cli\.test\.mjs/);
     assert.match(source, /name = "dogfood"/);
     assert.match(source, /name = "spec-reading:dogfood"/);
     assert.match(source, /name = "spec-reading:report-fixtures"/);
@@ -4745,7 +4746,7 @@ profile: d.AppProfile = new {
     );
   });
 
-  it("proves Lean eq clauses with clause-scoped evidence", () => {
+  it("proves Lean eq clauses with clause-scoped evidence", { skip: !hasLean }, () => {
     const manifestPath = "/tmp/dspec-assurance-formal-lean-eq.json";
     try {
       rmSync(manifestPath, { force: true });
@@ -4786,7 +4787,7 @@ profile: d.AppProfile = new {
     }
   });
 
-  it("keeps Lean eq semantic proofs load-bearing", () => {
+  it("keeps Lean eq semantic proofs load-bearing", { skip: !hasLean }, () => {
     const result = run([
       "evidence",
       "create",
@@ -4800,7 +4801,7 @@ profile: d.AppProfile = new {
     assert.match(result.stderr, /unsolved goals/);
   });
 
-  it("proves composed Lean implication clauses with clause-scoped evidence", () => {
+  it("proves composed Lean implication clauses with clause-scoped evidence", { skip: !hasLean }, () => {
     const manifestPath = "/tmp/dspec-assurance-formal-lean-implies.json";
     try {
       rmSync(manifestPath, { force: true });
@@ -4836,7 +4837,7 @@ profile: d.AppProfile = new {
     }
   });
 
-  it("keeps composed Lean implication proofs load-bearing", () => {
+  it("keeps composed Lean implication proofs load-bearing", { skip: !hasLean }, () => {
     const result = run([
       "evidence",
       "create",
