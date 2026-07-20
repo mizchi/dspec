@@ -1,0 +1,458 @@
+import "../dspec/Schema.pkl" as d
+import "../dspec/LeanCore.pkl" as lc
+
+model: d.Model = new {
+  id = "commerce-purchase-lean-core"
+  name = d.text("Lean semantic core purchase fixture", "Lean semantic core purchase fixture")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+  vocabulary {
+    d.term("commerce.customer", "actor", "購入者", "Customer")
+    d.term("commerce.purchase", "action", "購入", "Purchase")
+    d.term("inventory.available-stock", "quantity", "利用可能在庫", "Available stock")
+  }
+  rules {
+    new d.Rule {
+      id = "PURCHASE-CAPACITY"
+      kind = "invariant"
+      text = d.text("受理済み購入は利用可能在庫を超えない", "Accepted purchases do not exceed available stock")
+      terms {
+        "commerce.customer"
+        "commerce.purchase"
+        "inventory.available-stock"
+      }
+      must {
+        d.clause("accepted(purchases) -> requested(purchases) <= available(stock)", "受理済み購入量は在庫以下", "Accepted purchase quantity is at most stock")
+      }
+      reviewStatus = "approved"
+    }
+  }
+}
+
+/// Pkl owns the domain wording and stable references. The referenced Lean
+/// file owns the transition semantics and the proof/checking artifacts.
+leanCore: lc.LeanCore = new {
+  schemaVersion = "1.0"
+  id = "commerce.purchase.atomic-v1"
+  source = "fixtures/lean-core/CommercePurchase.lean"
+  generatedSource = "fixtures/lean-core/CommercePurchaseGenerated.lean"
+  terms = new {
+    "commerce.customer"
+    "commerce.purchase"
+    "inventory.available-stock"
+  }
+  transitionSystem = new lc.LeanTransitionSystem {
+    id = "commerce.purchase.atomic-v1"
+    stateFields {
+      new lc.LeanNatStateField { id = "available" }
+    }
+    initialValues {
+      new lc.LeanInitialValue { field = "available"; value = 10 }
+    }
+    actions {
+      new lc.LeanAction {
+        id = "purchase"
+        parameters {
+          new lc.LeanActionParameter {
+            id = "quantity"
+            finiteValues { 10 }
+          }
+        }
+        guard = new lc.LeanFormula {
+          kind = "le"
+          terms {
+            new lc.LeanNatExpr { kind = "input"; field = "quantity" }
+            new lc.LeanNatExpr { kind = "state"; field = "available" }
+          }
+        }
+        updates {
+          new lc.LeanStateUpdate {
+            field = "available"
+            value = new lc.LeanNatExpr {
+              kind = "sub"
+              children {
+                new lc.LeanNatExpr { kind = "state"; field = "available" }
+                new lc.LeanNatExpr { kind = "input"; field = "quantity" }
+              }
+            }
+          }
+        }
+      }
+    }
+    invariants {
+      new lc.LeanInvariant {
+        id = "purchase.capacity"
+        formula = new lc.LeanFormula {
+          kind = "le"
+          terms {
+            new lc.LeanNatExpr { kind = "state"; field = "available" }
+            new lc.LeanNatExpr { kind = "initial"; field = "available" }
+          }
+        }
+      }
+    }
+    boundedReachability {
+      new lc.LeanBoundedReachability {
+        id = "purchase.stock-empty.reachable"
+        maxSteps = 1
+        expectation = "reachable"
+        target = new lc.LeanFormula {
+          kind = "eq"
+          terms {
+            new lc.LeanNatExpr { kind = "state"; field = "available" }
+            new lc.LeanNatExpr { kind = "literal"; value = 0 }
+          }
+        }
+      }
+      new lc.LeanBoundedReachability {
+        id = "purchase.stock-increase.unreachable"
+        maxSteps = 3
+        expectation = "unreachable"
+        target = new lc.LeanFormula {
+          kind = "eq"
+          terms {
+            new lc.LeanNatExpr { kind = "state"; field = "available" }
+            new lc.LeanNatExpr { kind = "literal"; value = 11 }
+          }
+        }
+      }
+    }
+  }
+  temporalChecks {
+    new lc.LeanTemporalCheck {
+      id = "purchase.stock-empty-next.holds"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "fullPurchaseNextEmptiesStock"
+      terms { "commerce.purchase"; "inventory.available-stock" }
+      path {
+        new lc.LeanTemporalActionStep {
+          action = "purchase"
+          input { new lc.LeanTemporalActionInput { field = "quantity"; value = 10 } }
+        }
+      }
+      formula = new lc.LeanTemporalFormula {
+        kind = "next"
+        children {
+          new lc.LeanTemporalFormula {
+            kind = "state"
+            predicate = new lc.LeanFormula {
+              kind = "eq"
+              terms {
+                new lc.LeanNatExpr { kind = "state"; field = "available" }
+                new lc.LeanNatExpr { kind = "literal"; value = 0 }
+              }
+            }
+          }
+        }
+      }
+      expectation = "holds"
+    }
+    new lc.LeanTemporalCheck {
+      id = "purchase.stock-eventually-empty.holds"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "fullPurchaseEventuallyEmptiesStock"
+      terms { "commerce.purchase"; "inventory.available-stock" }
+      path {
+        new lc.LeanTemporalActionStep {
+          action = "purchase"
+          input { new lc.LeanTemporalActionInput { field = "quantity"; value = 10 } }
+        }
+      }
+      formula = new lc.LeanTemporalFormula {
+        kind = "eventually"
+        children {
+          new lc.LeanTemporalFormula {
+            kind = "state"
+            predicate = new lc.LeanFormula {
+              kind = "eq"
+              terms {
+                new lc.LeanNatExpr { kind = "state"; field = "available" }
+                new lc.LeanNatExpr { kind = "literal"; value = 0 }
+              }
+            }
+          }
+        }
+      }
+      expectation = "holds"
+    }
+    new lc.LeanTemporalCheck {
+      id = "purchase.capacity-always.holds"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "fullPurchaseTraceAlwaysWithinInitialCapacity"
+      terms { "commerce.purchase"; "inventory.available-stock" }
+      path {
+        new lc.LeanTemporalActionStep {
+          action = "purchase"
+          input { new lc.LeanTemporalActionInput { field = "quantity"; value = 10 } }
+        }
+      }
+      formula = new lc.LeanTemporalFormula {
+        kind = "always"
+        children {
+          new lc.LeanTemporalFormula {
+            kind = "state"
+            predicate = new lc.LeanFormula {
+              kind = "le"
+              terms {
+                new lc.LeanNatExpr { kind = "state"; field = "available" }
+                new lc.LeanNatExpr { kind = "initial"; field = "available" }
+              }
+            }
+          }
+        }
+      }
+      expectation = "holds"
+    }
+    new lc.LeanTemporalCheck {
+      id = "purchase.stock-unchanged-always.violated"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "fullPurchaseDoesNotKeepStockAtTen"
+      terms { "commerce.purchase"; "inventory.available-stock" }
+      path {
+        new lc.LeanTemporalActionStep {
+          action = "purchase"
+          input { new lc.LeanTemporalActionInput { field = "quantity"; value = 10 } }
+        }
+      }
+      formula = new lc.LeanTemporalFormula {
+        kind = "always"
+        children {
+          new lc.LeanTemporalFormula {
+            kind = "state"
+            predicate = new lc.LeanFormula {
+              kind = "eq"
+              terms {
+                new lc.LeanNatExpr { kind = "state"; field = "available" }
+                new lc.LeanNatExpr { kind = "literal"; value = 10 }
+              }
+            }
+          }
+        }
+      }
+      expectation = "violated"
+    }
+    new lc.LeanTemporalCheck {
+      id = "purchase.capacity-all-paths.holds"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "atomicPurchaseTracePreservesCapacity"
+      terms { "commerce.purchase"; "inventory.available-stock" }
+      scope = "allPaths"
+      maxSteps = 3
+      formula = new lc.LeanTemporalFormula {
+        kind = "always"
+        children {
+          new lc.LeanTemporalFormula {
+            kind = "state"
+            predicate = new lc.LeanFormula {
+              kind = "le"
+              terms {
+                new lc.LeanNatExpr { kind = "state"; field = "available" }
+                new lc.LeanNatExpr { kind = "initial"; field = "available" }
+              }
+            }
+          }
+        }
+      }
+      expectation = "holds"
+    }
+    new lc.LeanTemporalCheck {
+      id = "purchase.eventually-empty-all-paths.violated"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "emptyPurchaseTraceDoesNotEmptyStock"
+      terms { "commerce.purchase"; "inventory.available-stock" }
+      scope = "allPaths"
+      maxSteps = 3
+      formula = new lc.LeanTemporalFormula {
+        kind = "eventually"
+        children {
+          new lc.LeanTemporalFormula {
+            kind = "state"
+            predicate = new lc.LeanFormula {
+              kind = "eq"
+              terms {
+                new lc.LeanNatExpr { kind = "state"; field = "available" }
+                new lc.LeanNatExpr { kind = "literal"; value = 0 }
+              }
+            }
+          }
+        }
+      }
+      expectation = "violated"
+    }
+  }
+  satChecks {
+    new lc.LeanSatCheck {
+      id = "purchase.capacity.requested-in-stock.sat"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "purchaseRequestedAndStockAvailableSat"
+      terms {
+        "commerce.customer"
+        "commerce.purchase"
+        "inventory.available-stock"
+      }
+      variables {
+        "purchaseRequested"
+        "stockAvailable"
+      }
+      formula = new lc.LeanBooleanFormula {
+        kind = "and"
+        children {
+          new lc.LeanBooleanFormula { kind = "variable"; name = "purchaseRequested" }
+          new lc.LeanBooleanFormula { kind = "variable"; name = "stockAvailable" }
+        }
+      }
+      expectation = "sat"
+    }
+    new lc.LeanSatCheck {
+      id = "purchase.capacity.requested-out-of-stock.unsat"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "requestedWithoutStockViolatesCapacityUnsat"
+      terms {
+        "commerce.customer"
+        "commerce.purchase"
+        "inventory.available-stock"
+      }
+      variables {
+        "purchaseRequested"
+        "stockAvailable"
+      }
+      formula = new lc.LeanBooleanFormula {
+        kind = "and"
+        children {
+          new lc.LeanBooleanFormula { kind = "variable"; name = "purchaseRequested" }
+          new lc.LeanBooleanFormula {
+            kind = "not"
+            children {
+              new lc.LeanBooleanFormula { kind = "variable"; name = "stockAvailable" }
+            }
+          }
+          new lc.LeanBooleanFormula {
+            kind = "or"
+            children {
+              new lc.LeanBooleanFormula {
+                kind = "not"
+                children {
+                  new lc.LeanBooleanFormula { kind = "variable"; name = "purchaseRequested" }
+                }
+              }
+              new lc.LeanBooleanFormula { kind = "variable"; name = "stockAvailable" }
+            }
+          }
+        }
+      }
+      expectation = "unsat"
+    }
+  }
+  smtChecks {
+    new lc.LeanSmtCheck {
+      id = "purchase.capacity.requested-five-stock-five.sat"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "requestedFiveStockFiveSatisfiesCapacity"
+      terms {
+        "commerce.customer"
+        "commerce.purchase"
+        "inventory.available-stock"
+      }
+      variables {
+        new lc.LeanBoundedIntVariable { id = "requestedQuantity"; lower = 0; upper = 10 }
+        new lc.LeanBoundedIntVariable { id = "availableStock"; lower = 0; upper = 10 }
+      }
+      formula = new lc.LeanIntFormula {
+        kind = "and"
+        children {
+          new lc.LeanIntFormula {
+            kind = "eq"
+            terms {
+              new lc.LeanIntExpr { kind = "variable"; name = "requestedQuantity" }
+              new lc.LeanIntExpr { kind = "literal"; value = 5 }
+            }
+          }
+          new lc.LeanIntFormula {
+            kind = "eq"
+            terms {
+              new lc.LeanIntExpr { kind = "variable"; name = "availableStock" }
+              new lc.LeanIntExpr { kind = "literal"; value = 5 }
+            }
+          }
+          new lc.LeanIntFormula {
+            kind = "le"
+            terms {
+              new lc.LeanIntExpr { kind = "variable"; name = "requestedQuantity" }
+              new lc.LeanIntExpr { kind = "variable"; name = "availableStock" }
+            }
+          }
+        }
+      }
+      expectation = "sat"
+    }
+    new lc.LeanSmtCheck {
+      id = "purchase.capacity.requested-seven-stock-five.unsat"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "requestedSevenStockFiveViolatesCapacityUnsat"
+      terms {
+        "commerce.customer"
+        "commerce.purchase"
+        "inventory.available-stock"
+      }
+      variables {
+        new lc.LeanBoundedIntVariable { id = "requestedQuantity"; lower = 0; upper = 10 }
+        new lc.LeanBoundedIntVariable { id = "availableStock"; lower = 0; upper = 10 }
+      }
+      formula = new lc.LeanIntFormula {
+        kind = "and"
+        children {
+          new lc.LeanIntFormula {
+            kind = "eq"
+            terms {
+              new lc.LeanIntExpr { kind = "variable"; name = "requestedQuantity" }
+              new lc.LeanIntExpr { kind = "literal"; value = 7 }
+            }
+          }
+          new lc.LeanIntFormula {
+            kind = "eq"
+            terms {
+              new lc.LeanIntExpr { kind = "variable"; name = "availableStock" }
+              new lc.LeanIntExpr { kind = "literal"; value = 5 }
+            }
+          }
+          new lc.LeanIntFormula {
+            kind = "le"
+            terms {
+              new lc.LeanIntExpr { kind = "variable"; name = "requestedQuantity" }
+              new lc.LeanIntExpr { kind = "variable"; name = "availableStock" }
+            }
+          }
+        }
+      }
+      expectation = "unsat"
+    }
+  }
+  claims = new {
+    new lc.LeanCoreClaim {
+      id = "purchase.capacity.non-atomic-oversell"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "finiteBrokenModelFindsOversell"
+      assurance = "bounded"
+      terms = new {
+        "commerce.customer"
+        "commerce.purchase"
+        "inventory.available-stock"
+      }
+    }
+    new lc.LeanCoreClaim {
+      id = "purchase.capacity.atomic-preserves-capacity"
+      rule = "PURCHASE-CAPACITY"
+      declaration = "atomicPurchasePreservesCapacity"
+      assurance = "proved"
+      invariant = "purchase.capacity"
+      terms = new {
+        "commerce.purchase"
+        "inventory.available-stock"
+      }
+    }
+  }
+}

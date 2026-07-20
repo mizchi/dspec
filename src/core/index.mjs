@@ -31,6 +31,44 @@ export {
 } from "./real-app.mjs";
 
 export {
+  LEAN_SEMANTIC_CORE_SCHEMA_VERSION,
+  boundedReachabilityReport,
+  encodeLeanBooleanFormulaTseitin,
+  evaluateLeanIntExpression,
+  evaluateLeanIntFormula,
+  evaluateLeanTemporalChecks,
+  evaluateLeanTemporalFormula,
+  evaluateLeanBooleanFormula,
+  evaluateLeanInvariant,
+  executeLeanTransitionSystem,
+  initialLeanState,
+  leanSemanticCoreSourceMap,
+  normalizeLeanBooleanFormulaToCnf,
+  renderLeanTransitionSystem,
+  renderLeanSmtLibCheck,
+  solveLeanSatChecks,
+  solveLeanSatChecksDpll,
+  solveLeanSatChecksTseitin,
+  solveLeanSmtChecks,
+  validateLeanSemanticCore,
+  validateLeanSatChecks,
+  validateLeanSmtChecks,
+  validateLeanTemporalChecks,
+  validateLeanTransitionSystem,
+  verifyLeanSemanticCore,
+  verifyGeneratedLeanTransitionConformance,
+  verifyLeanSmtChecksZ3,
+} from "./lean-semantic-core.mjs";
+
+export {
+  BEHAVIOR_MODEL_SCHEMA_VERSION,
+  compileBehaviorModel,
+  validateBehaviorModel,
+  verifyBehaviorImplementation,
+  verifyBehaviorModel,
+} from "./behavior.mjs";
+
+export {
   MARKDOWN_PROJECTION_EMITTER,
   PROJECTION_PROVENANCE_SCHEMA_VERSION,
   createProjectionSnapshot,

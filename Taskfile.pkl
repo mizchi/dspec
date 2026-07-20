@@ -32,6 +32,13 @@ local jsSources: Listing<String> = new {
   "test/**/*.mjs"
 }
 
+/// Lean fixtures are executed by the Node semantic-core tests. They must take
+/// part in the test task action key so a changed theorem cannot be hidden by a
+/// cached JavaScript test result.
+local leanSources: Listing<String> = new {
+  "fixtures/**/*.lean"
+}
+
 local reviewArtifacts: Listing<String> = new {
   "generated/examples/**/*.md"
   "generated/holdouts/**/*.md"
@@ -77,6 +84,7 @@ local test: Task = new {
     ...sqlFixtures
     ...realAppFixtures
     ...jsSources
+    ...leanSources
     ...reviewArtifacts
     ...nixSources
     ...ciSources
@@ -289,6 +297,54 @@ local generatedVerify: Task = new {
   deps { coverage }
 }
 
+local leanCoreVerify: Task = new {
+  name = "lean-core:verify"
+  description = "Validate Pkl-to-Lean bindings and check the Lean semantic-core fixture"
+  cmd = "node scripts/verify-lean-semantic-core.mjs fixtures/lean-core-purchase.pkl"
+  inputs = new {
+    ...pklSources
+    ...leanSources
+    ...jsSources
+  }
+}
+
+local leanCoreGenerate: Task = new {
+  name = "lean-core:generate"
+  description = "Render the Pkl transition-system fixture as Lean State, Action, and denote"
+  cmd = "node scripts/generate-lean-transition.mjs fixtures/lean-core-purchase.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+  }
+  outputs = new {
+    "fixtures/lean-core/CommercePurchaseGenerated.lean"
+  }
+}
+
+local behaviorVerify: Task = new {
+  name = "behavior:verify"
+  description = "Check generated Lean, the behavior DSL reference model, and its implementation adapter"
+  cmd = "node scripts/generate-behavior-transition.mjs --check fixtures/behavior-purchase.pkl fixtures/behavior/CommercePurchaseGenerated.lean && lean fixtures/behavior/CommercePurchaseGenerated.lean && node scripts/verify-behavior.mjs fixtures/behavior-purchase.pkl"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+    ...leanSources
+  }
+}
+
+local behaviorGenerate: Task = new {
+  name = "behavior:generate"
+  description = "Render the behavior DSL fixture as a deterministic Lean transition model"
+  cmd = "node scripts/generate-behavior-transition.mjs fixtures/behavior-purchase.pkl fixtures/behavior/CommercePurchaseGenerated.lean"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+  }
+  outputs = new {
+    "fixtures/behavior/CommercePurchaseGenerated.lean"
+  }
+}
+
 local devshellCheck: Task = new {
   name = "devshell:check"
   description = "Run the full project check inside the Nix devShell"
@@ -430,6 +486,10 @@ tasks {
   reportFixturesReview
   specReadingReportFixturesReview
   generatedVerify
+  leanCoreVerify
+  leanCoreGenerate
+  behaviorVerify
+  behaviorGenerate
   devshellCheck
   devshellTools
   devshellFormal

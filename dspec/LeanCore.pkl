@@ -1,0 +1,184 @@
+/// Closed Pkl syntax for the small Lean semantic-core fragment.
+///
+/// The module intentionally models only natural-number state, atomic actions,
+/// and invariant formulas. It is a data language, not an escape hatch for
+/// arbitrary Pkl computation or arbitrary Lean syntax.
+module dspec.LeanCore
+
+typealias Identifier = String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+typealias LeanAssurance = "bounded" | "proved"
+typealias LeanReachabilityExpectation = "reachable" | "unreachable"
+typealias LeanSatExpectation = "sat" | "unsat"
+typealias LeanTemporalExpectation = "holds" | "violated"
+typealias LeanTemporalScope = "path" | "allPaths"
+typealias LeanNatExprKind = "state" | "initial" | "input" | "literal" | "add" | "sub"
+typealias LeanFormulaKind = "le" | "eq" | "and" | "implies"
+typealias LeanBooleanFormulaKind = "variable" | "literal" | "not" | "and" | "or"
+typealias LeanIntExprKind = "variable" | "literal" | "add" | "sub" | "scale"
+typealias LeanIntFormulaKind = "le" | "eq" | "not" | "and" | "or"
+typealias LeanTemporalFormulaKind = "state" | "not" | "and" | "or" | "next" | "always" | "eventually"
+
+class LeanNatExpr {
+  kind: LeanNatExprKind
+  field: Identifier? = null
+  value: Int? = null
+  children: Listing<LeanNatExpr> = new {}
+}
+
+class LeanFormula {
+  kind: LeanFormulaKind
+  terms: Listing<LeanNatExpr> = new {}
+  children: Listing<LeanFormula> = new {}
+}
+
+class LeanNatStateField {
+  id: Identifier
+}
+
+class LeanInitialValue {
+  field: Identifier
+  value: Int(this >= 0)
+}
+
+class LeanActionParameter {
+  id: Identifier
+  /// Finite values to enumerate only for bounded model checks. This does not
+  /// restrict the natural-number input accepted by the transition relation.
+  finiteValues: Listing<Int(this >= 0)> = new {}
+}
+
+class LeanStateUpdate {
+  field: Identifier
+  value: LeanNatExpr
+}
+
+class LeanAction {
+  id: Identifier
+  parameters: Listing<LeanActionParameter> = new {}
+  guard: LeanFormula
+  updates: Listing<LeanStateUpdate> = new {}
+}
+
+class LeanInvariant {
+  id: Identifier
+  formula: LeanFormula
+}
+
+class LeanBoundedReachability {
+  id: Identifier
+  maxSteps: Int(this >= 0)
+  expectation: LeanReachabilityExpectation
+  target: LeanFormula
+}
+
+class LeanBooleanFormula {
+  kind: LeanBooleanFormulaKind
+  name: Identifier? = null
+  value: Boolean? = null
+  children: Listing<LeanBooleanFormula> = new {}
+}
+
+class LeanSatCheck {
+  id: Identifier
+  rule: Identifier
+  declaration: Identifier
+  terms: Listing<Identifier> = new {}
+  variables: Listing<Identifier> = new {}
+  formula: LeanBooleanFormula
+  expectation: LeanSatExpectation
+}
+
+class LeanBoundedIntVariable {
+  id: Identifier
+  lower: Int
+  upper: Int
+}
+
+class LeanIntExpr {
+  kind: LeanIntExprKind
+  name: Identifier? = null
+  value: Int? = null
+  coefficient: Int? = null
+  children: Listing<LeanIntExpr> = new {}
+}
+
+class LeanIntFormula {
+  kind: LeanIntFormulaKind
+  terms: Listing<LeanIntExpr> = new {}
+  children: Listing<LeanIntFormula> = new {}
+}
+
+class LeanSmtCheck {
+  id: Identifier
+  rule: Identifier
+  declaration: Identifier
+  terms: Listing<Identifier> = new {}
+  variables: Listing<LeanBoundedIntVariable> = new {}
+  formula: LeanIntFormula
+  expectation: LeanSatExpectation
+}
+
+class LeanTemporalActionInput {
+  field: Identifier
+  value: Int(this >= 0)
+}
+
+class LeanTemporalActionStep {
+  action: Identifier
+  input: Listing<LeanTemporalActionInput> = new {}
+}
+
+class LeanTemporalFormula {
+  kind: LeanTemporalFormulaKind
+  predicate: LeanFormula? = null
+  children: Listing<LeanTemporalFormula> = new {}
+}
+
+class LeanTemporalCheck {
+  id: Identifier
+  rule: Identifier
+  declaration: Identifier
+  terms: Listing<Identifier> = new {}
+  /// `path` checks one explicit trace. `allPaths` checks every finite action
+  /// sequence from the initial state up to `maxSteps`.
+  scope: LeanTemporalScope = "path"
+  /// Required only for `allPaths`; this is a model-checking bound, not an
+  /// assertion about unbounded or fair executions.
+  maxSteps: Int? = null
+  path: Listing<LeanTemporalActionStep> = new {}
+  formula: LeanTemporalFormula
+  expectation: LeanTemporalExpectation
+}
+
+class LeanTransitionSystem {
+  id: Identifier
+  stateFields: Listing<LeanNatStateField> = new {}
+  initialValues: Listing<LeanInitialValue> = new {}
+  actions: Listing<LeanAction> = new {}
+  invariants: Listing<LeanInvariant> = new {}
+  boundedReachability: Listing<LeanBoundedReachability> = new {}
+}
+
+class LeanCoreClaim {
+  id: Identifier
+  rule: Identifier
+  declaration: Identifier
+  assurance: LeanAssurance
+  terms: Listing<Identifier> = new {}
+  invariant: Identifier? = null
+}
+
+class LeanCore {
+  schemaVersion: String(matches(Regex(#"^[0-9]+\.[0-9]+$"#)))
+  id: Identifier
+  source: String(length > 0)
+  /// Deterministically rendered Lean `State` / `Action` / `denote` model.
+  /// When configured, verification rejects any hand-edited drift in this file.
+  generatedSource: String? = null
+  terms: Listing<Identifier> = new {}
+  transitionSystem: LeanTransitionSystem
+  satChecks: Listing<LeanSatCheck> = new {}
+  smtChecks: Listing<LeanSmtCheck> = new {}
+  temporalChecks: Listing<LeanTemporalCheck> = new {}
+  claims: Listing<LeanCoreClaim> = new {}
+}

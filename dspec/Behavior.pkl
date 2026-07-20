@@ -1,0 +1,149 @@
+/// A Lean-free authoring surface for small, closed state-machine specifications.
+///
+/// This module is intentionally a frontend: authors name domain states,
+/// operations, preconditions, postconditions, and checks. The JavaScript
+/// compiler lowers this shape into the closed `dspec.LeanCore` semantic model;
+/// this module neither exposes Lean syntax nor permits arbitrary Pkl code as a
+/// transition relation.
+module dspec.Behavior
+
+import "./Schema.pkl" as d
+
+typealias Identifier = String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+typealias ReachabilityExpectation = "reachable" | "unreachable"
+typealias TemporalExpectation = "holds" | "violated"
+typealias TemporalScope = "path" | "allPaths"
+typealias NatKind = "current" | "initial" | "input" | "number" | "plus" | "minus"
+typealias ConstraintKind = "atMost" | "equals" | "allOf" | "ifThen"
+typealias TemporalKind = "state" | "not" | "all" | "any" | "next" | "always" | "eventually"
+
+/// A natural-number value in the behavior language. Prefer the constructors
+/// below (`current`, `input`, `atMost`, and so on) over constructing AST nodes.
+class Nat {
+  kind: NatKind
+  field: Identifier? = null
+  value: Int? = null
+  children: Listing<Nat> = new {}
+}
+
+function current(fieldId: Identifier): Nat = new { kind = "current"; field = fieldId }
+function initial(fieldId: Identifier): Nat = new { kind = "initial"; field = fieldId }
+function input(fieldId: Identifier): Nat = new { kind = "input"; field = fieldId }
+function number(literal: Int(this >= 0)): Nat = new { kind = "number"; value = literal }
+function plus(leftTerm: Nat, rightTerm: Nat): Nat = new { kind = "plus"; children { leftTerm; rightTerm } }
+function minus(leftTerm: Nat, rightTerm: Nat): Nat = new { kind = "minus"; children { leftTerm; rightTerm } }
+
+/// A closed predicate over the current state, initial state, and action input.
+class Constraint {
+  kind: ConstraintKind
+  terms: Listing<Nat> = new {}
+  children: Listing<Constraint> = new {}
+}
+
+function atMost(leftTerm: Nat, rightTerm: Nat): Constraint = new { kind = "atMost"; terms { leftTerm; rightTerm } }
+function equals(leftTerm: Nat, rightTerm: Nat): Constraint = new { kind = "equals"; terms { leftTerm; rightTerm } }
+function allOf(parts: Listing<Constraint>): Constraint = new { kind = "allOf"; children = parts }
+function ifThen(condition: Constraint, consequence: Constraint): Constraint = new { kind = "ifThen"; children { condition; consequence } }
+
+class State {
+  id: Identifier
+  initial: Int(this >= 0)
+}
+
+function state(stateId: Identifier, initialValue: Int(this >= 0)): State = new { id = stateId; initial = initialValue }
+
+/// `samples` exist only for bounded checks and implementation grounding. They
+/// never restrict the unbounded mathematical operation contract.
+class Input {
+  id: Identifier
+  samples: Listing<Int(this >= 0)> = new {}
+}
+
+function natInput(inputId: Identifier, sampleValues: Listing<Int(this >= 0)>): Input = new { id = inputId; samples = sampleValues }
+
+class Assignment {
+  field: Identifier
+  value: Nat
+}
+
+function set(fieldId: Identifier, nextValue: Nat): Assignment = new { field = fieldId; value = nextValue }
+
+/// A business operation. `requires` is its acceptance condition; `ensures`
+/// describes the next value of every updated state field.
+class Action {
+  id: Identifier
+  inputs: Listing<Input> = new {}
+  requires: Constraint
+  ensures: Listing<Assignment> = new {}
+}
+
+class Invariant {
+  id: Identifier
+  rule: Identifier
+  constraint: Constraint
+}
+
+class ReachabilityCheck {
+  id: Identifier
+  rule: Identifier
+  maxSteps: Int(this >= 0)
+  expectation: ReachabilityExpectation
+  target: Constraint
+}
+
+class ActionStep {
+  action: Identifier
+  input: Mapping<Identifier, Int(this >= 0)> = new {}
+}
+
+class TemporalFormula {
+  kind: TemporalKind
+  constraint: Constraint? = null
+  children: Listing<TemporalFormula> = new {}
+}
+
+function satisfies(predicate: Constraint): TemporalFormula = new { kind = "state"; constraint = predicate }
+function temporalNot(childFormula: TemporalFormula): TemporalFormula = new { kind = "not"; children { childFormula } }
+function allTemporal(parts: Listing<TemporalFormula>): TemporalFormula = new { kind = "all"; children = parts }
+function anyTemporal(parts: Listing<TemporalFormula>): TemporalFormula = new { kind = "any"; children = parts }
+function next(childFormula: TemporalFormula): TemporalFormula = new { kind = "next"; children { childFormula } }
+function always(childFormula: TemporalFormula): TemporalFormula = new { kind = "always"; children { childFormula } }
+function eventually(childFormula: TemporalFormula): TemporalFormula = new { kind = "eventually"; children { childFormula } }
+
+class TemporalCheck {
+  id: Identifier
+  rule: Identifier
+  scope: TemporalScope = "path"
+  maxSteps: Int? = null
+  path: Listing<ActionStep> = new {}
+  formula: TemporalFormula
+  expectation: TemporalExpectation
+}
+
+/// One executable correspondence. The adapter exports a function receiving
+/// `{ state, input }` and returns `{ status, state }`, where status is either
+/// `accepted` or `rejected`.
+class ActionGrounding {
+  action: Identifier
+  implementation: d.ImplementationRef
+}
+
+class Grounding {
+  /// Number of transitions to execute from the initial state. Every action
+  /// input sample is checked at every finite path prefix below this bound.
+  maxSteps: Int(this >= 0)
+  actions: Listing<ActionGrounding> = new {}
+}
+
+/// The author-facing behavior specification. Domain vocabulary and natural
+/// language rules stay in the sibling `model: d.Model` document field.
+class Behavior {
+  id: Identifier
+  terms: Listing<Identifier> = new {}
+  states: Listing<State> = new {}
+  actions: Listing<Action> = new {}
+  invariants: Listing<Invariant> = new {}
+  reachability: Listing<ReachabilityCheck> = new {}
+  temporal: Listing<TemporalCheck> = new {}
+  grounding: Grounding? = null
+}
