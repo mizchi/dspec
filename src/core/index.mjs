@@ -70,7 +70,11 @@ export {
 
 export {
   DOMAIN_CODEGEN_IR_SCHEMA_VERSION,
+  DOMAIN_RELATIONSHIP_GRAPH_SCHEMA_VERSION,
   domainCodegenIr,
+  domainRelationshipGraph,
+  renderDomainRelationshipMarkdown,
+  renderDomainRelationshipMermaid,
   renderDomainTypescript,
   validateDomainModel,
 } from "./domain.mjs";

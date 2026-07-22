@@ -1,8 +1,8 @@
 {
   "artifacts": [
     {
-      "bytes": 1492158,
-      "digest": "sha256:18e0fe79eee0bdced09943c55998776bbd682914859713140fdb19c563e023ed",
+      "bytes": 1498339,
+      "digest": "sha256:85d4b3a782f053aff0abbfb8ad819b2e25d45c7f009035ff65fbce861f11bb49",
       "locale": null,
       "path": "generated/source-map.json"
     }
@@ -11,9 +11,9 @@
     "name": "dspec/source-map",
     "version": "1.0"
   },
-  "generatedAt": "2026-07-22T19:23:02.986Z",
+  "generatedAt": "2026-07-22T20:02:15.210Z",
   "model": {
-    "digest": "sha256:cf8a09dde1e234084860d3fb6b9a25a6c014caf47ae8a2670158c772e4773fa8",
+    "digest": "sha256:9a959232e50b6618bce39454438edac9225424a0a1c2d040342cfe218b71c434",
     "id": "dspec-self",
     "version": "0.1.0"
   },

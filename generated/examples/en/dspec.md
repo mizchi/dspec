@@ -7,12 +7,12 @@
 ## Review Summary
 
 - approvedRules: `79`
-- automatedCheckTargets: `354`
-- implementationRefs: `737`
+- automatedCheckTargets: `356`
+- implementationRefs: `739`
 - projections: `8`
 - domainElements: `21`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=354, executed=5, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=356, executed=5, mutation-tested=1, bounded=0, proved=0`
 
 ## Projections
 
@@ -155,6 +155,7 @@
 - `artifact.spec_change_review_scaffold` (action): spec change review scaffold
 - `artifact.spec_query` (action): deterministic specification query
 - `artifact.spec_reading_eval` (entity): spec reading evaluation set
+- `artifact.specification_relationship_document` (entity): specification relationship document
 - `artifact.sql_query_oracle` (action): SQL query oracle
 - `backend.pkl` (entity): Pkl evaluator
 - `backend.pkl_mbt` (entity): mizchi/pkl-mbt
@@ -212,6 +213,7 @@
 - `concept.runtime_signal` (relation): Runtime signal
 - `concept.runtime_slo` (relation): Runtime SLO
 - `concept.runtime_telemetry` (relation): Runtime telemetry
+- `concept.specification_relationship_graph` (relation): specification relationship graph
 - `concept.stable_id` (value): stable id
 - `concept.support` (relation): support relation
 - `concept.term` (entity): vocabulary term
@@ -1353,36 +1355,44 @@ Domain pattern elements are grounded in approved rules through stable ids
 
 ### DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN
 
-The DDD domain model explicitly links invariants to normative Rules and formal artifacts, then generates implementation scaffolds from a language-neutral IR
+The DDD domain model explicitly links invariants to normative Rules and formal artifacts, then generates implementation scaffolds and a specification relationship document from language-neutral projections
 
 - kind: obligation
 - status: approved
 - priority: 100
 - requiredAssurances: reference
+- term: `artifact.specification_relationship_document`
 - term: `concept.domain_aggregate`
 - term: `concept.domain_codegen_ir`
 - term: `concept.domain_formalization`
 - term: `concept.domain_model`
+- term: `concept.specification_relationship_graph`
 - must: `domain.invariant.rule linkedTo domain.formalization.target`
 - must: `domain.codegenIR preserves entities valueObjects aggregates commands events fields`
+- must: `domain.relationshipGraph links declarations rules checks implementations formalizations`
 - check: node test/domain-core.test.mjs#compiles Entity, Value Object, Aggregate, Command, Event, and Invariant declarations into a language-neutral IR [reference]
+- check: node test/domain-core.test.mjs#projects DDD declarations, rules, evidence, and formalizations into one relationship graph [reference]
 - check: node test/domain-cli.test.mjs#generates a TypeScript domain scaffold at a caller-selected path [reference]
 - check: node test/domain-cli.test.mjs#tracks formalization artifact paths in the normal drift gate [reference]
+- check: node test/domain-cli.test.mjs#renders the specification relationship document from domain declarations [reference]
 - implementation: code dspec/schema/Claims.pkl#DomainModel
 - implementation: code dspec/schema/Claims.pkl#DomainFormalization
 - implementation: code src/core/domain.mjs#domainCodegenIr
+- implementation: code src/core/domain.mjs#domainRelationshipGraph
+- implementation: code src/core/domain.mjs#renderDomainRelationshipMarkdown
 - implementation: code src/core/domain.mjs#renderDomainTypescript
 - implementation: code src/cli.mjs#runDomainCommand
-- rationale: 生成するのは型・port・雛形までとし、業務判断や永続化を推測しない。任意言語の renderer は Pkl を再解釈せず versioned IR を入力にする。
+- rationale: 生成するのは型・port・雛形と宣言済みの関係までとし、業務判断、永続化、または成果物との意味的等価性を推測しない。任意言語の renderer は Pkl を再解釈せず versioned IR を入力にする。
 
 #### Review
 
 - source: model.rules[78]
 - coverage: rule
-- automatedChecks: 3
-- implementationRefs: 5
+- automatedChecks: 5
+- implementationRefs: 7
 - selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[0]
 - selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[1]
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[2]
 
 ### DSPEC-DOMAIN-PRESET-PACK
 

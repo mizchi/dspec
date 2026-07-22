@@ -1577,6 +1577,26 @@
         }
       },
       {
+        "generated": "alloy.sig.C_25_3",
+        "sortedRuleIndex": 25,
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[3]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_25_4",
+        "sortedRuleIndex": 25,
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[4]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
         "generated": "alloy.sig.R_DSPEC_DOMAIN_PRESET_PACK",
         "sortedRuleIndex": 26,
         "source": {
@@ -7080,6 +7100,24 @@
         }
       },
       {
+        "generated": "lean.checks.DSPEC_DOMAIN_MODEL_FORMALIZATION_AND_CODEGEN[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[3]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_DOMAIN_MODEL_FORMALIZATION_AND_CODEGEN[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[4]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
         "generated": "lean.clauseExprs.DSPEC_DOMAIN_MODEL_FORMALIZATION_AND_CODEGEN.must[0]",
         "source": {
           "field": "must",
@@ -7096,6 +7134,16 @@
           "index": 1,
           "kind": "clause",
           "path": "model.rules[78].must[1]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_DOMAIN_MODEL_FORMALIZATION_AND_CODEGEN.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[78].must[2]",
           "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
         }
       },
@@ -12950,6 +12998,14 @@
         }
       },
       {
+        "generated": "markdown.term.artifact.specification_relationship_document",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[129]",
+          "termId": "artifact.specification_relationship_document"
+        }
+      },
+      {
         "generated": "markdown.term.artifact.sql_query_oracle",
         "source": {
           "kind": "term",
@@ -13025,7 +13081,7 @@
         "generated": "markdown.term.concept.construction_authority",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[132]",
+          "path": "model.vocabulary[134]",
           "termId": "concept.construction_authority"
         }
       },
@@ -13153,7 +13209,7 @@
         "generated": "markdown.term.concept.intent_assurance_task",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[130]",
+          "path": "model.vocabulary[132]",
           "termId": "concept.intent_assurance_task"
         }
       },
@@ -13169,7 +13225,7 @@
         "generated": "markdown.term.concept.intent_claim",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[129]",
+          "path": "model.vocabulary[131]",
           "termId": "concept.intent_claim"
         }
       },
@@ -13185,7 +13241,7 @@
         "generated": "markdown.term.concept.intent_goal",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[128]",
+          "path": "model.vocabulary[130]",
           "termId": "concept.intent_goal"
         }
       },
@@ -13233,7 +13289,7 @@
         "generated": "markdown.term.concept.intent_scenario",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[133]",
+          "path": "model.vocabulary[135]",
           "termId": "concept.intent_scenario"
         }
       },
@@ -13241,7 +13297,7 @@
         "generated": "markdown.term.concept.intent_semantic_binding",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[131]",
+          "path": "model.vocabulary[133]",
           "termId": "concept.intent_semantic_binding"
         }
       },
@@ -13406,6 +13462,14 @@
         }
       },
       {
+        "generated": "markdown.term.concept.specification_relationship_graph",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[128]",
+          "termId": "concept.specification_relationship_graph"
+        }
+      },
+      {
         "generated": "markdown.term.concept.stable_id",
         "source": {
           "kind": "term",
@@ -13441,7 +13505,7 @@
         "generated": "markdown.term.state.intent-model-accepted",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[135]",
+          "path": "model.vocabulary[137]",
           "termId": "state.intent-model-accepted"
         }
       },
@@ -13449,7 +13513,7 @@
         "generated": "markdown.term.state.intent-model-authored",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[134]",
+          "path": "model.vocabulary[136]",
           "termId": "state.intent-model-authored"
         }
       },
@@ -18408,6 +18472,16 @@
         }
       },
       {
+        "generated": "markdown.rule.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[78].must[2]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
         "generated": "markdown.rule.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.checks[0]",
         "source": {
           "index": 0,
@@ -18431,6 +18505,24 @@
           "index": 2,
           "kind": "checkTarget",
           "path": "model.rules[78].checks[2]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.checks[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[3]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.checks[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[4]",
           "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
         }
       },
@@ -18476,6 +18568,24 @@
           "index": 4,
           "kind": "implementationRef",
           "path": "model.rules[78].implementedBy[4]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.implementedBy[5]",
+        "source": {
+          "index": 5,
+          "kind": "implementationRef",
+          "path": "model.rules[78].implementedBy[5]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.implementedBy[6]",
+        "source": {
+          "index": 6,
+          "kind": "implementationRef",
+          "path": "model.rules[78].implementedBy[6]",
           "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
         }
       },
@@ -32027,6 +32137,16 @@
         }
       },
       {
+        "generated": "quickcheck.rules.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[78].must[2]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
         "generated": "quickcheck.rules.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.checks[0]",
         "source": {
           "index": 0,
@@ -32050,6 +32170,24 @@
           "index": 2,
           "kind": "checkTarget",
           "path": "model.rules[78].checks[2]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.checks[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[3]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.checks[4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[4]",
           "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
         }
       },
@@ -32095,6 +32233,24 @@
           "index": 4,
           "kind": "implementationRef",
           "path": "model.rules[78].implementedBy[4]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.implementedBy[5]",
+        "source": {
+          "index": 5,
+          "kind": "implementationRef",
+          "path": "model.rules[78].implementedBy[5]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.implementedBy[6]",
+        "source": {
+          "index": 6,
+          "kind": "implementationRef",
+          "path": "model.rules[78].implementedBy[6]",
           "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
         }
       },
@@ -44096,6 +44252,24 @@
         }
       },
       {
+        "generated": "tla.Checks[DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN][3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[3]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN][4]",
+        "source": {
+          "index": 4,
+          "kind": "checkTarget",
+          "path": "model.rules[78].checks[4]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
         "generated": "tla.RuleClauses[DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN].must[0]",
         "source": {
           "field": "must",
@@ -44112,6 +44286,16 @@
           "index": 1,
           "kind": "clause",
           "path": "model.rules[78].must[1]",
+          "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN].must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[78].must[2]",
           "ruleId": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
         }
       },

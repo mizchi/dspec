@@ -647,6 +647,8 @@ model: d.Model = new {
     d.term("concept.domain_aggregate", "entity", "DDD 集約", "DDD aggregate")
     d.term("concept.domain_formalization", "relation", "ドメイン形式化対応", "domain formalization link")
     d.term("concept.domain_codegen_ir", "entity", "ドメイン codegen IR", "domain code-generation IR")
+    d.term("concept.specification_relationship_graph", "relation", "仕様関係グラフ", "specification relationship graph")
+    d.term("artifact.specification_relationship_document", "entity", "仕様関係ドキュメント", "specification relationship document")
     d.term("concept.intent_goal", "entity", "Intent goal", "Intent goal")
     d.term("concept.intent_claim", "entity", "Intent claim", "Intent claim")
     d.term("concept.intent_assurance_task", "entity", "Intent assurance task", "Intent assurance task")
@@ -6854,14 +6856,16 @@ model: d.Model = new {
       kind = "obligation"
       text =
         text(
-          "DDD ドメインモデルは不変条件を規範 Rule と形式化 artifact に明示接続し、言語非依存 IR から実装雛形を生成する",
-          "The DDD domain model explicitly links invariants to normative Rules and formal artifacts, then generates implementation scaffolds from a language-neutral IR",
+          "DDD ドメインモデルは不変条件を規範 Rule と形式化 artifact に明示接続し、言語非依存 IR と仕様関係ドキュメントを生成する",
+          "The DDD domain model explicitly links invariants to normative Rules and formal artifacts, then generates implementation scaffolds and a specification relationship document from language-neutral projections",
         )
       terms {
         "concept.domain_model"
         "concept.domain_aggregate"
         "concept.domain_formalization"
         "concept.domain_codegen_ir"
+        "concept.specification_relationship_graph"
+        "artifact.specification_relationship_document"
       }
       must {
         d.clause(
@@ -6874,22 +6878,31 @@ model: d.Model = new {
           "codegen IR は Entity、Value Object、Aggregate、Command、Event、field の形を保持する",
           "The code-generation IR preserves Entity, Value Object, Aggregate, Command, Event, and field shape",
         )
+        d.clause(
+          "domain.relationshipGraph links declarations rules checks implementations formalizations",
+          "仕様関係グラフは DDD 宣言、Rule、検査、実装、形式化 artifact のリンクを保持する",
+          "The specification relationship graph preserves links among DDD declarations, Rules, checks, implementations, and formalization artifacts",
+        )
       }
       reviewStatus = "approved"
       checks {
         d.nodeCheck("test/domain-core.test.mjs#compiles Entity, Value Object, Aggregate, Command, Event, and Invariant declarations into a language-neutral IR")
+        d.nodeCheck("test/domain-core.test.mjs#projects DDD declarations, rules, evidence, and formalizations into one relationship graph")
         d.nodeCheck("test/domain-cli.test.mjs#generates a TypeScript domain scaffold at a caller-selected path")
         d.nodeCheck("test/domain-cli.test.mjs#tracks formalization artifact paths in the normal drift gate")
+        d.nodeCheck("test/domain-cli.test.mjs#renders the specification relationship document from domain declarations")
       }
       implementedBy {
         d.codeRef("dspec/schema/Claims.pkl", "DomainModel")
         d.codeRef("dspec/schema/Claims.pkl", "DomainFormalization")
         d.codeRef("src/core/domain.mjs", "domainCodegenIr")
+        d.codeRef("src/core/domain.mjs", "domainRelationshipGraph")
+        d.codeRef("src/core/domain.mjs", "renderDomainRelationshipMarkdown")
         d.codeRef("src/core/domain.mjs", "renderDomainTypescript")
         d.codeRef("src/cli.mjs", "runDomainCommand")
       }
       rationale =
-        "生成するのは型・port・雛形までとし、業務判断や永続化を推測しない。任意言語の renderer は Pkl を再解釈せず versioned IR を入力にする。"
+        "生成するのは型・port・雛形と宣言済みの関係までとし、業務判断、永続化、または成果物との意味的等価性を推測しない。任意言語の renderer は Pkl を再解釈せず versioned IR を入力にする。"
     }
 
     new d.Rule {

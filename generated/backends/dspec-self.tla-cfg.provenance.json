@@ -11,9 +11,9 @@
     "name": "dspec/tla-cfg",
     "version": "1.0"
   },
-  "generatedAt": "2026-07-22T19:23:02.986Z",
+  "generatedAt": "2026-07-22T20:02:15.210Z",
   "model": {
-    "digest": "sha256:cf8a09dde1e234084860d3fb6b9a25a6c014caf47ae8a2670158c772e4773fa8",
+    "digest": "sha256:9a959232e50b6618bce39454438edac9225424a0a1c2d040342cfe218b71c434",
     "id": "dspec-self",
     "version": "0.1.0"
   },

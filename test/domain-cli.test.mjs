@@ -96,6 +96,9 @@ test("renders DDD declarations and their source links in the Markdown projection
   assert.match(markdown.stdout, /### Aggregate purchase-order/);
   assert.match(markdown.stdout, /### Command create-purchase-order/);
   assert.match(markdown.stdout, /### Domain Formalization order-total-alloy/);
+  assert.match(markdown.stdout, /## Specification Relationships/);
+  assert.match(markdown.stdout, /checks-rule/);
+  assert.match(markdown.stdout, /```mermaid/);
 
   const map = JSON.parse(sourceMap.stdout);
   assert.ok(map.artifacts.markdown.some(
@@ -106,4 +109,18 @@ test("renders DDD declarations and their source links in the Markdown projection
     (entry) => entry.generated === "markdown.domain.formalizations.order-total-alloy"
       && entry.source.path === "model.patterns.domain.formalizations[0]",
   ));
+  assert.ok(map.artifacts.markdown.some(
+    (entry) => entry.generated === "markdown.domain.relationships"
+      && entry.source.path === "model.patterns.domain",
+  ));
+});
+
+test("renders the specification relationship document from domain declarations", () => {
+  const result = run(["domain", "relationships", "--markdown", "fixtures/domain-codegen.pkl"]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /# Specification Relationships commerce-domain-fixture/);
+  assert.match(result.stdout, /domain\/invariant\/order-total-non-negative/);
+  assert.match(result.stdout, /domain\/formalization\/order-total-alloy/);
+  assert.match(result.stdout, /```mermaid/);
 });

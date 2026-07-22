@@ -94,6 +94,28 @@ contains an entry for every declaration and field, so a reader can navigate
 from a generated Entity, Value Object, or formalization link back to the exact
 Pkl declaration that owns it.
 
+## Specification relationship document
+
+The relationship graph makes the links that are otherwise implicit in separate
+declarations reviewable in one place. It includes field references, Aggregate
+boundaries, Commands and Events, Invariant-to-Rule links, Formalization-to-
+artifact links, and each linked Rule's terms, checks, and implementation
+references.
+
+```sh
+# Reviewable document with a Mermaid diagram
+dspec domain relationships --markdown \
+  --output docs/generated/commerce-relationships.md \
+  fixtures/domain-codegen.pkl
+
+# Stable machine-readable graph for a UI, query layer, or another generator
+dspec domain relationships --json fixtures/domain-codegen.pkl > relationships.json
+```
+
+The generated edges are declared traceability, not a proof of equivalence. In
+particular, a `checks-rule` edge says that an artifact was selected to check a
+Rule; its `assurance` and verifier result determine what claim can be made.
+
 ## Built-in TypeScript scaffold
 
 ```sh

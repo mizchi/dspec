@@ -1,4 +1,5 @@
 export const DOMAIN_CODEGEN_IR_SCHEMA_VERSION = "1.0";
+export const DOMAIN_RELATIONSHIP_GRAPH_SCHEMA_VERSION = "1.0";
 
 const FIELD_TYPES = new Set([
   "string",
@@ -365,6 +366,177 @@ export function domainCodegenIr(model) {
     formalizations,
     errors: [],
   };
+}
+
+function relationshipArtifactId(reference) {
+  const symbol = reference?.symbol ? `#${reference.symbol}` : "";
+  return `artifact/${reference?.kind ?? "unknown"}/${reference?.path ?? "missing"}${symbol}`;
+}
+
+function relationshipTargetId(field) {
+  if (field?.type === "value-object") return `domain/value-object/${field.target}`;
+  if (field?.type === "entity-reference") return `domain/entity/${field.target}`;
+  if (field?.type === "enum") return `domain/enum/${field.target}`;
+  return null;
+}
+
+function relationshipFieldId(collection, declaration, field) {
+  return `domain/field/${collection}/${declaration.id}/${field.id}`;
+}
+
+function sortedEntries(entries) {
+  return [...entries].sort((left, right) => `${left.from}\u0000${left.relation}\u0000${left.to}`.localeCompare(`${right.from}\u0000${right.relation}\u0000${right.to}`));
+}
+
+function countBy(values, property) {
+  const counts = new Map();
+  for (const value of values) counts.set(value[property], (counts.get(value[property]) ?? 0) + 1);
+  return Object.fromEntries([...counts.entries()].sort(([left], [right]) => left.localeCompare(right)));
+}
+
+/**
+ * Project the DDD catalog and its normative evidence into a stable graph.
+ * The graph records declared relationships; it does not claim semantic
+ * equivalence between a Rule and an implementation artifact.
+ */
+export function domainRelationshipGraph(model) {
+  const domainModel = domain(model);
+  const errors = domainModel ? validateDomainModel(model) : ["domain model has no Domain catalog"];
+  const nodes = new Map();
+  const edges = [];
+  const addNode = (id, kind, label) => {
+    const existing = nodes.get(id);
+    if (!existing || (existing.kind.startsWith("unresolved-") && !kind.startsWith("unresolved-"))) {
+      nodes.set(id, { id, kind, label });
+    }
+    return id;
+  };
+  const addEdge = (from, relation, to) => edges.push({ from, relation, to });
+  const ruleById = new Map(list(model?.rules).map((rule) => [rule.id, rule]));
+  const termById = new Map(list(model?.vocabulary).map((term) => [term.id, term]));
+  const domainDeclarations = [
+    { collection: "enums", kind: "enum", prefix: "domain/enum" },
+    { collection: "valueObjects", kind: "value-object", prefix: "domain/value-object" },
+    { collection: "entities", kind: "entity", prefix: "domain/entity" },
+    { collection: "aggregates", kind: "aggregate", prefix: "domain/aggregate" },
+    { collection: "commands", kind: "command", prefix: "domain/command" },
+    { collection: "events", kind: "event", prefix: "domain/event" },
+    { collection: "invariants", kind: "invariant", prefix: "domain/invariant" },
+    { collection: "formalizations", kind: "formalization", prefix: "domain/formalization" },
+  ];
+
+  const ruleNode = (ruleId) => {
+    const rule = ruleById.get(ruleId);
+    return addNode(`rule/${ruleId}`, rule ? "rule" : "unresolved-rule", `Rule ${ruleId}`);
+  };
+  const artifactNode = (reference) => {
+    const id = relationshipArtifactId(reference);
+    const symbol = reference?.symbol ? `#${reference.symbol}` : "";
+    return addNode(id, "artifact", `${reference?.kind ?? "unknown"} ${reference?.path ?? "missing"}${symbol}`);
+  };
+  const domainTargetNode = (kind, target) => {
+    const id = `domain/${kind}/${target ?? "missing"}`;
+    if (!nodes.has(id)) addNode(id, "unresolved-domain-target", `Unresolved ${kind} ${target ?? "missing"}`);
+    return id;
+  };
+
+  for (const rule of list(model?.rules).slice().sort(byId)) {
+    const ruleId = ruleNode(rule.id);
+    for (const termId of list(rule.terms).slice().sort()) {
+      const term = termById.get(termId);
+      const termNode = addNode(`term/${termId}`, term ? "term" : "unresolved-term", `Term ${termId}`);
+      addEdge(ruleId, "uses-term", termNode);
+    }
+    for (const check of list(rule.checks).slice().sort((left, right) => `${left.backend}\u0000${left.ref}`.localeCompare(`${right.backend}\u0000${right.ref}`))) {
+      const checkNode = addNode(`check/${check.backend}/${encodeURIComponent(check.ref)}`, "check", `${check.backend} ${check.ref}`);
+      addEdge(ruleId, "has-check", checkNode);
+    }
+    for (const reference of list(rule.implementedBy).slice().sort((left, right) => relationshipArtifactId(left).localeCompare(relationshipArtifactId(right)))) {
+      addEdge(ruleId, "implemented-by", artifactNode(reference));
+    }
+  }
+
+  for (const { collection, kind, prefix } of domainDeclarations) {
+    for (const declaration of list(domainModel?.[collection]).slice().sort(byId)) {
+      const declarationId = addNode(`${prefix}/${declaration.id}`, kind, `${kind} ${declaration.id}`);
+      for (const field of list(declaration.fields).slice().sort(byId)) {
+        const fieldId = addNode(relationshipFieldId(collection, declaration, field), "field", `${declaration.id}.${field.id}: ${field.type}`);
+        addEdge(declarationId, "declares-field", fieldId);
+        const targetId = relationshipTargetId(field);
+        if (targetId) {
+          const kind = field.type === "value-object" ? "value-object" : field.type === "entity-reference" ? "entity" : "enum";
+          addEdge(fieldId, "references", domainTargetNode(kind, field.target));
+        }
+      }
+      if (collection === "aggregates") {
+        addEdge(declarationId, "root", domainTargetNode("entity", declaration.root));
+        for (const member of list(declaration.members).slice().sort()) addEdge(declarationId, "member", domainTargetNode("entity", member));
+      }
+      if (collection === "commands" || collection === "events") {
+        addEdge(declarationId, "targets-aggregate", domainTargetNode("aggregate", declaration.aggregate));
+      }
+      if (collection === "invariants") {
+        if (declaration.aggregate) addEdge(declarationId, "invariant-of", domainTargetNode("aggregate", declaration.aggregate));
+        addEdge(declarationId, "states-rule", ruleNode(declaration.rule));
+      }
+      if (collection === "formalizations") {
+        addEdge(declarationId, "checks-rule", ruleNode(declaration.rule));
+        addEdge(declarationId, "uses-artifact", artifactNode(declaration.target));
+      }
+    }
+  }
+
+  const sortedNodes = [...nodes.values()].sort((left, right) => left.id.localeCompare(right.id));
+  const sortedEdges = sortedEntries(edges);
+  return {
+    schemaVersion: DOMAIN_RELATIONSHIP_GRAPH_SCHEMA_VERSION,
+    status: errors.length === 0 ? "pass" : "fail",
+    model: { id: model?.id ?? null, version: model?.version ?? null },
+    summary: {
+      nodes: sortedNodes.length,
+      edges: sortedEdges.length,
+      nodesByKind: countBy(sortedNodes, "kind"),
+      edgesByRelation: countBy(sortedEdges, "relation"),
+    },
+    nodes: sortedNodes,
+    edges: sortedEdges,
+    errors,
+  };
+}
+
+function mermaidLabel(value) {
+  return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"').replaceAll("\n", " ");
+}
+
+/** Render the graph as a portable Mermaid flowchart. */
+export function renderDomainRelationshipMermaid(graph) {
+  const ids = new Map(graph.nodes.map((node, index) => [node.id, `N${index}`]));
+  const lines = ["flowchart LR"];
+  for (const node of graph.nodes) lines.push(`  ${ids.get(node.id)}[\"${mermaidLabel(node.label)}\"]`);
+  for (const edge of graph.edges) lines.push(`  ${ids.get(edge.from)} -->|${mermaidLabel(edge.relation)}| ${ids.get(edge.to)}`);
+  return `${lines.join("\n")}\n`;
+}
+
+/** Render the same relationship graph as a reviewable Markdown document. */
+export function renderDomainRelationshipMarkdown(graph) {
+  const lines = [
+    `# Specification Relationships ${graph.model.id ?? "unknown"}`,
+    "",
+    `- version: \`${graph.model.version ?? "unknown"}\``,
+    `- status: \`${graph.status}\``,
+    `- nodes: \`${graph.summary.nodes}\``,
+    `- relationships: \`${graph.summary.edges}\``,
+    "",
+  ];
+  if (graph.errors.length > 0) {
+    lines.push("## Validation errors", "");
+    for (const error of graph.errors) lines.push(`- ${error}`);
+    lines.push("");
+  }
+  lines.push("## Relationship ledger", "", "| From | Relation | To |", "| --- | --- | --- |");
+  for (const edge of graph.edges) lines.push(`| \`${edge.from}\` | \`${edge.relation}\` | \`${edge.to}\` |`);
+  lines.push("", "## Diagram", "", "```mermaid", renderDomainRelationshipMermaid(graph).trimEnd(), "```", "");
+  return lines.join("\n");
 }
 
 function renderInterface(lines, name, fields, identityFieldId = null, identityType = null) {

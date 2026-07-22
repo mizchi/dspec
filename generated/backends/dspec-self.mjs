@@ -2276,6 +2276,15 @@ export const rules = [
       },
       {
         "backend": "node",
+        "ref": "test/domain-core.test.mjs#projects DDD declarations, rules, evidence, and formalizations into one relationship graph",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
+      },
+      {
+        "backend": "node",
         "ref": "test/domain-cli.test.mjs#generates a TypeScript domain scaffold at a caller-selected path",
         "automated": true,
         "assurances": [
@@ -2291,13 +2300,24 @@ export const rules = [
           "reference"
         ],
         "assuranceEvidence": {}
+      },
+      {
+        "backend": "node",
+        "ref": "test/domain-cli.test.mjs#renders the specification relationship document from domain declarations",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
       }
     ],
     "terms": [
+      "artifact.specification_relationship_document",
       "concept.domain_aggregate",
       "concept.domain_codegen_ir",
       "concept.domain_formalization",
-      "concept.domain_model"
+      "concept.domain_model",
+      "concept.specification_relationship_graph"
     ],
     "when": [],
     "must": [
@@ -2308,6 +2328,11 @@ export const rules = [
       },
       {
         "expr": "domain.codegenIR preserves entities valueObjects aggregates commands events fields",
+        "astSemanticsVersion": null,
+        "ast": null
+      },
+      {
+        "expr": "domain.relationshipGraph links declarations rules checks implementations formalizations",
         "astSemanticsVersion": null,
         "ast": null
       }

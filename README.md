@@ -343,6 +343,7 @@ node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl /tmp/dspec-eviden
 node src/cli.mjs evidence refresh fixtures/typed-ast.pkl /tmp/dspec-evidence.json
 node src/cli.mjs domain ir fixtures/domain-codegen.pkl
 node src/cli.mjs domain generate --language typescript --output /tmp/commerce-domain.ts fixtures/domain-codegen.pkl
+node src/cli.mjs domain relationships --markdown --output /tmp/commerce-relationships.md fixtures/domain-codegen.pkl
 node src/cli.mjs intent exercise --json --output /tmp/dspec-intent-exercise.json fixtures/intent-contract.pkl fixtures/intent-traces.json
 node src/cli.mjs intent generate-tests --json fixtures/intent-contract-http.pkl
 node src/cli.mjs intent test --json --http-base-url http://127.0.0.1:3000 fixtures/intent-contract-http.pkl
@@ -958,6 +959,13 @@ or business-decision code. Other language renderers consume the same IR rather
 than reinterpreting Pkl. The Markdown projection and source map retain each
 DDD declaration and field for source-level traceability. See
 [`docs/domain-model.md`](docs/domain-model.md).
+
+`dspec domain relationships` derives a reviewable relationship ledger and
+Mermaid graph from the same catalog: DDD declarations, Rule links, checks,
+implementation references, and selected formal artifacts appear as typed
+edges. It records traceability rather than inventing semantic equivalence; the
+linked artifact's assurance and verifier result remain the basis for a
+correctness claim.
 
 `IntentScenario` may be categorized (`success`, `rejection`, `retry`,
 `conflict`, or `timeout`) and marked required. `intent corpus` keeps normal

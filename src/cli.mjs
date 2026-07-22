@@ -42,6 +42,9 @@ import {
 } from "./core/protocol-tests.mjs";
 import {
   domainCodegenIr,
+  domainRelationshipGraph,
+  renderDomainRelationshipMarkdown,
+  renderDomainRelationshipMermaid,
   renderDomainTypescript,
   validateDomainModel,
 } from "./core/domain.mjs";
@@ -103,7 +106,7 @@ const TOP_LEVEL_COMMANDS = [
   { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
   { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
-  { name: "domain", usage: "dspec domain <ir|generate> ..." },
+  { name: "domain", usage: "dspec domain <ir|generate|relationships> ..." },
   { name: "intent", usage: "dspec intent <verify|exercise|generate-tests|test|schema> ..." },
   { name: "daily-drift", usage: "dspec daily-drift <collect|approve> ..." },
   { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
@@ -281,17 +284,22 @@ function domainUsage() {
   return `usage:
   dspec domain ir [--json] <model.pkl>
   dspec domain generate --language typescript [--json] [--output <file.ts>] <model.pkl>
+  dspec domain relationships [--json|--markdown|--mermaid] [--output <file>] <model.pkl>
 
 Compile Entity, Value Object, Aggregate, Command, Domain Event, Invariant, and
 Formalization declarations to a language-neutral IR. The built-in TypeScript
 renderer emits domain-layer types, ports, event payloads, and deliberately
 incomplete constructor stubs. Other language generators consume the IR rather
-than reinterpreting the Pkl domain model.
+than reinterpreting the Pkl domain model. relationships renders the declared
+links among DDD declarations, normative Rules, checks, implementation evidence,
+and formalization artifacts as JSON, Markdown, or Mermaid.
 `;
 }
 
 function parseDomainArgs(args, subcommand) {
   let json = false;
+  let markdown = false;
+  let mermaid = false;
   let language = null;
   let outputFile = null;
   const positional = [];
@@ -299,6 +307,14 @@ function parseDomainArgs(args, subcommand) {
     const arg = args[index];
     if (arg === "--json") {
       json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--mermaid") {
+      mermaid = true;
       continue;
     }
     if (arg === "--language") {
@@ -317,11 +333,14 @@ function parseDomainArgs(args, subcommand) {
     positional.push(arg);
   }
   if (positional.length !== 1) throw new CommandError(domainUsage());
-  if (subcommand === "ir" && (language || outputFile)) throw new CommandError(`domain ir does not accept --language or --output\n${domainUsage()}`);
+  if (Number(json) + Number(markdown) + Number(mermaid) > 1) throw new CommandError(`domain ${subcommand} accepts one output format\n${domainUsage()}`);
+  if (subcommand === "ir" && (language || outputFile || markdown || mermaid)) throw new CommandError(`domain ir does not accept --language, --output, --markdown, or --mermaid\n${domainUsage()}`);
   if (subcommand === "generate" && language !== "typescript") {
     throw new CommandError(`unsupported built-in domain language: ${language ?? "missing"}; use domain ir for an external renderer\n${domainUsage()}`);
   }
-  return { json, language, outputFile, modelFile: positional[0] };
+  if (subcommand === "generate" && (markdown || mermaid)) throw new CommandError(`domain generate does not accept --markdown or --mermaid\n${domainUsage()}`);
+  if (subcommand === "relationships" && language) throw new CommandError(`domain relationships does not accept --language\n${domainUsage()}`);
+  return { json, markdown, mermaid, language, outputFile, modelFile: positional[0] };
 }
 
 function writeDomainGeneratedSource(path, source) {
@@ -336,9 +355,25 @@ function runDomainCommand(args) {
     process.stdout.write(domainUsage());
     return;
   }
-  if (!["ir", "generate"].includes(subcommand)) throw new CommandError(`unknown domain subcommand: ${subcommand}\n${domainUsage()}`);
+  if (!["ir", "generate", "relationships"].includes(subcommand)) throw new CommandError(`unknown domain subcommand: ${subcommand}\n${domainUsage()}`);
   const options = parseDomainArgs(rest, subcommand);
   const model = loadModel(options.modelFile);
+  if (subcommand === "relationships") {
+    const graph = domainRelationshipGraph(model);
+    const errors = [...new Set([...validate(model), ...graph.errors])].sort();
+    const report = { ...graph, status: errors.length === 0 ? "pass" : "fail", errors };
+    const source = options.json
+      ? stableJson(report)
+      : options.mermaid
+        ? renderDomainRelationshipMermaid(report)
+        : renderDomainRelationshipMarkdown(report);
+    const output = options.outputFile ? writeDomainGeneratedSource(options.outputFile, source) : null;
+    if (options.json && output) process.stdout.write(stableJson({ ...report, output }));
+    else if (output) process.stdout.write(`ok: ${model.id} generated domain relationship document ${output.path}\n`);
+    else process.stdout.write(source);
+    if (report.status === "fail") throw new CommandError("domain relationship generation failed\n");
+    return;
+  }
   const ir = domainCodegenIr(model);
   const errors = [...new Set([...validate(model), ...ir.errors])].sort();
   const report = {
@@ -10498,6 +10533,10 @@ function emitSourceMapObject(model, requestedLocale) {
 
   const domain = domainPattern(model);
   if (domain) {
+    artifacts.markdown.push(generatedEntry("markdown.domain.relationships", {
+      kind: "domainRelationshipGraph",
+      path: "model.patterns.domain",
+    }));
     for (const collection of ["enums", "valueObjects", "entities", "aggregates", "commands", "events", "invariants", "formalizations"]) {
       const declarations = list(domain[collection]);
       for (const declaration of declarations.slice().sort(byId)) {
@@ -12010,6 +12049,23 @@ function appendDomainModelMarkdown(lines, model, locale) {
   }
 }
 
+function appendDomainRelationshipMarkdown(lines, model) {
+  if (!domainPattern(model)) return;
+  const graph = domainRelationshipGraph(model);
+  lines.push("## Specification Relationships", "");
+  lines.push(`- nodes: \`${graph.summary.nodes}\``);
+  lines.push(`- relationships: \`${graph.summary.edges}\``);
+  lines.push(`- status: \`${graph.status}\``, "");
+  if (graph.errors.length > 0) {
+    lines.push("### Validation errors", "");
+    for (const error of graph.errors) lines.push(`- ${error}`);
+    lines.push("");
+  }
+  lines.push("### Relationship ledger", "", "| From | Relation | To |", "| --- | --- | --- |");
+  for (const edge of graph.edges) lines.push(`| \`${edge.from}\` | \`${edge.relation}\` | \`${edge.to}\` |`);
+  lines.push("", "### Diagram", "", "```mermaid", renderDomainRelationshipMermaid(graph).trimEnd(), "```", "");
+}
+
 function render(model, requestedLocale) {
   const locale = requestedLocale ?? model.primaryLocale;
   const lines = [
@@ -12043,6 +12099,7 @@ function render(model, requestedLocale) {
   }
 
   appendDomainModelMarkdown(lines, model, locale);
+  appendDomainRelationshipMarkdown(lines, model);
 
   const intent = intentPattern(model);
   if (intent) {
@@ -12310,6 +12367,7 @@ function emitMarkdown(model, requestedLocale) {
   }
 
   appendDomainModelMarkdown(lines, model, locale);
+  appendDomainRelationshipMarkdown(lines, model);
 
   const db = dbPattern(model);
   if (db) {

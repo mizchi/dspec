@@ -721,9 +721,14 @@
       "translationHash": "sha256:b69d857183ac4332dce67e9ff93f5352dd8f1468880421e759aeff99898b9151"
     },
     {
+      "key": "rule:DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[2].text#en",
+      "sourceHash": "sha256:c872072982b056382e6aed72d73808cec56ca797a6cab0627aad88469c3ead3a",
+      "translationHash": "sha256:991f21f44251b1355875b09f92476d2306b540e26d1fd067930f02af5b6b269b"
+    },
+    {
       "key": "rule:DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.text#en",
-      "sourceHash": "sha256:cef49dc063faf9f87a542cbb5d7f5961eff3138602f07aafb29e4ca04527307d",
-      "translationHash": "sha256:b3e98ef1778b2915f03a88730638a41e8afa071423226482f11ac9253d2c3736"
+      "sourceHash": "sha256:f7c0b700324ec9337c38cbb2bfc0310306f0e8f69664c547091e968e7eedee5c",
+      "translationHash": "sha256:9ce04f26cea7d27ef58fc136446a931c48bf1fe5b2b6576b9276e4a5083fface"
     },
     {
       "key": "rule:DSPEC-DOMAIN-PRESET-PACK.must[0].text#en",
@@ -2341,6 +2346,11 @@
       "translationHash": "sha256:0f3d570cd406723c35f9da713cd1e8ca7058c2a0bb3be6a97b2c9074096bb3c2"
     },
     {
+      "key": "term:artifact.specification_relationship_document.text#en",
+      "sourceHash": "sha256:a19197ada24a3a5e9562a88b3aa13ed6d4455aeaeda89c419b7b69c71e74eea7",
+      "translationHash": "sha256:342fcf2f776d612a7fea660896ab60133304971334458246c975b90c37ff08ba"
+    },
+    {
       "key": "term:artifact.sql_query_oracle.text#en",
       "sourceHash": "sha256:eafe2d052cdeeae718f33c3ae7022dcc4f478a631d221a27cb43d08eeed228c3",
       "translationHash": "sha256:eafe2d052cdeeae718f33c3ae7022dcc4f478a631d221a27cb43d08eeed228c3"
@@ -2624,6 +2634,11 @@
       "key": "term:concept.runtime_telemetry.text#en",
       "sourceHash": "sha256:7a37dc4b17b662d131f59875379879391ba302fc5ebc2325217e5ecef165106b",
       "translationHash": "sha256:7a37dc4b17b662d131f59875379879391ba302fc5ebc2325217e5ecef165106b"
+    },
+    {
+      "key": "term:concept.specification_relationship_graph.text#en",
+      "sourceHash": "sha256:be89cbb63ec8ad48e3b79263f549607dab72f2aa3dfd236d7bce0fcb64f6b266",
+      "translationHash": "sha256:836036fa985e3b35a91be82a38fdcf30f0881ac9a06cc222c2d045202d171cc6"
     },
     {
       "key": "term:concept.stable_id.text#en",
