@@ -1,8 +1,8 @@
 {
   "artifacts": [
     {
-      "bytes": 218270,
-      "digest": "sha256:fa3bce846a1867138b6bd22277061bf7915552efd7c4e33a827e40127ab9b19e",
+      "bytes": 220395,
+      "digest": "sha256:2915f64efaa6612931c0a8fc5f616210e5ad89f8ff6af91513357df2109b6086",
       "locale": null,
       "path": "generated/backends/dspec-self.mjs"
     }
@@ -11,9 +11,9 @@
     "name": "dspec/quickcheck",
     "version": "1.0"
   },
-  "generatedAt": "2026-07-16T16:26:31.985Z",
+  "generatedAt": "2026-07-22T18:00:26.826Z",
   "model": {
-    "digest": "sha256:15a5d8d11466c08c1d614c0207be88afff5573107711f5394e1cbd6e233dd232",
+    "digest": "sha256:24d952fd5cac66f04cb0461153380adc52d3bafcc82c6b10275ae8b90a439ee1",
     "id": "dspec-self",
     "version": "0.1.0"
   },

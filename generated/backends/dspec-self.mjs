@@ -3242,6 +3242,15 @@ export const rules = [
           "reference"
         ],
         "assuranceEvidence": {}
+      },
+      {
+        "backend": "node",
+        "ref": "test/translation-lock-core.test.mjs#reports source, translation, and glossary changes independently",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
       }
     ],
     "terms": [
@@ -3258,6 +3267,11 @@ export const rules = [
       },
       {
         "expr": "i18n.glossary.labels == vocabulary.term.text.labels",
+        "astSemanticsVersion": null,
+        "ast": null
+      },
+      {
+        "expr": "translationLock.sourceHash == localizedText.primaryLocale.currentHash",
         "astSemanticsVersion": null,
         "ast": null
       }
@@ -3405,6 +3419,64 @@ export const rules = [
       },
       {
         "expr": "intent.goalGraph.elements == {goal.intent-model-validation, claim.intent-model-validation, assurance.intent-model-validation-property, assurance.intent-model-validation-alloy, binding.intent-model-validation}",
+        "astSemanticsVersion": null,
+        "ast": null
+      }
+    ],
+    "mustNot": []
+  },
+  {
+    "id": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE",
+    "kind": "obligation",
+    "status": "approved",
+    "requiredAssurances": [
+      "reference"
+    ],
+    "checks": [
+      {
+        "backend": "node",
+        "ref": "test/protocol-tests-core.test.mjs#generates language-independent HTTP and gRPC test vectors from Intent contract cases",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
+      },
+      {
+        "backend": "node",
+        "ref": "test/protocol-tests-cli.test.mjs#intent test executes a generated HTTP protocol test",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
+      },
+      {
+        "backend": "node",
+        "ref": "test/protocol-tests-cli.test.mjs#intent test executes a generated gRPC protocol test through the runner contract",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
+      }
+    ],
+    "terms": [
+      "concept.intent_field",
+      "concept.intent_grpc_endpoint",
+      "concept.intent_process",
+      "concept.intent_protocol_test",
+      "concept.intent_refinement"
+    ],
+    "when": [],
+    "must": [
+      {
+        "expr": "intent.protocolTest.canonicalFields decodedAndBoundTo refinement.implementationFields",
+        "astSemanticsVersion": null,
+        "ast": null
+      },
+      {
+        "expr": "intent.protocolTest.generatedTrace executedWith selectedTransport expectedStatusOrGrpcCode",
         "astSemanticsVersion": null,
         "ast": null
       }
@@ -6755,6 +6827,7 @@ export const approvedRuleIds = [
   "DSPEC-IMPLEMENTATION-CONFORMANCE",
   "DSPEC-INTENT-CLOSED-CONSTRUCTION",
   "DSPEC-INTENT-GOAL-GRAPH",
+  "DSPEC-INTENT-PROTOCOL-TEST-ORACLE",
   "DSPEC-JSON-REPORT-COMPAT-FIXTURES",
   "DSPEC-LEAN-EQ-SEMANTIC",
   "DSPEC-MARKDOWN-REVIEW-ARTIFACT",

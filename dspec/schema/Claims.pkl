@@ -417,6 +417,37 @@ class IntentHttpEndpoint {
   expectedStatus: Int(this >= 100 && this <= 599) = 200
 }
 
+/// The stable gRPC method surface of an Intent refinement. dspec keeps the
+/// wire client outside the model; a language-specific runner receives this
+/// method name and returns a protocol-neutral response record.
+class IntentGrpcEndpoint {
+  method: String(matches(Regex(#"^/[^/]+/[^/]+$"#)))
+  expectedCode: IntentGrpcCode = "OK"
+}
+
+/// One expected effect payload in a finite generated protocol test.
+/// Values stay strings in the Pkl source and are decoded using the matching
+/// IntentDataContract field type before a transport adapter is invoked.
+class IntentProtocolTestEffect {
+  effect: Identifier
+  output: Mapping<Identifier, String> = new {}
+}
+
+/// A finite, reviewed protocol test case. It is the language-independent
+/// source for generated request/response vectors, not executable test code.
+class IntentProtocolTest {
+  id: Identifier
+  process: Identifier
+  refinement: Identifier
+  outcome: Identifier
+  input: Mapping<Identifier, String> = new {}
+  output: Mapping<Identifier, String> = new {}
+  effects: Listing<IntentProtocolTestEffect> = new {}
+  expectedStatus: Int(this >= 100 && this <= 599)? = null
+  expectedGrpcCode: IntentGrpcCode? = null
+  text: LocalizedText? = null
+}
+
 /// A DB transaction contract exercised through the Intent transaction journal.
 ///
 /// `dbTransaction` names a transaction declared in `patterns.db`. The journal
@@ -439,6 +470,7 @@ class IntentRefinement {
   inputBindings: Listing<IntentFieldBinding> = new {}
   outcomeBindings: Listing<IntentOutcomeBinding> = new {}
   http: IntentHttpEndpoint? = null
+  grpc: IntentGrpcEndpoint? = null
   transaction: IntentTransactionEndpoint? = null
   text: LocalizedText? = null
 }
@@ -617,6 +649,7 @@ class IntentModel {
   assuranceTasks: Listing<IntentAssuranceTask> = new {}
   semanticBindings: Listing<IntentSemanticBinding> = new {}
   scenarios: Listing<IntentScenario> = new {}
+  tests: Listing<IntentProtocolTest> = new {}
 }
 
 class PatternCatalog {

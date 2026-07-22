@@ -37,6 +37,10 @@ import {
   verifyIntentTraces,
 } from "./core/intent.mjs";
 import {
+  protocolTestPlan,
+  validateProtocolTests,
+} from "./core/protocol-tests.mjs";
+import {
   RealAppCoreError,
   diffRealAppImportFacts,
   evaluateRealAppImport,
@@ -94,7 +98,7 @@ const TOP_LEVEL_COMMANDS = [
   { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
   { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
-  { name: "intent", usage: "dspec intent <verify|exercise|schema> ..." },
+  { name: "intent", usage: "dspec intent <verify|exercise|generate-tests|test|schema> ..." },
   { name: "daily-drift", usage: "dspec daily-drift <collect|approve> ..." },
   { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
   { name: "generated", usage: "dspec generated <check|unlock> ..." },
@@ -283,6 +287,8 @@ function intentUsage() {
   return `usage:
   dspec intent verify [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
   dspec intent exercise [--json|--markdown] [--policy] [--timeout-ms <positive-int>] [--http-base-url <url>] [--output <report.json>] <model.pkl> <traces.json>
+  dspec intent generate-tests [--json] [--output <plan.json>] <model.pkl>
+  dspec intent test [--json|--markdown] [--timeout-ms <positive-int>] [--http-base-url <url>] [--grpc-runner <script-or-executable>] [--output <report.json>] <model.pkl>
   dspec intent access [--json] <model.pkl> <process-id> <actor-or-role-id>
   dspec intent bindings [--json|--markdown] <model.pkl> <observed-bindings.json>
     dspec intent graph [--json|--markdown] [--locale <locale>] <model.pkl>
@@ -294,9 +300,11 @@ function intentUsage() {
 Validate bounded implementation observations against typed Intent Process
 contracts and explicit refinement mappings, execute refinements, measure
 scenario corpus coverage, observation coverage, generate nearby negative trace
-cases, or emit the trace document shape. The --policy option replays observed
-inputs, including duplicate idempotency keys, to a configured test or staging
-implementation.
+cases, emit the trace document shape, or generate and execute reviewed finite
+protocol test vectors. generate-tests is transport-neutral. test invokes HTTP
+directly and invokes gRPC through the supplied JSON runner. The --policy
+option replays observed inputs, including duplicate idempotency keys, to a
+configured test or staging implementation.
 `;
 }
 
@@ -398,6 +406,71 @@ function parseIntentTraceArgs(args, subcommand) {
   if (json && markdown) throw new CommandError(`intent ${subcommand} accepts only one output format\n${intentUsage()}`);
   if (positional.length !== 2) throw new CommandError(intentUsage());
   return { json, markdown, outputFile, timeoutMs, httpBaseUrl, policy, modelFile: positional[0], traceFile: positional[1] };
+}
+
+function parseIntentProtocolTestArgs(args, subcommand) {
+  let json = false;
+  let markdown = false;
+  let outputFile = null;
+  let timeoutMs = DEFAULT_INTENT_EXERCISE_TIMEOUT_MS;
+  let httpBaseUrl = null;
+  let grpcRunner = null;
+  const positional = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--output") {
+      outputFile = args[index + 1] ?? null;
+      index += 1;
+      if (!outputFile) throw new CommandError(`missing value for --output\n${intentUsage()}`);
+      continue;
+    }
+    if (arg === "--timeout-ms") {
+      const value = args[index + 1] ?? null;
+      index += 1;
+      if (subcommand !== "test" || !value || !/^[1-9][0-9]*$/.test(value)) {
+        throw new CommandError(`--timeout-ms requires a positive integer for intent test\n${intentUsage()}`);
+      }
+      timeoutMs = Number(value);
+      continue;
+    }
+    if (arg === "--http-base-url") {
+      const value = args[index + 1] ?? null;
+      index += 1;
+      if (subcommand !== "test" || !value) {
+        throw new CommandError(`--http-base-url requires a URL for intent test\n${intentUsage()}`);
+      }
+      try {
+        const url = new URL(value);
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error("unsupported protocol");
+      } catch {
+        throw new CommandError(`--http-base-url requires an http or https URL\n${intentUsage()}`);
+      }
+      httpBaseUrl = value;
+      continue;
+    }
+    if (arg === "--grpc-runner") {
+      grpcRunner = args[index + 1] ?? null;
+      index += 1;
+      if (subcommand !== "test" || !grpcRunner || grpcRunner.startsWith("-")) {
+        throw new CommandError(`--grpc-runner requires a script or executable for intent test\n${intentUsage()}`);
+      }
+      continue;
+    }
+    if (arg.startsWith("-")) throw new CommandError(`unknown intent ${subcommand} option: ${arg}\n${intentUsage()}`);
+    positional.push(arg);
+  }
+  if (json && markdown) throw new CommandError(`intent ${subcommand} accepts only one output format\n${intentUsage()}`);
+  if (subcommand === "generate-tests" && markdown) throw new CommandError(`intent generate-tests supports JSON only\n${intentUsage()}`);
+  if (positional.length !== 1) throw new CommandError(intentUsage());
+  return { json, markdown, outputFile, timeoutMs, httpBaseUrl, grpcRunner, modelFile: positional[0] };
 }
 
 function parseIntentAccessArgs(args) {
@@ -920,6 +993,21 @@ function attachIntentTraceDocumentEvidence(report, model, traceFile) {
   return report;
 }
 
+function generatedProtocolTraceReport(model, plan) {
+  const report = intentTraceVerificationReport(model, plan.traceDocument);
+  report.evidence.document = {
+    kind: "generated-protocol-test-plan",
+    digest: assuranceDigest(plan.traceDocument),
+    planDigest: assuranceDigest(plan),
+    modelDigest: assuranceDigest(model),
+  };
+  report.evidence.assumptions = [
+    ...report.evidence.assumptions,
+    "protocol test traces are generated from reviewed finite IntentProtocolTest cases; they do not prove behavior outside those cases",
+  ];
+  return report;
+}
+
 function intentImplementationPath(modelFile, implementation) {
   const candidates = [
     resolve(implementation.path),
@@ -989,7 +1077,51 @@ function invokeIntentChild(args, request, timeoutMs, label) {
   });
 }
 
-function intentRefinementInvoker(modelFile, { timeoutMs, httpBaseUrl }) {
+function invokeExternalJson(command, args, request, timeoutMs, label) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(command, args, {
+      cwd: process.cwd(),
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    let settled = false;
+    let timedOut = false;
+    let stdout = "";
+    let stderr = "";
+    const settle = (callback) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      callback();
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeoutMs);
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("error", (error) => settle(() => rejectPromise(error)));
+    child.on("close", (code) => settle(() => {
+      if (timedOut) {
+        rejectPromise(new Error(`${label} timed out after ${timeoutMs}ms`));
+        return;
+      }
+      if (code !== 0) {
+        rejectPromise(new Error(`${label} exited with status ${code}${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
+        return;
+      }
+      try {
+        resolvePromise(JSON.parse(stdout.trim()));
+      } catch {
+        rejectPromise(new Error(`${label} produced no valid JSON response${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
+      }
+    }));
+    child.stdin.end(JSON.stringify(request));
+  });
+}
+
+function intentRefinementInvoker(modelFile, { timeoutMs, httpBaseUrl, grpcRunner = null }) {
   const implementations = new Map();
   const registerImplementation = (refinement, adapter, details = {}) => {
     const implementation = refinement.implementation;
@@ -1067,8 +1199,9 @@ function intentRefinementInvoker(modelFile, { timeoutMs, httpBaseUrl }) {
     } finally {
       clearTimeout(timer);
     }
-    if (response.status !== endpoint.expectedStatus) {
-      throw new Error(`HTTP ${endpoint.method} ${endpoint.path} expected status ${endpoint.expectedStatus}, got ${response.status}`);
+    const expectedStatus = context?.expectedTransport?.expectedStatus ?? endpoint.expectedStatus;
+    if (response.status !== expectedStatus) {
+      throw new Error(`HTTP ${endpoint.method} ${endpoint.path} expected status ${expectedStatus}, got ${response.status}`);
     }
     const responseBody = await response.text();
     if (responseBody.length === 0) return null;
@@ -1077,6 +1210,45 @@ function intentRefinementInvoker(modelFile, { timeoutMs, httpBaseUrl }) {
     } catch {
       throw new Error(`HTTP ${endpoint.method} ${endpoint.path} returned invalid JSON`);
     }
+  };
+  const invokeGrpcMethod = async (refinement, input, context) => {
+    const implementation = refinement.implementation;
+    const endpoint = refinement.grpc;
+    if (!implementation || !endpoint) throw new Error(`Intent gRPC refinement requires implementation and grpc endpoint: ${refinement.id}`);
+    if (!grpcRunner) throw new Error(`gRPC method execution requires --grpc-runner: ${refinement.id}`);
+    const runnerPath = resolve(grpcRunner);
+    if (!existsSync(runnerPath)) throw new Error(`gRPC runner is missing: ${grpcRunner}`);
+    const sourcePath = registerImplementation(refinement, "grpc-external-runner", {
+      endpoint: {
+        method: endpoint.method,
+        expectedCode: endpoint.expectedCode,
+      },
+      runner: grpcRunner,
+    });
+    if (!existsSync(sourcePath)) throw new Error(`Intent gRPC refinement implementation is missing: ${implementation.path}`);
+    const invocationTimeoutMs = intentInvocationTimeoutMs(context, timeoutMs);
+    const isNodeScript = /\.(?:[cm]?js)$/i.test(runnerPath);
+    const response = await invokeExternalJson(
+      isNodeScript ? process.execPath : runnerPath,
+      isNodeScript ? [runnerPath] : [],
+      {
+        protocol: "dspec-grpc-runner-v1",
+        method: endpoint.method,
+        input,
+        timeoutMs: invocationTimeoutMs,
+      },
+      invocationTimeoutMs,
+      "gRPC runner",
+    );
+    if (!response || typeof response !== "object" || Array.isArray(response)) {
+      throw new Error("gRPC runner returned an invalid response record");
+    }
+    const expectedCode = context?.expectedTransport?.expectedCode ?? endpoint.expectedCode;
+    if (response.code !== expectedCode) {
+      throw new Error(`gRPC ${endpoint.method} expected code ${expectedCode}, got ${response.code ?? "missing"}`);
+    }
+    if (!("output" in response)) throw new Error(`gRPC ${endpoint.method} response is missing output`);
+    return response.output;
   };
   const invokeTransaction = async (refinement, input, context) => {
     const implementation = refinement.implementation;
@@ -1125,6 +1297,7 @@ function intentRefinementInvoker(modelFile, { timeoutMs, httpBaseUrl }) {
   const invoke = async (refinement, input, context) => {
     if (refinement.kind === "function") return invokeFunction(refinement, input, context);
     if (refinement.kind === "http-route") return invokeHttpRoute(refinement, input, context);
+    if (refinement.kind === "grpc-method") return invokeGrpcMethod(refinement, input, context);
     if (refinement.kind === "transaction") return invokeTransaction(refinement, input, context);
     throw new Error(`Intent refinement cannot be exercised: ${refinement.id} (${refinement.kind})`);
   };
@@ -1180,6 +1353,81 @@ async function runIntentCommand(args) {
   if (subcommand === "schema") {
     if (rest.length !== 1 || rest[0].startsWith("-")) throw new CommandError(intentUsage());
     process.stdout.write(stableJson(intentTraceSchema(loadModel(rest[0]))));
+    return;
+  }
+  if (subcommand === "generate-tests") {
+    const options = parseIntentProtocolTestArgs(rest, subcommand);
+    const model = loadModel(options.modelFile);
+    const plan = protocolTestPlan(model);
+    const modelErrors = validate(model);
+    const errors = [...new Set([...modelErrors, ...plan.errors])].sort();
+    const report = {
+      ...plan,
+      status: errors.length === 0 ? "pass" : "fail",
+      errors,
+    };
+    if (options.outputFile) report.output = writeIntentTraceReport(options.outputFile, report);
+    if (options.json) process.stdout.write(stableJson(report));
+    else process.stdout.write(`ok: ${model.id} protocol test plan (${plan.summary.cases} cases)\n`);
+    if (report.status === "fail") throw new CommandError("intent protocol test generation failed\n");
+    return;
+  }
+  if (subcommand === "test") {
+    const options = parseIntentProtocolTestArgs(rest, subcommand);
+    const model = loadModel(options.modelFile);
+    const plan = protocolTestPlan(model);
+    const traceReport = generatedProtocolTraceReport(model, plan);
+    const runner = intentRefinementInvoker(options.modelFile, options);
+    const preconditionErrors = plan.summary.cases === 0 ? ["protocol test plan has no cases"] : [];
+    const exercise = traceReport.status === "pass" && plan.status === "pass" && preconditionErrors.length === 0
+      ? await executeIntentRefinements(model, plan.traceDocument, runner.invoke)
+      : {
+        status: "skip",
+        summary: { executedRefinements: 0 },
+        executions: [],
+        errors: [],
+        reason: preconditionErrors[0] ?? "protocol test plan validation failed",
+      };
+    const errors = [...new Set([...traceReport.errors, ...plan.errors, ...preconditionErrors, ...exercise.errors])].sort();
+    const report = {
+      ...traceReport,
+      executedAt: new Date().toISOString(),
+      status: errors.length === 0 ? "pass" : "fail",
+      summary: { ...traceReport.summary, ...plan.summary, executedRefinements: exercise.summary.executedRefinements },
+      protocolTestPlan: {
+        schemaVersion: plan.protocolTestPlanSchemaVersion,
+        summary: plan.summary,
+        operations: plan.operations,
+        errors: plan.errors,
+      },
+      executions: exercise.executions,
+      evidence: {
+        ...traceReport.evidence,
+        assumptions: [
+          ...traceReport.evidence.assumptions,
+          "the selected HTTP endpoint or gRPC runner is trusted to represent the target test or staging deployment",
+        ],
+        execution: runner.evidence(),
+        checks: [
+          ...traceReport.evidence.checks,
+          {
+            id: "intent-generated-protocol-plan",
+            scope: "protocol-test-plan",
+            status: plan.status === "pass" && preconditionErrors.length === 0 ? "pass" : "fail",
+            errors: [...plan.errors, ...preconditionErrors],
+          },
+          {
+            id: "intent-executed-refinement",
+            scope: "refinement-execution",
+            status: exercise.status,
+            errors: exercise.errors,
+            ...(exercise.reason ? { reason: exercise.reason } : {}),
+          },
+        ],
+      },
+      errors,
+    };
+    writeIntentCommandReport(report, options, `ok: ${model.id} generated protocol tests (${exercise.summary.executedRefinements}/${plan.summary.cases} cases)\n`);
     return;
   }
   if (subcommand === "access") {
@@ -2917,6 +3165,12 @@ function validateIntentModel(errors, model) {
       if (refinement.kind !== "http-route" && refinement.http) {
         errors.push(`intent refinement HTTP endpoint requires http-route kind: ${process.id}.${refinement.id}`);
       }
+      if (refinement.kind === "grpc-method" && !refinement.grpc) {
+        errors.push(`intent gRPC refinement requires endpoint: ${process.id}.${refinement.id}`);
+      }
+      if (refinement.kind !== "grpc-method" && refinement.grpc) {
+        errors.push(`intent refinement gRPC endpoint requires grpc-method kind: ${process.id}.${refinement.id}`);
+      }
       if (refinement.kind === "transaction" && !refinement.transaction) {
         errors.push(`intent transaction refinement requires endpoint: ${process.id}.${refinement.id}`);
       }
@@ -3207,6 +3461,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
   validateReleaseModel(errors, model);
   validateRuntimeModel(errors, model);
   validateIntentModel(errors, model);
+  if (list(intentPattern(model)?.tests).length > 0) errors.push(...validateProtocolTests(model));
   validateDomainPacks(errors, model);
   validateI18nContract(errors, model);
   validateProjections(errors, model);

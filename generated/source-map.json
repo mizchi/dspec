@@ -2070,6 +2070,16 @@
         }
       },
       {
+        "generated": "alloy.sig.C_42_3",
+        "sortedRuleIndex": 42,
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[6].checks[3]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
         "generated": "alloy.sig.R_DSPEC_IMPLEMENTATION_CONFORMANCE",
         "sortedRuleIndex": 43,
         "source": {
@@ -2122,7 +2132,7 @@
         "sortedRuleIndex": 45,
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -2132,17 +2142,17 @@
         "source": {
           "index": 0,
           "kind": "checkTarget",
-          "path": "model.rules[78].checks[0]",
+          "path": "model.rules[79].checks[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
       {
-        "generated": "alloy.sig.R_DSPEC_JSON_REPORT_COMPAT_FIXTURES",
+        "generated": "alloy.sig.R_DSPEC_INTENT_PROTOCOL_TEST_ORACLE",
         "sortedRuleIndex": 46,
         "source": {
           "kind": "rule",
-          "path": "model.rules[55]",
-          "ruleId": "DSPEC-JSON-REPORT-COMPAT-FIXTURES"
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
         }
       },
       {
@@ -2151,8 +2161,8 @@
         "source": {
           "index": 0,
           "kind": "checkTarget",
-          "path": "model.rules[55].checks[0]",
-          "ruleId": "DSPEC-JSON-REPORT-COMPAT-FIXTURES"
+          "path": "model.rules[77].checks[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
         }
       },
       {
@@ -2161,8 +2171,8 @@
         "source": {
           "index": 1,
           "kind": "checkTarget",
-          "path": "model.rules[55].checks[1]",
-          "ruleId": "DSPEC-JSON-REPORT-COMPAT-FIXTURES"
+          "path": "model.rules[77].checks[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
         }
       },
       {
@@ -2171,13 +2181,52 @@
         "source": {
           "index": 2,
           "kind": "checkTarget",
+          "path": "model.rules[77].checks[2]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "alloy.sig.R_DSPEC_JSON_REPORT_COMPAT_FIXTURES",
+        "sortedRuleIndex": 47,
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[55]",
+          "ruleId": "DSPEC-JSON-REPORT-COMPAT-FIXTURES"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_47_0",
+        "sortedRuleIndex": 47,
+        "source": {
+          "index": 0,
+          "kind": "checkTarget",
+          "path": "model.rules[55].checks[0]",
+          "ruleId": "DSPEC-JSON-REPORT-COMPAT-FIXTURES"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_47_1",
+        "sortedRuleIndex": 47,
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[55].checks[1]",
+          "ruleId": "DSPEC-JSON-REPORT-COMPAT-FIXTURES"
+        }
+      },
+      {
+        "generated": "alloy.sig.C_47_2",
+        "sortedRuleIndex": 47,
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
           "path": "model.rules[55].checks[2]",
           "ruleId": "DSPEC-JSON-REPORT-COMPAT-FIXTURES"
         }
       },
       {
-        "generated": "alloy.sig.C_46_3",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_3",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -2186,8 +2235,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_4",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_4",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -2196,8 +2245,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_5",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_5",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 5,
           "kind": "checkTarget",
@@ -2206,8 +2255,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_6",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_6",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 6,
           "kind": "checkTarget",
@@ -2216,8 +2265,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_7",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_7",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 7,
           "kind": "checkTarget",
@@ -2226,8 +2275,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_8",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_8",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 8,
           "kind": "checkTarget",
@@ -2236,8 +2285,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_9",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_9",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 9,
           "kind": "checkTarget",
@@ -2246,8 +2295,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_10",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_10",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 10,
           "kind": "checkTarget",
@@ -2256,8 +2305,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_11",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_11",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 11,
           "kind": "checkTarget",
@@ -2266,8 +2315,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_12",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_12",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 12,
           "kind": "checkTarget",
@@ -2276,8 +2325,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_13",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_13",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 13,
           "kind": "checkTarget",
@@ -2286,8 +2335,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_14",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_14",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 14,
           "kind": "checkTarget",
@@ -2296,8 +2345,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_15",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_15",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 15,
           "kind": "checkTarget",
@@ -2306,8 +2355,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_16",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_16",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 16,
           "kind": "checkTarget",
@@ -2316,8 +2365,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_17",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_17",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 17,
           "kind": "checkTarget",
@@ -2326,8 +2375,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_18",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_18",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 18,
           "kind": "checkTarget",
@@ -2336,8 +2385,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_19",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_19",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 19,
           "kind": "checkTarget",
@@ -2346,8 +2395,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_20",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_20",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 20,
           "kind": "checkTarget",
@@ -2356,8 +2405,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_21",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_21",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 21,
           "kind": "checkTarget",
@@ -2366,8 +2415,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_22",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_22",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 22,
           "kind": "checkTarget",
@@ -2376,8 +2425,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_23",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_23",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 23,
           "kind": "checkTarget",
@@ -2386,8 +2435,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_24",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_24",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 24,
           "kind": "checkTarget",
@@ -2396,8 +2445,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_25",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_25",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 25,
           "kind": "checkTarget",
@@ -2406,8 +2455,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_26",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_26",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 26,
           "kind": "checkTarget",
@@ -2416,8 +2465,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_27",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_27",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 27,
           "kind": "checkTarget",
@@ -2426,8 +2475,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_28",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_28",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 28,
           "kind": "checkTarget",
@@ -2436,8 +2485,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_29",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_29",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 29,
           "kind": "checkTarget",
@@ -2446,8 +2495,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_46_30",
-        "sortedRuleIndex": 46,
+        "generated": "alloy.sig.C_47_30",
+        "sortedRuleIndex": 47,
         "source": {
           "index": 30,
           "kind": "checkTarget",
@@ -2457,7 +2506,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_LEAN_EQ_SEMANTIC",
-        "sortedRuleIndex": 47,
+        "sortedRuleIndex": 48,
         "source": {
           "kind": "rule",
           "path": "model.rules[17]",
@@ -2465,8 +2514,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_47_0",
-        "sortedRuleIndex": 47,
+        "generated": "alloy.sig.C_48_0",
+        "sortedRuleIndex": 48,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -2475,8 +2524,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_47_1",
-        "sortedRuleIndex": 47,
+        "generated": "alloy.sig.C_48_1",
+        "sortedRuleIndex": 48,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -2485,8 +2534,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_47_2",
-        "sortedRuleIndex": 47,
+        "generated": "alloy.sig.C_48_2",
+        "sortedRuleIndex": 48,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -2495,8 +2544,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_47_3",
-        "sortedRuleIndex": 47,
+        "generated": "alloy.sig.C_48_3",
+        "sortedRuleIndex": 48,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -2505,8 +2554,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_47_4",
-        "sortedRuleIndex": 47,
+        "generated": "alloy.sig.C_48_4",
+        "sortedRuleIndex": 48,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -2516,7 +2565,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_MARKDOWN_REVIEW_ARTIFACT",
-        "sortedRuleIndex": 48,
+        "sortedRuleIndex": 49,
         "source": {
           "kind": "rule",
           "path": "model.rules[65]",
@@ -2524,8 +2573,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_0",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_0",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -2534,8 +2583,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_1",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_1",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -2544,8 +2593,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_2",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_2",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -2554,8 +2603,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_3",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_3",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -2564,8 +2613,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_4",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_4",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -2574,8 +2623,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_5",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_5",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 5,
           "kind": "checkTarget",
@@ -2584,8 +2633,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_6",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_6",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 6,
           "kind": "checkTarget",
@@ -2594,8 +2643,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_7",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_7",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 7,
           "kind": "checkTarget",
@@ -2604,8 +2653,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_8",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_8",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 8,
           "kind": "checkTarget",
@@ -2614,8 +2663,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_9",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_9",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 9,
           "kind": "checkTarget",
@@ -2624,8 +2673,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_10",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_10",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 10,
           "kind": "checkTarget",
@@ -2634,8 +2683,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_11",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_11",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 11,
           "kind": "checkTarget",
@@ -2644,8 +2693,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_12",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_12",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 12,
           "kind": "checkTarget",
@@ -2654,8 +2703,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_13",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_13",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 13,
           "kind": "checkTarget",
@@ -2664,8 +2713,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_14",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_14",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 14,
           "kind": "checkTarget",
@@ -2674,8 +2723,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_15",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_15",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 15,
           "kind": "checkTarget",
@@ -2684,8 +2733,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_16",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_16",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 16,
           "kind": "checkTarget",
@@ -2694,8 +2743,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_17",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_17",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 17,
           "kind": "checkTarget",
@@ -2704,8 +2753,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_18",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_18",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 18,
           "kind": "checkTarget",
@@ -2714,8 +2763,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_19",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_19",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 19,
           "kind": "checkTarget",
@@ -2724,8 +2773,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_20",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_20",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 20,
           "kind": "checkTarget",
@@ -2734,8 +2783,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_21",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_21",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 21,
           "kind": "checkTarget",
@@ -2744,8 +2793,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_22",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_22",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 22,
           "kind": "checkTarget",
@@ -2754,8 +2803,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_23",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_23",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 23,
           "kind": "checkTarget",
@@ -2764,8 +2813,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_48_24",
-        "sortedRuleIndex": 48,
+        "generated": "alloy.sig.C_49_24",
+        "sortedRuleIndex": 49,
         "source": {
           "index": 24,
           "kind": "checkTarget",
@@ -2775,16 +2824,16 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_MBT_BOUNDARY",
-        "sortedRuleIndex": 49,
+        "sortedRuleIndex": 50,
         "source": {
           "kind": "rule",
-          "path": "model.rules[77]",
+          "path": "model.rules[78]",
           "ruleId": "DSPEC-MBT-BOUNDARY"
         }
       },
       {
         "generated": "alloy.sig.R_DSPEC_NIX_CI_GATE",
-        "sortedRuleIndex": 50,
+        "sortedRuleIndex": 51,
         "source": {
           "kind": "rule",
           "path": "model.rules[72]",
@@ -2792,8 +2841,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_50_0",
-        "sortedRuleIndex": 50,
+        "generated": "alloy.sig.C_51_0",
+        "sortedRuleIndex": 51,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -2803,7 +2852,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_NIX_FORMAL_TOOLS",
-        "sortedRuleIndex": 51,
+        "sortedRuleIndex": 52,
         "source": {
           "kind": "rule",
           "path": "model.rules[29]",
@@ -2811,8 +2860,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_51_0",
-        "sortedRuleIndex": 51,
+        "generated": "alloy.sig.C_52_0",
+        "sortedRuleIndex": 52,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -2821,8 +2870,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_51_1",
-        "sortedRuleIndex": 51,
+        "generated": "alloy.sig.C_52_1",
+        "sortedRuleIndex": 52,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -2831,8 +2880,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_51_2",
-        "sortedRuleIndex": 51,
+        "generated": "alloy.sig.C_52_2",
+        "sortedRuleIndex": 52,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -2842,7 +2891,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_PACKAGE_RELEASE",
-        "sortedRuleIndex": 52,
+        "sortedRuleIndex": 53,
         "source": {
           "kind": "rule",
           "path": "model.rules[30]",
@@ -2850,8 +2899,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_52_0",
-        "sortedRuleIndex": 52,
+        "generated": "alloy.sig.C_53_0",
+        "sortedRuleIndex": 53,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -2860,8 +2909,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_52_1",
-        "sortedRuleIndex": 52,
+        "generated": "alloy.sig.C_53_1",
+        "sortedRuleIndex": 53,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -2870,8 +2919,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_52_2",
-        "sortedRuleIndex": 52,
+        "generated": "alloy.sig.C_53_2",
+        "sortedRuleIndex": 53,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -2881,7 +2930,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_PRODUCT_POSITIONING",
-        "sortedRuleIndex": 53,
+        "sortedRuleIndex": 54,
         "source": {
           "kind": "rule",
           "path": "model.rules[18]",
@@ -2889,8 +2938,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_53_0",
-        "sortedRuleIndex": 53,
+        "generated": "alloy.sig.C_54_0",
+        "sortedRuleIndex": 54,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -2900,7 +2949,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_REAL_APP_DOGFOOD",
-        "sortedRuleIndex": 54,
+        "sortedRuleIndex": 55,
         "source": {
           "kind": "rule",
           "path": "model.rules[71]",
@@ -2908,8 +2957,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_54_0",
-        "sortedRuleIndex": 54,
+        "generated": "alloy.sig.C_55_0",
+        "sortedRuleIndex": 55,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -2919,7 +2968,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_REAL_APP_IMPORTER",
-        "sortedRuleIndex": 55,
+        "sortedRuleIndex": 56,
         "source": {
           "kind": "rule",
           "path": "model.rules[22]",
@@ -2927,8 +2976,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_0",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_0",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -2937,8 +2986,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_1",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_1",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -2947,8 +2996,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_2",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_2",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -2957,8 +3006,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_3",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_3",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -2967,8 +3016,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_4",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_4",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -2977,8 +3026,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_5",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_5",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 5,
           "kind": "checkTarget",
@@ -2987,8 +3036,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_6",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_6",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 6,
           "kind": "checkTarget",
@@ -2997,8 +3046,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_7",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_7",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 7,
           "kind": "checkTarget",
@@ -3007,8 +3056,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_8",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_8",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 8,
           "kind": "checkTarget",
@@ -3017,8 +3066,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_9",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_9",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 9,
           "kind": "checkTarget",
@@ -3027,8 +3076,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_10",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_10",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 10,
           "kind": "checkTarget",
@@ -3037,8 +3086,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_55_11",
-        "sortedRuleIndex": 55,
+        "generated": "alloy.sig.C_56_11",
+        "sortedRuleIndex": 56,
         "source": {
           "index": 11,
           "kind": "checkTarget",
@@ -3048,7 +3097,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_REAL_APP_RECONCILIATION",
-        "sortedRuleIndex": 56,
+        "sortedRuleIndex": 57,
         "source": {
           "kind": "rule",
           "path": "model.rules[23]",
@@ -3056,8 +3105,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_56_0",
-        "sortedRuleIndex": 56,
+        "generated": "alloy.sig.C_57_0",
+        "sortedRuleIndex": 57,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3066,8 +3115,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_56_1",
-        "sortedRuleIndex": 56,
+        "generated": "alloy.sig.C_57_1",
+        "sortedRuleIndex": 57,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3076,8 +3125,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_56_2",
-        "sortedRuleIndex": 56,
+        "generated": "alloy.sig.C_57_2",
+        "sortedRuleIndex": 57,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3086,8 +3135,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_56_3",
-        "sortedRuleIndex": 56,
+        "generated": "alloy.sig.C_57_3",
+        "sortedRuleIndex": 57,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3097,7 +3146,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_REAL_APP_REVERSE_COVERAGE",
-        "sortedRuleIndex": 57,
+        "sortedRuleIndex": 58,
         "source": {
           "kind": "rule",
           "path": "model.rules[24]",
@@ -3105,8 +3154,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_57_0",
-        "sortedRuleIndex": 57,
+        "generated": "alloy.sig.C_58_0",
+        "sortedRuleIndex": 58,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3115,8 +3164,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_57_1",
-        "sortedRuleIndex": 57,
+        "generated": "alloy.sig.C_58_1",
+        "sortedRuleIndex": 58,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3126,7 +3175,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_RELEASE_SAFETY_PATTERN",
-        "sortedRuleIndex": 58,
+        "sortedRuleIndex": 59,
         "source": {
           "kind": "rule",
           "path": "model.rules[41]",
@@ -3134,8 +3183,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_58_0",
-        "sortedRuleIndex": 58,
+        "generated": "alloy.sig.C_59_0",
+        "sortedRuleIndex": 59,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3144,8 +3193,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_58_1",
-        "sortedRuleIndex": 58,
+        "generated": "alloy.sig.C_59_1",
+        "sortedRuleIndex": 59,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3154,8 +3203,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_58_2",
-        "sortedRuleIndex": 58,
+        "generated": "alloy.sig.C_59_2",
+        "sortedRuleIndex": 59,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3164,8 +3213,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_58_3",
-        "sortedRuleIndex": 58,
+        "generated": "alloy.sig.C_59_3",
+        "sortedRuleIndex": 59,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3174,8 +3223,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_58_4",
-        "sortedRuleIndex": 58,
+        "generated": "alloy.sig.C_59_4",
+        "sortedRuleIndex": 59,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -3185,7 +3234,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_RUNTIME_COLLECTOR_FIXTURE",
-        "sortedRuleIndex": 59,
+        "sortedRuleIndex": 60,
         "source": {
           "kind": "rule",
           "path": "model.rules[48]",
@@ -3193,8 +3242,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_59_0",
-        "sortedRuleIndex": 59,
+        "generated": "alloy.sig.C_60_0",
+        "sortedRuleIndex": 60,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3204,7 +3253,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_RUNTIME_COLLECTOR_MANIFEST",
-        "sortedRuleIndex": 60,
+        "sortedRuleIndex": 61,
         "source": {
           "kind": "rule",
           "path": "model.rules[46]",
@@ -3212,8 +3261,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_60_0",
-        "sortedRuleIndex": 60,
+        "generated": "alloy.sig.C_61_0",
+        "sortedRuleIndex": 61,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3222,8 +3271,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_60_1",
-        "sortedRuleIndex": 60,
+        "generated": "alloy.sig.C_61_1",
+        "sortedRuleIndex": 61,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3233,7 +3282,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_RUNTIME_EVIDENCE_COLLECTOR",
-        "sortedRuleIndex": 61,
+        "sortedRuleIndex": 62,
         "source": {
           "kind": "rule",
           "path": "model.rules[45]",
@@ -3241,8 +3290,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_61_0",
-        "sortedRuleIndex": 61,
+        "generated": "alloy.sig.C_62_0",
+        "sortedRuleIndex": 62,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3251,8 +3300,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_61_1",
-        "sortedRuleIndex": 61,
+        "generated": "alloy.sig.C_62_1",
+        "sortedRuleIndex": 62,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3261,8 +3310,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_61_2",
-        "sortedRuleIndex": 61,
+        "generated": "alloy.sig.C_62_2",
+        "sortedRuleIndex": 62,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3271,8 +3320,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_61_3",
-        "sortedRuleIndex": 61,
+        "generated": "alloy.sig.C_62_3",
+        "sortedRuleIndex": 62,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3282,7 +3331,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_RUNTIME_EVIDENCE_IMPORTER",
-        "sortedRuleIndex": 62,
+        "sortedRuleIndex": 63,
         "source": {
           "kind": "rule",
           "path": "model.rules[44]",
@@ -3290,8 +3339,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_62_0",
-        "sortedRuleIndex": 62,
+        "generated": "alloy.sig.C_63_0",
+        "sortedRuleIndex": 63,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3300,8 +3349,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_62_1",
-        "sortedRuleIndex": 62,
+        "generated": "alloy.sig.C_63_1",
+        "sortedRuleIndex": 63,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3310,8 +3359,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_62_2",
-        "sortedRuleIndex": 62,
+        "generated": "alloy.sig.C_63_2",
+        "sortedRuleIndex": 63,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3321,7 +3370,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_RUNTIME_EVIDENCE_PATTERN",
-        "sortedRuleIndex": 63,
+        "sortedRuleIndex": 64,
         "source": {
           "kind": "rule",
           "path": "model.rules[43]",
@@ -3329,8 +3378,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_63_0",
-        "sortedRuleIndex": 63,
+        "generated": "alloy.sig.C_64_0",
+        "sortedRuleIndex": 64,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3339,8 +3388,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_63_1",
-        "sortedRuleIndex": 63,
+        "generated": "alloy.sig.C_64_1",
+        "sortedRuleIndex": 64,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3349,8 +3398,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_63_2",
-        "sortedRuleIndex": 63,
+        "generated": "alloy.sig.C_64_2",
+        "sortedRuleIndex": 64,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3359,8 +3408,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_63_3",
-        "sortedRuleIndex": 63,
+        "generated": "alloy.sig.C_64_3",
+        "sortedRuleIndex": 64,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3370,7 +3419,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_RUNTIME_EVIDENCE_VERIFIER",
-        "sortedRuleIndex": 64,
+        "sortedRuleIndex": 65,
         "source": {
           "kind": "rule",
           "path": "model.rules[47]",
@@ -3378,8 +3427,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_64_0",
-        "sortedRuleIndex": 64,
+        "generated": "alloy.sig.C_65_0",
+        "sortedRuleIndex": 65,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3388,8 +3437,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_64_1",
-        "sortedRuleIndex": 64,
+        "generated": "alloy.sig.C_65_1",
+        "sortedRuleIndex": 65,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3398,8 +3447,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_64_2",
-        "sortedRuleIndex": 64,
+        "generated": "alloy.sig.C_65_2",
+        "sortedRuleIndex": 65,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3408,8 +3457,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_64_3",
-        "sortedRuleIndex": 64,
+        "generated": "alloy.sig.C_65_3",
+        "sortedRuleIndex": 65,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3419,7 +3468,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_RUNTIME_SAFETY_PATTERN",
-        "sortedRuleIndex": 65,
+        "sortedRuleIndex": 66,
         "source": {
           "kind": "rule",
           "path": "model.rules[42]",
@@ -3427,8 +3476,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_65_0",
-        "sortedRuleIndex": 65,
+        "generated": "alloy.sig.C_66_0",
+        "sortedRuleIndex": 66,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3437,8 +3486,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_65_1",
-        "sortedRuleIndex": 65,
+        "generated": "alloy.sig.C_66_1",
+        "sortedRuleIndex": 66,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3447,8 +3496,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_65_2",
-        "sortedRuleIndex": 65,
+        "generated": "alloy.sig.C_66_2",
+        "sortedRuleIndex": 66,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3457,8 +3506,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_65_3",
-        "sortedRuleIndex": 65,
+        "generated": "alloy.sig.C_66_3",
+        "sortedRuleIndex": 66,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3467,8 +3516,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_65_4",
-        "sortedRuleIndex": 65,
+        "generated": "alloy.sig.C_66_4",
+        "sortedRuleIndex": 66,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -3478,7 +3527,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SCHEMA_TYPED",
-        "sortedRuleIndex": 66,
+        "sortedRuleIndex": 67,
         "source": {
           "kind": "rule",
           "path": "model.rules[0]",
@@ -3486,8 +3535,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_66_0",
-        "sortedRuleIndex": 66,
+        "generated": "alloy.sig.C_67_0",
+        "sortedRuleIndex": 67,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3497,7 +3546,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SEMANTICS_INFERENTIAL_SUPPORT",
-        "sortedRuleIndex": 67,
+        "sortedRuleIndex": 68,
         "source": {
           "kind": "rule",
           "path": "model.rules[74]",
@@ -3506,7 +3555,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SOURCE_MAP_GENERATED",
-        "sortedRuleIndex": 68,
+        "sortedRuleIndex": 69,
         "source": {
           "kind": "rule",
           "path": "model.rules[58]",
@@ -3514,8 +3563,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_68_0",
-        "sortedRuleIndex": 68,
+        "generated": "alloy.sig.C_69_0",
+        "sortedRuleIndex": 69,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3524,8 +3573,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_68_1",
-        "sortedRuleIndex": 68,
+        "generated": "alloy.sig.C_69_1",
+        "sortedRuleIndex": 69,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3535,7 +3584,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SPEC_CHANGE_REVIEW",
-        "sortedRuleIndex": 69,
+        "sortedRuleIndex": 70,
         "source": {
           "kind": "rule",
           "path": "model.rules[61]",
@@ -3543,8 +3592,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_0",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_0",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3553,8 +3602,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_1",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_1",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3563,8 +3612,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_2",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_2",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3573,8 +3622,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_3",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_3",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3583,8 +3632,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_4",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_4",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -3593,8 +3642,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_5",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_5",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 5,
           "kind": "checkTarget",
@@ -3603,8 +3652,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_6",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_6",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 6,
           "kind": "checkTarget",
@@ -3613,8 +3662,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_7",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_7",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 7,
           "kind": "checkTarget",
@@ -3623,8 +3672,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_8",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_8",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 8,
           "kind": "checkTarget",
@@ -3633,8 +3682,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_9",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_9",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 9,
           "kind": "checkTarget",
@@ -3643,8 +3692,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_69_10",
-        "sortedRuleIndex": 69,
+        "generated": "alloy.sig.C_70_10",
+        "sortedRuleIndex": 70,
         "source": {
           "index": 10,
           "kind": "checkTarget",
@@ -3654,7 +3703,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SPEC_CHANGE_REVIEW_SCAFFOLD",
-        "sortedRuleIndex": 70,
+        "sortedRuleIndex": 71,
         "source": {
           "kind": "rule",
           "path": "model.rules[62]",
@@ -3662,8 +3711,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_0",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_0",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3672,8 +3721,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_1",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_1",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3682,8 +3731,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_2",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_2",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3692,8 +3741,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_3",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_3",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3702,8 +3751,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_4",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_4",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -3712,8 +3761,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_5",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_5",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 5,
           "kind": "checkTarget",
@@ -3722,8 +3771,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_6",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_6",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 6,
           "kind": "checkTarget",
@@ -3732,8 +3781,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_7",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_7",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 7,
           "kind": "checkTarget",
@@ -3742,8 +3791,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_8",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_8",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 8,
           "kind": "checkTarget",
@@ -3752,8 +3801,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_9",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_9",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 9,
           "kind": "checkTarget",
@@ -3762,8 +3811,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_10",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_10",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 10,
           "kind": "checkTarget",
@@ -3772,8 +3821,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_11",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_11",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 11,
           "kind": "checkTarget",
@@ -3782,8 +3831,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_12",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_12",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 12,
           "kind": "checkTarget",
@@ -3792,8 +3841,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_70_13",
-        "sortedRuleIndex": 70,
+        "generated": "alloy.sig.C_71_13",
+        "sortedRuleIndex": 71,
         "source": {
           "index": 13,
           "kind": "checkTarget",
@@ -3803,7 +3852,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SPEC_COMPAT_CLASSIFIER",
-        "sortedRuleIndex": 71,
+        "sortedRuleIndex": 72,
         "source": {
           "kind": "rule",
           "path": "model.rules[60]",
@@ -3811,8 +3860,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_71_0",
-        "sortedRuleIndex": 71,
+        "generated": "alloy.sig.C_72_0",
+        "sortedRuleIndex": 72,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3821,8 +3870,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_71_1",
-        "sortedRuleIndex": 71,
+        "generated": "alloy.sig.C_72_1",
+        "sortedRuleIndex": 72,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3831,8 +3880,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_71_2",
-        "sortedRuleIndex": 71,
+        "generated": "alloy.sig.C_72_2",
+        "sortedRuleIndex": 72,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3841,8 +3890,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_71_3",
-        "sortedRuleIndex": 71,
+        "generated": "alloy.sig.C_72_3",
+        "sortedRuleIndex": 72,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3852,7 +3901,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SPEC_DIFF_IMPACT",
-        "sortedRuleIndex": 72,
+        "sortedRuleIndex": 73,
         "source": {
           "kind": "rule",
           "path": "model.rules[59]",
@@ -3860,8 +3909,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_72_0",
-        "sortedRuleIndex": 72,
+        "generated": "alloy.sig.C_73_0",
+        "sortedRuleIndex": 73,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3870,8 +3919,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_72_1",
-        "sortedRuleIndex": 72,
+        "generated": "alloy.sig.C_73_1",
+        "sortedRuleIndex": 73,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3880,8 +3929,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_72_2",
-        "sortedRuleIndex": 72,
+        "generated": "alloy.sig.C_73_2",
+        "sortedRuleIndex": 73,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3891,7 +3940,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SPEC_QUERY",
-        "sortedRuleIndex": 73,
+        "sortedRuleIndex": 74,
         "source": {
           "kind": "rule",
           "path": "model.rules[70]",
@@ -3899,8 +3948,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_73_0",
-        "sortedRuleIndex": 73,
+        "generated": "alloy.sig.C_74_0",
+        "sortedRuleIndex": 74,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3909,8 +3958,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_73_1",
-        "sortedRuleIndex": 73,
+        "generated": "alloy.sig.C_74_1",
+        "sortedRuleIndex": 74,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3920,7 +3969,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SPEC_READING_EVAL",
-        "sortedRuleIndex": 74,
+        "sortedRuleIndex": 75,
         "source": {
           "kind": "rule",
           "path": "model.rules[68]",
@@ -3928,8 +3977,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_0",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_0",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -3938,8 +3987,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_1",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_1",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -3948,8 +3997,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_2",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_2",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 2,
           "kind": "checkTarget",
@@ -3958,8 +4007,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_3",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_3",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 3,
           "kind": "checkTarget",
@@ -3968,8 +4017,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_4",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_4",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 4,
           "kind": "checkTarget",
@@ -3978,8 +4027,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_5",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_5",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 5,
           "kind": "checkTarget",
@@ -3988,8 +4037,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_6",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_6",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 6,
           "kind": "checkTarget",
@@ -3998,8 +4047,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_7",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_7",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 7,
           "kind": "checkTarget",
@@ -4008,8 +4057,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_8",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_8",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 8,
           "kind": "checkTarget",
@@ -4018,8 +4067,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_9",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_9",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 9,
           "kind": "checkTarget",
@@ -4028,8 +4077,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_10",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_10",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 10,
           "kind": "checkTarget",
@@ -4038,8 +4087,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_11",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_11",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 11,
           "kind": "checkTarget",
@@ -4048,8 +4097,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_12",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_12",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 12,
           "kind": "checkTarget",
@@ -4058,8 +4107,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_13",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_13",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 13,
           "kind": "checkTarget",
@@ -4068,8 +4117,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_14",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_14",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 14,
           "kind": "checkTarget",
@@ -4078,8 +4127,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_15",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_15",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 15,
           "kind": "checkTarget",
@@ -4088,8 +4137,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_16",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_16",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 16,
           "kind": "checkTarget",
@@ -4098,8 +4147,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_17",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_17",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 17,
           "kind": "checkTarget",
@@ -4108,8 +4157,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_18",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_18",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 18,
           "kind": "checkTarget",
@@ -4118,8 +4167,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_19",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_19",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 19,
           "kind": "checkTarget",
@@ -4128,8 +4177,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_20",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_20",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 20,
           "kind": "checkTarget",
@@ -4138,8 +4187,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_21",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_21",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 21,
           "kind": "checkTarget",
@@ -4148,8 +4197,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_22",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_22",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 22,
           "kind": "checkTarget",
@@ -4158,8 +4207,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_74_23",
-        "sortedRuleIndex": 74,
+        "generated": "alloy.sig.C_75_23",
+        "sortedRuleIndex": 75,
         "source": {
           "index": 23,
           "kind": "checkTarget",
@@ -4169,7 +4218,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_SQL_QUERY_ORACLE",
-        "sortedRuleIndex": 75,
+        "sortedRuleIndex": 76,
         "source": {
           "kind": "rule",
           "path": "model.rules[35]",
@@ -4177,8 +4226,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_75_0",
-        "sortedRuleIndex": 75,
+        "generated": "alloy.sig.C_76_0",
+        "sortedRuleIndex": 76,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -4187,8 +4236,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_75_1",
-        "sortedRuleIndex": 75,
+        "generated": "alloy.sig.C_76_1",
+        "sortedRuleIndex": 76,
         "source": {
           "index": 1,
           "kind": "checkTarget",
@@ -4198,7 +4247,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_STABLE_IDS",
-        "sortedRuleIndex": 76,
+        "sortedRuleIndex": 77,
         "source": {
           "kind": "rule",
           "path": "model.rules[4]",
@@ -4206,8 +4255,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_76_0",
-        "sortedRuleIndex": 76,
+        "generated": "alloy.sig.C_77_0",
+        "sortedRuleIndex": 77,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -4217,7 +4266,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_TOPLEVEL_MODEL",
-        "sortedRuleIndex": 77,
+        "sortedRuleIndex": 78,
         "source": {
           "kind": "rule",
           "path": "model.rules[3]",
@@ -4225,8 +4274,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_77_0",
-        "sortedRuleIndex": 77,
+        "generated": "alloy.sig.C_78_0",
+        "sortedRuleIndex": 78,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -4236,7 +4285,7 @@
       },
       {
         "generated": "alloy.sig.R_DSPEC_VERIFY_GENERATED_JSON",
-        "sortedRuleIndex": 78,
+        "sortedRuleIndex": 79,
         "source": {
           "kind": "rule",
           "path": "model.rules[53]",
@@ -4244,8 +4293,8 @@
         }
       },
       {
-        "generated": "alloy.sig.C_78_0",
-        "sortedRuleIndex": 78,
+        "generated": "alloy.sig.C_79_0",
+        "sortedRuleIndex": 79,
         "source": {
           "index": 0,
           "kind": "checkTarget",
@@ -8016,6 +8065,15 @@
         }
       },
       {
+        "generated": "lean.checks.DSPEC_I18N_SEMANTIC_DRIFT[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[6].checks[3]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
         "generated": "lean.clauseExprs.DSPEC_I18N_SEMANTIC_DRIFT.must[0]",
         "source": {
           "field": "must",
@@ -8032,6 +8090,16 @@
           "index": 1,
           "kind": "clause",
           "path": "model.rules[6].must[1]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_I18N_SEMANTIC_DRIFT.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[6].must[2]",
           "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
         }
       },
@@ -8174,7 +8242,7 @@
         "generated": "lean.RuleId.DSPEC_INTENT_GOAL_GRAPH",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -8182,7 +8250,7 @@
         "generated": "lean.checks.DSPEC_INTENT_GOAL_GRAPH",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -8190,7 +8258,7 @@
         "generated": "lean.clauseExprs.DSPEC_INTENT_GOAL_GRAPH",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -8199,7 +8267,7 @@
         "source": {
           "index": 0,
           "kind": "checkTarget",
-          "path": "model.rules[78].checks[0]",
+          "path": "model.rules[79].checks[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -8209,7 +8277,7 @@
           "field": "must",
           "index": 0,
           "kind": "clause",
-          "path": "model.rules[78].must[0]",
+          "path": "model.rules[79].must[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -8219,8 +8287,79 @@
           "field": "must",
           "index": 1,
           "kind": "clause",
-          "path": "model.rules[78].must[1]",
+          "path": "model.rules[79].must[1]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
+        }
+      },
+      {
+        "generated": "lean.RuleId.DSPEC_INTENT_PROTOCOL_TEST_ORACLE",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_INTENT_PROTOCOL_TEST_ORACLE",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_INTENT_PROTOCOL_TEST_ORACLE",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_INTENT_PROTOCOL_TEST_ORACLE[0]",
+        "source": {
+          "index": 0,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_INTENT_PROTOCOL_TEST_ORACLE[1]",
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "lean.checks.DSPEC_INTENT_PROTOCOL_TEST_ORACLE[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[2]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_INTENT_PROTOCOL_TEST_ORACLE.must[0]",
+        "source": {
+          "field": "must",
+          "index": 0,
+          "kind": "clause",
+          "path": "model.rules[77].must[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "lean.clauseExprs.DSPEC_INTENT_PROTOCOL_TEST_ORACLE.must[1]",
+        "source": {
+          "field": "must",
+          "index": 1,
+          "kind": "clause",
+          "path": "model.rules[77].must[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
         }
       },
       {
@@ -12776,7 +12915,7 @@
         "generated": "markdown.term.concept.construction_authority",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[126]",
+          "path": "model.vocabulary[128]",
           "termId": "concept.construction_authority"
         }
       },
@@ -12872,7 +13011,7 @@
         "generated": "markdown.term.concept.intent_assurance_task",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[124]",
+          "path": "model.vocabulary[126]",
           "termId": "concept.intent_assurance_task"
         }
       },
@@ -12888,7 +13027,7 @@
         "generated": "markdown.term.concept.intent_claim",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[123]",
+          "path": "model.vocabulary[125]",
           "termId": "concept.intent_claim"
         }
       },
@@ -12904,8 +13043,16 @@
         "generated": "markdown.term.concept.intent_goal",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[122]",
+          "path": "model.vocabulary[124]",
           "termId": "concept.intent_goal"
+        }
+      },
+      {
+        "generated": "markdown.term.concept.intent_grpc_endpoint",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[123]",
+          "termId": "concept.intent_grpc_endpoint"
         }
       },
       {
@@ -12925,6 +13072,14 @@
         }
       },
       {
+        "generated": "markdown.term.concept.intent_protocol_test",
+        "source": {
+          "kind": "term",
+          "path": "model.vocabulary[122]",
+          "termId": "concept.intent_protocol_test"
+        }
+      },
+      {
         "generated": "markdown.term.concept.intent_refinement",
         "source": {
           "kind": "term",
@@ -12936,7 +13091,7 @@
         "generated": "markdown.term.concept.intent_scenario",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[127]",
+          "path": "model.vocabulary[129]",
           "termId": "concept.intent_scenario"
         }
       },
@@ -12944,7 +13099,7 @@
         "generated": "markdown.term.concept.intent_semantic_binding",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[125]",
+          "path": "model.vocabulary[127]",
           "termId": "concept.intent_semantic_binding"
         }
       },
@@ -13144,7 +13299,7 @@
         "generated": "markdown.term.state.intent-model-accepted",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[129]",
+          "path": "model.vocabulary[131]",
           "termId": "state.intent-model-accepted"
         }
       },
@@ -13152,7 +13307,7 @@
         "generated": "markdown.term.state.intent-model-authored",
         "source": {
           "kind": "term",
-          "path": "model.vocabulary[128]",
+          "path": "model.vocabulary[130]",
           "termId": "state.intent-model-authored"
         }
       },
@@ -19376,6 +19531,16 @@
         }
       },
       {
+        "generated": "markdown.rule.DSPEC-I18N-SEMANTIC-DRIFT.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[6].must[2]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
         "generated": "markdown.rule.DSPEC-I18N-SEMANTIC-DRIFT.checks[0]",
         "source": {
           "index": 0,
@@ -19399,6 +19564,15 @@
           "index": 2,
           "kind": "checkTarget",
           "path": "model.rules[6].checks[2]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-I18N-SEMANTIC-DRIFT.checks[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[6].checks[3]",
           "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
         }
       },
@@ -19462,6 +19636,24 @@
           "index": 6,
           "kind": "implementationRef",
           "path": "model.rules[6].implementedBy[6]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-I18N-SEMANTIC-DRIFT.implementedBy[7]",
+        "source": {
+          "index": 7,
+          "kind": "implementationRef",
+          "path": "model.rules[6].implementedBy[7]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-I18N-SEMANTIC-DRIFT.implementedBy[8]",
+        "source": {
+          "index": 8,
+          "kind": "implementationRef",
+          "path": "model.rules[6].implementedBy[8]",
           "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
         }
       },
@@ -19734,7 +19926,7 @@
         "generated": "markdown.rule.DSPEC-INTENT-GOAL-GRAPH",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19744,7 +19936,7 @@
           "field": "must",
           "index": 0,
           "kind": "clause",
-          "path": "model.rules[78].must[0]",
+          "path": "model.rules[79].must[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19754,7 +19946,7 @@
           "field": "must",
           "index": 1,
           "kind": "clause",
-          "path": "model.rules[78].must[1]",
+          "path": "model.rules[79].must[1]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19763,7 +19955,7 @@
         "source": {
           "index": 0,
           "kind": "checkTarget",
-          "path": "model.rules[78].checks[0]",
+          "path": "model.rules[79].checks[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19772,7 +19964,7 @@
         "source": {
           "index": 0,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[0]",
+          "path": "model.rules[79].implementedBy[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19781,7 +19973,7 @@
         "source": {
           "index": 1,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[1]",
+          "path": "model.rules[79].implementedBy[1]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19790,7 +19982,7 @@
         "source": {
           "index": 2,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[2]",
+          "path": "model.rules[79].implementedBy[2]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19799,7 +19991,7 @@
         "source": {
           "index": 3,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[3]",
+          "path": "model.rules[79].implementedBy[3]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19808,7 +20000,7 @@
         "source": {
           "index": 4,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[4]",
+          "path": "model.rules[79].implementedBy[4]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -19817,8 +20009,99 @@
         "source": {
           "index": 5,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[5]",
+          "path": "model.rules[79].implementedBy[5]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[0]",
+        "source": {
+          "field": "must",
+          "index": 0,
+          "kind": "clause",
+          "path": "model.rules[77].must[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[1]",
+        "source": {
+          "field": "must",
+          "index": 1,
+          "kind": "clause",
+          "path": "model.rules[77].must[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.checks[0]",
+        "source": {
+          "index": 0,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.checks[1]",
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.checks[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[2]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.implementedBy[0]",
+        "source": {
+          "index": 0,
+          "kind": "implementationRef",
+          "path": "model.rules[77].implementedBy[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.implementedBy[1]",
+        "source": {
+          "index": 1,
+          "kind": "implementationRef",
+          "path": "model.rules[77].implementedBy[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.implementedBy[2]",
+        "source": {
+          "index": 2,
+          "kind": "implementationRef",
+          "path": "model.rules[77].implementedBy[2]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "markdown.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.implementedBy[3]",
+        "source": {
+          "index": 3,
+          "kind": "implementationRef",
+          "path": "model.rules[77].implementedBy[3]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
         }
       },
       {
@@ -21285,7 +21568,7 @@
         "generated": "markdown.rule.DSPEC-MBT-BOUNDARY",
         "source": {
           "kind": "rule",
-          "path": "model.rules[77]",
+          "path": "model.rules[78]",
           "ruleId": "DSPEC-MBT-BOUNDARY"
         }
       },
@@ -21295,7 +21578,7 @@
           "field": "when",
           "index": 0,
           "kind": "clause",
-          "path": "model.rules[77].when[0]",
+          "path": "model.rules[78].when[0]",
           "ruleId": "DSPEC-MBT-BOUNDARY"
         }
       },
@@ -21305,7 +21588,7 @@
           "field": "must",
           "index": 0,
           "kind": "clause",
-          "path": "model.rules[77].must[0]",
+          "path": "model.rules[78].must[0]",
           "ruleId": "DSPEC-MBT-BOUNDARY"
         }
       },
@@ -32767,6 +33050,16 @@
         }
       },
       {
+        "generated": "quickcheck.rules.DSPEC-I18N-SEMANTIC-DRIFT.must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[6].must[2]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
         "generated": "quickcheck.rules.DSPEC-I18N-SEMANTIC-DRIFT.checks[0]",
         "source": {
           "index": 0,
@@ -32790,6 +33083,15 @@
           "index": 2,
           "kind": "checkTarget",
           "path": "model.rules[6].checks[2]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-I18N-SEMANTIC-DRIFT.checks[3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[6].checks[3]",
           "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
         }
       },
@@ -32853,6 +33155,24 @@
           "index": 6,
           "kind": "implementationRef",
           "path": "model.rules[6].implementedBy[6]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-I18N-SEMANTIC-DRIFT.implementedBy[7]",
+        "source": {
+          "index": 7,
+          "kind": "implementationRef",
+          "path": "model.rules[6].implementedBy[7]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-I18N-SEMANTIC-DRIFT.implementedBy[8]",
+        "source": {
+          "index": 8,
+          "kind": "implementationRef",
+          "path": "model.rules[6].implementedBy[8]",
           "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
         }
       },
@@ -33125,7 +33445,7 @@
         "generated": "quickcheck.rule.DSPEC-INTENT-GOAL-GRAPH",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33135,7 +33455,7 @@
           "field": "must",
           "index": 0,
           "kind": "clause",
-          "path": "model.rules[78].must[0]",
+          "path": "model.rules[79].must[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33145,7 +33465,7 @@
           "field": "must",
           "index": 1,
           "kind": "clause",
-          "path": "model.rules[78].must[1]",
+          "path": "model.rules[79].must[1]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33154,7 +33474,7 @@
         "source": {
           "index": 0,
           "kind": "checkTarget",
-          "path": "model.rules[78].checks[0]",
+          "path": "model.rules[79].checks[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33163,7 +33483,7 @@
         "source": {
           "index": 0,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[0]",
+          "path": "model.rules[79].implementedBy[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33172,7 +33492,7 @@
         "source": {
           "index": 1,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[1]",
+          "path": "model.rules[79].implementedBy[1]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33181,7 +33501,7 @@
         "source": {
           "index": 2,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[2]",
+          "path": "model.rules[79].implementedBy[2]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33190,7 +33510,7 @@
         "source": {
           "index": 3,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[3]",
+          "path": "model.rules[79].implementedBy[3]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33199,7 +33519,7 @@
         "source": {
           "index": 4,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[4]",
+          "path": "model.rules[79].implementedBy[4]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -33208,8 +33528,99 @@
         "source": {
           "index": 5,
           "kind": "implementationRef",
-          "path": "model.rules[78].implementedBy[5]",
+          "path": "model.rules[79].implementedBy[5]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
+        }
+      },
+      {
+        "generated": "quickcheck.rule.DSPEC-INTENT-PROTOCOL-TEST-ORACLE",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[0]",
+        "source": {
+          "field": "must",
+          "index": 0,
+          "kind": "clause",
+          "path": "model.rules[77].must[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[1]",
+        "source": {
+          "field": "must",
+          "index": 1,
+          "kind": "clause",
+          "path": "model.rules[77].must[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.checks[0]",
+        "source": {
+          "index": 0,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.checks[1]",
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.checks[2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[2]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.implementedBy[0]",
+        "source": {
+          "index": 0,
+          "kind": "implementationRef",
+          "path": "model.rules[77].implementedBy[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.implementedBy[1]",
+        "source": {
+          "index": 1,
+          "kind": "implementationRef",
+          "path": "model.rules[77].implementedBy[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.implementedBy[2]",
+        "source": {
+          "index": 2,
+          "kind": "implementationRef",
+          "path": "model.rules[77].implementedBy[2]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "quickcheck.rules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE.implementedBy[3]",
+        "source": {
+          "index": 3,
+          "kind": "implementationRef",
+          "path": "model.rules[77].implementedBy[3]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
         }
       },
       {
@@ -34676,7 +35087,7 @@
         "generated": "quickcheck.rule.DSPEC-MBT-BOUNDARY",
         "source": {
           "kind": "rule",
-          "path": "model.rules[77]",
+          "path": "model.rules[78]",
           "ruleId": "DSPEC-MBT-BOUNDARY"
         }
       },
@@ -34686,7 +35097,7 @@
           "field": "when",
           "index": 0,
           "kind": "clause",
-          "path": "model.rules[77].when[0]",
+          "path": "model.rules[78].when[0]",
           "ruleId": "DSPEC-MBT-BOUNDARY"
         }
       },
@@ -34696,7 +35107,7 @@
           "field": "must",
           "index": 0,
           "kind": "clause",
-          "path": "model.rules[77].must[0]",
+          "path": "model.rules[78].must[0]",
           "ruleId": "DSPEC-MBT-BOUNDARY"
         }
       },
@@ -40237,8 +40648,16 @@
         "generated": "quickcheck.approvedRuleIds.DSPEC-INTENT-GOAL-GRAPH",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
+        }
+      },
+      {
+        "generated": "quickcheck.approvedRuleIds.DSPEC-INTENT-PROTOCOL-TEST-ORACLE",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
         }
       },
       {
@@ -44351,6 +44770,15 @@
         }
       },
       {
+        "generated": "tla.Checks[DSPEC-I18N-SEMANTIC-DRIFT][3]",
+        "source": {
+          "index": 3,
+          "kind": "checkTarget",
+          "path": "model.rules[6].checks[3]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
         "generated": "tla.RuleClauses[DSPEC-I18N-SEMANTIC-DRIFT].must[0]",
         "source": {
           "field": "must",
@@ -44367,6 +44795,16 @@
           "index": 1,
           "kind": "clause",
           "path": "model.rules[6].must[1]",
+          "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-I18N-SEMANTIC-DRIFT].must[2]",
+        "source": {
+          "field": "must",
+          "index": 2,
+          "kind": "clause",
+          "path": "model.rules[6].must[2]",
           "ruleId": "DSPEC-I18N-SEMANTIC-DRIFT"
         }
       },
@@ -44509,7 +44947,7 @@
         "generated": "tla.ActiveApprovedRules.DSPEC-INTENT-GOAL-GRAPH",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -44517,7 +44955,7 @@
         "generated": "tla.Checks[DSPEC-INTENT-GOAL-GRAPH]",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -44525,7 +44963,7 @@
         "generated": "tla.RuleClauses[DSPEC-INTENT-GOAL-GRAPH]",
         "source": {
           "kind": "rule",
-          "path": "model.rules[78]",
+          "path": "model.rules[79]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -44534,7 +44972,7 @@
         "source": {
           "index": 0,
           "kind": "checkTarget",
-          "path": "model.rules[78].checks[0]",
+          "path": "model.rules[79].checks[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -44544,7 +44982,7 @@
           "field": "must",
           "index": 0,
           "kind": "clause",
-          "path": "model.rules[78].must[0]",
+          "path": "model.rules[79].must[0]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
         }
       },
@@ -44554,8 +44992,79 @@
           "field": "must",
           "index": 1,
           "kind": "clause",
-          "path": "model.rules[78].must[1]",
+          "path": "model.rules[79].must[1]",
           "ruleId": "DSPEC-INTENT-GOAL-GRAPH"
+        }
+      },
+      {
+        "generated": "tla.ActiveApprovedRules.DSPEC-INTENT-PROTOCOL-TEST-ORACLE",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-INTENT-PROTOCOL-TEST-ORACLE]",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-INTENT-PROTOCOL-TEST-ORACLE]",
+        "source": {
+          "kind": "rule",
+          "path": "model.rules[77]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-INTENT-PROTOCOL-TEST-ORACLE][0]",
+        "source": {
+          "index": 0,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-INTENT-PROTOCOL-TEST-ORACLE][1]",
+        "source": {
+          "index": 1,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "tla.Checks[DSPEC-INTENT-PROTOCOL-TEST-ORACLE][2]",
+        "source": {
+          "index": 2,
+          "kind": "checkTarget",
+          "path": "model.rules[77].checks[2]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-INTENT-PROTOCOL-TEST-ORACLE].must[0]",
+        "source": {
+          "field": "must",
+          "index": 0,
+          "kind": "clause",
+          "path": "model.rules[77].must[0]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
+        }
+      },
+      {
+        "generated": "tla.RuleClauses[DSPEC-INTENT-PROTOCOL-TEST-ORACLE].must[1]",
+        "source": {
+          "field": "must",
+          "index": 1,
+          "kind": "clause",
+          "path": "model.rules[77].must[1]",
+          "ruleId": "DSPEC-INTENT-PROTOCOL-TEST-ORACLE"
         }
       },
       {

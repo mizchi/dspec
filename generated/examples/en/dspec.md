@@ -6,13 +6,13 @@
 
 ## Review Summary
 
-- approvedRules: `77`
-- automatedCheckTargets: `347`
-- implementationRefs: `726`
+- approvedRules: `78`
+- automatedCheckTargets: `351`
+- implementationRefs: `732`
 - projections: `8`
 - domainElements: `21`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=347, executed=5, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=351, executed=5, mutation-tested=1, bounded=0, proved=0`
 
 ## Projections
 
@@ -181,8 +181,10 @@
 - `concept.intent_claim` (entity): Intent claim
 - `concept.intent_field` (value): Intent contract field
 - `concept.intent_goal` (entity): Intent goal
+- `concept.intent_grpc_endpoint` (relation): Intent gRPC endpoint
 - `concept.intent_outcome` (entity): Intent outcome
 - `concept.intent_process` (action): Intent process
+- `concept.intent_protocol_test` (entity): Intent protocol test
 - `concept.intent_refinement` (relation): Intent refinement
 - `concept.intent_scenario` (entity): Intent scenario
 - `concept.intent_semantic_binding` (relation): Intent semantic binding
@@ -1827,7 +1829,7 @@ render produces natural-language output for the requested locale
 
 ### DSPEC-I18N-SEMANTIC-DRIFT
 
-The i18n contract detects semantic drift across required locales and glossary labels
+The i18n contract and reviewed translation lock detect required-locale, glossary, source, and translation changes
 
 - kind: invariant
 - status: approved
@@ -1838,13 +1840,17 @@ The i18n contract detects semantic drift across required locales and glossary la
 - term: `concept.term`
 - must: `localizedText.labels.cover(requiredLocales)`
 - must: `i18n.glossary.labels == vocabulary.term.text.labels`
+- must: `translationLock.sourceHash == localizedText.primaryLocale.currentHash`
 - check: node test/cli.test.mjs#accepts i18n contract coverage [reference]
 - check: node test/cli.test.mjs#rejects missing required localized labels [reference]
 - check: node test/cli.test.mjs#rejects i18n glossary label drift [reference]
+- check: node test/translation-lock-core.test.mjs#reports source, translation, and glossary changes independently [reference]
 - implementation: code dspec/Schema.pkl#I18nContract
 - implementation: code dspec/Schema.pkl#I18nGlossaryEntry
 - implementation: code src/cli.mjs#validateI18nContract
 - implementation: code src/cli.mjs#walkLocalizedTexts
+- implementation: code src/core/translation-lock.mjs#translationCheck
+- implementation: code src/cli.mjs#runTranslation
 - implementation: model fixtures/i18n-contract.pkl
 - implementation: model fixtures/i18n-contract-missing-label.pkl
 - implementation: model fixtures/i18n-contract-glossary-mismatch.pkl
@@ -1853,10 +1859,11 @@ The i18n contract detects semantic drift across required locales and glossary la
 
 - source: model.rules[6]
 - coverage: rule
-- automatedChecks: 3
-- implementationRefs: 7
+- automatedChecks: 4
+- implementationRefs: 9
 - selector: DSPEC-I18N-SEMANTIC-DRIFT.must[0]
 - selector: DSPEC-I18N-SEMANTIC-DRIFT.must[1]
+- selector: DSPEC-I18N-SEMANTIC-DRIFT.must[2]
 
 ### DSPEC-IMPLEMENTATION-CONFORMANCE
 
@@ -1960,12 +1967,45 @@ An Intent Goal is traceable through Claims, assurance tasks, and implementation 
 
 #### Review
 
-- source: model.rules[78]
+- source: model.rules[79]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 6
 - selector: DSPEC-INTENT-GOAL-GRAPH.must[0]
 - selector: DSPEC-INTENT-GOAL-GRAPH.must[1]
+
+### DSPEC-INTENT-PROTOCOL-TEST-ORACLE
+
+Reviewed Intent protocol tests generate transport-neutral oracles and verify finite cases against HTTP or gRPC implementations
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `concept.intent_field`
+- term: `concept.intent_grpc_endpoint`
+- term: `concept.intent_process`
+- term: `concept.intent_protocol_test`
+- term: `concept.intent_refinement`
+- must: `intent.protocolTest.canonicalFields decodedAndBoundTo refinement.implementationFields`
+- must: `intent.protocolTest.generatedTrace executedWith selectedTransport expectedStatusOrGrpcCode`
+- check: node test/protocol-tests-core.test.mjs#generates language-independent HTTP and gRPC test vectors from Intent contract cases [reference]
+- check: node test/protocol-tests-cli.test.mjs#intent test executes a generated HTTP protocol test [reference]
+- check: node test/protocol-tests-cli.test.mjs#intent test executes a generated gRPC protocol test through the runner contract [reference]
+- implementation: code dspec/schema/Claims.pkl#IntentProtocolTest
+- implementation: code dspec/schema/Claims.pkl#IntentGrpcEndpoint
+- implementation: code src/core/protocol-tests.mjs#protocolTestPlan
+- implementation: code src/cli.mjs#runIntentCommand
+- rationale: DSL は単一言語の生成テストではなく、型付き domain case を transport adapter に渡す可搬な oracle にする。有限ケースの成功は任意入力の実装等価性を証明しない。
+
+#### Review
+
+- source: model.rules[77]
+- coverage: rule
+- automatedChecks: 3
+- implementationRefs: 4
+- selector: DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[0]
+- selector: DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[1]
 
 ### DSPEC-JSON-REPORT-COMPAT-FIXTURES
 
@@ -2232,7 +2272,7 @@ A future pkl-mbt implementation replaces the checker boundary while preserving s
 
 #### Review
 
-- source: model.rules[77]
+- source: model.rules[78]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0

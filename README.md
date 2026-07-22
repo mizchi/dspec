@@ -342,6 +342,9 @@ node src/cli.mjs evidence create --output /tmp/dspec-evidence.json fixtures/type
 node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl /tmp/dspec-evidence.json
 node src/cli.mjs evidence refresh fixtures/typed-ast.pkl /tmp/dspec-evidence.json
 node src/cli.mjs intent exercise --json --output /tmp/dspec-intent-exercise.json fixtures/intent-contract.pkl fixtures/intent-traces.json
+node src/cli.mjs intent generate-tests --json fixtures/intent-contract-http.pkl
+node src/cli.mjs intent test --json --http-base-url http://127.0.0.1:3000 fixtures/intent-contract-http.pkl
+node src/cli.mjs intent test --json --grpc-runner ./scripts/grpc-runner.mjs fixtures/intent-contract-grpc.pkl
 node src/cli.mjs intent corpus --json fixtures/intent-contract.pkl fixtures/intent-traces-corpus-complete.json
 node src/cli.mjs intent access --json fixtures/intent-contract.pkl request.approve role.manager
 node src/cli.mjs intent bindings --json fixtures/intent-contract-semantic-http.pkl fixtures/intent-semantic-bindings-observed.json
@@ -923,6 +926,22 @@ rejected by the same verifier. These are finite detector checks, not a measure
 of all production faults. Both commands provide runtime conformance
 evidence for supplied observations, not a proof that all production executions
 refine the model.
+
+`IntentProtocolTest` is a reviewed, finite request/expected-result case held in
+the Pkl model rather than in a language-specific test file. It names a Process,
+Outcome, and `http-route` or `grpc-method` refinement, and supplies canonical
+contract values as strings. `dspec intent generate-tests --json <model.pkl>`
+decodes and maps those values into a transport-neutral plan plus an Intent trace
+document. `dspec intent test` verifies the generated trace and executes it:
+HTTP uses `--http-base-url`; gRPC uses `--grpc-runner`, an executable that reads
+one JSON request from stdin and writes one JSON response to stdout. The runner
+request is `{ protocol: "dspec-grpc-runner-v1", method, input, timeoutMs }`; the
+response is `{ code, output }`, where `code` is a gRPC status name such as `OK`.
+This keeps the contract and oracle portable across TypeScript, Go, Java, Rust,
+or other clients while making the selected runner and finite-case boundary
+explicit evidence rather than a claim of universal implementation equivalence.
+See [`docs/protocol-tests.md`](docs/protocol-tests.md) for the Pkl shape and
+runner contract.
 
 `IntentScenario` may be categorized (`success`, `rejection`, `retry`,
 `conflict`, or `timeout`) and marked required. `intent corpus` keeps normal

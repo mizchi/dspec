@@ -32,6 +32,7 @@
     "./real-app": "./src/core/real-app.mjs",
     "./external-holdouts": "./src/core/external-holdouts.mjs",
     "./intent": "./src/core/intent.mjs",
+    "./protocol-tests": "./src/core/protocol-tests.mjs",
     "./projection": "./src/core/projection.mjs",
     "./schema": "./dspec/Schema.pkl"
   },

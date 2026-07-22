@@ -116,6 +116,7 @@ export function intentTraceSchema(model) {
         kind: refinement.kind,
         implementation: refinement.implementation,
         http: refinement.http ?? null,
+        grpc: refinement.grpc ?? null,
       }))
       .sort((left, right) => left.id.localeCompare(right.id)),
   })).sort((left, right) => left.id.localeCompare(right.id));
@@ -814,7 +815,7 @@ export async function executeIntentRefinements(model, document, invoke) {
         errors.push(`trace ${traceId} step ${stepIndex}: refinement ${entry.refinement.id} does not belong to process ${step?.process ?? "missing"}`);
         continue;
       }
-      if (!["function", "http-route", "transaction"].includes(entry.refinement.kind)) {
+      if (!["function", "http-route", "grpc-method", "transaction"].includes(entry.refinement.kind)) {
         errors.push(`trace ${traceId} step ${stepIndex} refinement ${entry.refinement.id}: cannot execute ${entry.refinement.kind} refinement`);
         continue;
       }
@@ -836,6 +837,7 @@ export async function executeIntentRefinements(model, document, invoke) {
           process,
           expectedOutput: step?.output,
           expectedEffects: step?.effects,
+          expectedTransport: step?.transport ?? null,
           outcome: outcomes.get(step?.outcome),
         });
         const observed = executionObservation(actual);
@@ -880,7 +882,7 @@ function policyTraceSeed(document, process, refinements) {
       if (step?.process !== process.id) continue;
       const entry = refinements.get(step?.refinement);
       if (!entry || entry.process.id !== process.id) continue;
-      if (!["function", "http-route", "transaction"].includes(entry.refinement.kind)) continue;
+      if (!["function", "http-route", "grpc-method", "transaction"].includes(entry.refinement.kind)) continue;
       return { trace, traceId, step, stepIndex, refinement: entry.refinement };
     }
   }

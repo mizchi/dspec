@@ -63,6 +63,12 @@ export {
 } from "./intent.mjs";
 
 export {
+  PROTOCOL_TEST_PLAN_SCHEMA_VERSION,
+  protocolTestPlan,
+  validateProtocolTests,
+} from "./protocol-tests.mjs";
+
+export {
   LEAN_SEMANTIC_CORE_SCHEMA_VERSION,
   boundedReachabilityReport,
   encodeLeanBooleanFormulaTseitin,

@@ -1026,6 +1026,21 @@
       "translationHash": "sha256:b6a23f4c01c3216374ee8dad47bf3c91660c66f5c0456b846c37c4f1b6ae4030"
     },
     {
+      "key": "rule:DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[0].text#en",
+      "sourceHash": "sha256:2df44bbfca36243262e742ba875ebddc39e507fef08f1296df36715c2a21d990",
+      "translationHash": "sha256:b5a1b9b5515d51a945a6941b8f34d52c77200a081579c461e37fb1cc106b75fc"
+    },
+    {
+      "key": "rule:DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[1].text#en",
+      "sourceHash": "sha256:dba3d7d09bc0ecc3b5d38b1c2e5729c60f0b40c5c442a90563fcf521de43f34b",
+      "translationHash": "sha256:beaa7cd7b24e45b11ea0cff4340523182487c2c7d3a518964929b068f9ddf8eb"
+    },
+    {
+      "key": "rule:DSPEC-INTENT-PROTOCOL-TEST-ORACLE.text#en",
+      "sourceHash": "sha256:9c9526ba3c2fec208109d9fa3658fee543a69c42ccb6dfa9900b39697267b36b",
+      "translationHash": "sha256:c420adc4ce5b8c196b99016e35a74d587eb3c4007af673d19d5cc61e57a7a892"
+    },
+    {
       "key": "rule:DSPEC-JSON-REPORT-COMPAT-FIXTURES.must[0].text#en",
       "sourceHash": "sha256:dbcf414c7bf85cf84c8fddac812419f54cb68b316f6bd33b2d6ae2fa9fb1bdbf",
       "translationHash": "sha256:002c213d200babbcdb5f57713863d04cb709d79688424802a27f0494e475e772"
@@ -2441,6 +2456,11 @@
       "translationHash": "sha256:0137df4368ab43235500efad1aa99ed720a4cadad98312a0d1fe1f3306471a1d"
     },
     {
+      "key": "term:concept.intent_grpc_endpoint.text#en",
+      "sourceHash": "sha256:448218a9c6ad5d264039df90a8a85b4595278dc2e43fe96914fd5f80079c2aba",
+      "translationHash": "sha256:448218a9c6ad5d264039df90a8a85b4595278dc2e43fe96914fd5f80079c2aba"
+    },
+    {
       "key": "term:concept.intent_outcome.text#en",
       "sourceHash": "sha256:92c06bcc0a35ba27ede383e42640dc72bba1da006a2867b040345f1c22e1064f",
       "translationHash": "sha256:92c06bcc0a35ba27ede383e42640dc72bba1da006a2867b040345f1c22e1064f"
@@ -2449,6 +2469,11 @@
       "key": "term:concept.intent_process.text#en",
       "sourceHash": "sha256:f1c6b802519c2ad07cffcf9b65cd0d695e63d51ed3d0e8062d4148cb830a206e",
       "translationHash": "sha256:f1c6b802519c2ad07cffcf9b65cd0d695e63d51ed3d0e8062d4148cb830a206e"
+    },
+    {
+      "key": "term:concept.intent_protocol_test.text#en",
+      "sourceHash": "sha256:9f504096c1041322e2212385aad7c24866d60b2c2df8ba330a8ecb7bf84dba47",
+      "translationHash": "sha256:9f504096c1041322e2212385aad7c24866d60b2c2df8ba330a8ecb7bf84dba47"
     },
     {
       "key": "term:concept.intent_refinement.text#en",

@@ -8,11 +8,10 @@ model: d.Model = (base.model) {
         (base.model.patterns.intent.processes[0]) {
           refinements = new {
             (base.model.patterns.intent.processes[0].refinements[0]) {
-              kind = "http-route"
-              http = new d.IntentHttpEndpoint {
-                method = "POST"
-                path = "/requests/approve"
-                expectedStatus = 200
+              kind = "grpc-method"
+              grpc = new d.IntentGrpcEndpoint {
+                method = "/approval.v1.RequestService/Approve"
+                expectedCode = "OK"
               }
             }
           }
@@ -20,21 +19,21 @@ model: d.Model = (base.model) {
       }
       tests = new {
         new d.IntentProtocolTest {
-          id = "approve-http-success"
+          id = "approve-grpc-success"
           process = "request.approve"
           refinement = "request.approve-handler"
           outcome = "request.approved"
           input {
-            ["requestId"] = "request-001"
+            ["requestId"] = "request-002"
             ["amountCents"] = "500"
             ["locale"] = "ja"
             ["notify"] = "true"
           }
           output {
-            ["approvalId"] = "approval-request-001"
+            ["approvalId"] = "approval-request-002"
             ["notified"] = "true"
           }
-          expectedStatus = 200
+          expectedGrpcCode = "OK"
         }
       }
     }
