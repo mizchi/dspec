@@ -134,6 +134,11 @@ the domain rule it grounds; an extension must `import`/`open` its generated
 dependency. This preserves DSL-first generation while keeping deliberate
 escape hatches reviewable and executable.
 
+[`docs/trace-lock.md`](docs/trace-lock.md) describes a separate reviewed trace
+lock for detecting specification, implementation, and verification-link drift.
+[`docs/translation-lock.md`](docs/translation-lock.md) applies the same review
+and freshness boundary to translations of `LocalizedText`.
+
 ## Capability Boundaries
 
 | Question | dspec can establish | It does not establish |

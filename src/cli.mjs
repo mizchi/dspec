@@ -64,6 +64,16 @@ import {
   projectionStableJson,
   validateProjectionContracts,
 } from "./core/projection.mjs";
+import {
+  createTraceLock,
+  traceCheck,
+  traceSnapshot,
+} from "./core/trace-lock.mjs";
+import {
+  createTranslationLock,
+  translationCheck,
+  translationSnapshot,
+} from "./core/translation-lock.mjs";
 import { applyProjectionTransaction, recoverProjectionLock } from "./projection-filesystem.mjs";
 import { PklAdapterError, evaluatePklJson } from "./adapters/pkl.mjs";
 
@@ -71,6 +81,8 @@ const TOP_LEVEL_COMMANDS = [
   { name: "init", usage: "dspec init [--json] [--force] [--output <model.pkl>] [--lock <lock.json>] [model.pkl]" },
   { name: "verify", usage: "dspec verify [--json] [--lock <lock.json>] [--require-lock] <model.pkl>" },
   { name: "lock", usage: "dspec lock [--json] [--force] [--output <lock.json>] <model.pkl>" },
+  { name: "trace", usage: "dspec trace <reconcile|check> ..." },
+  { name: "translation", usage: "dspec translation <reconcile|check> ..." },
   { name: "scaffold", usage: "dspec scaffold rule [--json] [--force] [--output <rule.pkl>] [--kind <kind>] [--term <id>] [--implementation <path#symbol>] [--test <path#anchor>] <model.pkl> <rule-id>" },
   { name: "explain", usage: "dspec explain [--json|--markdown] [--lock <lock.json>] [--require-lock] <model.pkl>" },
   { name: "check", usage: "dspec check [--json] <model.pkl>" },
@@ -195,6 +207,37 @@ Options:
   --json               Emit the lock report as JSON.
   --force              Replace an existing lock file.
   --output <lock.json> Select the lock file (default: <model>.lock.json).
+`;
+}
+
+function traceUsage() {
+  return `usage:
+  dspec trace reconcile [--json] [--output <trace.lock.json>] <model.pkl>
+  dspec trace check [--json] [--gate] [--diff] [--lock <trace.lock.json>] <model.pkl>
+
+Materialize and compare a reviewed hash lock for Rule.id, its specification
+content, and explicitly declared implementation/test/check references.
+
+reconcile is the explicit approval step that replaces the trace lock.
+check reports drift without failing by default; add --gate for CI or a hook.
+--diff limits the gate to links whose source path is changed in the Git worktree.
+coverage (uncovered, impl-only, test-only, verified) is reported separately
+from hash drift.
+`;
+}
+
+function translationUsage() {
+  return `usage:
+  dspec translation reconcile [--json] [--output <translation.lock.json>] <model.pkl>
+  dspec translation check [--json] [--gate] [--lock <translation.lock.json>] <model.pkl>
+
+Materialize and compare a reviewed source-to-translation lock for LocalizedText.
+
+The model primaryLocale is the source language. i18n.requiredLocales selects
+targets; when it is empty, every declared non-primary locale is a target.
+reconcile is the explicit review step that replaces the translation lock.
+check reports stale source/translation or terminology changes; add --gate for CI.
+It detects freshness and required labels, not semantic equivalence of languages.
 `;
 }
 
@@ -1334,6 +1377,14 @@ function loadModel(file) {
     throw new CommandError(`missing top-level model: ${file}`);
   }
   return { ...document.model, projections: list(document.projections) };
+}
+
+function loadTraceDocument(file) {
+  const document = evalPklJson(file);
+  if (!document || typeof document !== "object" || !document.model) {
+    throw new CommandError(`missing top-level model: ${file}`);
+  }
+  return { ...document, model: { ...document.model, projections: list(document.projections) } };
 }
 
 function loadAppProfile(file) {
@@ -3896,6 +3947,95 @@ function parseJsonReportArgs(args) {
   return { file, json };
 }
 
+function parseTraceArgs(args) {
+  const [operation, ...rest] = args;
+  if (!operation || !["reconcile", "check"].includes(operation)) {
+    throw new CommandError(traceUsage());
+  }
+  let json = false;
+  let gate = false;
+  let diff = false;
+  let output = null;
+  let lock = null;
+  let file = null;
+  for (let index = 0; index < rest.length; index += 1) {
+    const arg = rest[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--gate" && operation === "check") {
+      gate = true;
+      continue;
+    }
+    if (arg === "--diff" && operation === "check") {
+      diff = true;
+      continue;
+    }
+    if (arg === "--output" && operation === "reconcile") {
+      output = rest[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+    if (arg === "--lock" && operation === "check") {
+      lock = rest[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+    if (!file) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(traceUsage());
+  }
+  if (!file || !file.endsWith(".pkl") || (output !== null && !output) || (lock !== null && !lock)) {
+    throw new CommandError(traceUsage());
+  }
+  return { operation, file, json, gate, diff, output, lock };
+}
+
+function parseTranslationArgs(args) {
+  const [operation, ...rest] = args;
+  if (!operation || !["reconcile", "check"].includes(operation)) {
+    throw new CommandError(translationUsage());
+  }
+  let json = false;
+  let gate = false;
+  let output = null;
+  let lock = null;
+  let file = null;
+  for (let index = 0; index < rest.length; index += 1) {
+    const arg = rest[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--gate" && operation === "check") {
+      gate = true;
+      continue;
+    }
+    if (arg === "--output" && operation === "reconcile") {
+      output = rest[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+    if (arg === "--lock" && operation === "check") {
+      lock = rest[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+    if (!file) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(translationUsage());
+  }
+  if (!file || !file.endsWith(".pkl") || (output !== null && !output) || (lock !== null && !lock)) {
+    throw new CommandError(translationUsage());
+  }
+  return { operation, file, json, gate, output, lock };
+}
+
 function parseExternalHoldoutArgs(args) {
   let json = false;
   let markdown = false;
@@ -5781,6 +5921,162 @@ function defaultSchemaLockPath(modelFile) {
   const extension = ".pkl";
   const base = modelFile.endsWith(extension) ? modelFile.slice(0, -extension.length) : modelFile;
   return `${base}.lock.json`;
+}
+
+function defaultTraceLockPath(modelFile) {
+  const extension = ".pkl";
+  const base = modelFile.endsWith(extension) ? modelFile.slice(0, -extension.length) : modelFile;
+  return `${base}.trace.lock.json`;
+}
+
+function defaultTranslationLockPath(modelFile) {
+  const extension = ".pkl";
+  const base = modelFile.endsWith(extension) ? modelFile.slice(0, -extension.length) : modelFile;
+  return `${base}.translation.lock.json`;
+}
+
+function relativeWorktreePath(path) {
+  return relative(process.cwd(), resolve(path)).replaceAll("\\", "/");
+}
+
+function changedWorktreePaths() {
+  const tracked = spawnSync("git", ["diff", "--name-only", "HEAD"], { encoding: "utf8" });
+  if (tracked.status !== 0) return { paths: new Set(), error: tracked.stderr || "git diff failed" };
+  const untracked = spawnSync("git", ["ls-files", "--others", "--exclude-standard"], { encoding: "utf8" });
+  if (untracked.status !== 0) return { paths: new Set(), error: untracked.stderr || "git ls-files failed" };
+  return {
+    paths: new Set(`${tracked.stdout}\n${untracked.stdout}`.split("\n").map((path) => path.trim()).filter(Boolean)),
+    error: null,
+  };
+}
+
+function traceKeyPath(key) {
+  const separator = String(key).indexOf(":");
+  if (separator < 0) return null;
+  const pathAndSymbol = String(key).slice(separator + 1);
+  return pathAndSymbol.split("#", 1)[0];
+}
+
+function scopeTraceReportToDiff(report, modelFile) {
+  const changed = changedWorktreePaths();
+  if (changed.error) {
+    return {
+      ...report,
+      status: "fail",
+      errors: [...report.errors, `trace diff scope failed: ${changed.error.trim()}`],
+      scope: { kind: "diff", changedPaths: [] },
+    };
+  }
+  const modelPath = relativeWorktreePath(modelFile);
+  const drift = report.drift.filter((entry) => {
+    if (entry.kind.startsWith("rule-")) return changed.paths.has(modelPath);
+    const sourcePath = traceKeyPath(entry.key);
+    return sourcePath !== null && changed.paths.has(sourcePath);
+  });
+  return {
+    ...report,
+    status: report.errors.length === 0 && drift.length === 0 ? "pass" : "fail",
+    drift,
+    scope: { kind: "diff", changedPaths: [...changed.paths].sort() },
+  };
+}
+
+function renderTraceReport(report) {
+  if (report.status === "pass") {
+    return `ok: ${report.model.id} trace (${report.scope?.kind ?? "all"}, ${report.coverage.filter((entry) => entry.status === "verified").length}/${report.coverage.length} verified)\n`;
+  }
+  const lines = ["trace drift:"];
+  for (const entry of report.drift) {
+    lines.push(`  ${entry.kind}: ${entry.rule} -> ${entry.key}`);
+  }
+  for (const error of report.errors) lines.push(`  error: ${error}`);
+  return `${lines.join("\n")}\n`;
+}
+
+function runTrace(args) {
+  if (hasHelpFlag(args)) {
+    process.stdout.write(traceUsage());
+    return;
+  }
+  const options = parseTraceArgs(args);
+  const document = loadTraceDocument(options.file);
+  if (options.operation === "reconcile") {
+    const snapshot = traceSnapshot(document);
+    if (snapshot.status === "fail") throw new CommandError(`${snapshot.errors.join("\n")}\n`);
+    const lock = createTraceLock(snapshot);
+    const output = resolve(options.output ?? defaultTraceLockPath(options.file));
+    mkdirSync(dirname(output), { recursive: true });
+    writeFileSync(output, stableJson(lock));
+    const report = { status: "pass", model: snapshot.model, lock: { path: output, rules: lock.rules.length, digest: sha256Digest(stableJson(lock)) } };
+    if (options.json) {
+      process.stdout.write(stableJson(report));
+      return;
+    }
+    process.stdout.write(`ok: reconciled trace ${report.lock.path} (${report.lock.rules} rules)\n`);
+    return;
+  }
+
+  const lockPath = resolve(options.lock ?? defaultTraceLockPath(options.file));
+  if (!existsSync(lockPath)) {
+    throw new CommandError(`trace lock not found: ${lockPath}; run dspec trace reconcile ${options.file}\n`);
+  }
+  let report = traceCheck(document, readJsonFile(lockPath, "trace lock"));
+  if (options.diff) report = scopeTraceReportToDiff(report, options.file);
+  else report = { ...report, scope: { kind: "all", changedPaths: [] } };
+  if (options.json) process.stdout.write(stableJson(report));
+  else process.stdout.write(renderTraceReport(report));
+  if (options.gate && report.status === "fail") {
+    throw new CommandError("trace gate failed\n");
+  }
+}
+
+function renderTranslationReport(report) {
+  if (report.status === "pass") {
+    return `ok: ${report.model.id} translations (${report.entries.length} bindings)\n`;
+  }
+  const lines = ["translation drift:"];
+  for (const entry of report.drift) lines.push(`  ${entry.kind}: ${entry.key}`);
+  for (const error of report.errors) lines.push(`  error: ${error}`);
+  return `${lines.join("\n")}\n`;
+}
+
+function runTranslation(args) {
+  if (hasHelpFlag(args)) {
+    process.stdout.write(translationUsage());
+    return;
+  }
+  const options = parseTranslationArgs(args);
+  const document = loadTraceDocument(options.file);
+  if (options.operation === "reconcile") {
+    const snapshot = translationSnapshot(document);
+    if (snapshot.status === "fail") throw new CommandError(`${snapshot.errors.join("\n")}\n`);
+    const lock = createTranslationLock(snapshot);
+    const output = resolve(options.output ?? defaultTranslationLockPath(options.file));
+    mkdirSync(dirname(output), { recursive: true });
+    writeFileSync(output, stableJson(lock));
+    const report = {
+      status: "pass",
+      model: snapshot.model,
+      lock: { path: output, bindings: lock.entries.length, digest: sha256Digest(stableJson(lock)) },
+    };
+    if (options.json) {
+      process.stdout.write(stableJson(report));
+      return;
+    }
+    process.stdout.write(`ok: reconciled translations ${report.lock.path} (${report.lock.bindings} bindings)\n`);
+    return;
+  }
+
+  const lockPath = resolve(options.lock ?? defaultTranslationLockPath(options.file));
+  if (!existsSync(lockPath)) {
+    throw new CommandError(`translation lock not found: ${lockPath}; run dspec translation reconcile ${options.file}\n`);
+  }
+  const report = translationCheck(document, readJsonFile(lockPath, "translation lock"));
+  if (options.json) process.stdout.write(stableJson(report));
+  else process.stdout.write(renderTranslationReport(report));
+  if (options.gate && report.status === "fail") {
+    throw new CommandError("translation gate failed\n");
+  }
 }
 
 function schemaImportFromModel(modelFile) {
@@ -18219,7 +18515,7 @@ async function run(argv) {
     return;
   }
 
-  if (!["spec-change", "evidence", "generated", "scaffold", "intent", "daily-drift"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+  if (!["spec-change", "evidence", "generated", "scaffold", "intent", "daily-drift", "trace", "translation"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     process.stdout.write(topLevelCommandHelp(commandSpec));
     return;
   }
@@ -18249,6 +18545,16 @@ async function run(argv) {
       return;
     }
     process.stdout.write(`ok: wrote schema lock ${lock.path} (${lock.files} modules)\n`);
+    return;
+  }
+
+  if (command === "trace") {
+    runTrace(args);
+    return;
+  }
+
+  if (command === "translation") {
+    runTranslation(args);
     return;
   }
 

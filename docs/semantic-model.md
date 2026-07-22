@@ -283,11 +283,16 @@ whether it returns a term or a rule, and rule helpers must declare typed AST
 predicates. Drift then checks that the registered helper symbols still exist in
 the pack implementation file.
 
-The i18n contract adds a small semantic-drift layer for human-readable labels.
+The i18n contract adds a structural drift layer for human-readable labels.
 It does not prove translation quality. It checks that every `LocalizedText`
 has labels for required locales and that glossary entries match the labels on
 stable vocabulary terms. That keeps ids language-independent while making
 localized wording a reviewable support obligation instead of untracked prose.
+
+`dspec translation reconcile/check` adds a reviewed source-to-target freshness
+lock on top of that contract. It detects a changed source text, changed target
+text, changed glossary, or removed locale binding, but deliberately does not
+assert that two languages are semantically equivalent.
 
 The DB pattern adds a fourth, domain-specific layer inside the source base:
 `DbTable` describes relational structure, `DbInvariant` names the predicates

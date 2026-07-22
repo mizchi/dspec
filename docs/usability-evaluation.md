@@ -175,8 +175,9 @@ It is not yet enough as:
 - full automatic extraction of the real-app model from source code; the current
   importer extracts a useful observed-facts subset, but the authoritative
   sample app model is still authored by hand
-- translation-quality validation beyond required-label presence and glossary
-  equality; human review or external localization QA is still needed for nuance
+- translation-quality validation beyond required-label presence, glossary
+  equality, and reviewed source-to-target freshness; human review or external
+  localization QA is still needed for nuance
 - compliance-grade data governance over real catalogs, warehouse lineage,
   consent records, deletion job evidence, retention job evidence, or production
   access logs beyond the current metadata declaration checks

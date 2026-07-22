@@ -13,6 +13,14 @@ local jsonFixtures: Listing<String> = new {
   "fixtures/**/*.json"
 }
 
+local traceLocks: Listing<String> = new {
+  "examples/**/*.trace.lock.json"
+}
+
+local translationLocks: Listing<String> = new {
+  "examples/**/*.translation.lock.json"
+}
+
 local markdownFixtures: Listing<String> = new {
   "fixtures/**/*.md"
 }
@@ -193,6 +201,31 @@ local coverage: Task = new {
     ...ciSources
   }
   deps { drift }
+}
+
+local traceVerify: Task = new {
+  name = "trace:verify"
+  description = "Gate reviewed spec-to-code/test trace locks for the self model"
+  cmd = "node src/cli.mjs trace check --gate examples/dspec.pkl"
+  inputs = new {
+    ...pklSources
+    ...traceLocks
+    ...jsSources
+    ...reviewArtifacts
+  }
+  deps { schema }
+}
+
+local translationVerify: Task = new {
+  name = "translation:verify"
+  description = "Gate reviewed source-to-translation bindings for the self model"
+  cmd = "node src/cli.mjs translation check --gate examples/dspec.pkl"
+  inputs = new {
+    ...pklSources
+    ...translationLocks
+    ...jsSources
+  }
+  deps { schema }
 }
 
 local domainCoverage: Task = new {
@@ -548,6 +581,8 @@ local checkFast: Task = new {
     packageSmoke
     checkerConformance
     domainCoverage
+    traceVerify
+    translationVerify
     realAppReconcile
     emitSmoke
     markdownReview
@@ -615,6 +650,8 @@ tasks {
   checkerConformance
   drift
   coverage
+  traceVerify
+  translationVerify
   domainCoverage
   realAppReconcile
   appProfileRefresh

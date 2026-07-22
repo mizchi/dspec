@@ -1060,8 +1060,8 @@ model: d.Model = new {
       kind = "invariant"
       text =
         text(
-          "i18n contract は必須 locale と glossary の意味ドリフトを検出する",
-          "The i18n contract detects semantic drift across required locales and glossary labels",
+          "i18n contract とレビュー済み translation lock は必須 locale、glossary、原文・訳文の変更を検出する",
+          "The i18n contract and reviewed translation lock detect required-locale, glossary, source, and translation changes",
         )
       terms {
         "artifact.i18n_contract"
@@ -1079,18 +1079,26 @@ model: d.Model = new {
           "glossary の label は vocabulary term の label と一致する",
           "glossary labels match the labels on vocabulary terms",
         )
+        d.clause(
+          "translationLock.sourceHash == localizedText.primaryLocale.currentHash",
+          "原文を変えると、対応する翻訳のレビュー済み binding は stale になる",
+          "changing source text makes its reviewed translation binding stale",
+        )
       }
       reviewStatus = "approved"
       checks {
         d.nodeCheck("test/cli.test.mjs#accepts i18n contract coverage")
         d.nodeCheck("test/cli.test.mjs#rejects missing required localized labels")
         d.nodeCheck("test/cli.test.mjs#rejects i18n glossary label drift")
+        d.nodeCheck("test/translation-lock-core.test.mjs#reports source, translation, and glossary changes independently")
       }
       implementedBy {
         d.codeRef("dspec/Schema.pkl", "I18nContract")
         d.codeRef("dspec/Schema.pkl", "I18nGlossaryEntry")
         d.codeRef("src/cli.mjs", "validateI18nContract")
         d.codeRef("src/cli.mjs", "walkLocalizedTexts")
+        d.codeRef("src/core/translation-lock.mjs", "translationCheck")
+        d.codeRef("src/cli.mjs", "runTranslation")
         d.modelRef("fixtures/i18n-contract.pkl")
         d.modelRef("fixtures/i18n-contract-missing-label.pkl")
         d.modelRef("fixtures/i18n-contract-glossary-mismatch.pkl")

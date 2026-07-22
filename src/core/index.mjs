@@ -117,6 +117,20 @@ export {
 } from "./formal-links.mjs";
 
 export {
+  TRACE_LOCK_SCHEMA_VERSION,
+  createTraceLock,
+  traceCheck,
+  traceSnapshot,
+} from "./trace-lock.mjs";
+
+export {
+  TRANSLATION_LOCK_SCHEMA_VERSION,
+  createTranslationLock,
+  translationCheck,
+  translationSnapshot,
+} from "./translation-lock.mjs";
+
+export {
   MARKDOWN_PROJECTION_EMITTER,
   PROJECTION_EMITTERS,
   PROJECTION_PLANNER_EMITTER,
