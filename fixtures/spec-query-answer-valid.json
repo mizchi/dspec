@@ -1,0 +1,7 @@
+{
+  "classification": "entailed",
+  "evidence": [
+    "rule:WEBAPP-ACCESS-CONFORMANCE",
+    "clause:WEBAPP-ACCESS-CONFORMANCE#must[0]"
+  ]
+}

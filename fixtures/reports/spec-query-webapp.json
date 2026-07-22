@@ -1,0 +1,65 @@
+{
+  "answer": {
+    "classification": "entailed",
+    "errors": [],
+    "evidence": [
+      "rule:WEBAPP-ACCESS-CONFORMANCE",
+      "clause:WEBAPP-ACCESS-CONFORMANCE#must[0]"
+    ],
+    "status": "pass"
+  },
+  "classification": "entailed",
+  "errors": [],
+  "evidence": [
+    {
+      "id": "WEBAPP-ACCESS-CONFORMANCE",
+      "kind": "rule",
+      "ref": "rule:WEBAPP-ACCESS-CONFORMANCE"
+    },
+    {
+      "id": "WEBAPP-ACCESS-CONFORMANCE",
+      "kind": "clause",
+      "ref": "clause:WEBAPP-ACCESS-CONFORMANCE#must[0]",
+      "selector": "must[0]"
+    }
+  ],
+  "model": {
+    "id": "conformance-webapp",
+    "version": "0.1.0"
+  },
+  "request": {
+    "id": "WEBAPP-ACCESS-CONFORMANCE",
+    "kind": "rule",
+    "selector": null
+  },
+  "result": {
+    "clauses": [
+      {
+        "ast": {
+          "args": [
+            "subject"
+          ],
+          "children": [],
+          "name": "allowed",
+          "op": "atom"
+        },
+        "expr": "allowed(subject)",
+        "selector": "must[0]",
+        "text": "主体は許可されている"
+      }
+    ],
+    "deprecated": false,
+    "exceptions": [],
+    "id": "WEBAPP-ACCESS-CONFORMANCE",
+    "kind": "invariant",
+    "priority": 100,
+    "reviewStatus": "draft",
+    "terms": [
+      "concept.access",
+      "concept.subject"
+    ],
+    "text": "許可された主体だけがアクセスできる"
+  },
+  "schemaVersion": "1.0",
+  "status": "pass"
+}

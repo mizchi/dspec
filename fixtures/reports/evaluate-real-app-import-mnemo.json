@@ -4,7 +4,7 @@
   },
   "errors": [],
   "evaluation": {
-    "appRoot": "fixtures/holdout-mnemo-app",
+    "appRoot": "holdout-mnemo-app",
     "id": "mnemo-external-dogfood"
   },
   "matched": [

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "1.0",
+  "answers": [
+    {
+      "caseId": "intent-formal-contradiction",
+      "review": "# Review\n\n## Machine Findings\n\n```json\n{\"schemaVersion\":\"1.0\",\"findings\":[{\"id\":\"intent-formal-contradiction\",\"classification\":\"intent-to-formal\",\"evidence\":[\"targets/orders/reports/intent-graph.json\"]}]}\n```\n"
+    },
+    {
+      "caseId": "implementation-observation-missing",
+      "review": "# Review\n\n## Machine Findings\n\n```json\n{\"schemaVersion\":\"1.0\",\"findings\":[{\"id\":\"implementation-observation-missing\",\"classification\":\"formal-to-implementation\",\"evidence\":[\"targets/orders/reports/app-profile.json\"]}]}\n```\n"
+    },
+    {
+      "caseId": "localized-meaning-conflict",
+      "review": "# Review\n\n## Machine Findings\n\n```json\n{\"schemaVersion\":\"1.0\",\"findings\":[{\"id\":\"localized-meaning-conflict\",\"classification\":\"intent-to-formal\",\"evidence\":[\"targets/orders/reports/intent-graph.json\",\"targets/orders/review/render-ja.md\"]}]}\n```\n"
+    },
+    {
+      "caseId": "no-drift",
+      "review": "# Review\n\n## Machine Findings\n\n```json\n{\"schemaVersion\":\"1.0\",\"findings\":[]}\n```\n"
+    }
+  ]
+}

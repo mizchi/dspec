@@ -1,14 +1,14 @@
 {
   "artifacts": [
     {
-      "bytes": 146145,
-      "digest": "sha256:8a55236b77686af338cec2fd20e858ed516e7afdd50ce5f686d464e476ea85b6",
+      "bytes": 171217,
+      "digest": "sha256:868231e729e882e04698a5c18f308091219e64bbd12f53d8460a0cf1faa6ff24",
       "locale": "en",
       "path": "generated/examples/en/dspec.md"
     },
     {
-      "bytes": 146414,
-      "digest": "sha256:786c6c219919bb395c7d9a98ae1f3a004843e1b21e65e025d75848b9a8f9d3b6",
+      "bytes": 171513,
+      "digest": "sha256:f6666c00747fe46a976d5c68459fd906b1b4807f356b0e79df211199b3c293d8",
       "locale": "ja",
       "path": "generated/examples/ja/dspec.md"
     }
@@ -17,13 +17,17 @@
     "name": "dspec/markdown",
     "version": "1.0"
   },
-  "generatedAt": "2026-07-15T00:00:00.000Z",
+  "generatedAt": "2026-07-16T16:26:31.985Z",
   "model": {
-    "digest": "sha256:cccc633435645fa8eee5a634f9c85c8f76cdfaebeb388d2fd631c92193bf4fd3",
+    "digest": "sha256:15a5d8d11466c08c1d614c0207be88afff5573107711f5394e1cbd6e233dd232",
     "id": "dspec-self",
     "version": "0.1.0"
   },
   "projection": {
+    "emitter": {
+      "name": "dspec/markdown",
+      "version": "1.0"
+    },
     "freshness": "exact",
     "id": "self-markdown",
     "kind": "markdown",

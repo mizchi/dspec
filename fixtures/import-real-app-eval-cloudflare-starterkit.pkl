@@ -1,0 +1,23 @@
+import "../dspec/Schema.pkl" as d
+
+realAppImportEval: d.RealAppImportEvaluation = new {
+  id = "cloudflare-starterkit-external-dogfood"
+  appRoot = "holdout-cloudflare-starterkit-app"
+  expectedFacts {
+    new d.RealAppImportFact { kind = "workflow"; id = "CI" }
+    new d.RealAppImportFact { kind = "infrastructure-source"; id = "infra/pulumi/index.ts" }
+    new d.RealAppImportFact { kind = "infrastructure-source"; id = "wrangler.jsonc" }
+    new d.RealAppImportFact { kind = "infrastructure-environment"; id = "production" }
+    new d.RealAppImportFact { kind = "infrastructure-environment"; id = "staging" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/assets" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/cf-mbt-app" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "production/db" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/assets" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/cf-mbt-app-staging" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/db" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/app-access" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/app-assets-bucket" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/app-cli-service-token" }
+    new d.RealAppImportFact { kind = "infrastructure-resource"; id = "pulumi/app-db" }
+  }
+}

@@ -1,0 +1,60 @@
+import "../dspec/Schema.pkl" as d
+import "../dspec/AlloyBehavior.pkl" as a
+
+/// This model makes the scheduling decision required by the earlier
+/// counterexample explicit: while any product is reserved, the next action
+/// must release a reservation. New reservations are accepted only once the
+/// current set has drained.
+model: d.Model = new {
+  id = "commerce-reservation-release-before-reserve"
+  name = d.text("予約解放優先の仕様", "Release-before-reserve specification")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales { "ja"; "en" }
+  vocabulary {
+    d.term("commerce.customer", "actor", "顧客", "Customer")
+    d.term("catalog.product", "entity", "商品", "Product")
+    d.term("commerce.reservation", "relation", "予約", "Reservation")
+  }
+  rules {
+    new d.Rule {
+      id = "RESERVATION-EXCLUSIVE"
+      kind = "invariant"
+      text = d.text("同じ商品は同時に一人だけが予約できる", "A product has at most one reservation owner at a time")
+      terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+      must { d.clause("owner(product) is unique", "予約者は一意", "A product has at most one owner") }
+      reviewStatus = "approved"
+    }
+    new d.Rule {
+      id = "RESERVATION-RELEASES"
+      kind = "obligation"
+      text = d.text("予約済みの商品は解放を優先して最終的に解放される", "Reserved products drain before another reservation is accepted")
+      terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+      must { d.clause("reserved(product) implies eventually unreserved(product)", "予約は必ず解放される", "Every reservation is eventually released") }
+      reviewStatus = "approved"
+    }
+    new d.Rule {
+      id = "RESERVATION-OWNER-CAPACITY"
+      kind = "invariant"
+      text = d.text("顧客は同時に一つだけ予約できる", "A customer has at most one active reservation")
+      terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+      must { d.clause("owner has at most one product", "顧客の同時予約は一つ", "A customer owns at most one product") }
+      reviewStatus = "approved"
+    }
+  }
+}
+
+alloyBehavior: a.AlloyBehavior = new {
+  id = "commerce.reservation.release-before-reserve.alloy-v1"
+  terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+  entities {
+    a.entity("customer", 2)
+    a.entity("product", 2)
+  }
+  reservation = a.releaseBeforeReserveReservation("product-reservation", "customer", "product")
+  checks {
+    a.alwaysExclusive("reservation.exclusive.holds", "RESERVATION-EXCLUSIVE", 4, "holds")
+    a.eventuallyReleased("reservation.eventually-released.holds", "RESERVATION-RELEASES", 4, "holds")
+    a.alwaysOwnerCapacity("reservation.owner-capacity.holds", "RESERVATION-OWNER-CAPACITY", 4, "holds")
+  }
+}

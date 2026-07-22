@@ -5,6 +5,19 @@ export {
 } from "./clause-ast.mjs";
 
 export {
+  CONFORMANCE_REPORT_SCHEMA_VERSION,
+  conformanceReport,
+  validateConformanceModel,
+} from "./conformance.mjs";
+
+export {
+  SPEC_QUERY_SCHEMA_VERSION,
+  querySpec,
+  renderSpecQueryMarkdown,
+  verifySpecAnswer,
+} from "./spec-query.mjs";
+
+export {
   ASSURANCE_EVIDENCE_SCHEMA_VERSION,
   CLAUSE_AST_OPERATORS,
   CLAUSE_BACKEND_OPERATOR_SUPPORT,
@@ -19,6 +32,7 @@ export {
 
 export {
   RealAppCoreError,
+  diffRealAppImportFacts,
   evaluateRealAppImport,
   importInfrastructureDocuments,
   infrastructureBindingId,
@@ -29,6 +43,24 @@ export {
   realAppImportFacts,
   realAppObservedDomain,
 } from "./real-app.mjs";
+
+export {
+  externalHoldoutCorpusReport,
+  externalHoldoutMutationReport,
+  normalizeRealAppImportFacts,
+  realAppImportFactListsEqual,
+  renderExternalHoldoutCorpusMarkdown,
+} from "./external-holdouts.mjs";
+
+export {
+  executeIntentRefinements,
+  exerciseIntentExecutionPolicies,
+  intentScenarioCorpusReport,
+  intentTraceCoverage,
+  intentTraceMutationReport,
+  intentTraceSchema,
+  verifyIntentTraces,
+} from "./intent.mjs";
 
 export {
   LEAN_SEMANTIC_CORE_SCHEMA_VERSION,
@@ -69,7 +101,25 @@ export {
 } from "./behavior.mjs";
 
 export {
+  ALLOY_BEHAVIOR_MODEL_SCHEMA_VERSION,
+  compileAlloyBehaviorModel,
+  validateAlloyBehaviorModel,
+  verifyAlloyBehaviorModel,
+  verifyAlloyBehaviorScopeMatrix,
+  verifyAlloyBehaviorWithAnalyzer,
+} from "./alloy-behavior.mjs";
+
+export {
+  FORMAL_LINKS_SCHEMA_VERSION,
+  validateFormalLinks,
+  verifyFormalLinks,
+  verifyFormalLinksWithTools,
+} from "./formal-links.mjs";
+
+export {
   MARKDOWN_PROJECTION_EMITTER,
+  PROJECTION_EMITTERS,
+  PROJECTION_PLANNER_EMITTER,
   PROJECTION_PROVENANCE_SCHEMA_VERSION,
   createProjectionSnapshot,
   isSafeProjectionPath,

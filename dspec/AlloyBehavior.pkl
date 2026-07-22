@@ -1,0 +1,127 @@
+/// A Lean-free authoring surface for a small relational temporal model.
+///
+/// This first Alloy-oriented vocabulary intentionally describes one useful
+/// business shape: an owner reserves and releases an exclusive resource. It
+/// is separate from `dspec.Behavior`, whose state is natural-number based and
+/// lowers to Lean. Authors name domain entities and business rules here; the
+/// compiler owns the Alloy 6 syntax, mutable relation, and temporal formulas.
+module dspec.AlloyBehavior
+
+import "./Schema.pkl" as d
+
+typealias Identifier = String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+typealias TemporalCheckKind = "alwaysExclusive" | "alwaysOwnerCapacity" | "eventuallyReleased"
+typealias TemporalExpectation = "holds" | "violated"
+typealias ReservationScheduling = "unconstrained" | "releaseBeforeReserve"
+
+/// A finite Alloy signature. `scope` is exact for every generated check.
+class Entity {
+  id: Identifier
+  scope: Int(this >= 1)
+}
+
+function entity(entityId: Identifier, exactScope: Int(this >= 1)): Entity = new {
+  id = entityId
+  scope = exactScope
+}
+
+/// A mutable partial function from resource to owner. A resource therefore
+/// has at most one owner in every state, while each owner may reserve multiple
+/// resources. Generated actions are `reserve`, `release`, and `stutter`.
+class ExclusiveReservation {
+  id: Identifier
+  owner: Identifier
+  resource: Identifier
+  /// `releaseBeforeReserve` turns the liveness decision into transition
+  /// semantics: while a reservation exists, the next action must release one.
+  scheduling: ReservationScheduling = "unconstrained"
+}
+
+function exclusiveReservation(
+  reservationId: Identifier,
+  ownerEntity: Identifier,
+  resourceEntity: Identifier,
+): ExclusiveReservation = new {
+  id = reservationId
+  owner = ownerEntity
+  resource = resourceEntity
+}
+
+/// A closed scheduling policy for domains where outstanding reservations must
+/// drain before accepting another reservation. This is stronger than merely
+/// writing an `eventually` wish: it constrains every transition in the model.
+function releaseBeforeReserveReservation(
+  reservationId: Identifier,
+  ownerEntity: Identifier,
+  resourceEntity: Identifier,
+): ExclusiveReservation = new {
+  id = reservationId
+  owner = ownerEntity
+  resource = resourceEntity
+  scheduling = "releaseBeforeReserve"
+}
+
+/// A property checked over one explicit finite Alloy time bound. `holds`
+/// means no counterexample is expected in that bound; `violated` records an
+/// intended counterexample, useful for specifying a missing fairness rule.
+class TemporalCheck {
+  id: Identifier
+  rule: Identifier
+  kind: TemporalCheckKind
+  expectation: TemporalExpectation
+  maxSteps: Int(this >= 1)
+}
+
+function alwaysExclusive(
+  checkId: Identifier,
+  ruleId: Identifier,
+  maximumSteps: Int(this >= 1),
+  expected: TemporalExpectation,
+): TemporalCheck = new {
+  id = checkId
+  rule = ruleId
+  kind = "alwaysExclusive"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+/// Check whether one owner has at most one reserved resource in every state.
+/// This is not imposed by the base reservation relation: the Alloy model must
+/// derive it from the declared transition policy.
+function alwaysOwnerCapacity(
+  checkId: Identifier,
+  ruleId: Identifier,
+  maximumSteps: Int(this >= 1),
+  expected: TemporalExpectation,
+): TemporalCheck = new {
+  id = checkId
+  rule = ruleId
+  kind = "alwaysOwnerCapacity"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+function eventuallyReleased(
+  checkId: Identifier,
+  ruleId: Identifier,
+  maximumSteps: Int(this >= 1),
+  expected: TemporalExpectation,
+): TemporalCheck = new {
+  id = checkId
+  rule = ruleId
+  kind = "eventuallyReleased"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+/// The relational-temporal sibling of `dspec.Behavior`.
+///
+/// The sibling `model: d.Model` remains the natural-language source of truth:
+/// every term and temporal check must link back to it.
+class AlloyBehavior {
+  id: Identifier
+  terms: Listing<Identifier> = new {}
+  entities: Listing<Entity> = new {}
+  reservation: ExclusiveReservation
+  checks: Listing<TemporalCheck> = new {}
+}

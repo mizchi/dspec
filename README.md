@@ -1,16 +1,218 @@
 # dspec
 
-Typed Pkl prototype for a human-level executable specification language.
+Typed Pkl prototype for a system specification and assurance toolkit.
 
-The first prototype treats Pkl as the source of truth:
+dspec keeps a human-authored, typed formal model as the specification master,
+then makes that model executable in a narrow and explicit sense: it
+deterministically checks, projects, reconciles, and records evidence. It is not
+a general theorem prover or a claim that arbitrary production code has been
+proved correct.
+
+## Formal-First Goal
+
+The formal model is normative; Natural-language text is a derived, localized
+review projection and cannot introduce a requirement that is absent from the
+model. Test oracles, backend artifacts, and implementation-conformance inputs
+must derive from the same formal model. An implementation is accepted only by
+passing the declared oracle or by carrying the explicitly scoped proof/evidence
+required by its claim.
+
+Pkl is the current typed IR and authoring syntax, not natural-language source
+text. Its `Clause.ast` and domain records have declared backend applicability.
+Lean currently provides semantic proof only for the documented
+`eq`/`neq`/`not`/`implies` fragment; a claim outside that fragment must not be
+presented as Lean-proved. The formal-first target is to make each supported
+semantic fragment originate in a machine-checkable model or proof artifact,
+then generate readable documents and test oracles from it.
+
+An LLM may translate a requested change or question into a candidate formal
+model edit or structured query. It is not allowed to make the source model true
+by assertion: candidates are validated, reviewed, projected, and checked
+against implementation evidence before they become authoritative.
+
+The first prototype uses Pkl as that typed formal model:
 
 - stable ids and typed schema live in `dspec/Schema.pkl`
 - authored models live in `examples/*.pkl`
-- natural-language rendering is generated from localized labels
+- natural-language rendering is generated from localized labels and has no
+  independent normative force
 - cross-model consistency checks run in `src/cli.mjs`
 
 This is intentionally not YAML. The authoring surface is Pkl so schema
 errors are caught before the model reaches the implementation checker.
+
+## Core Workflow
+
+The primary workflow is a bidirectional reconciliation loop:
+
+1. Author normative rules, domain models, Intent contracts, and projections in
+   Pkl.
+2. Import conservative observations from application and infrastructure
+   artifacts.
+3. Check declared-to-observed reconciliation, observed-to-model reverse
+   coverage, and model-to-approved-rule domain coverage.
+4. Attach current execution or formal-tool evidence to the claim it supports.
+
+This catches both directions of drift: a declared requirement that no longer
+has an implementation anchor, and an observed route, resource, or operational
+fact that was never made part of the specification master.
+
+## Daily Drift Review
+
+`examples/daily-drift-targets.pkl` is a typed `DailyDrift.Manifest`. It names
+every target model, its applicable core gates, and its implementation-observation
+source. An `application` target must name an `AppProfile`; its packet therefore
+includes imported real-app facts, reconciliation, and reverse coverage rather
+than only source-reference checks. A `runtime` target may require a normalized
+runtime-evidence manifest. `tooling-self` is intentionally narrower and does
+not claim to observe arbitrary implementation behavior.
+
+`pkf run daily-drift:packet` collects one report directory per declared target
+in `.dspec/daily-drift/`. It includes the selected core gates, each declared
+implementation observation, locale-specific Markdown projections, a packet-local
+copy of the review skill, and a prompt that treats all packet content as
+untrusted data. Run it through the Nix development shell when formal backend
+tools are required:
+
+```sh
+nix develop path:$PWD -c pkf run daily-drift:packet
+```
+
+An approved baseline records a target model digest and Intent graph digest.
+Changing either is drift until a human deliberately establishes a replacement
+baseline with an approver and approval id:
+
+```sh
+nix develop path:$PWD -c node src/cli.mjs daily-drift approve \
+  --approved-by 'name@example.com' --approval-id ADR-123 \
+  --spec-change-review target-id=reviews/target-change.pkl \
+  --require-formal-tools examples/daily-drift-targets.pkl
+```
+
+The installed package exposes the same command as `dspec daily-drift approve`.
+Every declared target needs one `--spec-change-review` binding. Its successful
+after-model digest must equal that target's current model digest; the baseline
+records the review and report digests with the human approval.
+
+`.github/workflows/daily-drift-review.yml` runs the same collection on a daily
+cron, retains the packet as an artifact, and invokes the versioned
+`skills/dspec-intent-formal-implementation-drift` skill through a read-only
+Codex review. The LLM job has no checkout and reads only the packet artifact.
+`OPENAI_API_KEY` is required for scheduled runs; a manual dispatch may record a
+deliberate skip instead. All third-party actions are pinned to immutable
+commits.
+
+The review can report candidate Pkl, test, or implementation changes. It never
+edits the model, opens issues or pull requests, or treats a candidate as an
+accepted requirement. A human accepts a candidate only by changing the formal
+model and passing the declared validation, drift, and assurance gates.
+
+`pkf run daily-drift:eval` scores the review skill against seeded
+Intent-to-formal, formal-to-implementation, i18n, and no-drift cases. It checks
+machine-readable finding ids, classifications, evidence paths, and restraint
+against hallucinated findings. This is a regression harness for the review
+instruction and model choice, not evidence that an LLM found a production bug.
+The latest operator walkthrough and remaining boundary are recorded in
+[`docs/dogfooding-2026-07-17-daily-drift.md`](docs/dogfooding-2026-07-17-daily-drift.md).
+
+## Assurance Boundary
+
+dspec checks typed model structure, stable references, declared coverage, and
+deterministic projections. It can compare declared `Clause.ast` behavior with
+finite implementation conformance cases and detect drift in recorded observed
+facts. Lean is semantic only for the documented equality/negation/implication
+fragment; other backend paths are structural, textual, or unmapped.
+
+It does not prove that arbitrary production code refines a business rule, that
+an imported cloud declaration is deployed or reachable, or that a generated
+TLA+/Alloy artifact covers an undeclared behavior. These limits are deliberate
+and are recorded in the model and evidence contracts.
+
+For cases that need direct Lean or Alloy source, [`docs/formal-links.md`](docs/formal-links.md)
+defines an explicit `authored`/`extension` registry. A direct artifact names
+the domain rule it grounds; an extension must `import`/`open` its generated
+dependency. This preserves DSL-first generation while keeping deliberate
+escape hatches reviewable and executable.
+
+## Capability Boundaries
+
+| Question | dspec can establish | It does not establish |
+| --- | --- | --- |
+| Architecture, ownership, topology, and data placement | Typed model consistency plus reconciliation and reverse coverage for supported adapters | That the deployment actually occurred, is reachable, or remains healthy |
+| API and business process behavior | Declared Intent contracts, finite scenarios, refinement exercises, and current runtime evidence | Universal equivalence between an implementation and a business process |
+| Distributed or temporal behavior | A generated artifact can be syntax-checked or tool-checked within its declared model and scope | That generated TLA+/Alloy output covers undeclared states or production execution |
+| Clause semantics | Clause-scoped Lean evidence only for the documented `eq`/`neq`/`not`/`implies` fragment | A generic proof path for algorithms, SDK behavior, or arbitrary application code |
+| Compliance and audit | Reviewable rules, evidence manifests, provenance, and CI results | Legal certification or compliance by itself |
+
+The current importers cover selected TypeScript and infrastructure surfaces.
+Adapter coverage is an implementation boundary, not a claim that dspec is tied
+to one permanent stack. There is also no validated service-count threshold:
+adoption is justified when the cost of cross-artifact drift exceeds the cost of
+maintaining the model.
+
+## Install
+
+```sh
+pnpm add @mizchi/dspec
+dspec init
+dspec verify --require-lock dspec.pkl
+```
+
+The CLI requires Node.js 24+ and Pkl on `PATH`. `dspec init` writes `dspec.pkl`,
+`dspec.lock.json`, and resolves the bundled schema to a relative import. Use
+`dspec init --output specs/core.pkl` for a different location; existing files
+require `--force` to be replaced.
+
+`dspec verify` combines structural validity, reference drift, and approved-rule
+coverage in one report. The lock is optional for existing models and required
+with `--require-lock`; refresh it intentionally after reviewing a schema update:
+
+```sh
+dspec verify --json --require-lock spec.pkl
+dspec lock --force spec.pkl
+dspec explain --markdown --require-lock spec.pkl
+```
+
+`dspec explain --json` emits de-duplicated diagnostics with a gate phase,
+stable error code, rule id when available, model source line, and a corrective
+suggestion. `dspec scaffold rule` emits a typed draft Rule fragment without
+editing the master model:
+
+```sh
+dspec scaffold rule --output drafts/access-rule.pkl --kind obligation \
+  --term request.authenticated \
+  --implementation src/access.mjs#canAccess \
+  --test test/access.test.mjs#authenticated-requests-can-access \
+  spec.pkl ACCESS-AUTHENTICATED
+```
+
+## Pkl Package
+
+The repository also publishes the schema as a native Pkl package. `PklProject`
+uses the npm package version, runs the public-facade API tests, and produces the
+Pkl metadata, SHA-256 checksums, and ZIP with `pkl project package`.
+
+After a Pkl release is available, declare it in a consumer `PklProject` and
+import the facade with dependency notation:
+
+```pkl
+amends "pkl:Project"
+
+dependencies {
+  ["dspec"] {
+    uri = "package://github.com/mizchi/dspec/releases/download/pkl/dspec@0.1.0"
+  }
+}
+```
+
+```pkl
+import "@dspec/dspec/Schema.pkl" as d
+```
+
+Run `pkl project resolve` after changing dependencies. Local Pkl dependencies
+using the same notation are supported by `dspec lock` and `dspec verify`; remote
+Pkl dependencies remain Pkl-resolved, while dspec's file-digest lock is limited
+to module files available locally.
 
 ## Try
 
@@ -19,6 +221,7 @@ With Nix:
 ```sh
 nix develop path:$PWD
 pnpm test
+pnpm run checker:conformance
 node src/cli.mjs devshell-smoke --json
 node src/cli.mjs verify-generated examples/dspec.pkl
 node src/cli.mjs verify-generated --json examples/dspec.pkl
@@ -26,6 +229,8 @@ node src/cli.mjs verify-generated --json --require-formal-tools fixtures/typed-a
 node src/cli.mjs evidence create --output evidence.json fixtures/typed-ast.pkl
 node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl evidence.json
 node src/cli.mjs evidence refresh fixtures/typed-ast.pkl evidence.json
+node src/cli.mjs conformance --json fixtures/conformance-webapp.pkl
+node src/cli.mjs query --json --locale ja --answer fixtures/spec-query-answer-valid.json fixtures/conformance-webapp.pkl rule WEBAPP-ACCESS-CONFORMANCE
 node src/cli.mjs generate --dry-run --json examples/dspec.pkl
 node src/cli.mjs generate examples/dspec.pkl
 node src/cli.mjs generated check examples/dspec.pkl
@@ -73,6 +278,7 @@ node src/cli.mjs import-real-app --json fixtures/sample-webapp-2026
 node src/cli.mjs import-real-app --pkl fixtures/sample-webapp-2026
 node src/cli.mjs evaluate-real-app-import --json fixtures/import-real-app-eval-mnemo.pkl
 node src/cli.mjs evaluate-real-app-import --json fixtures/import-real-app-eval-iac.pkl
+node src/cli.mjs evaluate-external-holdouts --markdown fixtures/external-holdout-real-app-import.pkl
 node src/cli.mjs reconcile-real-app --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json
 node src/cli.mjs reverse-coverage --json examples/sample-webapp-2026.pkl fixtures/reports/import-real-app-sample-webapp.json
 node src/cli.mjs scaffold-app-profile --observed-facts fixtures/reports/import-real-app-sample-webapp.json examples/sample-webapp-2026.pkl fixtures/sample-webapp-2026
@@ -130,6 +336,15 @@ node src/cli.mjs verify-generated --json examples/dspec.pkl
 node src/cli.mjs evidence create --output /tmp/dspec-evidence.json fixtures/typed-ast.pkl
 node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl /tmp/dspec-evidence.json
 node src/cli.mjs evidence refresh fixtures/typed-ast.pkl /tmp/dspec-evidence.json
+node src/cli.mjs intent exercise --json --output /tmp/dspec-intent-exercise.json fixtures/intent-contract.pkl fixtures/intent-traces.json
+node src/cli.mjs intent corpus --json fixtures/intent-contract.pkl fixtures/intent-traces-corpus-complete.json
+node src/cli.mjs intent access --json fixtures/intent-contract.pkl request.approve role.manager
+node src/cli.mjs intent bindings --json fixtures/intent-contract-semantic-http.pkl fixtures/intent-semantic-bindings-observed.json
+node src/cli.mjs intent graph --json fixtures/intent-goal-graph.pkl
+node src/cli.mjs intent coverage --json fixtures/intent-contract-effects-transaction.pkl fixtures/intent-traces-effects-complete.json
+node src/cli.mjs intent mutation --json fixtures/intent-contract-effects-transaction.pkl fixtures/intent-traces-effects-complete.json
+node src/cli.mjs evidence create --intent-report /tmp/dspec-intent-exercise.json --output /tmp/dspec-intent-evidence.json fixtures/intent-contract.pkl
+node src/cli.mjs evidence verify --json fixtures/intent-contract.pkl /tmp/dspec-intent-evidence.json
 node src/cli.mjs collect-runtime-evidence fixtures/runtime-evidence-collector.json
 node src/cli.mjs collect-runtime-evidence --pkl fixtures/runtime-evidence-collector.json
 node src/cli.mjs verify-runtime-evidence fixtures/runtime-evidence-collector.json
@@ -147,6 +362,23 @@ node src/cli.mjs render --locale ja examples/dspec.pkl
 `normalize-counterexamples` exits non-zero when it successfully finds generated
 counterexamples; use `--json` when another tool should consume the normalized
 records.
+
+## Conformance And Query
+
+`dspec conformance` evaluates an explicit, finite `ConformanceCase` set. Each
+case supplies bindings, atom valuations, and an optional reviewed `shrinksTo`
+link. The CLI evaluates the selected `Clause.ast` as the reference relation and
+compares it with a named JavaScript adapter export. A pass is `executed`
+conformance evidence over those inputs; it is not a Lean proof that arbitrary
+application execution refines the clause.
+
+`dspec query` is the deterministic read API for the model. It accepts `rule`,
+`term`, `evidence`, `impact`, or `clause` lookup, emits locale-aware JSON or
+Markdown, and returns resolvable model evidence. An AI may translate a natural
+language question into this structured query, but it must not become the
+source of truth. Supply its candidate `{ classification, evidence }` JSON with
+`--answer` to reject labels or evidence that do not match the deterministic
+result.
 
 With pkfire:
 
@@ -203,7 +435,7 @@ It models the current implementation boundary:
   compatibility review classifies added requirements as narrowing and removed
   requirements as widening.
 - `domain-coverage` requires tracked domain pattern elements to be grounded in
-  approved rules by stable ids, so orphan Cloud/Data/Release/Runtime model
+  approved rules by stable ids, so orphan Cloud/Data/Release/Runtime/Intent model
   facts are caught before they become unreviewed spec master data.
 - `import-real-app` extracts observed facts from a real application checkout:
   Hono API routes, Zod contract schemas, GitHub Actions workflows, flaker/VRT
@@ -216,6 +448,11 @@ It models the current implementation boundary:
   Pkl gold set and reports missing/unexpected facts plus precision and recall.
   The mnemo holdout records source commit, file digests, sanitization, vendored
   config noise, and E2E environment classification.
+  `evaluate-external-holdouts` aggregates separately stored external holdouts,
+  keeping observed implementation facts distinct from authored gold facts and
+  recording source revision, retrospective authoring estimate, manual mapping
+  count, documented exclusions, and replayed implementation changes. Its
+  Markdown report is intended for review; JSON is the CI contract.
   The normalization, fact comparison, and conservative domain projection are
   also available as filesystem-free functions from `src/core/real-app.mjs`;
   the CLI is an adapter over the same core output.
@@ -365,6 +602,28 @@ It models the current implementation boundary:
   `freshWithinDays` and `asOf`; `verify-runtime-evidence --json` also emits an
   evidence quality summary with missing, stale, freshness-checked, and score
   counts.
+- `patterns.intent` models a bounded human-level Process as declared input
+  state, typed input/output contracts, Outcome, required Capability, observable
+  effect, ConstructionAuthority, explicit refinement mapping, and finite
+  Scenario trace. `IntentField` supports scalar type, requiredness, enum,
+  range, and pattern constraints; relational or quantified conditions remain
+  `Clause.ast` obligations. `intent verify` validates a bounded observed trace
+  through those mappings and records source/model digests plus assumptions.
+  `intent exercise` additionally invokes a `function`, `http-route`, or
+  `transaction` refinement with each trace input and compares its JSON return
+  value with the observed output. Outcomes can declare typed required or
+  optional effect postconditions; `intent verify` checks the step's `effects`
+  observations through their refinement bindings.
+  A Process may also declare an `execution` policy with a finite
+  `maxInFlight`, an `idempotencyKey` naming a required string or identifier
+  input, a discrete `timeoutSteps` bound, and an optional adapter deadline
+  `timeoutMs`. TLA+ checks the discrete declarations with an abstract finite
+  scheduler; `timeoutMs` is exercised only by runtime adapters.
+  It does not embed implementation code or claim universal equivalence:
+  QuickCheck shrinks Process/Scenario ids and rechecks refinement bindings,
+  Alloy checks closed construction relations, and TLA+ checks ordered trace
+  continuity. Process and refinement references are included in drift
+  detection.
 - `verify-generated` executes generated QuickCheck output, compiles generated
   Lean output, validates generated TLA+/Alloy syntax shape, and runs TLA+ SANY,
   TLA+ TLC, plus Alloy analyzer smoke checks when those tools are available.
@@ -374,7 +633,10 @@ It models the current implementation boundary:
   evidence manifest containing model, source-map, and generated-artifact
   digests, tool versions, results, execution time, and Clause selectors.
   `evidence verify` rejects stale model/artifact/tool/result/binding data, while
-  `evidence refresh` re-executes and replaces the manifest.
+  `evidence refresh` re-executes and replaces the manifest. Supply one or more
+  `--intent-report` files to bind passing `intent exercise` evidence as well;
+  verification then rejects a changed report, trace document, implementation
+  module, or model digest.
 - Clause/backend applicability is recorded per AST operator as `unmapped`,
   `textual`, `structural`, or `semantic`. Lean has a semantic path for Clauses
   composed only from `eq`, `neq`, `not`, and `implies`: it generates a
@@ -414,7 +676,7 @@ It models the current implementation boundary:
   monorepo layout with two independent projections, preventing the planner and
   ownership checks from specializing to the self-model path shape.
 - `generated/source-map.json` maps generated selectors back to source `Rule`,
-  `Clause`, and `CheckTarget` paths.
+  `Clause`, `CheckTarget`, and Intent Goal/Claim/AssuranceTask paths.
 - `generated/manifest.json` records SHA-256 freshness hashes for primary
   generated artifacts.
 - `fixtures/reports/generate-projection.json` and
@@ -473,15 +735,24 @@ without inheriting where the base entrypoint materializes generated files.
 - `patterns.runtime`: optional runtime safety model with `services`,
   `dependencies`, `signals`, `runbooks`, `alerts`, `slos`, `telemetry`,
   `alertPolicies`, `runbookExecutions`, and `dependencyTraces`.
+- `patterns.intent`: optional executable-intent model with `capabilities`,
+  `outcomes`, `processes`, `constructionAuthorities`, and `scenarios`.
+  A Process declares stable-id inputs, results, dependencies, effects,
+  constructions, transitions, and optional implementation references; it is
+  not a general-purpose implementation language.
 
 The top-level `projections` listing contains typed ownership and freshness
-contracts for generated artifacts. The first supported shape is
-`kind = "markdown"`, `matrix = "locales"`, and `freshness = "exact"`;
-`output` must contain one `{locale}` placeholder and stay below the selected
-generation root. `provenance` is a required, non-templated JSON path below the
-same root and must not collide with any generated output. Repeated generation
-preserves its `generatedAt` value while all deterministic inputs are current;
-`--generated-at <iso>` exists for reproducible fixtures and first generation.
+contracts for generated artifacts. `kind = "markdown"` with
+`matrix = "locales"` expands a Markdown artifact for every locale and requires
+one `{locale}` placeholder. The `single` matrix owns one kind-specific artifact
+for `quickcheck`, `lean`, `alloy`, `tla`, `tla-cfg`, `source-map`, or
+`generated-manifest`; each kind has a required output extension. `output` and
+the required non-templated JSON `provenance` path must stay below the generation
+root and cannot collide. Repeated generation preserves `generatedAt` while
+deterministic inputs are current; `--generated-at <iso>` exists for reproducible
+fixtures and first generation. An `AssuranceEvidenceManifest` remains a record
+of an executed verification and is created or verified through `evidence`, not
+overwritten by static projection generation.
 
 Domain preset packs under `dspec/domains/` are authoring helpers over this
 shape. They do not add a separate semantics layer; they return ordinary Core IR
@@ -578,11 +849,118 @@ implementation/operation drift in the imported evidence; it does not by itself
 prove production reliability or telemetry completeness outside the imported
 records.
 
+`patterns.intent` is the sixth domain pattern. It captures a bounded
+human-level operation without turning the spec into an implementation language:
+Capabilities name dependencies and observable effects, Outcomes bind domain
+results to vocabulary states, Processes declare their input, possible results,
+transitions, and legal constructions, and ConstructionAuthority closes the
+paths that may create each Outcome. Scenarios are finite ordered traces used to
+check that Process inputs, transitions, and final states compose. QuickCheck
+generates Process/Scenario ids with deterministic shrinking, Alloy checks that
+declared constructions are authorized, and TLA+ checks trace continuity. A
+Process may carry `implementedBy` references so the normal drift detector can
+find a removed implementation symbol or path.
+
+`IntentGoal` adds a human-readable desired state above bounded Processes.
+Each Goal names its Process intents, reviewable `IntentClaim` records, and
+explicit non-goals. A Claim states a behavioral, safety, security, temporal,
+or compliance property for one or more Processes. It must have one or more
+`IntentAssuranceTask` records and, by default, an `IntentSemanticBinding` to an
+implementation-observation boundary. Tasks select a `property-test`,
+`formal-model`, `runtime-observation`, or `manual-review` method with an
+explicit backend, assurance strength, target, and assumptions. `intent graph`
+checks those links and reports missing task or implementation coverage.
+
+This graph makes natural-language Intent reviewable and localizable without
+treating language-model interpretation as proof. An LLM may later propose
+Goals, Claims, bindings, or a semantic-diff review plan, but its output must
+be written as candidate records and pass the same deterministic graph,
+implementation-drift, and evidence gates before it becomes specification
+state.
+
+An Intent Process may additionally declare `inputContract`, each Outcome may
+declare `outputContract` and outcome-specific `effects`, and a Process may
+declare `refinements`. Contracts
+provide typed scalar fields (`string`, `integer`, `boolean`, `identifier`) with
+requiredness, allowed values, bounds, and regex patterns. A refinement maps
+canonical contract fields to handler, route, transaction, topic, or worker
+payload fields and is drift-checked as an implementation reference. Generate
+the model-specific observation shape with `dspec intent schema <model.pkl>`;
+validate bounded trace evidence with
+`dspec intent verify --json <model.pkl> <traces.json>`. To execute local
+`code` or `test` function refinements against those same finite cases, use
+`dspec intent exercise --json <model.pkl> <traces.json>`. `exercise` compares
+the complete JSON return value with the observed implementation payload and
+records an executed-refinement evidence check. Each function case runs in a
+fresh Node child process with the Node permission system: filesystem writes,
+child processes, and worker threads are denied, and the report records the
+timeout, Node version, and implementation digest. This is not network
+isolation; use a container or runner-level egress policy when the implementation
+must not make network calls. An `http-route` refinement declares a typed method,
+path, and expected status; pass `--http-base-url <url>` to run its JSON request
+and response against an environment-specific host. Pass `--output` and then
+`evidence create --intent-report` to make a report stale when its model, trace,
+implementation, or report digest changes. A `transaction` refinement names a
+declared `patterns.db.transactions` entry and runs a Node transaction-journal
+adapter. The implementation receives `read(table)`, `write(table)`,
+`effect(id, payload)`, and `commit()`; the adapter rejects undeclared table or
+effect use and compares the committed journal with the observed trace. This is
+a bounded interaction conformance harness, not a proof of a deployed database
+engine's isolation semantics. `queue-topic` and `worker` refinements remain
+rejected until dedicated adapters define their isolation and observation
+contracts. `intent coverage` turns valid finite traces into a coverage oracle:
+it requires every declared transition, refinement/outcome pair, mapped
+input/output field, and declared effect payload field to be observed at least
+once. `intent mutation` starts from a valid trace document and deterministically
+generates nearby negative cases such as removed required fields, substituted
+outcomes, and missing/unexpected/invalid effects; its score is the fraction
+rejected by the same verifier. These are finite detector checks, not a measure
+of all production faults. Both commands provide runtime conformance
+evidence for supplied observations, not a proof that all production executions
+refine the model.
+
+`IntentScenario` may be categorized (`success`, `rejection`, `retry`,
+`conflict`, or `timeout`) and marked required. `intent corpus` keeps normal
+trace verification permissive, but requires one structurally matching observed
+trace for every required scenario and emits deterministic missing-case
+suggestions without inventing business input values. `IntentAccessPolicy`
+declares an allow/deny decision for one actor or role and Process. Higher
+priority rules win; a declared override must name the same Process/subject at a
+lower priority, and equal priorities are rejected as ambiguous. Query the
+resolved policy with `intent access`.
+
+`IntentSemanticBinding` is an adapter-neutral bridge from the intent model to
+observed implementation facts. It describes a required `http-route`,
+`db-transaction`, `cloud-resource`, or `otel-attribute` as a `kind`, `target`,
+and optional `value`. `intent bindings` compares a normalized observed manifest
+with those declarations: missing required bindings mean implementation evidence
+is incomplete; observed but undeclared bindings mean the spec is incomplete.
+It does not parse arbitrary application code, prove endpoint behavior, or prove
+deployment state. The corresponding adapters must produce the manifest.
+
+A Process may also declare `execution = new d.IntentExecutionPolicy { ... }`.
+`maxInFlight` is a finite concurrency bound, `idempotencyKey` names a required
+`identifier` or `string` field in the input contract, and `timeoutSteps` is a
+discrete abstract scheduler bound. `timeoutMs` is an optional wall-clock
+deadline enforced by `intent exercise` adapters; it is not projected into the
+TLA+ scheduler. `intent exercise --policy` is an explicit test/staging opt-in:
+it replays one verified input `maxInFlight + 1` times, using the same mapped
+idempotency-key value, with at most `maxInFlight` client invocations at once.
+The resulting evidence records response/effect consistency and client-side
+pressure. It does not prove an internal queue, distributed idempotency store,
+DB isolation level, retry implementation, or deployment capacity. The
+generated TLA+ model starts, completes, ticks, and expires bounded executions;
+TLC checks the in-flight bound, unique active idempotency keys, and elapsed-step
+bound. Introducing or tightening this policy is classified as narrowing by
+`spec-change compat`; relaxing it is widening, while mixed changes or replacing
+an idempotency key are unknown and require review.
+
 `import-runtime-evidence` is the first importer boundary. It accepts
 provider-scoped JSON exports under `prometheus.telemetry`,
 `pagerduty.alertPolicies`, `incident.runbookExecutions`, and
-`otel.dependencyTraces`, then emits either a deterministic Pkl fragment for a
-`RuntimeModel` block or stable JSON with `--json`.
+`otel.dependencyTraces` or `otel.intentExecutions`, then emits either a
+deterministic Pkl fragment for a `RuntimeModel` block or stable JSON with
+`--json`.
 
 `collect-runtime-evidence` is the first collector boundary. It reads a manifest
 of provider API payload sources from `file`, `inline`, or live `http` entries
@@ -594,10 +972,19 @@ pipes the collected result through `import-runtime-evidence` and emits a
 Runtime evidence Pkl fragment.
 
 `emit runtime-collector` generates the expected collector manifest from a
-Runtime safety spec. It turns SLOs, page alerts, runbooks, and dependencies
+Runtime safety and Intent execution specs. It turns SLOs, page alerts, runbooks,
+dependencies, and Process execution policies
 into provider/kind/path/query entries with `sourceMap` records back to the
 authoritative spec item. The generated manifest can be used as the handoff
 contract for recorded payloads and live HTTP collectors.
+
+Intent execution collector entries use OTel `intentExecutions` spans with
+`dspec.intent.process`, `dspec.intent.refinement`,
+`dspec.execution.max_in_flight`, and
+`dspec.execution.duplicate_suppressed` attributes, plus the standard
+idempotency-key presence attribute. They check observed values against the
+declared execution policy. They do not prove a distributed idempotency store,
+internal queueing, database isolation, or capacity under real load.
 
 `verify-runtime-evidence` is the coverage/drift oracle for that manifest. It
 collects the referenced payloads, normalizes them through the same importer
@@ -722,6 +1109,11 @@ compatibility.
 alerts, runbooks, dependency timeouts, retry idempotency, and imported
 operational evidence for telemetry, alert policy, runbook execution, and trace
 drift.
+`docs/alloy-behavior-dsl.md` adds a separate, closed relational-temporal
+authoring experiment: an exclusive reservation relation renders native Alloy 6
+mutable state and temporal checks, then retains bounded counterexamples in
+domain vocabulary. It does not make arbitrary Alloy syntax the source DSL or
+claim implementation refinement.
 `domain-coverage` adds a meta-check over these patterns: it does not prove the
 domain facts themselves, but it detects facts that are present in the model and
 not mentioned by any approved rule. `examples/sample-webapp-2026.pkl` is the

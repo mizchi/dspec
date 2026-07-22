@@ -9,24 +9,24 @@
     ],
     "requirements": {
       "bounded": 0,
-      "executed": 4,
+      "executed": 5,
       "mutation-tested": 1,
       "proved": 0,
-      "reference": 69
+      "reference": 77
     },
     "rules": {
-      "satisfied": 69,
-      "total": 69
+      "satisfied": 77,
+      "total": 77
     },
     "targets": {
       "byKind": {
         "bounded": 0,
-        "executed": 4,
+        "executed": 5,
         "mutation-tested": 1,
         "proved": 0,
-        "reference": 326
+        "reference": 347
       },
-      "total": 326
+      "total": 347
     }
   },
   "errors": [],
@@ -36,9 +36,9 @@
   },
   "status": "pass",
   "summary": {
-    "decisions": 2,
-    "projections": 1,
-    "rules": 71,
-    "terms": 109
+    "decisions": 3,
+    "projections": 8,
+    "rules": 79,
+    "terms": 130
   }
 }

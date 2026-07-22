@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "1.0",
+  "model": {
+    "id": "intent-contract-fixture",
+    "version": "0.1.0"
+  },
+  "traces": [
+    {
+      "id": "request-approve-corpus-001",
+      "scenario": "request-approval",
+      "source": "otel://approval-service/traces/request-approve-corpus-001",
+      "observedAt": "2026-07-16T09:00:00Z",
+      "initialState": "request.pending",
+      "expectedState": "request.approved",
+      "steps": [
+        {
+          "process": "request.approve",
+          "outcome": "request.approved",
+          "refinement": "request.approve-handler",
+          "input": {
+            "request_id": "request-001",
+            "amount_cents": 500,
+            "locale": "ja",
+            "notify": true
+          },
+          "output": {
+            "approval_id": "approval-request-001",
+            "notified": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "request-reject-corpus-001",
+      "scenario": "request-rejection",
+      "source": "otel://approval-service/traces/request-reject-corpus-001",
+      "observedAt": "2026-07-16T09:05:00Z",
+      "initialState": "request.pending",
+      "expectedState": "request.not-authorized",
+      "steps": [
+        {
+          "process": "request.approve",
+          "outcome": "request.not-authorized",
+          "refinement": "request.approve-handler",
+          "input": {
+            "request_id": "request-002",
+            "amount_cents": 500,
+            "locale": "en"
+          },
+          "output": {
+            "reason": "not-manager"
+          }
+        }
+      ]
+    }
+  ]
+}

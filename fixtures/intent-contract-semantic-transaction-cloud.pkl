@@ -1,0 +1,47 @@
+import "intent-contract-effects-transaction.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    db = base.model.patterns.db
+    cloud = new d.CloudModel {
+      zones {
+        new d.CloudZone {
+          id = "private"
+          exposure = "private"
+        }
+      }
+      nodes {
+        new d.CloudNode {
+          id = "approval-api"
+          kind = "service"
+          zone = "private"
+        }
+      }
+    }
+    intent = (base.model.patterns.intent) {
+      semanticBindings {
+        new d.IntentSemanticBinding {
+          id = "request.approve-db-transaction"
+          process = "request.approve"
+          refinement = "request.approve-handler"
+          kind = "db-transaction"
+          target = "approve-request"
+        }
+        new d.IntentSemanticBinding {
+          id = "request.approve-cloud-resource"
+          process = "request.approve"
+          kind = "cloud-resource"
+          target = "approval-api"
+        }
+        new d.IntentSemanticBinding {
+          id = "request.approve-otel-process"
+          process = "request.approve"
+          kind = "otel-attribute"
+          target = "dspec.intent.process"
+          value = "request.approve"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+import "intent-process.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  id = "intent-process-invalid-capability-fixture"
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      processes {
+        new d.Process {
+          id = "request.approve-with-unknown-capability"
+          input = "request.pending"
+          outcomes {
+            "request.approved"
+          }
+          requires {
+            "employee.not-declared"
+          }
+          constructs {
+            "request.approved"
+          }
+          transitions {
+            new d.ProcessTransition {
+              from = "request.pending"
+              to = "request.approved"
+            }
+          }
+          text = new {
+            default = "未知の Capability を要求する"
+          }
+        }
+      }
+    }
+  }
+}

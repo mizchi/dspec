@@ -1,0 +1,7 @@
+import "intent-contract.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  id = "intent-contract-compat-fixture"
+  version = "0.1.0"
+}

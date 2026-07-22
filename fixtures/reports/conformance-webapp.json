@@ -1,0 +1,101 @@
+{
+  "errors": [],
+  "model": {
+    "id": "conformance-webapp",
+    "version": "0.1.0"
+  },
+  "schemaVersion": "1.0",
+  "status": "pass",
+  "summary": {
+    "cases": 3,
+    "failed": 0,
+    "failedCases": 0,
+    "passed": 1,
+    "passedCases": 3,
+    "targets": 1
+  },
+  "targets": [
+    {
+      "cases": [
+        {
+          "actual": true,
+          "error": null,
+          "expected": true,
+          "id": "full-input",
+          "input": {
+            "atoms": [
+              {
+                "args": [
+                  "alice"
+                ],
+                "name": "allowed",
+                "value": true
+              }
+            ],
+            "bindings": {
+              "subject": "alice"
+            },
+            "domain": []
+          },
+          "shrinksTo": "minimal-input",
+          "status": "pass"
+        },
+        {
+          "actual": true,
+          "error": null,
+          "expected": true,
+          "id": "minimal-input",
+          "input": {
+            "atoms": [
+              {
+                "args": [
+                  "alice"
+                ],
+                "name": "allowed",
+                "value": true
+              }
+            ],
+            "bindings": {
+              "subject": "alice"
+            },
+            "domain": []
+          },
+          "shrinksTo": null,
+          "status": "pass"
+        },
+        {
+          "actual": false,
+          "error": null,
+          "expected": false,
+          "id": "denied-input",
+          "input": {
+            "atoms": [
+              {
+                "args": [
+                  "bob"
+                ],
+                "name": "allowed",
+                "value": false
+              }
+            ],
+            "bindings": {
+              "subject": "bob"
+            },
+            "domain": []
+          },
+          "shrinksTo": null,
+          "status": "pass"
+        }
+      ],
+      "counterexample": null,
+      "id": "webapp-access",
+      "implementation": {
+        "path": "conformance-webapp.mjs",
+        "symbol": "isAllowed"
+      },
+      "ruleId": "WEBAPP-ACCESS-CONFORMANCE",
+      "selector": "must[0]",
+      "status": "pass"
+    }
+  ]
+}

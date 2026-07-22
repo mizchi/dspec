@@ -1,0 +1,49 @@
+import "intent-process.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  id = "intent-process-invalid-authority-fixture"
+  vocabulary {
+    new d.Term {
+      id = "request.cancelled"
+      kind = "state"
+      text = new {
+        default = "申請取消済み"
+      }
+    }
+  }
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      outcomes {
+        new d.IntentOutcome {
+          id = "request.cancelled"
+          state = "request.cancelled"
+          text = new {
+            default = "取り消された"
+          }
+        }
+      }
+      processes {
+        new d.Process {
+          id = "request.cancel"
+          input = "request.pending"
+          outcomes {
+            "request.cancelled"
+          }
+          constructs {
+            "request.cancelled"
+          }
+          transitions {
+            new d.ProcessTransition {
+              from = "request.pending"
+              to = "request.cancelled"
+            }
+          }
+          text = new {
+            default = "申請を取り消す"
+          }
+        }
+      }
+    }
+  }
+}

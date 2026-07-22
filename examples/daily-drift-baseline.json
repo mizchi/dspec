@@ -1,0 +1,42 @@
+{
+  "approval": {
+    "by": "mizchi",
+    "id": "ADR-DAILY-DRIFT-003"
+  },
+  "approvedAt": "2026-07-16T14:54:29.657Z",
+  "manifest": {
+    "digest": "sha256:cfee269b039cef3896c02504a63f26fd6e6b8a338e8eda3b19b06062c73c0d15",
+    "id": "dspec-daily-drift",
+    "path": "examples/daily-drift-targets.pkl"
+  },
+  "schemaVersion": "1.0",
+  "targets": [
+    {
+      "id": "dspec-self",
+      "intentGraphDigest": "sha256:51e5e481e19141a02e17560f4851b1abf27f904730101090e1f46492e721dccc",
+      "kind": "tooling-self",
+      "model": {
+        "digest": "sha256:38a5867d68fabed6d0a42746ba450816e255345cf9cd82d2ec577069366494df",
+        "path": "examples/dspec.pkl"
+      }
+    },
+    {
+      "id": "sample-webapp",
+      "intentGraphDigest": "sha256:fff152d059a0406d27bd6eaf8c5f5d7e5ae664b407d1da2624fe56b1db2cbd6b",
+      "kind": "application",
+      "model": {
+        "digest": "sha256:d6afc552d41f1a3f6f4e3eac9b2ff56edbe28a276e97a9192114567bcdeb0b23",
+        "path": "examples/sample-webapp-2026.pkl"
+      }
+    },
+    {
+      "id": "runtime-evidence",
+      "intentGraphDigest": null,
+      "kind": "runtime",
+      "model": {
+        "digest": "sha256:05fefd4b0cdb352e5fe77f8726c12ff42c7a84ddf0782eba18fbdff1c0ced560",
+        "path": "fixtures/runtime-model.pkl"
+      }
+    }
+  ]
+}

@@ -17,6 +17,62 @@ projections: Listing<d.Projection> = new {
     provenance = "generated/examples/dspec.provenance.json"
     freshness = "exact"
   }
+  new d.Projection {
+    id = "self-quickcheck"
+    kind = "quickcheck"
+    matrix = "single"
+    output = "generated/backends/dspec-self.mjs"
+    provenance = "generated/backends/dspec-self.quickcheck.provenance.json"
+    freshness = "exact"
+  }
+  new d.Projection {
+    id = "self-lean"
+    kind = "lean"
+    matrix = "single"
+    output = "generated/backends/DSpecSelf.lean"
+    provenance = "generated/backends/dspec-self.lean.provenance.json"
+    freshness = "exact"
+  }
+  new d.Projection {
+    id = "self-alloy"
+    kind = "alloy"
+    matrix = "single"
+    output = "generated/backends/dspec-self.als"
+    provenance = "generated/backends/dspec-self.alloy.provenance.json"
+    freshness = "exact"
+  }
+  new d.Projection {
+    id = "self-tla"
+    kind = "tla"
+    matrix = "single"
+    output = "generated/backends/DSpecSelf.tla"
+    provenance = "generated/backends/dspec-self.tla.provenance.json"
+    freshness = "exact"
+  }
+  new d.Projection {
+    id = "self-tla-cfg"
+    kind = "tla-cfg"
+    matrix = "single"
+    output = "generated/backends/DSpecSelf.cfg"
+    provenance = "generated/backends/dspec-self.tla-cfg.provenance.json"
+    freshness = "exact"
+  }
+  new d.Projection {
+    id = "self-source-map"
+    kind = "source-map"
+    matrix = "single"
+    output = "generated/source-map.json"
+    provenance = "generated/source-map.provenance.json"
+    freshness = "exact"
+  }
+  new d.Projection {
+    id = "self-generated-manifest"
+    kind = "generated-manifest"
+    matrix = "single"
+    output = "generated/manifest.json"
+    provenance = "generated/manifest.provenance.json"
+    freshness = "exact"
+  }
 }
 
 model: d.Model = new {
@@ -113,6 +169,18 @@ model: d.Model = new {
       "entity",
       "spec reading evaluation set",
       "spec reading evaluation set",
+    )
+    d.term(
+      "artifact.implementation_conformance",
+      "action",
+      "implementation conformance checker",
+      "implementation conformance checker",
+    )
+    d.term(
+      "artifact.spec_query",
+      "action",
+      "deterministic specification query",
+      "deterministic specification query",
     )
     d.term("artifact.package_release", "action", "npm package release", "npm package release")
     d.term(
@@ -252,6 +320,17 @@ model: d.Model = new {
       kind = "entity"
       text = text("Markdown 仕様文書", "Markdown specification document")
     }
+    d.term("artifact.daily_drift_packet", "entity", "日次 drift packet", "Daily drift packet")
+    d.term("artifact.daily_drift_manifest", "entity", "日次 drift target manifest", "Daily drift target manifest")
+    d.term("artifact.daily_drift_baseline", "entity", "日次 drift 承認 baseline", "Daily drift approved baseline")
+    d.term("artifact.drift_review_evaluation", "entity", "drift review 評価セット", "Drift review evaluation suite")
+    d.term("artifact.drift_review_skill", "entity", "drift review skill", "Drift review skill")
+    d.term(
+      "artifact.daily_drift_workflow",
+      "action",
+      "日次 drift review workflow",
+      "Daily drift review workflow",
+    )
     new d.Term {
       id = "artifact.sql_query_oracle"
       kind = "action"
@@ -557,6 +636,24 @@ model: d.Model = new {
       kind = "entity"
       text = text("mizchi/pkl-mbt", "mizchi/pkl-mbt")
     }
+    d.term("concept.intent_capability", "entity", "Intent capability", "Intent capability")
+    d.term("concept.intent_outcome", "entity", "Intent outcome", "Intent outcome")
+    d.term("concept.intent_process", "action", "Intent process", "Intent process")
+    d.term("concept.intent_field", "value", "Intent contract field", "Intent contract field")
+    d.term("concept.intent_refinement", "relation", "Intent refinement", "Intent refinement")
+    d.term("concept.intent_goal", "entity", "Intent goal", "Intent goal")
+    d.term("concept.intent_claim", "entity", "Intent claim", "Intent claim")
+    d.term("concept.intent_assurance_task", "entity", "Intent assurance task", "Intent assurance task")
+    d.term("concept.intent_semantic_binding", "relation", "Intent semantic binding", "Intent semantic binding")
+    d.term(
+      "concept.construction_authority",
+      "relation",
+      "構築権限",
+      "construction authority",
+    )
+    d.term("concept.intent_scenario", "entity", "Intent scenario", "Intent scenario")
+    d.term("state.intent-model-authored", "state", "Intent model authored", "Intent model authored")
+    d.term("state.intent-model-accepted", "state", "Intent model accepted", "Intent model accepted")
   }
 
   domainPacks {
@@ -1646,6 +1743,200 @@ model: d.Model = new {
         d.modelRef("fixtures/assurance-formal-lean-implies.pkl")
         d.modelRef("fixtures/assurance-formal-lean-implies-broken.pkl")
       }
+    }
+
+    new d.Rule {
+      id = "DSPEC-PRODUCT-POSITIONING"
+      kind = "invariant"
+      text =
+        text(
+          "dspec は双方向ドリフト検出を中心とする仕様・保証ツールキットであり、汎用定理証明器ではない",
+          "dspec is a system specification and assurance toolkit centered on bidirectional drift detection, not a general theorem prover",
+        )
+      terms {
+        "artifact.assurance_evidence_manifest"
+        "artifact.domain_coverage_oracle"
+        "artifact.formal_backend"
+        "artifact.real_app_importer"
+        "artifact.reconciliation_oracle"
+        "artifact.reverse_coverage_oracle"
+        "concept.clause_backend_support"
+      }
+      must {
+        d.clause(
+          "primaryValue == reconcile(authoredModel, observedFacts) + reverseCoverage + domainCoverage",
+          "中心の価値は、著者モデル・観測事実・承認 rule の双方向照合にある",
+          "the primary value is bidirectional reconciliation among the authored model, observed facts, and approved rules",
+        )
+        d.clause(
+          "executableSpecification == deterministic(check + projection + reconciliation + evidence)",
+          "実行可能とは決定的な検査・生成・照合・証跡であり、任意の実装を自動証明する意味ではない",
+          "executable means deterministic checks, projections, reconciliation, and evidence, not automatic proof of arbitrary implementations",
+        )
+        d.clause(
+          "proved(selector) -> semanticBackendSupport(selector) && scope(selector) == selectedClause",
+          "proved は semantic backend 対応と選択された Clause の範囲に限定する",
+          "proved is limited to semantic backend support and the selected Clause scope",
+        )
+        d.clause(
+          "importerPass != deploymentOrProductionReachabilityProof",
+          "importer の成功は deployment や production 到達性の証明ではない",
+          "an importer pass is not deployment or production-reachability proof",
+        )
+        d.clause(
+          "importerCoverage == declaredAdapters",
+          "現在の対応スタックは adapter の対応範囲であり、言語本体の恒久的な境界ではない",
+          "the currently supported stack is adapter coverage, not a permanent boundary of the language",
+        )
+      }
+      reviewStatus = "approved"
+      requiredAssurances {
+        "executed"
+      }
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#keeps product positioning and assurance boundaries explicit"
+          assurances {
+            "executed"
+          }
+          assuranceEvidence {
+            ["executed"] = "Taskfile.pkl#test"
+          }
+        }
+      }
+    }
+
+    new d.Rule {
+      id = "DSPEC-FORMAL-SOURCE-OF-TRUTH"
+      kind = "invariant"
+      text =
+        text(
+          "規範的な仕様は形式モデルに置き、自然言語・テスト oracle・実装適合はそこから導出する",
+          "Normative specifications live in a formal model, from which natural language, test oracles, and implementation conformance derive",
+        )
+      terms {
+        "artifact.formal_backend"
+        "artifact.implementation_conformance"
+        "artifact.markdown"
+        "artifact.quickcheck"
+        "concept.localized_text"
+        "concept.expr_ast"
+        "concept.localized_text"
+      }
+      must {
+        d.clause(
+          "normativeMeaning == formalModel; localizedText == projection(formalModel)",
+          "規範的意味は形式モデルにあり、locale 文言はそこからの review 投影である",
+          "Normative meaning belongs to the formal model, while locale text is its review projection",
+        )
+        d.clause(
+          "formalModel -> derive(markdown + quickcheck + formalBackend); implementation -> passes(declaredOracle)",
+          "Markdown・テスト oracle・形式 backend は同じ形式モデルから決定的に生成し、実装は宣言済み oracle を通過する",
+          "Markdown, test oracles, and formal backends derive deterministically from one formal model, and implementations pass declared oracles",
+        )
+        d.clause(
+          "llm(changeRequest|question) -> candidate(formalModelEdit|structuredQuery) -> validate + review + evidence",
+          "LLM の変更案や問い合わせ解釈は形式モデル編集または構造化 query の候補であり、検証・review・証跡を通るまで規範ではない",
+          "An LLM change proposal or question interpretation is a candidate formal-model edit or structured query, not normative until validation, review, and evidence pass",
+        )
+        d.clause(
+          "formalSource.elements == {goal.formal-source-of-truth, claim.formal-source-of-truth, assurance.formal-source-of-truth-property, assurance.formal-source-of-truth-lean, binding.formal-source-of-truth}",
+          "自己仕様の formal source Goal graph 要素は stable ID でこの rule に接地する",
+          "The self-spec formal-source Goal graph elements are grounded in this rule by stable id",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#keeps product positioning and assurance boundaries explicit")
+      }
+      rationale =
+        "Pkl は現在の型付き IR であり、Lean の意味論的証明は対応 fragment に限定される。形式 first は宣言で完了せず、対応範囲ごとの formal artifact と実装 oracle を段階的に増やす。"
+    }
+
+    new d.Rule {
+      id = "DSPEC-DAILY-DRIFT-REVIEW"
+      kind = "obligation"
+      text =
+        text(
+          "日次 batch は Intent・形式・実装の決定的 drift packet を作り、LLM は read-only review と候補提案だけを行う",
+          "The daily batch builds a deterministic Intent/formal/implementation drift packet, while the LLM performs read-only review and candidate proposals only",
+        )
+      terms {
+        "artifact.daily_drift_packet"
+        "artifact.daily_drift_manifest"
+        "artifact.daily_drift_baseline"
+        "artifact.drift_review_skill"
+        "artifact.drift_review_evaluation"
+        "artifact.daily_drift_workflow"
+        "artifact.formal_backend"
+        "artifact.implementation_conformance"
+        "artifact.quickcheck"
+      }
+      must {
+        d.clause(
+          "dailyDriftPacket.targets == manifest.targets; applicationTarget -> observed(appProfile|intentBindings|intentExercise); runtimeTarget -> observed(runtimeEvidence)",
+          "日次 packet は型付き target manifest の全対象を巡回し、application target では AppProfile または明示した実装観測を、runtime target では runtime evidence を保存する",
+          "The daily packet visits every typed manifest target, retains AppProfile or declared implementation observations for every application target, and retains runtime evidence for every runtime target",
+        )
+        d.clause(
+          "dailyLlmReview == readOnly(packet) -> candidate(change|query); candidate != authoritativeChange",
+          "LLM review は packet の read-only 観測と変更または query 候補の提案に限定し、候補自体は規範的変更ではない",
+          "The LLM review is limited to read-only packet observation and change or query candidates; a candidate is not an authoritative change",
+        )
+        d.clause(
+          "dailyDriftPacket.reviewProjection == render(target.locales)",
+          "packet は target が宣言した各 locale の Markdown 投影を保存し、LLM review は人間可読な意味差を根拠付きで比較できる",
+          "The packet retains a Markdown projection for every target locale so LLM review can compare human-readable meaning differences with evidence",
+        )
+        d.clause(
+          "dailyDriftBaseline == explicitApproval(targetModel + intentGraph + specChangeReview); targetChange -> review",
+          "target model または Intent graph の変更は、対象 model digest に一致する spec-change review と承認者・承認 ID を持つ baseline を明示更新するまで日次 drift として扱う",
+          "A target model or Intent graph change remains daily drift until an explicitly approved baseline binds a matching spec-change review, approver, and approval id",
+        )
+        d.clause(
+          "dailyLlmReview.evaluation == seeded(intentFormal + implementation + i18n + noDrift)",
+          "LLM review は Intent/formal/implementation/i18n と no-drift の seed 評価で根拠・分類・過検知を回帰検査する",
+          "LLM review regression-tests evidence, classification, and restraint with seeded Intent/formal/implementation/i18n and no-drift cases",
+        )
+        d.clause(
+          "dailyDriftWorkflow.schedule == cron && packetArtifact == retained && llmJob == packetOnly",
+          "daily workflow は cron で実行し、packet を artifact として保持する。LLM job は repository checkout なしで packet のみを読む",
+          "The daily workflow runs on cron, retains the packet as an artifact, and gives the LLM job packet-only access without a repository checkout",
+        )
+        d.clause(
+          "dailyDrift.elements == {goal.daily-drift-review, claim.daily-drift-review, assurance.daily-drift-review-property}",
+          "日次 drift review の Goal graph 要素は stable ID でこの rule に接地する",
+          "The daily drift-review Goal graph elements are grounded in this rule by stable id",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/daily-drift-packet.test.mjs#exposes daily packet collection and approved baselines through dspec")
+        d.nodeCheck("test/daily-drift-packet.test.mjs#requires an explicit approval to establish and then enforce a target baseline")
+        d.nodeCheck("test/daily-drift-packet.test.mjs#writes typed target reports and declared implementation observations")
+        d.nodeCheck("test/daily-drift-packet.test.mjs#retains every report when a target's deterministic drift checks fail")
+        d.nodeCheck("test/daily-drift-packet.test.mjs#runs an application target's implementation observation gate")
+        d.nodeCheck("test/daily-drift-packet.test.mjs#runs declared runtime evidence as a target observation gate")
+        d.nodeCheck("test/daily-drift-packet.test.mjs#keeps the daily LLM drift review read-only and artifact-only")
+        d.nodeCheck("test/daily-drift-review-eval.test.mjs#scores required drift findings, evidence paths, and no-drift restraint")
+      }
+      implementedBy {
+        d.codeRef("src/cli.mjs", "runDailyDrift")
+        d.codeRef("scripts/generate-daily-drift-packet.mjs", "main")
+        d.codeRef("scripts/generate-daily-drift-packet.mjs", "evaluateSpecChangeReviews")
+        d.codeRef("scripts/generate-daily-drift-packet.mjs", "reviewPrompt")
+        d.codeRef("scripts/evaluate-daily-drift-review.mjs", "main")
+        d.codeRef("scripts/evaluate-daily-drift-review.mjs", "scoreCase")
+        d.modelRef("dspec/DailyDrift.pkl")
+        d.modelRef("examples/daily-drift-targets.pkl")
+        d.modelRef("examples/daily-drift-baseline.json")
+        d.modelRef("fixtures/daily-drift-review-eval-suite.json")
+        d.runtimeRef(".github/workflows/daily-drift-review.yml")
+        d.runtimeRef("skills/dspec-intent-formal-implementation-drift/SKILL.md")
+      }
+      rationale =
+        "定期巡回の入力を型付き target、承認 baseline、決定的な証跡 packet に限定すると、LLM の評価は再現可能な事実と候補の分類に集中できる。AppProfile 等の観測を宣言しない tooling-self target は任意実装の意味論的等価性を保証せず、自動是正もしない。"
     }
 
     new d.Rule {
@@ -5671,6 +5962,93 @@ model: d.Model = new {
     }
 
     new d.Rule {
+      id = "DSPEC-BACKEND-PROJECTION-OWNERSHIP"
+      kind = "obligation"
+      text =
+        text(
+          "checked-in backend 生成物は kind 固有の single projection と provenance で所有される",
+          "Checked-in backend artifacts are owned by kind-specific single projections and provenance",
+        )
+      terms {
+        "artifact.generator"
+        "artifact.projection"
+        "artifact.formal_backend"
+        "artifact.quickcheck"
+        "artifact.source_map"
+        "artifact.generated_manifest"
+        "artifact.assurance_evidence_manifest"
+      }
+      must {
+        d.clause(
+          "projection.kind in {quickcheck, lean, alloy, tla, tla-cfg, source-map, generated-manifest} -> projection.matrix == single",
+          "backend/source-map/生成マニフェストは各 kind に対応する single output と provenance を持つ",
+          "backend, source-map, and generated-manifest outputs have one kind-specific output and provenance",
+        )
+        d.clause(
+          "generatedCheck(projection) detects missing + stale + unexpected owned artifacts without writing",
+          "generated check は所有する backend 生成物の欠落・古さ・未宣言 path を書き込みなしで検出する",
+          "generated check detects missing, stale, and unexpected owned backend artifacts without writing",
+        )
+        d.clause(
+          "impact(before, after).projectionArtifacts includes projectionKind + path + action for all materialized projections",
+          "impact は全 projection の projectionKind/path/action を決定的に返す",
+          "impact deterministically returns projection kind, path, and action for every materialized projection",
+        )
+        d.clause(
+          "assuranceEvidenceManifest is execution evidence and is created or verified outside static projection generation",
+          "AssuranceEvidenceManifest は実行時証跡であり、静的 projection の再生成では作成・上書きしない",
+          "An AssuranceEvidenceManifest is execution evidence and is not created or overwritten by static projection generation",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#generates, checks, and repairs every deterministic backend projection kind")
+        d.nodeCheck("test/projection-core.test.mjs#materializes localized and singleton backend projections with kind-specific emitters")
+        d.nodeCheck("test/projection-core.test.mjs#rejects incompatible projection matrices and output extensions")
+        d.nodeCheck("test/cli.test.mjs#keeps generated source map artifact in sync")
+        d.nodeCheck("test/cli.test.mjs#keeps generated manifest artifact in sync")
+      }
+      implementedBy {
+        d.codeRef("src/core/projection.mjs", "PROJECTION_EMITTERS")
+        d.codeRef("src/core/projection.mjs", "createProjectionSnapshot")
+        d.codeRef("src/core/projection.mjs", "validateProjectionContracts")
+        d.codeRef("src/cli.mjs", "projectionSnapshot")
+        d.codeRef("src/cli.mjs", "generatedProjectionReport")
+        d.codeRef("src/cli.mjs", "projectionImpactReport")
+        d.codeRef("src/cli.mjs", "createAssuranceEvidenceManifest")
+        d.codeRef("dspec/Schema.pkl", "Projection")
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/backends/dspec-self.mjs"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/backends/DSpecSelf.lean"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/backends/dspec-self.als"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/backends/DSpecSelf.tla"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/backends/DSpecSelf.cfg"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/source-map.json"
+        }
+        new d.ImplementationRef {
+          kind = "doc"
+          path = "generated/manifest.json"
+        }
+      }
+    }
+
+    new d.Rule {
       id = "DSPEC-DOGFOOD-TASK"
       kind = "obligation"
       text =
@@ -5696,11 +6074,13 @@ model: d.Model = new {
         "artifact.spec_change_review"
         "artifact.spec_change_review_scaffold"
         "artifact.spec_reading_eval"
+        "artifact.implementation_conformance"
+        "artifact.spec_query"
       }
       must {
         new d.Clause {
           expr =
-            "pkf.run(dogfood).checks(selfSpec + runtimeObservationLoop + realAppModel + realAppReconciliation + reverseCoverage + appProfile + appProfileScenario + appProfileSuite + scaffoldDiff + scaffoldApplyDryRun + scenarioCoverage + mutationScore + mutationScoreHoldouts + mutationScoreMetamorphic + changeReplayCorpus + specCompatibility + specChangeReviewScaffold + specChangeReview + specReadingEval + specReadingSuite + specReadingDigestRefresh + specReadingRunArtifact + evaluationMarkdown)"
+            "pkf.run(dogfood).checks(selfSpec + runtimeObservationLoop + realAppModel + realAppReconciliation + reverseCoverage + appProfile + appProfileScenario + appProfileSuite + scaffoldDiff + scaffoldApplyDryRun + scenarioCoverage + mutationScore + mutationScoreHoldouts + mutationScoreMetamorphic + changeReplayCorpus + specCompatibility + specChangeReviewScaffold + specChangeReview + specReadingEval + specReadingSuite + specReadingDigestRefresh + specReadingRunArtifact + evaluationMarkdown + implementationConformance + specQuery)"
           ast = new d.ExprAst {
             op = "atom"
             name = "dogfoodTaskRunsSelfEvaluation"
@@ -5710,8 +6090,8 @@ model: d.Model = new {
           }
           text =
             text(
-              "pkf run dogfood は self spec、runtime observation loop、実アプリ model、reconciliation、reverse coverage、app profile、scenario、suite、scaffold diff/apply dry-run、scenario coverage、mutation score、holdout mutation score、metamorphic mutation score、change replay corpus、spec compatibility、spec change review scaffold、spec change review、spec reading eval、suite、coverage oracle、metamorphic check、file-relative path、digest refresh、run artifact、evaluation markdown を検証する",
-              "pkf run dogfood verifies the self spec, runtime observation loop, real app model, reconciliation, reverse coverage, app profile, scenarios, suites, scaffold diff/apply dry-run, scenario coverage, mutation score, holdout mutation score, metamorphic mutation score, change replay corpus, spec compatibility, spec change review scaffold, spec change review, spec reading eval, suite, coverage oracle, metamorphic check, file-relative path, digest refresh, run artifact, and evaluation markdown",
+              "pkf run dogfood は self spec、runtime observation loop、実アプリ model、reconciliation、reverse coverage、app profile、scenario、suite、scaffold diff/apply dry-run、scenario coverage、mutation score、holdout mutation score、metamorphic mutation score、change replay corpus、spec compatibility、spec change review scaffold、spec change review、spec reading eval、suite、coverage oracle、metamorphic check、file-relative path、digest refresh、run artifact、evaluation markdown、implementation conformance、spec query を検証する",
+              "pkf run dogfood verifies the self spec, runtime observation loop, real app model, reconciliation, reverse coverage, app profile, scenarios, suites, scaffold diff/apply dry-run, scenario coverage, mutation score, holdout mutation score, metamorphic mutation score, change replay corpus, spec compatibility, spec change review scaffold, spec change review, spec reading eval, suite, coverage oracle, metamorphic check, file-relative path, digest refresh, run artifact, evaluation markdown, implementation conformance, and spec query",
             )
         }
       }
@@ -5920,6 +6300,118 @@ model: d.Model = new {
         d.modelRef("fixtures/reports/spec-reading-eval-stale-digest.json")
         d.modelRef("fixtures/reports/spec-reading-eval-score.md")
         d.runtimeRef("Taskfile.pkl")
+      }
+    }
+
+    new d.Rule {
+      id = "DSPEC-IMPLEMENTATION-CONFORMANCE"
+      kind = "invariant"
+      text =
+        text(
+          "implementation conformance は有限の型付き入力で Clause.ast の参照意味論と実装 adapter の結果を照合する",
+          "Implementation conformance compares Clause.ast reference semantics and an implementation adapter over finite typed inputs",
+        )
+      terms {
+        "artifact.implementation_conformance"
+        "artifact.checker"
+        "concept.expr_ast"
+        "artifact.counterexample_normalizer"
+      }
+      must {
+        new d.Clause {
+          expr = "conformance.case.reference(clause.ast) == conformance.case.adapter(input)"
+          ast = new d.ExprAst {
+            op = "atom"
+            name = "conformanceMatchesReference"
+            args {
+              "target"
+              "input"
+            }
+          }
+          text =
+            text(
+              "各 conformance case は参照評価と adapter の Boolean 結果を一致させる",
+              "Each conformance case agrees between reference evaluation and the adapter Boolean result",
+            )
+        }
+        d.clause(
+          "conformance.failure.shrinksTo(declaredFailingCase)",
+          "失敗時は宣言済み shrink 関係をたどった最小の failing case を返す",
+          "On failure, the report returns the smallest failing case reachable through declared shrink links",
+        )
+        d.clause(
+          "conformance.pass -> executedEvidence && conformance.pass != arbitraryImplementationProof",
+          "conformance の pass は実行済み一致の証拠であり、任意の実装挙動に対する証明ではない",
+          "A conformance pass is executed agreement evidence, not a proof of arbitrary implementation behavior",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#runs typed implementation conformance against Clause.ast reference semantics")
+        d.nodeCheck("test/cli.test.mjs#reports the smallest declared conformance counterexample")
+      }
+      implementedBy {
+        d.codeRef("dspec/Schema.pkl", "ConformanceCatalog")
+        d.codeRef("dspec/Schema.pkl", "ConformanceTarget")
+        d.codeRef("dspec/Schema.pkl", "ConformanceCase")
+        d.codeRef("dspec/Schema.pkl", "ConformanceAtom")
+        d.codeRef("src/core/conformance.mjs", "conformanceReport")
+        d.codeRef("src/core/conformance.mjs", "validateConformanceModel")
+        d.codeRef("src/cli.mjs", "implementationConformanceInvoker")
+        d.codeRef("src/cli.mjs", "parseConformanceArgs")
+        d.modelRef("fixtures/conformance-webapp.pkl")
+        d.modelRef("fixtures/conformance-webapp-broken.pkl")
+        d.modelRef("fixtures/conformance-webapp.mjs")
+        d.modelRef("fixtures/conformance-webapp-broken.mjs")
+        d.modelRef("docs/dogfooding-2026-07-15-conformance-query.md")
+      }
+    }
+
+    new d.Rule {
+      id = "DSPEC-SPEC-QUERY"
+      kind = "obligation"
+      text =
+        text(
+          "spec query は locale を保った決定的なモデル問い合わせと evidence 検証を提供する",
+          "Spec query provides locale-preserving deterministic model lookup and evidence verification",
+        )
+      terms {
+        "artifact.spec_query"
+        "artifact.renderer"
+        "artifact.i18n_contract"
+        "artifact.spec_reading_eval"
+      }
+      must {
+        d.clause(
+          "query(rule|term|evidence|impact|clause, id).returns(localizedResult + resolvedEvidence)",
+          "rule/term/evidence/impact/clause query は locale 化された結果と解決済み evidence を返す",
+          "rule/term/evidence/impact/clause queries return a localized result and resolved evidence",
+        )
+        d.clause(
+          "query(clause.mustNot).classification == contradicted && query(missing).classification == not-supported",
+          "mustNot clause は contradicted、存在しない ID は not-supported として分類する",
+          "mustNot clauses are classified as contradicted and missing IDs as not-supported",
+        )
+        d.clause(
+          "query.answer.classificationAndEvidence.mustMatch(deterministicQueryResult)",
+          "AI を含む回答は分類と evidence が決定的 query 結果に一致する場合だけ受理する",
+          "An answer, including one produced by AI, is accepted only when its classification and evidence match the deterministic query result",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#queries localized claims and verifies an evidence-grounded answer")
+        d.nodeCheck("test/cli.test.mjs#keeps unsupported query evidence from being accepted as an answer")
+      }
+      implementedBy {
+        d.codeRef("src/core/spec-query.mjs", "querySpec")
+        d.codeRef("src/core/spec-query.mjs", "verifySpecAnswer")
+        d.codeRef("src/core/spec-query.mjs", "renderSpecQueryMarkdown")
+        d.codeRef("src/cli.mjs", "parseQueryArgs")
+        d.codeRef("src/cli.mjs", "queryAnswerReport")
+        d.modelRef("fixtures/conformance-webapp.pkl")
+        d.modelRef("fixtures/spec-query-answer-valid.json")
+        d.modelRef("docs/semantic-model.md")
       }
     }
 
@@ -6252,6 +6744,55 @@ model: d.Model = new {
     }
 
     new d.Rule {
+      id = "DSPEC-INTENT-CLOSED-CONSTRUCTION"
+      kind = "invariant"
+      text =
+        text(
+          "Intent process は宣言済み Capability と ConstructionAuthority を通る Outcome だけを構築する",
+          "Intent processes construct outcomes only through declared capabilities and construction authorities",
+        )
+      terms {
+        "concept.intent_capability"
+        "concept.intent_outcome"
+        "concept.intent_process"
+        "concept.intent_field"
+        "concept.intent_refinement"
+        "concept.construction_authority"
+        "concept.intent_scenario"
+      }
+      must {
+        d.clause(
+          "intent.process.outcomes == intent.process.constructs subsetOf constructionAuthority",
+          "Process の Outcome はすべて明示した construction authority を持つ",
+          "Every Process outcome has an explicit construction authority",
+        )
+        d.clause(
+          "intent.scenario.trace follows process.input and process.transition",
+          "Scenario trace は Process の input state と transition を連続してたどる",
+          "A Scenario trace follows continuous Process input states and transitions",
+        )
+        d.clause(
+          "intent.elements == {capability.pkl.typecheck, capability.dspec.validate, outcome.intent-model-accepted, outcome.intent-model-accepted/output/validationReport, intent.validate-model, intent.validate-model/input/modelId, intent.validate-model/input/modelVersion, intent.validate-model/intent.validate-model-cli, intent.validate-model-accepts, intent-model-acceptance}",
+          "自己仕様の Intent 要素は stable ID で rule に接地する",
+          "The self-spec Intent elements are grounded in this rule by stable id",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#emits Intent processes into human and executable projections")
+      }
+      implementedBy {
+        d.codeRef("dspec/Schema.pkl", "IntentModel")
+        d.codeRef("dspec/Schema.pkl", "Process")
+        d.codeRef("dspec/Schema.pkl", "ConstructionAuthority")
+        d.codeRef("src/cli.mjs", "validateIntentModel")
+        d.codeRef("src/cli.mjs", "intentProjection")
+      }
+      rationale =
+        "Souther の closed construction path を、実装言語ではなく型付き Intent として取り込む。"
+    }
+
+    new d.Rule {
       id = "DSPEC-MBT-BOUNDARY"
       kind = "transition"
       text =
@@ -6280,6 +6821,402 @@ model: d.Model = new {
       rationale =
         "The Node CLI is a thin prototype boundary. The durable contract should be the Pkl schema plus fixture-level diagnostics."
     }
+
+    new d.Rule {
+      id = "DSPEC-INTENT-GOAL-GRAPH"
+      kind = "invariant"
+      text =
+        text(
+          "Intent の Goal は Claim、保証タスク、実装 semantic binding まで追跡できる",
+          "An Intent Goal is traceable through Claims, assurance tasks, and implementation semantic bindings",
+        )
+      terms {
+        "concept.intent_goal"
+        "concept.intent_claim"
+        "concept.intent_assurance_task"
+        "concept.intent_semantic_binding"
+      }
+      must {
+        d.clause(
+          "intent.goal.claims -> intent.claim.processes + assuranceTask + semanticBinding",
+          "Goal の Claim は対象 Process、少なくとも一つの保証タスク、必要なら実装 binding を持つ",
+          "A Goal Claim has declared Processes, at least one assurance task, and a required implementation binding",
+        )
+        d.clause(
+          "intent.goalGraph.elements == {goal.intent-model-validation, claim.intent-model-validation, assurance.intent-model-validation-property, assurance.intent-model-validation-alloy, binding.intent-model-validation}",
+          "自己仕様の Goal graph 要素は stable ID でこの rule に接地する",
+          "The self-spec Goal graph elements are grounded in this rule by stable id",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/cli.test.mjs#organizes natural-language Intent goals into claims, assurance tasks, and implementation bindings")
+      }
+      implementedBy {
+        d.codeRef("dspec/schema/Claims.pkl", "IntentGoal")
+        d.codeRef("dspec/schema/Claims.pkl", "IntentClaim")
+        d.codeRef("dspec/schema/Claims.pkl", "IntentAssuranceTask")
+        d.codeRef("dspec/schema/Claims.pkl", "IntentSemanticBinding")
+        d.codeRef("src/cli.mjs", "validateIntentModel")
+        d.codeRef("src/cli.mjs", "intentGraphReport")
+      }
+      rationale =
+        "自然言語の目的を独立した正しさの根拠にせず、Claim ごとの決定的な検証・実装接続へ分解して drift を検出する。"
+    }
+  }
+
+  patterns = new d.PatternCatalog {
+    intent = new d.IntentModel {
+      capabilities {
+        new d.Capability {
+          id = "capability.pkl.typecheck"
+          kind = "external"
+          text = text("Pkl schema を型検証する", "Type-check the Pkl schema")
+        }
+        new d.Capability {
+          id = "capability.dspec.validate"
+          kind = "read"
+          text = text("Intent catalog を検証する", "Validate the Intent catalog")
+        }
+      }
+      outcomes {
+        new d.IntentOutcome {
+          id = "outcome.intent-model-accepted"
+          state = "state.intent-model-accepted"
+          outputContract = new d.IntentDataContract {
+            fields {
+              new d.IntentField {
+                id = "validationReport"
+                type = "identifier"
+                pattern = "^[a-z][a-z0-9-]*$"
+              }
+            }
+            clauses {
+              new d.Clause {
+                expr = "validation.report.has_no_errors(validationReport)"
+                ast = new d.ExprAst {
+                  op = "atom"
+                  name = "validationReportHasNoErrors"
+                  args {
+                    "validationReport"
+                  }
+                }
+              }
+            }
+          }
+          text = text("Intent model が受理された", "The Intent model is accepted")
+        }
+      }
+      processes {
+        new d.Process {
+          id = "intent.validate-model"
+          input = "state.intent-model-authored"
+          inputContract = new d.IntentDataContract {
+            fields {
+              new d.IntentField {
+                id = "modelId"
+                type = "identifier"
+              }
+              new d.IntentField {
+                id = "modelVersion"
+                type = "string"
+                pattern = "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9_.-]+)?$"
+              }
+            }
+            clauses {
+              new d.Clause {
+                expr = "intent.model.has_version(modelId, modelVersion)"
+                ast = new d.ExprAst {
+                  op = "atom"
+                  name = "intentModelHasVersion"
+                  args {
+                    "modelId"
+                    "modelVersion"
+                  }
+                }
+              }
+            }
+          }
+          outcomes {
+            "outcome.intent-model-accepted"
+          }
+          requires {
+            "capability.pkl.typecheck"
+            "capability.dspec.validate"
+          }
+          constructs {
+            "outcome.intent-model-accepted"
+          }
+          transitions {
+            new d.ProcessTransition {
+              from = "state.intent-model-authored"
+              to = "state.intent-model-accepted"
+            }
+          }
+          implementedBy {
+            d.codeRef("src/cli.mjs", "validateIntentModel")
+          }
+          refinements {
+            new d.IntentRefinement {
+              id = "intent.validate-model-cli"
+              kind = "function"
+              implementation = d.codeRef("src/cli.mjs", "validateIntentModel")
+              inputBindings {
+                new d.IntentFieldBinding { contractField = "modelId"; implementationField = "model.id" }
+                new d.IntentFieldBinding { contractField = "modelVersion"; implementationField = "model.version" }
+              }
+              outcomeBindings {
+                new d.IntentOutcomeBinding {
+                  outcome = "outcome.intent-model-accepted"
+                  fields {
+                    new d.IntentFieldBinding { contractField = "validationReport"; implementationField = "validation.report" }
+                  }
+                }
+              }
+            }
+          }
+          text = text("Intent model を検証して受理する", "Validate and accept an Intent model")
+        }
+      }
+      constructionAuthorities {
+        new d.ConstructionAuthority {
+          id = "intent.validate-model-accepts"
+          process = "intent.validate-model"
+          outcome = "outcome.intent-model-accepted"
+        }
+      }
+      goals {
+        new d.IntentGoal {
+          id = "goal.daily-drift-review"
+          priority = 20
+          intents {
+            "intent.validate-model"
+          }
+          claims {
+            "claim.daily-drift-review"
+          }
+          nonGoals {
+            text(
+              "LLM は Pkl を自動編集せず、PR・Issue・仕様の正本を自動更新しない",
+              "The LLM does not automatically edit Pkl, create PRs or issues, or update specification truth",
+            )
+          }
+          text = text(
+            "日次 batch で Intent・形式・実装 drift を検出して review する",
+            "Detect and review Intent, formal, and implementation drift in a daily batch",
+          )
+        }
+        new d.IntentGoal {
+          id = "goal.formal-source-of-truth"
+          priority = 0
+          intents {
+            "intent.validate-model"
+          }
+          claims {
+            "claim.formal-source-of-truth"
+          }
+          nonGoals {
+            text(
+              "自然言語だけで仕様を規範化しない。対応範囲外の任意プログラムを Lean で証明済みとも主張しない",
+              "Does not make natural language alone normative or claim arbitrary programs are Lean-proved outside declared support",
+            )
+          }
+          text = text(
+            "形式モデルを仕様の正本とし、文書・oracle・実装適合をそこから導出する",
+            "Use the formal model as the specification master and derive documents, oracles, and implementation conformance from it",
+          )
+        }
+        new d.IntentGoal {
+          id = "goal.intent-model-validation"
+          intents {
+            "intent.validate-model"
+          }
+          claims {
+            "claim.intent-model-validation"
+          }
+          nonGoals {
+            text(
+              "任意の実装が Intent model と意味論的に等価であることは証明しない",
+              "Does not prove semantic equivalence between arbitrary implementations and the Intent model",
+            )
+          }
+          text = text("型付き Intent model を一貫して受理する", "Consistently accept typed Intent models")
+        }
+      }
+      claims {
+        new d.IntentClaim {
+          id = "claim.daily-drift-review"
+          kind = "temporal"
+          requiredImplementationBinding = false
+          processes {
+            "intent.validate-model"
+          }
+          text = text(
+            "日次の決定的 packet は target ごとの Intent・形式・宣言済み実装観測の差異を収集し、LLM review は提案のみを出力する",
+            "A daily deterministic packet collects per-target Intent, formal, and declared implementation-observation differences, while LLM review outputs proposals only",
+          )
+        }
+        new d.IntentClaim {
+          id = "claim.formal-source-of-truth"
+          kind = "behavior"
+          processes {
+            "intent.validate-model"
+          }
+          text = text(
+            "規範的意味は型付き形式モデルにあり、自然言語は生成された review 表現、実装は生成 oracle または明示した証跡を通過する",
+            "Normative meaning is in the typed formal model; natural language is generated review text, and implementations pass generated or declared evidence-backed oracles",
+          )
+        }
+        new d.IntentClaim {
+          id = "claim.intent-model-validation"
+          kind = "safety"
+          processes {
+            "intent.validate-model"
+          }
+          text = text(
+            "妥当な Intent model は Goal graph の接続を含めて検証できる",
+            "A valid Intent model is checked including its Goal graph links",
+          )
+        }
+      }
+      assuranceTasks {
+        new d.IntentAssuranceTask {
+          id = "assurance.daily-drift-review-property"
+          claims {
+            "claim.daily-drift-review"
+          }
+          kind = "property-test"
+          backend = "node"
+          assurance = "executed"
+          target = new d.ImplementationRef {
+            kind = "test"
+            path = "test/daily-drift-packet.test.mjs"
+          }
+          text = text(
+            "型付き target、実装観測、baseline、失敗時の証跡保持、read-only LLM review、評価セットの境界を Node test で検証する",
+            "Check typed targets, implementation observations, baselines, retained failure evidence, the read-only LLM boundary, and the evaluation suite with Node tests",
+          )
+        }
+        new d.IntentAssuranceTask {
+          id = "assurance.formal-source-of-truth-property"
+          claims {
+            "claim.formal-source-of-truth"
+          }
+          kind = "property-test"
+          backend = "node"
+          assurance = "executed"
+          target = new d.ImplementationRef {
+            kind = "test"
+            path = "test/cli.test.mjs"
+          }
+          text = text(
+            "formal-first の文書境界と自己 Goal graph を Node test で検証する",
+            "Check the formal-first documentation boundary and self Goal graph with a Node test",
+          )
+        }
+        new d.IntentAssuranceTask {
+          id = "assurance.formal-source-of-truth-lean"
+          claims {
+            "claim.formal-source-of-truth"
+          }
+          kind = "formal-model"
+          backend = "lean"
+          assurance = "proved"
+          target = new d.ImplementationRef {
+            kind = "proof"
+            path = "generated/backends/DSpecSelf.lean"
+          }
+          assumptions {
+            "Proof-level semantics are limited to declared Lean-supported Clause fragments"
+          }
+          text = text(
+            "Lean は自己モデルの有限 support coverage invariant を証明し、意味論的主張は対応 fragment に限定する",
+            "Lean proves the self-model finite support-coverage invariant while semantic claims remain limited to supported fragments",
+          )
+        }
+        new d.IntentAssuranceTask {
+          id = "assurance.intent-model-validation-property"
+          claims {
+            "claim.intent-model-validation"
+          }
+          kind = "property-test"
+          backend = "node"
+          assurance = "executed"
+          target = new d.ImplementationRef {
+            kind = "test"
+            path = "test/cli.test.mjs"
+          }
+          text = text(
+            "Goal graph の正負 fixture を Node property で検証する",
+            "Check positive and negative Goal graph fixtures with a Node property",
+          )
+        }
+        new d.IntentAssuranceTask {
+          id = "assurance.intent-model-validation-alloy"
+          claims {
+            "claim.intent-model-validation"
+          }
+          kind = "formal-model"
+          backend = "alloy"
+          assurance = "bounded"
+          target = new d.ImplementationRef {
+            kind = "model"
+            path = "examples/dspec.pkl"
+          }
+          assumptions {
+            "Alloy checks bounded instances of generated relations"
+          }
+          text = text(
+            "生成 Alloy model の有限インスタンスで Intent 構造を検査する",
+            "Check Intent structure in bounded instances of the generated Alloy model",
+          )
+        }
+      }
+      semanticBindings {
+        new d.IntentSemanticBinding {
+          id = "binding.formal-source-of-truth"
+          claims {
+            "claim.formal-source-of-truth"
+          }
+          process = "intent.validate-model"
+          kind = "otel-attribute"
+          target = "dspec.spec.authority"
+          value = "formal-model"
+          text = text(
+            "実装観測は形式モデルを仕様の権威として記録する",
+            "Implementation observations record the formal model as specification authority",
+          )
+        }
+        new d.IntentSemanticBinding {
+          id = "binding.intent-model-validation"
+          claims {
+            "claim.intent-model-validation"
+          }
+          process = "intent.validate-model"
+          kind = "otel-attribute"
+          target = "dspec.intent.process"
+          value = "intent.validate-model"
+          text = text(
+            "実装観測は検証 Process ID を記録する",
+            "Implementation observations record the validation Process ID",
+          )
+        }
+      }
+      scenarios {
+        new d.IntentScenario {
+          id = "intent-model-acceptance"
+          initialState = "state.intent-model-authored"
+          steps {
+            new d.IntentScenarioStep {
+              process = "intent.validate-model"
+              outcome = "outcome.intent-model-accepted"
+            }
+          }
+          expectedState = "state.intent-model-accepted"
+          text = text("型付き Intent model の受理", "Acceptance of a typed Intent model")
+        }
+      }
+    }
   }
 
   decisions {
@@ -6304,6 +7241,17 @@ model: d.Model = new {
         )
       rationale =
         "This avoids inventing a half-finished expression language before the stable model, i18n, and drift-detection boundaries are validated."
+    }
+    new d.Decision {
+      id = "ADR-SELF-0003"
+      date = "2026-07-16"
+      summary =
+        text(
+          "dspec を汎用証明器ではなく、仕様・保証・双方向ドリフト検出ツールキットとして位置付ける",
+          "Position dspec as a specification, assurance, and bidirectional drift-detection toolkit rather than a general prover",
+        )
+      rationale =
+        "The authoritative model, adapter observations, reverse coverage, and claim-scoped evidence are valuable independently of universal program proof, so product documentation and the self-model must state that boundary explicitly."
     }
   }
 }

@@ -1,0 +1,251 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "intent-contract-fixture"
+  name = text("Intent 契約 fixture", "Intent contract fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    d.term("role.manager", "role", "上長", "Manager")
+    d.term("request.pending", "state", "申請待ち", "Request pending")
+    d.term("request.approved", "state", "申請承認済み", "Request approved")
+    d.term("request.not-authorized", "state", "申請権限なし", "Request not authorized")
+  }
+
+  patterns = new d.PatternCatalog {
+    intent = new d.IntentModel {
+      capabilities {
+        new d.Capability {
+          id = "employee.manager-of"
+          kind = "read"
+          text = text("上長を照会する", "Look up an employee manager")
+        }
+      }
+      outcomes {
+        new d.IntentOutcome {
+          id = "request.approved"
+          state = "request.approved"
+          outputContract = new d.IntentDataContract {
+            fields {
+              new d.IntentField {
+                id = "approvalId"
+                type = "identifier"
+                pattern = "^[a-z][a-z0-9-]*$"
+              }
+              new d.IntentField {
+                id = "notified"
+                type = "boolean"
+                allowedValues {
+                  "true"
+                }
+              }
+            }
+            clauses {
+              new d.Clause {
+                expr = "notification.isSent(approvalId)"
+                ast = new d.ExprAst {
+                  op = "atom"
+                  name = "notificationIsSent"
+                  args {
+                    "approvalId"
+                  }
+                }
+              }
+            }
+          }
+          text = text("承認された", "Approved")
+        }
+        new d.IntentOutcome {
+          id = "request.not-authorized"
+          state = "request.not-authorized"
+          outputContract = new d.IntentDataContract {
+            fields {
+              new d.IntentField {
+                id = "reason"
+                type = "string"
+                allowedValues {
+                  "not-manager"
+                }
+              }
+            }
+          }
+          text = text("権限がない", "Not authorized")
+        }
+      }
+      processes {
+        new d.Process {
+          id = "request.approve"
+          input = "request.pending"
+          inputContract = new d.IntentDataContract {
+            fields {
+              new d.IntentField {
+                id = "requestId"
+                type = "identifier"
+                pattern = "^[a-z][a-z0-9-]*$"
+              }
+              new d.IntentField {
+                id = "amountCents"
+                type = "integer"
+                minimum = 1
+                maximum = 100000
+              }
+              new d.IntentField {
+                id = "locale"
+                type = "string"
+                allowedValues {
+                  "ja"
+                  "en"
+                }
+              }
+              new d.IntentField {
+                id = "notify"
+                type = "boolean"
+                required = false
+              }
+            }
+            clauses {
+              new d.Clause {
+                expr = "manager.canApprove(requestId)"
+                ast = new d.ExprAst {
+                  op = "atom"
+                  name = "managerCanApprove"
+                  args {
+                    "requestId"
+                  }
+                }
+              }
+            }
+          }
+          outcomes {
+            "request.approved"
+            "request.not-authorized"
+          }
+          requires {
+            "employee.manager-of"
+          }
+          constructs {
+            "request.approved"
+            "request.not-authorized"
+          }
+          transitions {
+            new d.ProcessTransition {
+              from = "request.pending"
+              to = "request.approved"
+            }
+            new d.ProcessTransition {
+              from = "request.pending"
+              to = "request.not-authorized"
+            }
+          }
+          refinements {
+            new d.IntentRefinement {
+              id = "request.approve-handler"
+              kind = "function"
+              implementation = new d.ImplementationRef {
+                kind = "code"
+                path = "fixtures/intent-refinement-implementation.mjs"
+                symbol = "approveRequest"
+              }
+              inputBindings {
+                new d.IntentFieldBinding { contractField = "requestId"; implementationField = "request_id" }
+                new d.IntentFieldBinding { contractField = "amountCents"; implementationField = "amount_cents" }
+                new d.IntentFieldBinding { contractField = "locale"; implementationField = "locale" }
+                new d.IntentFieldBinding { contractField = "notify"; implementationField = "notify" }
+              }
+              outcomeBindings {
+                new d.IntentOutcomeBinding {
+                  outcome = "request.approved"
+                  fields {
+                    new d.IntentFieldBinding { contractField = "approvalId"; implementationField = "approval_id" }
+                    new d.IntentFieldBinding { contractField = "notified"; implementationField = "notified" }
+                  }
+                }
+                new d.IntentOutcomeBinding {
+                  outcome = "request.not-authorized"
+                  fields {
+                    new d.IntentFieldBinding { contractField = "reason"; implementationField = "reason" }
+                  }
+                }
+              }
+            }
+          }
+          text = text("申請を承認または拒否する", "Approve or reject a request")
+        }
+      }
+      constructionAuthorities {
+        new d.ConstructionAuthority {
+          id = "request.approve-constructs-approved"
+          process = "request.approve"
+          outcome = "request.approved"
+        }
+        new d.ConstructionAuthority {
+          id = "request.approve-constructs-not-authorized"
+          process = "request.approve"
+          outcome = "request.not-authorized"
+        }
+      }
+      accessPolicies {
+        new d.IntentAccessPolicy {
+          id = "request.approve-manager-allow"
+          process = "request.approve"
+          subject = "role.manager"
+          decision = "allow"
+          priority = 100
+          text = text("上長は申請を承認できる", "A manager may approve a request")
+        }
+        new d.IntentAccessPolicy {
+          id = "request.approve-manager-deny-exception"
+          process = "request.approve"
+          subject = "role.manager"
+          decision = "deny"
+          priority = 200
+          overrides {
+            "request.approve-manager-allow"
+          }
+          text = text("例外時は上長の承認を拒否する", "An exception denies a manager approval")
+        }
+      }
+      scenarios {
+        new d.IntentScenario {
+          id = "request-approval"
+          kind = "success"
+          initialState = "request.pending"
+          steps {
+            new d.IntentScenarioStep {
+              process = "request.approve"
+              outcome = "request.approved"
+            }
+          }
+          expectedState = "request.approved"
+          text = text("承認される申請", "An approved request")
+        }
+        new d.IntentScenario {
+          id = "request-rejection"
+          kind = "rejection"
+          initialState = "request.pending"
+          steps {
+            new d.IntentScenarioStep {
+              process = "request.approve"
+              outcome = "request.not-authorized"
+            }
+          }
+          expectedState = "request.not-authorized"
+          text = text("却下される申請", "A rejected request")
+        }
+      }
+    }
+  }
+}

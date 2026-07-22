@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "bytes": 1009,
+      "digest": "sha256:b76973b7196c3c434a40070c68ea61ec6ac451dababfd21ad3e2bdcceaee081a",
+      "locale": null,
+      "path": "generated/manifest.json"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/generated-manifest",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-16T16:26:31.985Z",
+  "model": {
+    "digest": "sha256:15a5d8d11466c08c1d614c0207be88afff5573107711f5394e1cbd6e233dd232",
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "emitter": {
+      "name": "dspec/generated-manifest",
+      "version": "1.0"
+    },
+    "freshness": "exact",
+    "id": "self-generated-manifest",
+    "kind": "generated-manifest",
+    "matrix": "single",
+    "output": "generated/manifest.json",
+    "provenance": "generated/manifest.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

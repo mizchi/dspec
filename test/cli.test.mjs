@@ -4,7 +4,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { hostname, tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   normalizeCounterexamples,
@@ -184,12 +184,154 @@ function mutationWitnessProjection(report) {
 }
 
 describe("dspec CLI", () => {
+  it("initializes a valid model without overwriting an existing file", () => {
+    const directory = mkdtempSync(join(tmpdir(), "dspec-init-"));
+    const output = join(directory, "spec", "dspec.pkl");
+    try {
+      const initialized = run(["init", "--json", "--output", output]);
+
+      assert.equal(initialized.status, 0, initialized.stderr);
+      const report = JSON.parse(initialized.stdout);
+      assert.equal(report.status, "pass");
+      assert.equal(report.output.path, output);
+      assert.ok(report.output.lock);
+      assert.ok(existsSync(report.output.lock.path));
+      const source = readFileSync(output, "utf8");
+      const schemaImport = source.match(/^import "(.+)" as d$/m)?.[1];
+      assert.ok(schemaImport);
+      assert.equal(resolve(dirname(output), schemaImport), join(root, "dspec", "Schema.pkl"));
+      const verified = run(["verify", "--json", output]);
+      assert.equal(verified.status, 0, verified.stderr);
+      assert.equal(JSON.parse(verified.stdout).schemaLock.status, "pass");
+
+      const lock = JSON.parse(readFileSync(report.output.lock.path, "utf8"));
+      lock.schema.files[0].digest = `sha256:${"0".repeat(64)}`;
+      writeFileSync(report.output.lock.path, stableJson(lock));
+      const staleLock = run(["verify", "--json", output]);
+      assert.notEqual(staleLock.status, 0);
+      assert.equal(JSON.parse(staleLock.stdout).schemaLock.status, "fail");
+
+      const refreshed = run(["lock", "--json", "--force", output]);
+      assert.equal(refreshed.status, 0, refreshed.stderr);
+      assert.equal(run(["verify", "--json", output]).status, 0);
+
+      const existing = run(["init", "--output", output]);
+      assert.notEqual(existing.status, 0);
+      assert.match(existing.stderr, /refusing to overwrite existing model/);
+      assert.equal(run(["init", "--force", "--output", output]).status, 0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it("checks a valid Pkl model", () => {
     const result = run(["check", "examples/rbac.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: app-rbac/);
     assert.match(result.stdout, /4 terms, 3 rules/);
+  });
+
+  it("aggregates structural, drift, and coverage gates through verify", () => {
+    const passed = run(["verify", "--json", "fixtures/typed-ast.pkl"]);
+
+    assert.equal(passed.status, 0, passed.stderr);
+    const report = JSON.parse(passed.stdout);
+    assert.equal(report.status, "pass");
+    assert.equal(report.check.status, "pass");
+    assert.equal(report.drift.status, "pass");
+    assert.equal(report.coverage.status, "pass");
+    assert.equal(report.schemaLock.status, "skip");
+
+    const requiredLock = run(["verify", "--json", "--require-lock", "fixtures/typed-ast.pkl"]);
+    assert.notEqual(requiredLock.status, 0);
+    assert.equal(JSON.parse(requiredLock.stdout).schemaLock.status, "fail");
+
+    const failed = run(["verify", "--json", "fixtures/invalid-typed-ast.pkl"]);
+    assert.notEqual(failed.status, 0);
+    const failedReport = JSON.parse(failed.stdout);
+    assert.equal(failedReport.status, "fail");
+    assert.equal(failedReport.check.status, "fail");
+  });
+
+  it("scaffolds a typed draft rule from an existing model vocabulary", () => {
+    const directory = mkdtempSync(join(tmpdir(), "dspec-scaffold-rule-"));
+    const output = join(directory, "draft-rule.pkl");
+    try {
+      const scaffolded = run([
+        "scaffold",
+        "rule",
+        "--output",
+        output,
+        "--kind",
+        "invariant",
+        "--term",
+        "artifact.schema",
+        "--implementation",
+        "dspec/Schema.pkl#Model",
+        "--test",
+        "test/cli.test.mjs#checks a valid Pkl model",
+        "examples/dspec.pkl",
+        "DSPEC-SCAFFOLDED-RULE",
+      ]);
+
+      assert.equal(scaffolded.status, 0, scaffolded.stderr);
+      const source = readFileSync(output, "utf8");
+      assert.match(source, /id = "DSPEC-SCAFFOLDED-RULE"/);
+      assert.match(source, /reviewStatus = "draft"/);
+      assert.match(source, /d\.nodeCheck\("test\/cli\.test\.mjs#checks a valid Pkl model"\)/);
+      assert.equal(spawnSync("pkl", ["eval", output], { cwd: root, encoding: "utf8" }).status, 0);
+
+      const unknownTerm = run(["scaffold", "rule", "--term", "missing.term", "examples/dspec.pkl", "DSPEC-UNKNOWN-TERM"]);
+      assert.notEqual(unknownTerm.status, 0);
+      assert.match(unknownTerm.stderr, /unknown vocabulary term: missing.term/);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("explains verification failures with stable structured diagnostics", () => {
+    const result = run(["explain", "--json", "fixtures/invalid-typed-ast.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "fail");
+    assert.equal(report.summary.diagnostics, 1);
+    assert.deepEqual(report.diagnostics[0], {
+      id: "check:invalid-clause-ast:INVALID-TYPED-AST",
+      phase: "check",
+      code: "invalid-clause-ast",
+      severity: "error",
+      ruleId: "INVALID-TYPED-AST",
+      message: "invalid expr ast: INVALID-TYPED-AST must[0] eq expects exactly 2 args",
+      source: {
+        path: "fixtures/invalid-typed-ast.pkl",
+        line: 7,
+      },
+      suggestion: "correct the Clause.ast operator shape for this rule",
+    });
+  });
+
+  it("locks schema modules imported through a local Pkl dependency", () => {
+    const directory = mkdtempSync(join(tmpdir(), "dspec-pkl-dependency-lock-"));
+    const lock = join(directory, "consumer.lock.json");
+    try {
+      const locked = run(["lock", "--json", "--output", lock, "fixtures/pkl-package-consumer/consumer.pkl"]);
+      assert.equal(locked.status, 0, locked.stderr);
+
+      const verified = run([
+        "verify",
+        "--json",
+        "--require-lock",
+        "--lock",
+        lock,
+        "fixtures/pkl-package-consumer/consumer.pkl",
+      ]);
+      assert.equal(verified.status, 0, verified.stderr);
+      assert.equal(JSON.parse(verified.stdout).schemaLock.status, "pass");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it("uses domain preset packs for the current RBAC spec", () => {
@@ -565,6 +707,54 @@ describe("dspec CLI", () => {
     assertReportFixture(
       ["evaluate-real-app-import", "--json", "fixtures/import-real-app-eval-iac.pkl"],
       "fixtures/reports/evaluate-real-app-import-iac.json",
+    );
+  });
+
+  it("evaluates the external holdout corpus with provenance and recorded IaC changes", () => {
+    const result = run(["evaluate-external-holdouts", "--json", "fixtures/external-holdout-real-app-import.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.deepEqual(report.summary.holdouts, {
+      total: 3,
+      passed: 3,
+      expected: 59,
+      observed: 59,
+      matched: 59,
+      missing: 0,
+      unexpected: 0,
+      precision: 1,
+      recall: 1,
+      estimatedAuthoringMinutes: 95,
+      manualMappings: 0,
+      exclusions: 4,
+    });
+    assert.deepEqual(report.summary.mutations, {
+      total: 1,
+      detected: 1,
+      missed: 0,
+      detectionRate: 1,
+      added: 8,
+      removed: 0,
+    });
+    assert.deepEqual(report.mutations[0].added, [
+      { kind: "infrastructure-environment", id: "staging" },
+      { kind: "infrastructure-resource", id: "staging/ai" },
+      { kind: "infrastructure-resource", id: "staging/db" },
+      { kind: "infrastructure-resource", id: "staging/db-shard-00" },
+      { kind: "infrastructure-resource", id: "staging/db-shard-01" },
+      { kind: "infrastructure-resource", id: "staging/mnemo-staging" },
+      { kind: "infrastructure-resource", id: "staging/skill-assets" },
+      { kind: "infrastructure-resource", id: "staging/skill-index" },
+    ]);
+    assert.deepEqual(report.mutations[0].removed, []);
+  });
+
+  it("keeps the external holdout corpus report in sync", () => {
+    assertReportFixture(
+      ["evaluate-external-holdouts", "--json", "fixtures/external-holdout-real-app-import.pkl"],
+      "fixtures/reports/evaluate-external-holdouts.json",
     );
   });
 
@@ -1357,6 +1547,115 @@ profile: d.AppProfile = new {
     );
   });
 
+  it("runs typed implementation conformance against Clause.ast reference semantics", () => {
+    const result = run(["conformance", "--json", "fixtures/conformance-webapp.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.deepEqual(report.summary, { targets: 1, passed: 1, failed: 0, cases: 3, passedCases: 3, failedCases: 0 });
+    assert.equal(report.targets[0].implementation.symbol, "isAllowed");
+  });
+
+  it("reports the smallest declared conformance counterexample", () => {
+    const result = run(["conformance", "--json", "fixtures/conformance-webapp-broken.pkl"]);
+
+    assert.equal(result.status, 1);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "fail");
+    assert.equal(report.targets[0].counterexample.caseId, "minimal-input");
+    assert.equal(report.targets[0].counterexample.expected, true);
+    assert.equal(report.targets[0].counterexample.actual, false);
+  });
+
+  it("keeps the conformance JSON report fixture in sync", () => {
+    assertReportFixture(
+      ["conformance", "--json", "fixtures/conformance-webapp.pkl"],
+      "fixtures/reports/conformance-webapp.json",
+    );
+  });
+
+  it("queries localized claims and verifies an evidence-grounded answer", () => {
+    const result = run([
+      "query",
+      "--json",
+      "--locale",
+      "ja",
+      "--answer",
+      "fixtures/spec-query-answer-valid.json",
+      "fixtures/conformance-webapp.pkl",
+      "rule",
+      "WEBAPP-ACCESS-CONFORMANCE",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.equal(report.classification, "entailed");
+    assert.equal(report.result.text, "許可された主体だけがアクセスできる");
+    assert.equal(report.answer.status, "pass");
+    assert.deepEqual(report.answer.evidence, ["rule:WEBAPP-ACCESS-CONFORMANCE", "clause:WEBAPP-ACCESS-CONFORMANCE#must[0]"]);
+  });
+
+  it("keeps unsupported query evidence from being accepted as an answer", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-query-answer-"));
+    try {
+      const answer = join(dir, "invalid.json");
+      writeFileSync(answer, JSON.stringify({ classification: "entailed", evidence: ["rule:DOES-NOT-EXIST"] }));
+      const result = run([
+        "query",
+        "--json",
+        "--answer",
+        answer,
+        "fixtures/conformance-webapp.pkl",
+        "rule",
+        "WEBAPP-ACCESS-CONFORMANCE",
+      ]);
+
+      assert.equal(result.status, 1);
+      const report = JSON.parse(result.stdout);
+      assert.equal(report.answer.status, "fail");
+      assert.match(report.answer.errors[0], /does not resolve/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("renders deterministic Markdown for a localized query", () => {
+    const result = run([
+      "query",
+      "--markdown",
+      "--locale",
+      "ja",
+      "fixtures/conformance-webapp.pkl",
+      "clause",
+      "WEBAPP-ACCESS-CONFORMANCE",
+      "must[0]",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^# DSpec Query clause:WEBAPP-ACCESS-CONFORMANCE/m);
+    assert.match(result.stdout, /主体は許可されている/);
+    assert.match(result.stdout, /`clause:WEBAPP-ACCESS-CONFORMANCE#must\[0\]`/);
+  });
+
+  it("keeps the spec query JSON report fixture in sync", () => {
+    assertReportFixture(
+      [
+        "query",
+        "--json",
+        "--locale",
+        "ja",
+        "--answer",
+        "fixtures/spec-query-answer-valid.json",
+        "fixtures/conformance-webapp.pkl",
+        "rule",
+        "WEBAPP-ACCESS-CONFORMANCE",
+      ],
+      "fixtures/reports/spec-query-webapp.json",
+    );
+  });
+
   it("renders spec reading evaluation prompts without gold labels", () => {
     const result = run(["spec-reading-eval", "--prompt", "fixtures/spec-reading-eval-sample-webapp.pkl"]);
 
@@ -2115,6 +2414,50 @@ profile: d.AppProfile = new {
     assert.match(result.stdout, /ok: runtime-model-fixture/);
   });
 
+  it("accepts Intent processes with closed construction paths", () => {
+    const result = run(["check", "fixtures/intent-process.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /ok: intent-process-fixture/);
+  });
+
+  it("rejects Intent processes that require undeclared capabilities", () => {
+    const result = run(["check", "fixtures/intent-process-invalid-capability.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /unknown intent process required capability/);
+  });
+
+  it("rejects Intent processes with unauthorised construction paths", () => {
+    const result = run(["check", "fixtures/intent-process-invalid-authority.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /intent process construction has no authority: request\.cancel -> request\.cancelled/);
+  });
+
+  it("rejects Intent scenarios with discontinuous state traces", () => {
+    const result = run(["check", "fixtures/intent-process-invalid-scenario.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /intent scenario input state mismatch: request-approval-from-wrong-state\[0\] expected request\.approved, process accepts request\.pending/);
+  });
+
+  it("tracks Intent process implementation references in drift detection", () => {
+    const result = run(["drift", "--json", "fixtures/intent-process.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.ok(JSON.parse(result.stdout).references >= 1);
+  });
+
+  it("reports Intent elements that are not grounded in approved rules", () => {
+    const result = run(["domain-coverage", "--json", "fixtures/intent-process.pkl"]);
+
+    assert.equal(result.status, 1);
+    const report = JSON.parse(result.stdout);
+    assert.ok(report.errors.includes("uncovered domain element: intent.process request.approve at model.patterns.intent.processes[0]"));
+    assert.ok(report.errors.includes("uncovered domain element: intent.scenario request-approval at model.patterns.intent.scenarios[0]"));
+  });
+
   it("rejects invalid Runtime safety references", () => {
     const result = run(["check", "fixtures/runtime-model-invalid-ref.pkl"]);
 
@@ -2281,6 +2624,62 @@ profile: d.AppProfile = new {
     assert.equal(manifest.sources[3].query.targetPercent, 99);
   });
 
+  it("collects implementation-side Intent execution policy observations through OTel", () => {
+    const emitted = run(["emit", "runtime-collector-fixture", "fixtures/intent-contract-execution-policy.pkl"]);
+    const sourceMap = run(["emit", "source-map", "fixtures/intent-contract-execution-policy.pkl"]);
+
+    assert.equal(emitted.status, 0, emitted.stderr);
+    assert.equal(sourceMap.status, 0, sourceMap.stderr);
+    const manifest = JSON.parse(emitted.stdout);
+    assert.equal(manifest.sources.length, 1);
+    const source = manifest.sources[0];
+    assert.equal(source.provider, "otel");
+    assert.equal(source.kind, "intentExecutions");
+    assert.deepEqual(source.expects, {
+      duplicateSuppressed: true,
+      id: "request.approve-request.approve-handler-execution",
+      idempotencyKeyObserved: true,
+      maxInFlightObservedAtMost: 2,
+      observedLatencyMsAtMost: 1000,
+      process: "request.approve",
+      refinement: "request.approve-handler",
+      timedOut: false,
+    });
+    assert.deepEqual(source.payload.spans[0].attributes, {
+      "dspec.execution.duplicate_suppressed": true,
+      "dspec.execution.max_in_flight": 2,
+      "dspec.intent.process": "request.approve",
+      "dspec.intent.refinement": "request.approve-handler",
+      "http.request.header.idempotency-key.present": true,
+    });
+    assert.ok(JSON.parse(sourceMap.stdout).artifacts.runtimeCollector.some((entry) =>
+      entry.generated === "runtimeCollector.sources.otel.intentExecutions.request.approve-request.approve-handler-execution" &&
+      entry.source.path === "model.patterns.intent.processes[0].execution"
+    ));
+
+    const dir = mkdtempSync(join(tmpdir(), "dspec-intent-otel-"));
+    try {
+      const passingFile = join(dir, "passing.json");
+      const failingFile = join(dir, "failing.json");
+      writeFileSync(passingFile, emitted.stdout);
+      const passing = run(["verify-runtime-evidence", "--json", passingFile]);
+      assert.equal(passing.status, 0, passing.stderr);
+      assert.equal(JSON.parse(passing.stdout).passed, 1);
+
+      source.payload.spans[0].attributes["dspec.execution.max_in_flight"] = 3;
+      source.payload.spans[0].attributes["dspec.execution.duplicate_suppressed"] = false;
+      writeFileSync(failingFile, stableJson(manifest));
+      const failing = run(["verify-runtime-evidence", "--json", failingFile]);
+      assert.notEqual(failing.status, 0);
+      assert.deepEqual(JSON.parse(failing.stdout).failures.map((failure) => failure.property), [
+        "intentExecution.maxInFlightObservedAtMost",
+        "intentExecution.duplicateSuppressed",
+      ]);
+    } finally {
+      rmSync(dir, { force: true, recursive: true });
+    }
+  });
+
   it("verifies runtime evidence collector expectations", () => {
     const result = run(["verify-runtime-evidence", "fixtures/runtime-evidence-collector.json"]);
 
@@ -2412,7 +2811,7 @@ profile: d.AppProfile = new {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: dspec-self/);
-    assert.match(result.stdout, /109 terms, 71 rules/);
+    assert.match(result.stdout, /130 terms, 79 rules/);
   });
 
   it("emits check JSON reports", () => {
@@ -2422,11 +2821,11 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.summary.terms, 109);
-    assert.equal(report.summary.projections, 1);
-    assert.equal(report.summary.rules, 71);
-    assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
-    assert.equal(report.assurance.targets.byKind.executed, 4);
+    assert.equal(report.summary.terms, 130);
+    assert.equal(report.summary.projections, 8);
+    assert.equal(report.summary.rules, 79);
+    assert.deepEqual(report.assurance.rules, { satisfied: 77, total: 77 });
+    assert.equal(report.assurance.targets.byKind.executed, 5);
     assert.equal(report.assurance.targets.byKind["mutation-tested"], 1);
     assert.equal(report.assurance.targets.byKind.bounded, 0);
     assert.equal(report.assurance.targets.byKind.proved, 0);
@@ -2485,7 +2884,7 @@ profile: d.AppProfile = new {
     assert.match(result.stdout, /- approvedRules: `\d+`/);
     assert.match(result.stdout, /- automatedCheckTargets: `\d+`/);
     assert.match(result.stdout, /- implementationRefs: `\d+`/);
-    assert.match(result.stdout, /- projections: `1`/);
+    assert.match(result.stdout, /- projections: `8`/);
     assert.match(result.stdout, /- domainElements: `\d+`/);
     assert.match(result.stdout, /- runtimeEvidenceRecords: `\d+`/);
     assert.match(result.stdout, /## Projections/);
@@ -2583,6 +2982,7 @@ profile: d.AppProfile = new {
           locale: "en",
           path: "generated/impact/en/impact.md",
           projectionId: "impact-markdown",
+          projectionKind: "markdown",
         },
         {
           action: "regenerate",
@@ -2590,6 +2990,7 @@ profile: d.AppProfile = new {
           locale: null,
           path: "generated/impact/impact.provenance.json",
           projectionId: "impact-markdown",
+          projectionKind: "markdown",
         },
         {
           action: "regenerate",
@@ -2597,6 +2998,7 @@ profile: d.AppProfile = new {
           locale: "ja",
           path: "generated/impact/ja/impact.md",
           projectionId: "impact-markdown",
+          projectionKind: "markdown",
         },
       ],
     );
@@ -3155,6 +3557,31 @@ profile: d.AppProfile = new {
     }
   });
 
+  it("keeps product positioning and assurance boundaries explicit", () => {
+    const readme = readFileSync(join(root, "README.md"), "utf8");
+    const semanticModel = readFileSync(join(root, "docs", "semantic-model.md"), "utf8");
+    const graph = run(["intent", "graph", "--json", "examples/dspec.pkl"]);
+
+    assert.match(readme, /system specification and assurance toolkit/);
+    assert.match(readme, /not\s+a general theorem prover/);
+    assert.match(readme, /formal model is normative/);
+    assert.match(readme, /Natural-language text is a derived/);
+    assert.match(readme, /## Capability Boundaries/);
+    assert.match(semanticModel, /## Product Positioning and Scope/);
+    assert.match(semanticModel, /formal-first target/);
+    assert.match(semanticModel, /LLM.*candidate/);
+    assert.match(semanticModel, /not deployment or\s+production-reachability proof/);
+    assert.equal(graph.status, 0, graph.stderr);
+    assert.ok(JSON.parse(graph.stdout).goals.some((goal) =>
+      goal.id === "goal.formal-source-of-truth" && goal.priority === 0 &&
+      goal.claims.includes("claim.formal-source-of-truth")
+    ));
+    assert.ok(JSON.parse(graph.stdout).goals.some((goal) =>
+      goal.id === "goal.daily-drift-review" &&
+      goal.claims.includes("claim.daily-drift-review")
+    ));
+  });
+
   it("keeps documented CLI extractor covered by holdout shapes", () => {
     const invocations = documentedCliInvocations(["fixtures/documented-cli-examples-holdout.md"]);
 
@@ -3287,6 +3714,79 @@ profile: d.AppProfile = new {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  it("generates, checks, and repairs every deterministic backend projection kind", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-projection-kinds-"));
+    const output = (path) => join(dir, ...path.split("/"));
+    try {
+      const generated = run(["generate", "--json", "--root", dir, "fixtures/projection-all-kinds.pkl"]);
+      assert.equal(generated.status, 0, generated.stderr);
+      const report = JSON.parse(generated.stdout);
+      assert.equal(report.summary.projections, 8);
+      assert.equal(report.summary.artifacts, 9);
+      assert.equal(report.summary.actions.create, 17);
+      assert.deepEqual(
+        report.projections.map((projection) => projection.kind),
+        ["alloy", "generated-manifest", "lean", "markdown", "quickcheck", "source-map", "tla", "tla-cfg"],
+      );
+
+      const sourceMap = JSON.parse(run(["emit", "source-map", "fixtures/projection-all-kinds.pkl"]).stdout);
+      const sourceMapProjectionEntries = {
+        alloy: ["alloy", "alloy.projection.alloy"],
+        "generated-manifest": ["generatedManifest", "generatedManifest.projection.generated-manifest"],
+        lean: ["lean", "lean.projection.lean"],
+        markdown: ["markdown", "markdown.projection.localized-markdown"],
+        quickcheck: ["quickcheck", "quickcheck.projection.quickcheck"],
+        "source-map": ["sourceMap", "sourceMap.projection.source-map"],
+        tla: ["tla", "tla.projection.tla"],
+        "tla-cfg": ["tlaCfg", "tlaCfg.projection.tla-cfg"],
+      };
+      for (const [kind, [artifact, generated]] of Object.entries(sourceMapProjectionEntries)) {
+        assert.ok(sourceMap.artifacts[artifact].some((entry) => entry.generated === generated), kind);
+      }
+
+      const checked = run(["generated", "check", "--json", "--root", dir, "fixtures/projection-all-kinds.pkl"]);
+      assert.equal(checked.status, 0, checked.stderr);
+      assert.equal(JSON.parse(checked.stdout).status, "pass");
+
+      writeFileSync(output("generated/projection-kinds/Spec.lean"), "stale\n");
+      const stale = run(["generated", "check", "--root", dir, "fixtures/projection-all-kinds.pkl"]);
+      assert.notEqual(stale.status, 0);
+      assert.match(stale.stderr, /stale generated artifact: lean -> generated\/projection-kinds\/Spec\.lean/);
+
+      assert.equal(run(["generate", "--root", dir, "fixtures/projection-all-kinds.pkl"]).status, 0);
+      assert.equal(readFileSync(output("generated/projection-kinds/Spec.lean"), "utf8").startsWith("namespace DSpec.Generated"), true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports deterministic impact for every materialized backend projection", () => {
+    const result = run([
+      "impact",
+      "--json",
+      "fixtures/projection-all-kinds.pkl",
+      "fixtures/projection-all-kinds-after.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.deepEqual(
+      new Set(report.projectionImpact.artifacts.map((artifact) => artifact.projectionKind)),
+      new Set(["markdown", "quickcheck", "lean", "alloy", "tla", "tla-cfg", "source-map", "generated-manifest"]),
+    );
+    assert.ok(report.projectionImpact.artifacts.some(
+      (artifact) => artifact.kind === "source-map" && artifact.path === "generated/projection-kinds/source-map.json" && artifact.action === "regenerate",
+    ));
+    assert.ok(report.projectionImpact.artifacts.some(
+      (artifact) => artifact.kind === "generated-manifest" && artifact.path === "generated/projection-kinds/manifest.json" && artifact.action === "regenerate",
+    ));
+    assert.deepEqual(report.projectionImpact.regenerateArgv, [
+      "dspec",
+      "generate",
+      "fixtures/projection-all-kinds-after.pkl",
+    ]);
   });
 
   it("previews Projection generation without writing", () => {
@@ -3466,8 +3966,10 @@ profile: d.AppProfile = new {
     assert.equal(result.status, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
+    const markdown = report.projections.find((projection) => projection.id === "self-markdown");
+    assert.ok(markdown);
     assert.deepEqual(
-      report.projections[0].artifacts.map((artifact) => artifact.locale),
+      markdown.artifacts.map((artifact) => artifact.locale),
       ["en", "ja"],
     );
   });
@@ -3878,6 +4380,884 @@ profile: d.AppProfile = new {
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.runtime.dependencyTraces.checkout-api-to-payments-p95"));
     assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.RuntimeSlos[checkout-availability]"));
     assert.ok(map.artifacts.runtimeCollector.some((entry) => entry.generated === "runtimeCollector.sources.prometheus.telemetry.checkout-availability-30d"));
+  });
+
+  it("emits Intent processes into human and executable projections", () => {
+    const markdown = run(["emit", "markdown", "--locale", "ja", "fixtures/intent-process.pkl"]);
+    const quickcheck = run(["emit", "quickcheck", "fixtures/intent-process.pkl"]);
+    const alloy = run(["emit", "alloy", "fixtures/intent-process.pkl"]);
+    const tla = run(["emit", "tla", "fixtures/intent-process.pkl"]);
+    const tlaCfg = run(["emit", "tla-cfg", "fixtures/intent-process.pkl"]);
+    const sourceMap = run(["emit", "source-map", "--locale", "ja", "fixtures/intent-process.pkl"]);
+
+    assert.equal(markdown.status, 0, markdown.stderr);
+    assert.equal(quickcheck.status, 0, quickcheck.stderr);
+    assert.equal(alloy.status, 0, alloy.stderr);
+    assert.equal(tla.status, 0, tla.stderr);
+    assert.equal(tlaCfg.status, 0, tlaCfg.stderr);
+    assert.equal(sourceMap.status, 0, sourceMap.stderr);
+
+    assert.match(markdown.stdout, /## Intent Model/);
+    assert.match(markdown.stdout, /### Process request\.approve/);
+    assert.match(markdown.stdout, /### Construction Authority request\.approve-constructs-approved/);
+    assert.match(markdown.stdout, /### Scenario request-approval/);
+    assert.match(quickcheck.stdout, /export const intentModel =/);
+    assert.match(quickcheck.stdout, /generateIntentProcesses/);
+    assert.match(quickcheck.stdout, /generateIntentScenarios/);
+    assert.match(quickcheck.stdout, /propertyIntentProcessConstructionIsAuthorized/);
+    assert.match(quickcheck.stdout, /propertyIntentScenarioTraceIsContinuous/);
+    assert.match(alloy.stdout, /abstract sig IntentOutcome/);
+    assert.match(alloy.stdout, /one sig IO_request_approved extends IntentOutcome/);
+    assert.match(alloy.stdout, /assert IntentProcessConstructionIsAuthorized/);
+    assert.match(tla.stdout, /IntentOutcomes ==/);
+    assert.match(tla.stdout, /IntentProcessConstructionIsAuthorized ==/);
+    assert.match(tla.stdout, /IntentScenarioTraceIsContinuous ==/);
+    assert.match(tlaCfg.stdout, /INVARIANT IntentProcessConstructionIsAuthorized/);
+    assert.match(tlaCfg.stdout, /INVARIANT IntentScenarioTraceIsContinuous/);
+    assert.deepEqual(validateGeneratedAlloy(alloy.stdout), []);
+    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
+
+    const map = JSON.parse(sourceMap.stdout);
+    assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.intent.processes.request.approve"));
+    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.IntentOutcomes[request.approved]"));
+    assert.ok(map.artifacts.alloy.some((entry) => entry.generated === "alloy.sig.IO_request_approved"));
+  });
+
+  it("validates typed Intent input and outcome contracts", () => {
+    const valid = run(["check", "fixtures/intent-contract.pkl"]);
+    const invalid = run(["check", "fixtures/intent-contract-invalid-field.pkl"]);
+    const invalidRefinement = run(["check", "fixtures/intent-contract-invalid-refinement.pkl"]);
+
+    assert.equal(valid.status, 0, valid.stderr);
+    assert.notEqual(invalid.status, 0);
+    assert.notEqual(invalidRefinement.status, 0);
+    assert.match(invalid.stderr, /intent contract minimum exceeds maximum: request\.approve input\.amountCents/);
+    assert.match(invalidRefinement.stderr, /intent refinement missing required field binding: request\.approve\.request\.approve-handler input -> amountCents/);
+  });
+
+  it("verifies observed Intent traces through a declared refinement mapping", () => {
+    const result = run([
+      "intent",
+      "verify",
+      "--json",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-traces.json",
+    ]);
+    const markdown = run([
+      "intent",
+      "verify",
+      "--markdown",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-traces.json",
+    ]);
+    const schema = run(["intent", "schema", "fixtures/intent-contract.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(markdown.status, 0, markdown.stderr);
+    assert.equal(schema.status, 0, schema.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.equal(report.summary.traces, 1);
+    assert.equal(report.summary.steps, 1);
+    assert.deepEqual(
+      report.evidence.checks.map((check) => check.id),
+      ["intent-static-contract", "intent-refinement-reference", "intent-observed-trace"],
+    );
+    assert.match(markdown.stdout, /# Intent Trace Verification intent-contract-fixture/);
+    assert.match(markdown.stdout, /request-approve-001/);
+    const traceSchema = JSON.parse(schema.stdout);
+    assert.equal(traceSchema.model.id, "intent-contract-fixture");
+    assert.equal(traceSchema.traces.items.properties.steps.items.properties.refinement.type, "string");
+  });
+
+  it("checks the declared Intent scenario corpus and proposes missing cases", () => {
+    const incomplete = run([
+      "intent",
+      "corpus",
+      "--json",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-traces-corpus-incomplete.json",
+    ]);
+    const complete = run([
+      "intent",
+      "corpus",
+      "--json",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-traces-corpus-complete.json",
+    ]);
+    const markdown = run([
+      "intent",
+      "corpus",
+      "--markdown",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-traces-corpus-incomplete.json",
+    ]);
+    const schema = run(["intent", "schema", "fixtures/intent-contract.pkl"]);
+    const modelMarkdown = run(["emit", "markdown", "--locale", "en", "fixtures/intent-contract.pkl"]);
+    const quickcheck = run(["emit", "quickcheck", "fixtures/intent-contract.pkl"]);
+
+    assert.notEqual(incomplete.status, 0);
+    const incompleteReport = JSON.parse(incomplete.stdout);
+    assert.equal(incompleteReport.status, "fail");
+    assert.equal(incompleteReport.summary.required, 2);
+    assert.equal(incompleteReport.summary.covered, 1);
+    assert.deepEqual(incompleteReport.missing.map((scenario) => scenario.id), ["request-rejection"]);
+    assert.deepEqual(incompleteReport.suggestions, [{
+      scenario: "request-rejection",
+      initialState: "request.pending",
+      expectedState: "request.not-authorized",
+      steps: [{ process: "request.approve", outcome: "request.not-authorized" }],
+      reason: "required declared scenario has no matching observed trace",
+    }]);
+    assert.match(incompleteReport.errors.join("\n"), /missing required Intent scenario trace: request-rejection/);
+
+    assert.equal(complete.status, 0, complete.stderr);
+    const completeReport = JSON.parse(complete.stdout);
+    assert.equal(completeReport.status, "pass");
+    assert.equal(completeReport.summary.coverage, 1);
+    assert.equal(completeReport.observations.length, 2);
+
+    assert.notEqual(markdown.status, 0);
+    assert.match(markdown.stdout, /# Intent Scenario Corpus intent-contract-fixture/);
+    assert.match(markdown.stdout, /request-rejection/);
+    assert.match(markdown.stdout, /required declared scenario has no matching observed trace/);
+
+    const traceSchema = JSON.parse(schema.stdout);
+    assert.equal(traceSchema.traces.items.properties.scenario.type, "string");
+    assert.equal(modelMarkdown.status, 0, modelMarkdown.stderr);
+    assert.match(modelMarkdown.stdout, /### Scenario request-rejection/);
+    assert.match(modelMarkdown.stdout, /- kind: `rejection`/);
+    assert.match(modelMarkdown.stdout, /- required: `true`/);
+    assert.equal(quickcheck.status, 0, quickcheck.stderr);
+    assert.match(quickcheck.stdout, /"kind": "rejection"/);
+    assert.match(quickcheck.stdout, /"required": true/);
+  });
+
+  it("resolves Intent access exceptions by explicit authority and precedence", () => {
+    const access = run([
+      "intent",
+      "access",
+      "--json",
+      "fixtures/intent-contract.pkl",
+      "request.approve",
+      "role.manager",
+    ]);
+    const invalid = run(["check", "fixtures/intent-access-policy-invalid.pkl"]);
+    const markdown = run(["emit", "markdown", "--locale", "en", "fixtures/intent-contract.pkl"]);
+    const quickcheck = run(["emit", "quickcheck", "fixtures/intent-contract.pkl"]);
+
+    assert.equal(access.status, 0, access.stderr);
+    assert.deepEqual(JSON.parse(access.stdout), {
+      decision: "deny",
+      model: { id: "intent-contract-fixture", version: "0.1.0" },
+      policy: {
+        id: "request.approve-manager-deny-exception",
+        overrides: ["request.approve-manager-allow"],
+        priority: 200,
+      },
+      process: "request.approve",
+      status: "pass",
+      subject: "role.manager",
+    });
+    assert.notEqual(invalid.status, 0);
+    assert.match(invalid.stderr, /ambiguous intent access policy precedence: request\.approve -> role\.manager at priority 100/);
+    assert.equal(markdown.status, 0, markdown.stderr);
+    assert.match(markdown.stdout, /### Access Policy request\.approve-manager-deny-exception/);
+    assert.match(markdown.stdout, /- decision: `deny`/);
+    assert.match(markdown.stdout, /- overrides: `request\.approve-manager-allow`/);
+    assert.equal(quickcheck.status, 0, quickcheck.stderr);
+    assert.match(quickcheck.stdout, /propertyIntentAccessPolicyOverridesHaveHigherPriority/);
+    assert.match(quickcheck.stdout, /propertyIntentAccessPoliciesResolveDeterministically/);
+  });
+
+  it("detects semantic implementation drift from explicit Intent bindings", () => {
+    const passing = run([
+      "intent",
+      "bindings",
+      "--json",
+      "fixtures/intent-contract-semantic-http.pkl",
+      "fixtures/intent-semantic-bindings-observed.json",
+    ]);
+    const drifting = run([
+      "intent",
+      "bindings",
+      "--json",
+      "fixtures/intent-contract-semantic-http.pkl",
+      "fixtures/intent-semantic-bindings-drift.json",
+    ]);
+    const markdown = run(["emit", "markdown", "--locale", "en", "fixtures/intent-contract-semantic-http.pkl"]);
+    const quickcheck = run(["emit", "quickcheck", "fixtures/intent-contract-semantic-http.pkl"]);
+
+    assert.equal(passing.status, 0, passing.stderr);
+    assert.deepEqual(JSON.parse(passing.stdout).summary, {
+      matched: 2,
+      missing: 0,
+      observed: 2,
+      required: 2,
+      unmodeled: 0,
+    });
+
+    assert.notEqual(drifting.status, 0);
+    const driftReport = JSON.parse(drifting.stdout);
+    assert.deepEqual(driftReport.missing.map((binding) => binding.id), ["request.approve-otel-process"]);
+    assert.deepEqual(driftReport.unmodeled, [{ kind: "cloud-resource", target: "approval-api", value: null }]);
+    assert.match(driftReport.errors.join("\n"), /missing required semantic binding: request\.approve-otel-process/);
+    assert.match(driftReport.errors.join("\n"), /unmodeled observed semantic binding: cloud-resource approval-api/);
+
+    assert.equal(markdown.status, 0, markdown.stderr);
+    assert.match(markdown.stdout, /### Semantic Binding request\.approve-http-route/);
+    assert.match(markdown.stdout, /- kind: `http-route`/);
+    assert.equal(quickcheck.status, 0, quickcheck.stderr);
+    assert.match(quickcheck.stdout, /propertyIntentSemanticBindingsAreWellFormed/);
+  });
+
+  it("organizes natural-language Intent goals into claims, assurance tasks, and implementation bindings", () => {
+    const checked = run(["check", "fixtures/intent-goal-graph.pkl"]);
+    const graph = run(["intent", "graph", "--json", "fixtures/intent-goal-graph.pkl"]);
+    const graphMarkdown = run(["intent", "graph", "--markdown", "--locale", "en", "fixtures/intent-goal-graph.pkl"]);
+    const invalid = run(["check", "fixtures/intent-goal-graph-invalid.pkl"]);
+    const markdown = run(["emit", "markdown", "--locale", "en", "fixtures/intent-goal-graph.pkl"]);
+    const quickcheck = run(["emit", "quickcheck", "fixtures/intent-goal-graph.pkl"]);
+    const sourceMap = run(["emit", "source-map", "fixtures/intent-goal-graph.pkl"]);
+
+    assert.equal(checked.status, 0, checked.stderr);
+    assert.equal(graph.status, 0, graph.stderr);
+    assert.equal(graphMarkdown.status, 0, graphMarkdown.stderr);
+    assert.deepEqual(JSON.parse(graph.stdout).summary, {
+      bindings: 1,
+      claims: 1,
+      formalTasks: 1,
+      goals: 1,
+      implementationCoveredClaims: 1,
+      intents: 1,
+      taskCoveredClaims: 1,
+      tasks: 2,
+    });
+    assert.match(graphMarkdown.stdout, /Only a manager can approve a request/);
+    assert.match(graphMarkdown.stdout, /The authority model is bounded to the declared process and outcomes/);
+    assert.notEqual(invalid.status, 0);
+    assert.match(invalid.stderr, /intent claim has no assurance task: request\.approve-unverified/);
+    assert.match(invalid.stderr, /intent claim has no implementation binding: request\.approve-unverified/);
+    assert.equal(markdown.status, 0, markdown.stderr);
+    assert.match(markdown.stdout, /### Goal request-approval-safety/);
+    assert.match(markdown.stdout, /### Claim request\.approve-manager-only/);
+    assert.match(markdown.stdout, /### Assurance Task request\.approve-authority-alloy/);
+    assert.equal(quickcheck.status, 0, quickcheck.stderr);
+    assert.match(quickcheck.stdout, /propertyIntentClaimGraphIsComplete/);
+    assert.equal(sourceMap.status, 0, sourceMap.stderr);
+    const map = JSON.parse(sourceMap.stdout);
+    assert.ok(map.artifacts.markdown.some((entry) =>
+      entry.generated === "markdown.intent.goals.request-approval-safety" &&
+      entry.source.path === "model.patterns.intent.goals[0]"
+    ));
+    assert.ok(map.artifacts.quickcheck.some((entry) =>
+      entry.generated === "quickcheck.intent.claims.request.approve-manager-only" &&
+      entry.source.path === "model.patterns.intent.claims[0]"
+    ));
+    assert.ok(map.artifacts.quickcheck.some((entry) =>
+      entry.generated === "quickcheck.intent.assuranceTasks.request.approve-authority-alloy" &&
+      entry.source.path === "model.patterns.intent.assuranceTasks[1]"
+    ));
+  });
+
+  it("binds transaction and cloud implementation semantics to the same drift protocol", () => {
+    const checked = run(["check", "fixtures/intent-contract-semantic-transaction-cloud.pkl"]);
+    const alloy = run(["emit", "alloy", "fixtures/intent-contract-semantic-transaction-cloud.pkl"]);
+    const verified = run([
+      "intent",
+      "bindings",
+      "--json",
+      "fixtures/intent-contract-semantic-transaction-cloud.pkl",
+      "fixtures/intent-semantic-bindings-transaction-cloud.json",
+    ]);
+
+    assert.equal(checked.status, 0, checked.stderr);
+    assert.equal(alloy.status, 0, alloy.stderr);
+    assert.match(alloy.stdout, /DbModel\.dbPreserves = none -> none/);
+    assert.match(alloy.stdout, /DbModel\.dbMigrationPreserves = none -> none/);
+    assert.match(alloy.stdout, /CloudModel\.cloudFlowFrom = none -> none/);
+    assert.match(alloy.stdout, /CloudModel\.cloudFlowTo = none -> none/);
+    assert.equal(verified.status, 0, verified.stderr);
+    assert.deepEqual(JSON.parse(verified.stdout).summary, {
+      matched: 3,
+      missing: 0,
+      observed: 3,
+      required: 3,
+      unmodeled: 0,
+    });
+  });
+
+  it("reports value and refinement drift in observed Intent traces", () => {
+    const result = run([
+      "intent",
+      "verify",
+      "--json",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-traces-invalid.json",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "fail");
+    assert.match(report.errors.join("\n"), /trace request-approve-invalid step 0 input: field amountCents expected integer/);
+    assert.match(report.errors.join("\n"), /trace request-approve-invalid step 0 output: missing required field approvalId/);
+  });
+
+  it("executes function refinements against bounded Intent trace cases", () => {
+    const passing = run([
+      "intent",
+      "exercise",
+      "--json",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-traces.json",
+    ]);
+    const failing = run([
+      "intent",
+      "exercise",
+      "--json",
+      "fixtures/intent-contract-broken-implementation.pkl",
+      "fixtures/intent-traces.json",
+    ]);
+    const blocked = run([
+      "intent",
+      "exercise",
+      "--json",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-traces-invalid.json",
+    ]);
+    const timedOut = run([
+      "intent",
+      "exercise",
+      "--json",
+      "--timeout-ms",
+      "150",
+      "fixtures/intent-contract-timeout-implementation.pkl",
+      "fixtures/intent-traces.json",
+    ]);
+
+    assert.equal(passing.status, 0, passing.stderr);
+    const passReport = JSON.parse(passing.stdout);
+    assert.equal(passReport.status, "pass");
+    assert.equal(passReport.summary.executedRefinements, 1);
+    assert.equal(passReport.evidence.checks.at(-1).id, "intent-executed-refinement");
+    assert.equal(passReport.evidence.execution.runner, "node-permission-child-process");
+    assert.equal(passReport.evidence.execution.timeoutMs, 5000);
+    assert.equal(passReport.evidence.execution.permissions.fsWrite, false);
+    assert.equal(passReport.evidence.execution.permissions.childProcess, false);
+    assert.equal(passReport.evidence.execution.implementations.length, 1);
+    assert.match(passReport.evidence.execution.implementations[0].digest, /^sha256:/);
+
+    assert.notEqual(failing.status, 0);
+    const failReport = JSON.parse(failing.stdout);
+    assert.match(failReport.errors.join("\n"), /trace request-approve-001 step 0 refinement request\.approve-handler: output does not match observed trace/);
+
+    assert.notEqual(blocked.status, 0);
+    const blockedReport = JSON.parse(blocked.stdout);
+    assert.equal(blockedReport.summary.executedRefinements, 0);
+    assert.equal(blockedReport.evidence.checks.at(-1).status, "skip");
+
+    assert.notEqual(timedOut.status, 0);
+    const timeoutReport = JSON.parse(timedOut.stdout);
+    assert.match(timeoutReport.errors.join("\n"), /execution timed out after 150ms/);
+  });
+
+  it("stores and verifies current Intent exercise evidence", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-intent-evidence-"));
+    try {
+      const reportFile = join(dir, "intent-exercise.json");
+      const manifestFile = join(dir, "assurance.json");
+      const exercised = run([
+        "intent",
+        "exercise",
+        "--json",
+        "--output",
+        reportFile,
+        "fixtures/intent-contract.pkl",
+        "fixtures/intent-traces.json",
+      ]);
+      const created = run([
+        "evidence",
+        "create",
+        "--json",
+        "--intent-report",
+        reportFile,
+        "fixtures/intent-contract.pkl",
+      ]);
+
+      assert.equal(exercised.status, 0, exercised.stderr);
+      assert.equal(created.status, 0, created.stderr);
+      const manifest = JSON.parse(created.stdout).manifest;
+      assert.equal(manifest.intentExercises.length, 1);
+      assert.equal(manifest.intentExercises[0].execution.runner, "node-permission-child-process");
+      writeFileSync(manifestFile, stableJson(manifest));
+
+      const verified = run(["evidence", "verify", "--json", "fixtures/intent-contract.pkl", manifestFile]);
+      assert.equal(verified.status, 0, verified.stderr);
+      assert.equal(JSON.parse(verified.stdout).summary.intentExercises, 1);
+
+      const refreshed = run([
+        "evidence",
+        "refresh",
+        "--json",
+        "--executed-at",
+        "2026-07-16T12:00:00Z",
+        "fixtures/intent-contract.pkl",
+        manifestFile,
+      ]);
+      assert.equal(refreshed.status, 0, refreshed.stderr);
+      assert.equal(JSON.parse(refreshed.stdout).manifest.intentExercises.length, 1);
+
+      manifest.intentExercises[0].trace.digest = "sha256:stale";
+      writeFileSync(manifestFile, stableJson(manifest));
+      const stale = run(["evidence", "verify", "--json", "fixtures/intent-contract.pkl", manifestFile]);
+      assert.notEqual(stale.status, 0);
+      assert.match(JSON.parse(stale.stdout).errors.join("\n"), /stale Intent trace evidence digest/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("binds opt-in Intent execution policy observations into assurance evidence", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-intent-policy-evidence-"));
+    try {
+      const reportFile = join(dir, "intent-exercise.json");
+      const manifestFile = join(dir, "assurance.json");
+      const exercised = run([
+        "intent",
+        "exercise",
+        "--json",
+        "--policy",
+        "--output",
+        reportFile,
+        "fixtures/intent-contract-execution-policy.pkl",
+        "fixtures/intent-traces.json",
+      ]);
+      const created = run([
+        "evidence",
+        "create",
+        "--json",
+        "--intent-report",
+        reportFile,
+        "fixtures/intent-contract-execution-policy.pkl",
+      ]);
+
+      assert.equal(exercised.status, 0, exercised.stderr);
+      assert.equal(created.status, 0, created.stderr);
+      const manifest = JSON.parse(created.stdout).manifest;
+      assert.equal(manifest.intentExercises[0].executionPolicy.status, "pass");
+      assert.equal(manifest.intentExercises[0].executionPolicy.observations[0].pressure.maxInFlight, 2);
+      writeFileSync(manifestFile, stableJson(manifest));
+
+      const verified = run(["evidence", "verify", "--json", "fixtures/intent-contract-execution-policy.pkl", manifestFile]);
+      assert.equal(verified.status, 0, verified.stderr);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps a skipped opt-in policy observation out of assurance evidence", () => {
+    const dir = mkdtempSync(join(tmpdir(), "dspec-intent-policy-skip-"));
+    try {
+      const reportFile = join(dir, "intent-exercise.json");
+      const exercised = run([
+        "intent",
+        "exercise",
+        "--json",
+        "--policy",
+        "--output",
+        reportFile,
+        "fixtures/intent-contract.pkl",
+        "fixtures/intent-traces.json",
+      ]);
+      const created = run([
+        "evidence",
+        "create",
+        "--json",
+        "--intent-report",
+        reportFile,
+        "fixtures/intent-contract.pkl",
+      ]);
+
+      assert.equal(exercised.status, 0, exercised.stderr);
+      assert.equal(JSON.parse(exercised.stdout).executionPolicy.status, "skip");
+      assert.equal(created.status, 0, created.stderr);
+      assert.equal(JSON.parse(created.stdout).manifest.intentExercises[0].executionPolicy, null);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("executes HTTP route refinements against bounded Intent trace cases", async () => {
+    const server = createServer(async (request, response) => {
+      assert.equal(request.method, "POST");
+      assert.equal(request.url, "/requests/approve");
+      let body = "";
+      for await (const chunk of request) body += chunk;
+      assert.deepEqual(JSON.parse(body), {
+        request_id: "request-001",
+        amount_cents: 500,
+        locale: "ja",
+        notify: true,
+      });
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ approval_id: "approval-request-001", notified: true }));
+    });
+    try {
+      const address = await listen(server);
+      const result = await runAsync([
+        "intent",
+        "exercise",
+        "--json",
+        "--http-base-url",
+        `http://127.0.0.1:${address.port}`,
+        "fixtures/intent-contract-http.pkl",
+        "fixtures/intent-traces.json",
+      ]);
+
+      assert.equal(result.status, 0, result.stderr);
+      const report = JSON.parse(result.stdout);
+      assert.equal(report.status, "pass");
+      assert.equal(report.evidence.execution.runner, "http-fetch");
+      assert.deepEqual(report.evidence.execution.implementations[0].endpoint, {
+        method: "POST",
+        path: "/requests/approve",
+        expectedStatus: 200,
+      });
+    } finally {
+      server.close();
+    }
+  });
+
+  it("replays an Intent execution policy against an HTTP endpoint with bounded client pressure", async () => {
+    let requests = 0;
+    let inFlight = 0;
+    let maxInFlight = 0;
+    const server = createServer(async (request, response) => {
+      requests += 1;
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      try {
+        assert.equal(request.method, "POST");
+        assert.equal(request.url, "/requests/approve");
+        let body = "";
+        for await (const chunk of request) body += chunk;
+        assert.equal(JSON.parse(body).request_id, "request-001");
+        await new Promise((resolvePromise) => setTimeout(resolvePromise, 40));
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify({ approval_id: "approval-request-001", notified: true }));
+      } finally {
+        inFlight -= 1;
+      }
+    });
+    try {
+      const address = await listen(server);
+      const result = await runAsync([
+        "intent",
+        "exercise",
+        "--json",
+        "--policy",
+        "--http-base-url",
+        `http://127.0.0.1:${address.port}`,
+        "fixtures/intent-contract-execution-policy-http.pkl",
+        "fixtures/intent-traces.json",
+      ]);
+
+      assert.equal(result.status, 0, result.stderr);
+      const report = JSON.parse(result.stdout);
+      assert.equal(report.executionPolicy.status, "pass");
+      assert.equal(report.executionPolicy.observations[0].pressure.maxObservedInFlight, 2);
+      assert.equal(requests, 4);
+      assert.equal(maxInFlight, 2);
+    } finally {
+      server.close();
+    }
+  });
+
+  it("verifies Outcome effect postconditions and exercises transaction refinements", () => {
+    const verified = run([
+      "intent",
+      "verify",
+      "--json",
+      "fixtures/intent-contract-effects-transaction.pkl",
+      "fixtures/intent-traces-effects-transaction.json",
+    ]);
+    const schema = run(["intent", "schema", "fixtures/intent-contract-effects-transaction.pkl"]);
+    const exercised = run([
+      "intent",
+      "exercise",
+      "--json",
+      "fixtures/intent-contract-effects-transaction.pkl",
+      "fixtures/intent-traces-effects-transaction.json",
+    ]);
+    const missingEffect = run([
+      "intent",
+      "verify",
+      "--json",
+      "fixtures/intent-contract-effects-transaction.pkl",
+      "fixtures/intent-traces-effects-missing.json",
+    ]);
+    const brokenTransaction = run([
+      "intent",
+      "exercise",
+      "--json",
+      "fixtures/intent-contract-effects-transaction-broken.pkl",
+      "fixtures/intent-traces-effects-transaction.json",
+    ]);
+
+    assert.equal(verified.status, 0, verified.stderr);
+    const traceReport = JSON.parse(verified.stdout);
+    assert.equal(traceReport.summary.observedEffects, 1);
+    assert.ok(traceReport.evidence.checks.some((check) => check.id === "intent-observed-effect" && check.status === "pass"));
+    assert.equal(JSON.parse(schema.stdout).traces.items.properties.steps.items.properties.effects.type, "array");
+
+    assert.equal(exercised.status, 0, exercised.stderr);
+    const exerciseReport = JSON.parse(exercised.stdout);
+    assert.equal(exerciseReport.evidence.execution.runner, "node-transaction-journal-child-process");
+    assert.deepEqual(exerciseReport.executions[0].transaction, {
+      id: "approve-request",
+      isolation: "serializable",
+      status: "committed",
+      reads: ["requests"],
+      writes: ["requests"],
+      effects: [{ id: "request.approved.notification", output: { approval_id: "approval-request-001" } }],
+    });
+
+    assert.notEqual(missingEffect.status, 0);
+    assert.match(JSON.parse(missingEffect.stdout).errors.join("\n"), /missing required effect request\.approved\.notification/);
+    assert.notEqual(brokenTransaction.status, 0);
+    assert.match(JSON.parse(brokenTransaction.stdout).errors.join("\n"), /undeclared transaction write: approvals/);
+  });
+
+  it("replays an Intent execution policy through transaction journal observations", () => {
+    const result = run([
+      "intent",
+      "exercise",
+      "--json",
+      "--policy",
+      "fixtures/intent-contract-execution-policy-transaction.pkl",
+      "fixtures/intent-traces-effects-transaction.json",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    const observation = report.executionPolicy.observations[0];
+    assert.equal(observation.status, "pass");
+    assert.equal(observation.result.effectsMatchObserved, true);
+    assert.equal(observation.invocations.length, 3);
+    assert.ok(observation.invocations.every((invocation) => invocation.transaction.status === "committed"));
+  });
+
+  it("classifies adding a required Outcome effect as a narrowing change", () => {
+    const result = run([
+      "spec-change",
+      "compat",
+      "--json",
+      "fixtures/intent-contract.pkl",
+      "fixtures/intent-contract-effects-transaction.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.classification, "narrowing");
+    assert.ok(report.decisions.some((decision) => decision.change === "intent-outcome:request.approved:modified" && decision.classification === "narrowing"));
+  });
+
+  it("measures Intent trace coverage and detects generated trace mutations", () => {
+    const coverage = run([
+      "intent",
+      "coverage",
+      "--json",
+      "fixtures/intent-contract-effects-transaction.pkl",
+      "fixtures/intent-traces-effects-complete.json",
+    ]);
+    const incompleteCoverage = run([
+      "intent",
+      "coverage",
+      "--json",
+      "fixtures/intent-contract-effects-transaction.pkl",
+      "fixtures/intent-traces-effects-transaction.json",
+    ]);
+    const mutations = run([
+      "intent",
+      "mutation",
+      "--json",
+      "fixtures/intent-contract-effects-transaction.pkl",
+      "fixtures/intent-traces-effects-complete.json",
+    ]);
+    const markdown = run([
+      "intent",
+      "mutation",
+      "--markdown",
+      "fixtures/intent-contract-effects-transaction.pkl",
+      "fixtures/intent-traces-effects-complete.json",
+    ]);
+
+    assert.equal(coverage.status, 0, coverage.stderr);
+    const coverageReport = JSON.parse(coverage.stdout);
+    assert.equal(coverageReport.status, "pass");
+    assert.equal(coverageReport.summary.targets, 13);
+    assert.equal(coverageReport.summary.covered, 13);
+    assert.equal(coverageReport.summary.coverage, 1);
+
+    assert.notEqual(incompleteCoverage.status, 0);
+    const incompleteReport = JSON.parse(incompleteCoverage.stdout);
+    assert.ok(incompleteReport.uncovered.some((target) => target.kind === "transition" && target.id === "request.approve/request.not-authorized"));
+
+    assert.equal(mutations.status, 0, mutations.stderr);
+    const mutationReport = JSON.parse(mutations.stdout);
+    assert.equal(mutationReport.status, "pass");
+    assert.equal(mutationReport.generated, 15);
+    assert.equal(mutationReport.detected, 15);
+    assert.equal(mutationReport.score, 1);
+    assert.ok(mutationReport.mutations.some((mutation) => mutation.kind === "required-effect-removed"));
+    assert.ok(mutationReport.mutations.every((mutation) => mutation.status === "pass" && mutation.actual === "fail"));
+    assert.match(markdown.stdout, /^# Intent Trace Mutation Score intent-contract-fixture/m);
+  });
+
+  it("classifies a required Intent contract field as a narrowing change", () => {
+    const result = run([
+      "spec-change",
+      "compat",
+      "--json",
+      "fixtures/intent-contract-before.pkl",
+      "fixtures/intent-contract-after-narrowing.pkl",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.classification, "narrowing");
+    assert.ok(report.decisions.some((decision) => decision.change === "intent-process:request.approve:modified"));
+  });
+
+  it("projects Intent contracts and refinements into Markdown and QuickCheck", () => {
+    const markdown = run(["emit", "markdown", "--locale", "ja", "fixtures/intent-contract.pkl"]);
+    const quickcheck = run(["emit", "quickcheck", "fixtures/intent-contract.pkl"]);
+    const sourceMap = run(["emit", "source-map", "fixtures/intent-contract.pkl"]);
+
+    assert.equal(markdown.status, 0, markdown.stderr);
+    assert.equal(quickcheck.status, 0, quickcheck.stderr);
+    assert.equal(sourceMap.status, 0, sourceMap.stderr);
+    assert.match(markdown.stdout, /- input field: `amountCents` \(integer, required, minimum 1, maximum 100000\)/);
+    assert.match(markdown.stdout, /- refinement: `request\.approve-handler` \(function\)/);
+    assert.match(quickcheck.stdout, /propertyIntentProcessRefinementBindingsAreComplete/);
+    const map = JSON.parse(sourceMap.stdout);
+    assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.intent.processes.request.approve.input.fields.amountCents"));
+    assert.ok(map.artifacts.markdown.some((entry) => entry.generated === "markdown.intent.processes.request.approve.refinements.request.approve-handler"));
+  });
+
+  it("projects bounded Intent execution policies into Markdown, QuickCheck, and TLA+", () => {
+    const model = "fixtures/intent-contract-execution-policy.pkl";
+    const valid = run(["check", model]);
+    const invalid = run(["check", "fixtures/intent-contract-execution-policy-invalid-key.pkl"]);
+    const markdown = run(["emit", "markdown", "--locale", "ja", model]);
+    const quickcheck = run(["emit", "quickcheck", model]);
+    const tla = run(["emit", "tla", model]);
+    const tlaCfg = run(["emit", "tla-cfg", model]);
+    const sourceMap = run(["emit", "source-map", model]);
+    const traceSchema = run(["intent", "schema", model]);
+    const compatibility = run(["spec-change", "compat", "--json", "fixtures/intent-contract.pkl", model]);
+    const domainCoverage = run(["domain-coverage", "--json", model]);
+
+    assert.equal(valid.status, 0, valid.stderr);
+    assert.notEqual(invalid.status, 0);
+    assert.match(invalid.stderr, /intent execution idempotency key must have identifier or string type: request\.approve -> amountCents/);
+    assert.equal(markdown.status, 0, markdown.stderr);
+    assert.equal(quickcheck.status, 0, quickcheck.stderr);
+    assert.equal(tla.status, 0, tla.stderr);
+    assert.equal(tlaCfg.status, 0, tlaCfg.stderr);
+    assert.equal(sourceMap.status, 0, sourceMap.stderr);
+    assert.equal(traceSchema.status, 0, traceSchema.stderr);
+    assert.equal(compatibility.status, 0, compatibility.stderr);
+    assert.match(markdown.stdout, /- execution maxInFlight: `2`/);
+    assert.match(markdown.stdout, /- execution idempotency key: `requestId`/);
+    assert.match(markdown.stdout, /- execution timeout steps: `2`/);
+    assert.match(markdown.stdout, /- execution timeout ms: `1000`/);
+    assert.match(quickcheck.stdout, /"maxInFlight": 2/);
+    assert.match(quickcheck.stdout, /"timeoutMs": 1000/);
+    assert.equal(JSON.parse(traceSchema.stdout).processes[0].execution.timeoutMs, 1000);
+    assert.match(tla.stdout, /IntentExecutionProcesses == \{"request\.approve"\}/);
+    assert.match(tla.stdout, /IntentIdempotentProcesses == \{"request\.approve"\}/);
+    assert.match(tla.stdout, /IntentTimedProcesses == \{"request\.approve"\}/);
+    assert.match(tla.stdout, /IntentConcurrencyBounded ==/);
+    assert.match(tla.stdout, /IntentIdempotencyKeysAreExclusive ==/);
+    assert.match(tla.stdout, /IntentTimeoutsBounded ==/);
+    assert.match(tlaCfg.stdout, /INVARIANT IntentConcurrencyBounded/);
+    assert.match(tlaCfg.stdout, /INVARIANT IntentIdempotencyKeysAreExclusive/);
+    assert.match(tlaCfg.stdout, /INVARIANT IntentTimeoutsBounded/);
+    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
+
+    const compatibilityReport = JSON.parse(compatibility.stdout);
+    assert.equal(compatibilityReport.classification, "narrowing");
+    assert.ok(compatibilityReport.decisions.some((entry) => entry.change === "intent-process:request.approve:modified" && entry.classification === "narrowing"));
+
+    const domainCoverageReport = JSON.parse(domainCoverage.stdout);
+    const executionPolicy = domainCoverageReport.elements.find((entry) => entry.kind === "intent.executionPolicy" && entry.id === "request.approve");
+    assert.ok(executionPolicy?.coveredBy.some((entry) => entry.rule === "INTENT-EXECUTION-BOUNDED"));
+
+    const map = JSON.parse(sourceMap.stdout);
+    assert.ok(map.artifacts.markdown.some((entry) => entry.generated === "markdown.intent.processes.request.approve.execution"));
+    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.IntentExecutionPolicy[request.approve]"));
+    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.IntentExecutionTypeInvariant"));
+    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.IntentConcurrencyBounded"));
+    assert.ok(map.artifacts.tlaCfg.some((entry) => entry.generated === "tlaCfg.INVARIANT.IntentExecutionTypeInvariant"));
+    assert.ok(map.artifacts.tlaCfg.some((entry) => entry.generated === "tlaCfg.INVARIANT.IntentTimeoutsBounded"));
+  });
+
+  it("replays trace inputs for opt-in Intent execution policy observations", () => {
+    const result = run([
+      "intent",
+      "exercise",
+      "--json",
+      "--policy",
+      "fixtures/intent-contract-execution-policy.pkl",
+      "fixtures/intent-traces.json",
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.status, "pass");
+    assert.equal(report.executionPolicy.status, "pass");
+    assert.equal(report.executionPolicy.summary.policies, 1);
+    assert.equal(report.executionPolicy.summary.replays, 3);
+    assert.equal(report.executionPolicy.observations.length, 1);
+    assert.equal(report.executionPolicy.observations[0].process, "request.approve");
+    assert.equal(report.executionPolicy.observations[0].idempotency.contractField, "requestId");
+    assert.equal(report.executionPolicy.observations[0].idempotency.implementationField, "request_id");
+    assert.equal(report.executionPolicy.observations[0].idempotency.value, "request-001");
+    assert.equal(report.executionPolicy.observations[0].pressure.maxInFlight, 2);
+    assert.equal(report.executionPolicy.observations[0].pressure.maxObservedInFlight, 2);
+    assert.equal(report.executionPolicy.observations[0].result.outputMatchesObserved, true);
+    assert.equal(report.evidence.checks.at(-1).id, "intent-execution-policy-observation");
+  });
+
+  it("uses an Intent execution policy timeoutMs as the adapter deadline", () => {
+    const result = run([
+      "intent",
+      "exercise",
+      "--json",
+      "fixtures/intent-contract-execution-policy-timeout-implementation.pkl",
+      "fixtures/intent-traces.json",
+    ]);
+
+    assert.notEqual(result.status, 0);
+    const report = JSON.parse(result.stdout);
+    assert.match(report.errors.join("\n"), /execution timed out after 150ms/);
+  });
+
+  it("requires Intent contract fields and refinements to be grounded by approved rules", () => {
+    const result = run(["domain-coverage", "fixtures/intent-contract.pkl"]);
+
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /uncovered domain element: intent\.inputField request\.approve\/input\/amountCents/);
+    assert.match(result.stderr, /uncovered domain element: intent\.refinement request\.approve\/request\.approve-handler/);
+  });
+
+  it("verifies generated backends for an Intent model without rules", () => {
+    const result = run(["verify-generated", "fixtures/intent-process.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /ok: intent-process-fixture generated quickcheck/);
+    assert.match(result.stdout, /ok: intent-process-fixture generated lean/);
   });
 
   it("runs generated QuickCheck output", () => {
@@ -4353,6 +5733,12 @@ profile: d.AppProfile = new {
       "missing TLA+ definition: RuntimeEnabledPolicyAlerts",
       "missing TLA+ definition: RuntimeExecutedRunbookAlerts",
       "missing TLA+ definition: RuntimeTimeoutCompliantTraces",
+      "missing TLA+ definition: IntentExecutionProcesses",
+      "missing TLA+ definition: IntentIdempotentProcesses",
+      "missing TLA+ definition: IntentTimedProcesses",
+      "missing TLA+ definition: IntentProcessMaxInFlight",
+      "missing TLA+ definition: IntentProcessTimeoutSteps",
+      "missing TLA+ definition: IntentExecutionKeySpace",
       "missing TLA+ definition: RuleWorkflowState",
       "missing TLA+ definition: vars",
       "missing TLA+ definition: Init",
@@ -4388,6 +5774,10 @@ profile: d.AppProfile = new {
       "missing TLA+ definition: RuntimePageAlertsHaveEnabledPolicy",
       "missing TLA+ definition: RuntimePageAlertsHaveExecutedRunbook",
       "missing TLA+ definition: RuntimeDependencyTracesWithinTimeout",
+      "missing TLA+ definition: IntentExecutionTypeInvariant",
+      "missing TLA+ definition: IntentConcurrencyBounded",
+      "missing TLA+ definition: IntentIdempotencyKeysAreExclusive",
+      "missing TLA+ definition: IntentTimeoutsBounded",
       "unbalanced TLA+ delimiters: {",
     ]);
   });
@@ -4445,8 +5835,8 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 1016);
-    assert.deepEqual(report.assurance.rules, { satisfied: 69, total: 69 });
+    assert.equal(report.references, 1104);
+    assert.deepEqual(report.assurance.rules, { satisfied: 77, total: 77 });
     assert.deepEqual(report.errors, []);
   });
 
@@ -4465,7 +5855,7 @@ profile: d.AppProfile = new {
     const result = run(["coverage", "examples/dspec.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: dspec-self coverage \(69\/69 approved rules\)/);
+    assert.match(result.stdout, /ok: dspec-self coverage \(77\/77 approved rules\)/);
   });
 
   it("reports domain model element coverage", () => {
@@ -4519,11 +5909,11 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.covered, 69);
-    assert.equal(report.total, 69);
+    assert.equal(report.covered, 77);
+    assert.equal(report.total, 77);
     assert.deepEqual(report.assurance.requirements, {
-      reference: 69,
-      executed: 4,
+      reference: 77,
+      executed: 5,
       "mutation-tested": 1,
       bounded: 0,
       proved: 0,

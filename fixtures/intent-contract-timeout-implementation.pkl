@@ -1,0 +1,22 @@
+import "intent-contract.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      processes = new {
+        (base.model.patterns.intent.processes[0]) {
+          refinements = new {
+            (base.model.patterns.intent.processes[0].refinements[0]) {
+              implementation = new d.ImplementationRef {
+                kind = "code"
+                path = "fixtures/intent-refinement-implementation-timeout.mjs"
+                symbol = "approveRequest"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

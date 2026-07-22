@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   MARKDOWN_PROJECTION_EMITTER,
+  PROJECTION_EMITTERS,
   PROJECTION_PROVENANCE_SCHEMA_VERSION,
   createProjectionSnapshot,
   planProjectionChanges,
@@ -34,6 +35,11 @@ function fixtureModel() {
 
 const renderMarkdown = (_model, locale) => `# ${locale}\n`;
 
+const renderProjection = (_model, projection, locale) => {
+  if (projection.kind === "markdown") return `# ${locale}\n`;
+  return `// ${projection.kind}\n`;
+};
+
 test("builds deterministic Projection snapshots and provenance", () => {
   const model = fixtureModel();
   assert.deepEqual(validateProjectionContracts(model), []);
@@ -46,6 +52,44 @@ test("builds deterministic Projection snapshots and provenance", () => {
     ["en:generated/projection/en/spec.md", "ja:generated/projection/ja/spec.md"],
   );
   assert.equal(snapshot.projections[0].provenancePath, "generated/projection/spec.provenance.json");
+});
+
+test("materializes localized and singleton backend projections with kind-specific emitters", () => {
+  const model = fixtureModel();
+  model.projections.push(
+    {
+      id: "quickcheck",
+      kind: "quickcheck",
+      source: "self",
+      matrix: "single",
+      output: "generated/projection/spec.mjs",
+      provenance: "generated/projection/spec.quickcheck.provenance.json",
+      freshness: "exact",
+    },
+    {
+      id: "source-map",
+      kind: "source-map",
+      source: "self",
+      matrix: "single",
+      output: "generated/projection/source-map.json",
+      provenance: "generated/projection/source-map.provenance.json",
+      freshness: "exact",
+    },
+  );
+
+  const snapshot = createProjectionSnapshot(model, { renderProjection });
+  assert.equal(snapshot.projections.length, 3);
+  assert.deepEqual(
+    snapshot.projections.map((projection) => [projection.id, projection.artifacts.length, projection.artifacts[0].locale]),
+    [
+      ["localized-markdown", 2, "en"],
+      ["quickcheck", 1, null],
+      ["source-map", 1, null],
+    ],
+  );
+  assert.deepEqual(snapshot.projections[1].emitter, PROJECTION_EMITTERS.quickcheck);
+  assert.equal(snapshot.projections[1].artifacts[0].path, "generated/projection/spec.mjs");
+  assert.equal(snapshot.projections[2].artifacts[0].path, "generated/projection/source-map.json");
 });
 
 test("isolates Projection snapshots from renderer mutation", () => {
@@ -164,4 +208,21 @@ test("rejects unsafe or colliding provenance contracts", () => {
 
   delete model.projections[0].provenance;
   assert.match(validateProjectionContracts(model).join("\n"), /provenance must stay under the generation root/);
+});
+
+test("rejects incompatible projection matrices and output extensions", () => {
+  const model = fixtureModel();
+  model.projections[0].matrix = "single";
+  assert.match(validateProjectionContracts(model).join("\n"), /single projection output must not contain placeholders/);
+
+  model.projections[0] = {
+    id: "bad-lean",
+    kind: "lean",
+    source: "self",
+    matrix: "single",
+    output: "generated/projection/spec.tla",
+    provenance: "generated/projection/spec.lean.provenance.json",
+    freshness: "exact",
+  };
+  assert.match(validateProjectionContracts(model).join("\n"), /lean projection output must end with .lean/);
 });

@@ -1,0 +1,99 @@
+name: daily-drift-review
+
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-drift-review-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  packet:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: DeterminateSystems/determinate-nix-action@c70cb8ae92d68c66953db28a26a63db1665bc837 # v3.21.5
+      - uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
+      - id: collect
+        continue-on-error: true
+        run: >-
+          nix develop path:$PWD -c node scripts/generate-daily-drift-packet.mjs --fail-on-drift --require-formal-tools
+          --output .dspec/daily-drift examples/daily-drift-targets.pkl
+      - name: Upload deterministic drift packet
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: daily-drift-packet
+          path: .dspec/daily-drift
+          if-no-files-found: error
+          retention-days: 30
+      - name: Mark deterministic drift as failed
+        if: steps.collect.outcome == 'failure'
+        run: exit 1
+
+  llm-review:
+    if: ${{ always() && needs.packet.result != 'cancelled' }}
+    needs: packet
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Download deterministic drift packet
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: daily-drift-packet
+          path: .dspec/daily-drift
+      - id: llm-config
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -n "$OPENAI_API_KEY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            printf '%s\n' '{"status":"skipped","reason":"OPENAI_API_KEY is not configured for a manual run"}' > .dspec/daily-drift/llm-review-status.json
+          else
+            printf '%s\n' '{"status":"failed","reason":"OPENAI_API_KEY is required for scheduled review"}' > .dspec/daily-drift/llm-review-status.json
+            echo "OPENAI_API_KEY is required for scheduled review" >&2
+            exit 1
+          fi
+      - name: Record skipped LLM review
+        if: steps.llm-config.outputs.enabled != 'true'
+        run: |
+          printf '%s\n' '# LLM Review Skipped' '' 'OPENAI_API_KEY is not configured. The deterministic packet remains authoritative.' > .dspec/daily-drift/llm-review.md
+      - name: Run read-only Codex drift review
+        id: codex
+        if: steps.llm-config.outputs.enabled == 'true'
+        uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1.11
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .dspec/daily-drift/prompt.md
+          output-file: .dspec/daily-drift/llm-review.md
+          sandbox: read-only
+          safety-strategy: drop-sudo
+      - name: Record LLM review result
+        if: always()
+        run: |
+          if [ "${{ steps.codex.outcome }}" = "success" ]; then
+            printf '%s\n' '{"status":"pass"}' > .dspec/daily-drift/llm-review-status.json
+          elif [ "${{ steps.codex.outcome }}" = "failure" ]; then
+            printf '%s\n' '{"status":"failed","reason":"Codex action failed"}' > .dspec/daily-drift/llm-review-status.json
+          elif [ ! -f .dspec/daily-drift/llm-review-status.json ]; then
+            printf '%s\n' '{"status":"skipped","reason":"LLM review was not started"}' > .dspec/daily-drift/llm-review-status.json
+          fi
+      - name: Upload LLM drift review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: daily-drift-llm-review
+          path: |
+            .dspec/daily-drift/llm-review.md
+            .dspec/daily-drift/llm-review-status.json
+          if-no-files-found: error
+          retention-days: 30

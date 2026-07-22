@@ -1,0 +1,22 @@
+import "../dspec/DailyDrift.pkl" as daily
+
+manifest: daily.Manifest = new {
+  id = "daily-drift-invalid"
+  targets {
+    new daily.Target {
+      id = "invalid-goal-graph"
+      kind = "tooling-self"
+      modelPath = "fixtures/intent-goal-graph-invalid.pkl"
+      coreGates {
+        "check"
+        "drift"
+        "coverage"
+        "intent-graph"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "conformance-webapp-broken"
+  name = d.text("壊れた実装 conformance", "broken implementation conformance")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+  vocabulary {
+    d.term("concept.subject", "entity", "主体", "Subject")
+    d.term("concept.access", "relation", "アクセス", "Access")
+  }
+  rules {
+    new d.Rule {
+      id = "WEBAPP-ACCESS-CONFORMANCE"
+      kind = "invariant"
+      text = d.text("許可された主体だけがアクセスできる", "Only allowed subjects can access")
+      terms {
+        "concept.subject"
+        "concept.access"
+      }
+      must {
+        new d.Clause {
+          expr = "allowed(subject)"
+          text = d.text("主体は許可されている", "The subject is allowed")
+          ast = new d.ExprAst {
+            op = "atom"
+            name = "allowed"
+            args {
+              "subject"
+            }
+          }
+        }
+      }
+      reviewStatus = "draft"
+    }
+  }
+  conformance {
+    targets {
+      new d.ConformanceTarget {
+        id = "webapp-access"
+        rule = "WEBAPP-ACCESS-CONFORMANCE"
+        selector = "must[0]"
+        implementation = d.codeRef("conformance-webapp-broken.mjs", "isAllowed")
+        cases {
+          new d.ConformanceCase {
+            id = "full-input"
+            bindings {
+              ["subject"] = "alice"
+            }
+            atoms {
+              new d.ConformanceAtom {
+                name = "allowed"
+                args { "alice" }
+                value = true
+              }
+            }
+            shrinksTo = "minimal-input"
+          }
+          new d.ConformanceCase {
+            id = "minimal-input"
+            bindings {
+              ["subject"] = "alice"
+            }
+            atoms {
+              new d.ConformanceAtom {
+                name = "allowed"
+                args { "alice" }
+                value = true
+              }
+            }
+          }
+          new d.ConformanceCase {
+            id = "denied-input"
+            bindings {
+              ["subject"] = "bob"
+            }
+            atoms {
+              new d.ConformanceAtom {
+                name = "allowed"
+                args { "bob" }
+                value = false
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

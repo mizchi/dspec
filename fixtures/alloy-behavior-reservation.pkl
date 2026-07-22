@@ -1,0 +1,67 @@
+import "../dspec/Schema.pkl" as d
+import "../dspec/AlloyBehavior.pkl" as a
+
+/// Domain wording is the source of truth for reviewers and generated docs.
+model: d.Model = new {
+  id = "commerce-reservation"
+  name = d.text("商品予約の仕様", "Product reservation specification")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales { "ja"; "en" }
+  vocabulary {
+    d.term("commerce.customer", "actor", "顧客", "Customer")
+    d.term("catalog.product", "entity", "商品", "Product")
+    d.term("commerce.reservation", "relation", "予約", "Reservation")
+  }
+  rules {
+    new d.Rule {
+      id = "RESERVATION-EXCLUSIVE"
+      kind = "invariant"
+      text = d.text("同じ商品は同時に一人だけが予約できる", "A product has at most one reservation owner at a time")
+      terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+      must {
+        d.clause("owner(product) is unique", "予約者は一意", "A product has at most one owner")
+      }
+      reviewStatus = "approved"
+    }
+    new d.Rule {
+      id = "RESERVATION-RELEASES"
+      kind = "obligation"
+      text = d.text("予約済みの商品は最終的に解放される", "A reserved product is eventually released")
+      terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+      must {
+        d.clause("reserved(product) implies eventually unreserved(product)", "予約はいつか解放される", "Every reservation is eventually released")
+      }
+      reviewStatus = "approved"
+    }
+    new d.Rule {
+      id = "RESERVATION-OWNER-CAPACITY"
+      kind = "invariant"
+      text = d.text("顧客は同時に一つだけ予約できる", "A customer has at most one active reservation")
+      terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+      must {
+        d.clause("owner has at most one product", "顧客の同時予約は一つ", "A customer owns at most one product")
+      }
+      reviewStatus = "approved"
+    }
+  }
+}
+
+/// The Alloy-level model is relational: a product maps to at most one customer.
+/// `eventuallyReleased` is intentionally expected to fail: `stutter` is a valid
+/// transition forever, so the domain rule needs an explicit fairness/timeout
+/// decision before it can hold.
+alloyBehavior: a.AlloyBehavior = new {
+  id = "commerce.reservation.alloy-v1"
+  terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+  entities {
+    a.entity("customer", 2)
+    a.entity("product", 2)
+  }
+  reservation = a.exclusiveReservation("product-reservation", "customer", "product")
+  checks {
+    a.alwaysExclusive("reservation.exclusive.holds", "RESERVATION-EXCLUSIVE", 4, "holds")
+    a.eventuallyReleased("reservation.eventually-released.violated", "RESERVATION-RELEASES", 4, "violated")
+    a.alwaysOwnerCapacity("reservation.owner-capacity.violated", "RESERVATION-OWNER-CAPACITY", 4, "violated")
+  }
+}

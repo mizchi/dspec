@@ -1,0 +1,150 @@
+/// Evaluation and corpus declarations built on the claim model.
+open module dspec.Checks
+extends "Claims.pkl"
+
+class AppProfile {
+  id: Identifier
+  modelPath: String(length > 0)
+  appRoot: String(length > 0)
+  observedFacts: String(length > 0)? = null
+  gates: Listing<AppProfileGate> = new {}
+  requiredScenarioCategories: Listing<AppProfileScenarioCategory> = new {}
+  scenarios: Listing<AppProfileScenario> = new {}
+}
+class AppProfileScenario {
+  id: Identifier
+  kind: AppProfileScenarioKind
+  route: String(length > 0)? = null
+  schema: Identifier? = null
+  step: Identifier? = null
+  workflow: Identifier? = null
+  gate: Identifier? = null
+  store: Identifier? = null
+  dependency: Identifier? = null
+  expected: AppProfileScenarioExpectation? = null
+}
+
+class AppProfileSuite {
+  id: Identifier
+  profiles: Listing<String(length > 0)> = new {}
+}
+
+class AppProfileChangeReplayCase {
+  id: Identifier
+  modelPath: String(length > 0)
+  beforeAppRoot: String(length > 0)
+  afterAppRoot: String(length > 0)
+  expected: AppProfileChangeDrift
+}
+
+class AppProfileChangeReplayCorpus {
+  id: Identifier
+  cases: Listing<AppProfileChangeReplayCase> = new {}
+}
+
+class RealAppImportFact {
+  kind: RealAppImportFactKind
+  id: String(length > 0)
+}
+
+class RealAppImportEvaluation {
+  id: Identifier
+  appRoot: String(length > 0)
+  expectedFacts: Listing<RealAppImportFact> = new {}
+}
+
+/// Metadata that makes an external holdout reviewable without treating the
+/// reduced fixture as the original repository.
+class ExternalRealAppImportManualMapping {
+  source: String(length > 0)
+  target: String(length > 0)
+  rationale: String(length > 0)
+}
+
+class ExternalRealAppImportExclusion {
+  id: Identifier
+  kind: ExternalRealAppImportExclusionKind
+  rationale: String(length > 0)
+}
+
+class ExternalRealAppImportHoldout {
+  id: Identifier
+  evaluationPath: String(length > 0)
+  sourceRepository: String(length > 0)
+  sourceRevision: String(length > 0)
+  capturedOn: String(length > 0)
+  /// Retrospective estimate unless the capture process measures it directly.
+  estimatedAuthoringMinutes: Int(this >= 0) = 0
+  manualMappings: Listing<ExternalRealAppImportManualMapping> = new {}
+  exclusions: Listing<ExternalRealAppImportExclusion> = new {}
+}
+
+class ExternalRealAppImportMutation {
+  id: Identifier
+  sourceRepository: String(length > 0)
+  sourceBeforeRevision: String(length > 0)
+  sourceAfterRevision: String(length > 0)
+  beforeAppRoot: String(length > 0)
+  afterAppRoot: String(length > 0)
+  expectedAddedFacts: Listing<RealAppImportFact> = new {}
+  expectedRemovedFacts: Listing<RealAppImportFact> = new {}
+}
+
+class ExternalRealAppImportCorpus {
+  id: Identifier
+  holdouts: Listing<ExternalRealAppImportHoldout> = new {}
+  mutations: Listing<ExternalRealAppImportMutation> = new {}
+}
+
+class SpecReadingEvidence {
+  ref: String(length > 0)
+  note: LocalizedText? = null
+}
+
+class SpecReadingCase {
+  id: Identifier
+  claim: LocalizedText
+  expected: SpecReadingExpectation
+  evidence: Listing<SpecReadingEvidence> = new {}
+  evidenceDigest: String? = null
+  tags: Listing<Identifier> = new {}
+  paraphrases: Mapping<Locale, Listing<String(length > 0)>> = new {}
+  rationale: LocalizedText? = null
+}
+
+class SpecReadingEvaluation {
+  id: Identifier
+  modelPath: String(length > 0)
+  locale: Locale? = null
+  rubricVersion: String(length > 0) = "spec-reading-rubric-v1"
+  cases: Listing<SpecReadingCase> = new {}
+}
+
+/// Provider-neutral process adapter for a spec-reading agent.
+///
+/// The process receives the evaluation prompt on stdin and must emit the
+/// documented answers JSON object on stdout. `command` is argv, not a shell
+/// expression, so providers can be swapped without changing score semantics.
+class SpecReadingAgentRunner {
+  id: Identifier
+  provider: String(length > 0)
+  model: String(length > 0)
+  command: Listing<String(length > 0)>
+  timeoutMs: Int(this > 0) = 120000
+}
+
+class SpecReadingEvaluationSuite {
+  id: Identifier
+  evaluations: Listing<String(length > 0)> = new {}
+  minEvaluations: Int(this >= 0) = 1
+  minCases: Int(this >= 0) = 1
+  requiredLabels: Listing<SpecReadingExpectation> = new {
+    "entailed"
+    "contradicted"
+    "not-supported"
+  }
+  requiredEvidenceKinds: Listing<Identifier> = new {}
+  requiredModelKinds: Listing<Identifier> = new {}
+  requiredTags: Listing<Identifier> = new {}
+  requiredParaphraseLocales: Listing<Locale> = new {}
+}

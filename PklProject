@@ -1,0 +1,31 @@
+/// Public Pkl package for the typed dspec schema facade.
+amends "pkl:Project"
+
+import "pkl:json"
+
+local npmPackage = (new json.Parser {}).parse(read("package.json"))
+
+package {
+  name = "dspec"
+  baseUri = "package://github.com/mizchi/dspec/releases/download/pkl/dspec"
+  version = npmPackage.version
+  packageZipUrl = "https://github.com/mizchi/dspec/releases/download/pkl/dspec@\(version).zip"
+  description = "Typed, executable specification toolkit built around Pkl"
+  license = "MIT"
+  sourceCode = "https://github.com/mizchi/dspec"
+  issueTracker = "https://github.com/mizchi/dspec/issues"
+  apiTests {
+    "pkl-tests/Schema.test.pkl"
+  }
+  exclude {
+    "node_modules/**"
+    "generated/**"
+    "fixtures/**"
+    "test/**"
+    "docs/**"
+    "src/**"
+    "scripts/**"
+    "examples/**"
+    "pkl-tests/**"
+  }
+}

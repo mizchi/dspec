@@ -62,9 +62,9 @@ model, source-map, generated-source, result, and selector drift invalidate it.
 - the non-reflexive and broken-composition mutations are rejected by Lean
 - generator-scoped Lean success still cannot satisfy `proved`
 
-The self model now reports 69/69 covered approved rules, 326 automated targets,
+The self model now reports 71/71 covered approved rules, 330 automated targets,
 4 executed targets, 1 mutation-tested target, and zero self-claimed `bounded`
-or `proved` targets. Drift resolves 1016 references.
+or `proved` targets. Drift resolves 1041 references.
 
 ## Verification
 

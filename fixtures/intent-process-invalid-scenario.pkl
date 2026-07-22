@@ -1,0 +1,26 @@
+import "intent-process.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  id = "intent-process-invalid-scenario-fixture"
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      scenarios {
+        new d.IntentScenario {
+          id = "request-approval-from-wrong-state"
+          initialState = "request.approved"
+          steps {
+            new d.IntentScenarioStep {
+              process = "request.approve"
+              outcome = "request.not-authorized"
+            }
+          }
+          expectedState = "request.not-authorized"
+          text = new {
+            default = "誤った開始状態の申請"
+          }
+        }
+      }
+    }
+  }
+}

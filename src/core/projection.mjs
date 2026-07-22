@@ -2,9 +2,34 @@ import { createHash } from "node:crypto";
 import { isAbsolute } from "node:path";
 
 export const PROJECTION_PROVENANCE_SCHEMA_VERSION = "1.0";
+export const PROJECTION_PLANNER_EMITTER = Object.freeze({
+  name: "dspec/projection",
+  version: "2.0",
+});
 export const MARKDOWN_PROJECTION_EMITTER = Object.freeze({
   name: "dspec/markdown",
   version: "1.0",
+});
+export const PROJECTION_EMITTERS = Object.freeze({
+  markdown: MARKDOWN_PROJECTION_EMITTER,
+  quickcheck: Object.freeze({ name: "dspec/quickcheck", version: "1.0" }),
+  lean: Object.freeze({ name: "dspec/lean", version: "1.0" }),
+  alloy: Object.freeze({ name: "dspec/alloy", version: "1.0" }),
+  tla: Object.freeze({ name: "dspec/tla", version: "1.0" }),
+  "tla-cfg": Object.freeze({ name: "dspec/tla-cfg", version: "1.0" }),
+  "source-map": Object.freeze({ name: "dspec/source-map", version: "1.0" }),
+  "generated-manifest": Object.freeze({ name: "dspec/generated-manifest", version: "1.0" }),
+});
+
+const PROJECTION_OUTPUT_EXTENSIONS = Object.freeze({
+  markdown: ".md",
+  quickcheck: ".mjs",
+  lean: ".lean",
+  alloy: ".als",
+  tla: ".tla",
+  "tla-cfg": ".cfg",
+  "source-map": ".json",
+  "generated-manifest": ".json",
 });
 
 function list(value) {
@@ -33,7 +58,8 @@ export function isSafeProjectionPath(path) {
     && !path.split(/[\\/]/).includes("..");
 }
 
-export function projectionOutputPath(projection, locale) {
+export function projectionOutputPath(projection, locale = null) {
+  if (projection.matrix !== "locales") return projection.output;
   return projection.output.replace("{locale}", locale);
 }
 
@@ -62,24 +88,42 @@ export function validateProjectionContracts(model) {
     if (ids.has(projection.id)) errors.push(`duplicate projection id: ${projection.id}`);
     ids.add(projection.id);
 
+    const kind = projection.kind;
+    const matrix = projection.matrix;
     const output = typeof projection.output === "string" ? projection.output : "";
     const localePlaceholders = [...output.matchAll(/\{locale\}/g)].length;
-    if (localePlaceholders !== 1) {
-      errors.push(`projection output must contain exactly one {locale}: ${projection.id}`);
-    } else {
-      const remaining = output.replace("{locale}", "").match(/\{[^}]+\}/g) ?? [];
-      if (remaining.length > 0) {
-        errors.push(`projection output has unsupported placeholder: ${projection.id} -> ${remaining.join(", ")}`);
+    const extension = PROJECTION_OUTPUT_EXTENSIONS[kind];
+    if (!extension) {
+      errors.push(`unsupported projection kind: ${projection.id} -> ${kind}`);
+    }
+    if (matrix === "locales") {
+      if (kind !== "markdown") {
+        errors.push(`projection kind only supports single matrix: ${projection.id} -> ${kind}`);
       }
+      if (localePlaceholders !== 1) {
+        errors.push(`${kind} projection output must contain exactly one {locale}: ${projection.id}`);
+      } else {
+        const remaining = output.replace("{locale}", "").match(/\{[^}]+\}/g) ?? [];
+        if (remaining.length > 0) {
+          errors.push(`projection output has unsupported placeholder: ${projection.id} -> ${remaining.join(", ")}`);
+        }
+      }
+    } else if (matrix === "single") {
+      if (localePlaceholders > 0 || output.match(/\{[^}]+\}/g)) {
+        errors.push(`single projection output must not contain placeholders: ${projection.id} -> ${output}`);
+      }
+    } else {
+      errors.push(`unsupported projection matrix: ${projection.id} -> ${matrix}`);
     }
     if (!isSafeProjectionPath(output)) {
       errors.push(`projection output must stay under the generation root: ${projection.id} -> ${projection.output}`);
     }
-    if (projection.kind === "markdown" && !output.endsWith(".md")) {
-      errors.push(`markdown projection output must end with .md: ${projection.id} -> ${projection.output}`);
+    if (extension && !output.endsWith(extension)) {
+      errors.push(`${kind} projection output must end with ${extension}: ${projection.id} -> ${projection.output}`);
     }
 
-    for (const locale of localePlaceholders === 1 ? list(model?.locales) : []) {
+    const artifactLocales = matrix === "locales" && localePlaceholders === 1 ? list(model?.locales) : matrix === "single" ? [null] : [];
+    for (const locale of artifactLocales) {
       const path = projectionOutputPath(projection, locale);
       const owner = outputs.get(path);
       if (owner) errors.push(`projection output collision: ${projection.id} -> ${path} (already owned by ${owner})`);
@@ -98,10 +142,16 @@ export function validateProjectionContracts(model) {
   return errors;
 }
 
-export function createProjectionSnapshot(model, { renderMarkdown }) {
+export function createProjectionSnapshot(model, { renderMarkdown, renderProjection } = {}) {
   const errors = validateProjectionContracts(model);
   if (errors.length > 0) throw new Error(errors.join("\n"));
-  if (typeof renderMarkdown !== "function") throw new TypeError("renderMarkdown must be a function");
+  const renderer = renderProjection ?? ((sourceModel, projection, locale) => {
+    if (projection.kind !== "markdown" || typeof renderMarkdown !== "function") {
+      throw new TypeError("renderProjection must be a function for non-markdown projections");
+    }
+    return renderMarkdown(sourceModel, locale);
+  });
+  if (typeof renderer !== "function") throw new TypeError("renderProjection must be a function");
 
   const modelRecord = {
     id: model.id,
@@ -119,11 +169,13 @@ export function createProjectionSnapshot(model, { renderMarkdown }) {
       output: projection.output,
       provenancePath: projection.provenance,
       freshness: projection.freshness,
-      artifacts: list(model.locales)
-        .slice()
-        .sort()
+      emitter: { ...PROJECTION_EMITTERS[projection.kind] },
+      artifacts: (projection.matrix === "locales" ? list(model.locales).slice().sort() : [null])
         .map((locale) => {
-          const content = renderMarkdown(structuredClone(model), locale);
+          const content = renderer(structuredClone(model), structuredClone(projection), locale);
+          if (typeof content !== "string") {
+            throw new TypeError(`projection renderer must return a string: ${projection.id}`);
+          }
           return {
             bytes: Buffer.byteLength(content, "utf8"),
             content,
@@ -137,7 +189,9 @@ export function createProjectionSnapshot(model, { renderMarkdown }) {
     }));
 
   return {
-    emitter: { ...MARKDOWN_PROJECTION_EMITTER },
+    emitter: projections.every((projection) => projection.kind === "markdown")
+      ? { ...MARKDOWN_PROJECTION_EMITTER }
+      : { ...PROJECTION_PLANNER_EMITTER },
     model: modelRecord,
     projections,
   };
@@ -152,7 +206,7 @@ export function projectionProvenanceDocument(snapshot, projection, generatedAt) 
   return {
     schemaVersion: PROJECTION_PROVENANCE_SCHEMA_VERSION,
     generatedAt,
-    emitter: snapshot.emitter,
+    emitter: projection.emitter ?? snapshot.emitter,
     model: snapshot.model,
     projection: {
       id: projection.id,
@@ -162,6 +216,7 @@ export function projectionProvenanceDocument(snapshot, projection, generatedAt) 
       output: projection.output,
       provenance: projection.provenancePath,
       freshness: projection.freshness,
+      emitter: projection.emitter,
     },
     artifacts: projection.artifacts.map(({ bytes, digest, locale, path }) => ({ bytes, digest, locale, path })),
   };
@@ -293,6 +348,7 @@ export function projectionPlanReport(plan) {
       output: projection.output,
       provenance: projection.provenancePath,
       freshness: projection.freshness,
+      emitter: projection.emitter,
       artifacts: projection.artifacts.map(({ bytes, digest, locale, path }) => ({ bytes, digest, locale, path })),
     })),
     provenance: plan.actions

@@ -1,0 +1,9 @@
+import "@dspec/dspec/Schema.pkl" as d
+
+model: d.Model = new {
+  id = "pkl-package-consumer"
+  name = d.text("Pkl package consumer", "Pkl package consumer")
+  version = "0.0.0"
+  primaryLocale = "en"
+  locales { "en" }
+}

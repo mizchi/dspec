@@ -1,0 +1,31 @@
+import "intent-contract.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  id = "intent-contract-invalid-refinement-fixture"
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      processes = new {
+        (base.model.patterns.intent.processes[0]) {
+          refinements = new {
+            new d.IntentRefinement {
+              id = "request.approve-handler"
+              kind = "function"
+              implementation = new d.ImplementationRef {
+                kind = "code"
+                path = "fixtures/intent-refinement-implementation.mjs"
+                symbol = "approveRequest"
+              }
+              inputBindings {
+                new d.IntentFieldBinding { contractField = "requestId"; implementationField = "request_id" }
+                new d.IntentFieldBinding { contractField = "locale"; implementationField = "locale" }
+                new d.IntentFieldBinding { contractField = "notify"; implementationField = "notify" }
+              }
+              outcomeBindings = base.model.patterns.intent.processes[0].refinements[0].outcomeBindings
+            }
+          }
+        }
+      }
+    }
+  }
+}

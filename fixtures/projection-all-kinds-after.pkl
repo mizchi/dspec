@@ -1,0 +1,8 @@
+import "../dspec/Schema.pkl" as d
+import "projection-all-kinds.pkl" as base
+
+projections: Listing<d.Projection> = base.projections
+
+model: d.Model = (base.model) {
+  version = "0.2.0"
+}

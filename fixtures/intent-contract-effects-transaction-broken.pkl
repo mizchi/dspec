@@ -1,0 +1,23 @@
+import "intent-contract-effects-transaction.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    db = base.model.patterns.db
+    intent = (base.model.patterns.intent) {
+      processes = new {
+        (base.model.patterns.intent.processes[0]) {
+          refinements = new {
+            (base.model.patterns.intent.processes[0].refinements[0]) {
+              implementation = new d.ImplementationRef {
+                kind = "test"
+                path = "fixtures/intent-transaction-implementation-broken.mjs"
+                symbol = "approveRequestTransaction"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,981 @@
+{
+  "corpus": {
+    "id": "external-real-app-import-v1"
+  },
+  "errors": [],
+  "holdouts": [
+    {
+      "authoredIntent": {
+        "evaluationPath": "import-real-app-eval-mnemo.pkl",
+        "facts": [
+          {
+            "id": "e2e",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "staging",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "e2e/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "e2e/mnemo-e2e",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "e2e/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/ai",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db-shard-00",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db-shard-01",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/images",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/mnemo",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/skill-index",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-cli-service-token",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-platform-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-platform-shard-00-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-skill-assets-bucket",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-v1-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/ai",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db-shard-00",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db-shard-01",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/images",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/mnemo-staging",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/skill-index",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/0-star-star-star-star",
+            "kind": "infrastructure-schedule"
+          },
+          {
+            "id": "mnemo-server/infra/pulumi/index.ts",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "mnemo-server/wrangler.e2e.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "mnemo-server/wrangler.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "CI",
+            "kind": "workflow"
+          }
+        ]
+      },
+      "evaluation": {
+        "app": {
+          "id": "mnemo-workspace"
+        },
+        "errors": [],
+        "evaluation": {
+          "appRoot": "holdout-mnemo-app",
+          "id": "mnemo-external-dogfood"
+        },
+        "matched": [
+          {
+            "id": "e2e",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "staging",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "e2e/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "e2e/mnemo-e2e",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "e2e/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/ai",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db-shard-00",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db-shard-01",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/images",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/mnemo",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/skill-index",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-cli-service-token",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-platform-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-platform-shard-00-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-skill-assets-bucket",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-v1-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/ai",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db-shard-00",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db-shard-01",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/images",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/mnemo-staging",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/skill-index",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/0-star-star-star-star",
+            "kind": "infrastructure-schedule"
+          },
+          {
+            "id": "mnemo-server/infra/pulumi/index.ts",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "mnemo-server/wrangler.e2e.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "mnemo-server/wrangler.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "CI",
+            "kind": "workflow"
+          }
+        ],
+        "missing": [],
+        "status": "pass",
+        "summary": {
+          "expected": 32,
+          "matched": 32,
+          "missing": 0,
+          "observed": 32,
+          "precision": 1,
+          "recall": 1,
+          "unexpected": 0
+        },
+        "unexpected": []
+      },
+      "holdout": {
+        "capturedOn": "2026-07-14",
+        "estimatedAuthoringMinutes": 50,
+        "exclusions": [
+          {
+            "id": "pulumi-conditional-state",
+            "kind": "unsupported",
+            "rationale": "Pulumi conditionals are declarations, not executed stack state."
+          },
+          {
+            "id": "cloudflare-binding-reachability",
+            "kind": "unsupported",
+            "rationale": "A declared Cloudflare binding does not establish deployed reachability."
+          }
+        ],
+        "id": "mnemo",
+        "manualMappings": [],
+        "sourceRepository": "https://github.com/mizchi/mnemo",
+        "sourceRevision": "5cbf27107339dbbf92546065f3df5b6dec9dddce"
+      },
+      "observedImplementation": {
+        "appRoot": "holdout-mnemo-app",
+        "facts": [
+          {
+            "id": "e2e",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "staging",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "e2e/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "e2e/mnemo-e2e",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "e2e/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/ai",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db-shard-00",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db-shard-01",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/images",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/mnemo",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/skill-index",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-cli-service-token",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-platform-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-platform-shard-00-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-skill-assets-bucket",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/mnemo-v1-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/ai",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db-shard-00",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db-shard-01",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/images",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/mnemo-staging",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/skill-assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/skill-index",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/0-star-star-star-star",
+            "kind": "infrastructure-schedule"
+          },
+          {
+            "id": "mnemo-server/infra/pulumi/index.ts",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "mnemo-server/wrangler.e2e.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "mnemo-server/wrangler.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "CI",
+            "kind": "workflow"
+          }
+        ]
+      }
+    },
+    {
+      "authoredIntent": {
+        "evaluationPath": "import-real-app-eval-iac.pkl",
+        "facts": [
+          {
+            "id": "kubernetes/production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "kubernetes/production/cron-job/nightly-reconcile",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/deployment/payments-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/secret/payments-api-secrets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/service/payments-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/aws_db_instance.primary",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/aws_s3_bucket.assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/module.queue.aws_sqs_queue.jobs",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/nightly-reconcile",
+            "kind": "infrastructure-schedule"
+          },
+          {
+            "id": "infra/k8s/payments.yaml",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "infra/terraform-plan.json",
+            "kind": "infrastructure-source"
+          }
+        ]
+      },
+      "evaluation": {
+        "app": {
+          "id": "holdout-iac-app"
+        },
+        "errors": [],
+        "evaluation": {
+          "appRoot": "holdout-iac-app",
+          "id": "terraform-kubernetes-holdout"
+        },
+        "matched": [
+          {
+            "id": "kubernetes/production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "kubernetes/production/cron-job/nightly-reconcile",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/deployment/payments-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/secret/payments-api-secrets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/service/payments-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/aws_db_instance.primary",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/aws_s3_bucket.assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/module.queue.aws_sqs_queue.jobs",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/nightly-reconcile",
+            "kind": "infrastructure-schedule"
+          },
+          {
+            "id": "infra/k8s/payments.yaml",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "infra/terraform-plan.json",
+            "kind": "infrastructure-source"
+          }
+        ],
+        "missing": [],
+        "status": "pass",
+        "summary": {
+          "expected": 12,
+          "matched": 12,
+          "missing": 0,
+          "observed": 12,
+          "precision": 1,
+          "recall": 1,
+          "unexpected": 0
+        },
+        "unexpected": []
+      },
+      "holdout": {
+        "capturedOn": "2026-07-14",
+        "estimatedAuthoringMinutes": 20,
+        "exclusions": [
+          {
+            "id": "terraform-apply-state",
+            "kind": "unsupported",
+            "rationale": "Terraform planned_values are not evidence that an apply succeeded."
+          }
+        ],
+        "id": "terraform-kubernetes",
+        "manualMappings": [],
+        "sourceRepository": "fixture://terraform-kubernetes-common-subset",
+        "sourceRevision": "terraform-plan-1.2/kubernetes-v1"
+      },
+      "observedImplementation": {
+        "appRoot": "holdout-iac-app",
+        "facts": [
+          {
+            "id": "kubernetes/production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "kubernetes/production/cron-job/nightly-reconcile",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/deployment/payments-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/secret/payments-api-secrets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/service/payments-api",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/aws_db_instance.primary",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/aws_s3_bucket.assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "terraform/module.queue.aws_sqs_queue.jobs",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "kubernetes/production/nightly-reconcile",
+            "kind": "infrastructure-schedule"
+          },
+          {
+            "id": "infra/k8s/payments.yaml",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "infra/terraform-plan.json",
+            "kind": "infrastructure-source"
+          }
+        ]
+      }
+    },
+    {
+      "authoredIntent": {
+        "evaluationPath": "import-real-app-eval-cloudflare-starterkit.pkl",
+        "facts": [
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "staging",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production/assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/cf-mbt-app",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-access",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-assets-bucket",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-cli-service-token",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/cf-mbt-app-staging",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "infra/pulumi/index.ts",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "wrangler.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "CI",
+            "kind": "workflow"
+          }
+        ]
+      },
+      "evaluation": {
+        "app": {
+          "id": "@mizchi/cloudflare-starterkit-mbt"
+        },
+        "errors": [],
+        "evaluation": {
+          "appRoot": "holdout-cloudflare-starterkit-app",
+          "id": "cloudflare-starterkit-external-dogfood"
+        },
+        "matched": [
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "staging",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production/assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/cf-mbt-app",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-access",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-assets-bucket",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-cli-service-token",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/cf-mbt-app-staging",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "infra/pulumi/index.ts",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "wrangler.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "CI",
+            "kind": "workflow"
+          }
+        ],
+        "missing": [],
+        "status": "pass",
+        "summary": {
+          "expected": 15,
+          "matched": 15,
+          "missing": 0,
+          "observed": 15,
+          "precision": 1,
+          "recall": 1,
+          "unexpected": 0
+        },
+        "unexpected": []
+      },
+      "holdout": {
+        "capturedOn": "2026-07-16",
+        "estimatedAuthoringMinutes": 25,
+        "exclusions": [
+          {
+            "id": "pulumi-stack-environment",
+            "kind": "unsupported",
+            "rationale": "The source has a runtime-selected Pulumi environment that this static adapter does not execute."
+          }
+        ],
+        "id": "cloudflare-starterkit",
+        "manualMappings": [],
+        "sourceRepository": "https://github.com/mizchi/cloudflare-starterkit-mbt",
+        "sourceRevision": "44f2a826f35fc0a5ae39bb59e4f38fd97c91c83d"
+      },
+      "observedImplementation": {
+        "appRoot": "holdout-cloudflare-starterkit-app",
+        "facts": [
+          {
+            "id": "production",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "staging",
+            "kind": "infrastructure-environment"
+          },
+          {
+            "id": "production/assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/cf-mbt-app",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "production/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-access",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-assets-bucket",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-cli-service-token",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "pulumi/app-db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/assets",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/cf-mbt-app-staging",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "staging/db",
+            "kind": "infrastructure-resource"
+          },
+          {
+            "id": "infra/pulumi/index.ts",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "wrangler.jsonc",
+            "kind": "infrastructure-source"
+          },
+          {
+            "id": "CI",
+            "kind": "workflow"
+          }
+        ]
+      }
+    }
+  ],
+  "mutations": [
+    {
+      "added": [
+        {
+          "id": "staging",
+          "kind": "infrastructure-environment"
+        },
+        {
+          "id": "staging/ai",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/db",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/db-shard-00",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/db-shard-01",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/mnemo-staging",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/skill-assets",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/skill-index",
+          "kind": "infrastructure-resource"
+        }
+      ],
+      "afterAppRoot": "holdout-mnemo-staging",
+      "beforeAppRoot": "holdout-mnemo-pre-staging",
+      "errors": [],
+      "expectedAdded": [
+        {
+          "id": "staging",
+          "kind": "infrastructure-environment"
+        },
+        {
+          "id": "staging/ai",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/db",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/db-shard-00",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/db-shard-01",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/mnemo-staging",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/skill-assets",
+          "kind": "infrastructure-resource"
+        },
+        {
+          "id": "staging/skill-index",
+          "kind": "infrastructure-resource"
+        }
+      ],
+      "expectedRemoved": [],
+      "id": "mnemo-add-staging-environment",
+      "removed": [],
+      "sourceAfterRevision": "93408840daca0011ba57a698eafc5b6709fe871d",
+      "sourceBeforeRevision": "972b3bf9e5d9d4b9d1ab3368b290871ad66d74fa",
+      "sourceRepository": "https://github.com/mizchi/mnemo",
+      "status": "pass"
+    }
+  ],
+  "status": "pass",
+  "summary": {
+    "holdouts": {
+      "estimatedAuthoringMinutes": 95,
+      "exclusions": 4,
+      "expected": 59,
+      "manualMappings": 0,
+      "matched": 59,
+      "missing": 0,
+      "observed": 59,
+      "passed": 3,
+      "precision": 1,
+      "recall": 1,
+      "total": 3,
+      "unexpected": 0
+    },
+    "mutations": {
+      "added": 8,
+      "detected": 1,
+      "detectionRate": 1,
+      "missed": 0,
+      "removed": 0,
+      "total": 1
+    }
+  }
+}

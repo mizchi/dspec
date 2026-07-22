@@ -37,8 +37,8 @@
     },
     {
       "action": "create",
-      "afterBytes": 1031,
-      "afterDigest": "sha256:6dd10b91a372fb9c8f615e125ceb86d01c12cbb729865390c9235bb667c8d3a3",
+      "afterBytes": 1110,
+      "afterDigest": "sha256:cf93c2e63c2b9d1b70a7551df53902d8baf516bd1ca758139f41524817baa472",
       "beforeBytes": null,
       "beforeDigest": null,
       "kind": "provenance",
@@ -64,6 +64,10 @@
           "path": "generated/projection/ja/projection-model.md"
         }
       ],
+      "emitter": {
+        "name": "dspec/markdown",
+        "version": "1.0"
+      },
       "freshness": "exact",
       "id": "localized-markdown",
       "kind": "markdown",
@@ -80,7 +84,7 @@
         "version": "1.0"
       },
       "generatedAt": "2026-07-15T00:00:00.000Z",
-      "modelDigest": "sha256:fc1887a05ae14acccf72ef896f926c7f8c497514604389e47680758c8f951dbf",
+      "modelDigest": "sha256:e5805869097caf49aefd64508e03ffa4339a9bcb676d0107f6cd06bfc0b3792a",
       "path": "generated/projection/projection-model.provenance.json",
       "projectionId": "localized-markdown",
       "schemaVersion": "1.0"

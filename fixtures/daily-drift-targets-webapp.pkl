@@ -1,0 +1,23 @@
+import "../dspec/DailyDrift.pkl" as daily
+
+manifest: daily.Manifest = new {
+  id = "daily-drift-webapp"
+  targets {
+    new daily.Target {
+      id = "sample-webapp"
+      kind = "application"
+      modelPath = "examples/sample-webapp-2026.pkl"
+      coreGates {
+        "check"
+        "drift"
+        "intent-graph"
+        "generated"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+      appProfile = "fixtures/sample-webapp-profile.pkl"
+    }
+  }
+}

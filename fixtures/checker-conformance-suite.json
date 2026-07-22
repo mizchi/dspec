@@ -1,0 +1,35 @@
+{
+  "contractVersion": "dspec-checker-conformance-v1",
+  "cases": [
+    {
+      "id": "check-self-model",
+      "argv": ["check", "--json", "examples/dspec.pkl"],
+      "expectedReport": "fixtures/reports/check-dspec.json"
+    },
+    {
+      "id": "drift-self-model",
+      "argv": ["drift", "--json", "examples/dspec.pkl"],
+      "expectedReport": "fixtures/reports/drift-dspec.json"
+    },
+    {
+      "id": "coverage-self-model",
+      "argv": ["coverage", "--json", "examples/dspec.pkl"],
+      "expectedReport": "fixtures/reports/coverage-dspec.json"
+    },
+    {
+      "id": "implementation-conformance",
+      "argv": ["conformance", "--json", "fixtures/conformance-webapp.pkl"],
+      "expectedReport": "fixtures/reports/conformance-webapp.json"
+    },
+    {
+      "id": "localized-spec-query",
+      "argv": ["query", "--json", "--locale", "ja", "--answer", "fixtures/spec-query-answer-valid.json", "fixtures/conformance-webapp.pkl", "rule", "WEBAPP-ACCESS-CONFORMANCE"],
+      "expectedReport": "fixtures/reports/spec-query-webapp.json"
+    },
+    {
+      "id": "external-real-app-holdouts",
+      "argv": ["evaluate-external-holdouts", "--json", "fixtures/external-holdout-real-app-import.pkl"],
+      "expectedReport": "fixtures/reports/evaluate-external-holdouts.json"
+    }
+  ]
+}

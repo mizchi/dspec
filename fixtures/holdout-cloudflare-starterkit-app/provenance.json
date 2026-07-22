@@ -1,0 +1,15 @@
+{
+  "source": "https://github.com/mizchi/cloudflare-starterkit-mbt",
+  "commit": "44f2a826f35fc0a5ae39bb59e4f38fd97c91c83d",
+  "capturedOn": "2026-07-16",
+  "files": {
+    ".github/workflows/ci.yml": "554631d8d736150496f8e21af82a5c1d8be03de2191084dda09e10c7b66da824",
+    "infra/pulumi/index.ts": "dd733cbbf8c6bd43c9de39de9c9b36b08e1600e18d8d463b4fb4bbd1576bef91",
+    "wrangler.jsonc": "3d37f0cdd8e60df42cecf00832753ea50d0510165ff27cb16f7aa4f24d493dda"
+  },
+  "transformations": [
+    "Reduced files to importer-relevant declarations.",
+    "Replaced Cloudflare resource identifiers with REDACTED placeholders.",
+    "Preserved CI, Worker, D1, R2, staging, and Pulumi declaration shapes."
+  ]
+}

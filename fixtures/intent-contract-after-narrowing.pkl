@@ -1,0 +1,39 @@
+import "intent-contract-before.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  version = "0.1.1"
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      processes = new {
+        (base.model.patterns.intent.processes[0]) {
+          inputContract = (base.model.patterns.intent.processes[0].inputContract) {
+            fields = new {
+              ...base.model.patterns.intent.processes[0].inputContract.fields
+              new d.IntentField {
+                id = "reason"
+                type = "string"
+              }
+            }
+          }
+          refinements = new {
+            new d.IntentRefinement {
+              id = "request.approve-handler"
+              kind = "function"
+              implementation = new d.ImplementationRef {
+                kind = "code"
+                path = "fixtures/intent-refinement-implementation.mjs"
+                symbol = "approveRequest"
+              }
+              inputBindings {
+                ...base.model.patterns.intent.processes[0].refinements[0].inputBindings
+                new d.IntentFieldBinding { contractField = "reason"; implementationField = "reason" }
+              }
+              outcomeBindings = base.model.patterns.intent.processes[0].refinements[0].outcomeBindings
+            }
+          }
+        }
+      }
+    }
+  }
+}

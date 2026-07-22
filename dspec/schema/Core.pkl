@@ -1,0 +1,367 @@
+/// dspec schema.
+///
+/// This module intentionally keeps the first prototype small:
+/// Pkl owns the typed document shape, while `Clause.ast` carries the first
+/// portable expression structure for deterministic backend projections.
+@ModuleInfo { minPklVersion = "0.31.0" }
+open module dspec.Core
+
+typealias Identifier = String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+typealias Locale = String(matches(Regex(#"^[a-z]{2}(-[A-Z]{2})?$"#)))
+typealias Version = String(matches(Regex(#"^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9_.-]+)?$"#)))
+typealias IsoDate = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}$"#)))
+typealias Expr = String(length > 0)
+typealias ExprOp = "atom" | "not" | "and" | "or" | "implies" | "eq" | "neq" | "exists" | "forall"
+typealias ClauseAstSemanticsVersion = String(matches(Regex(#"^[0-9]+\.[0-9]+$"#)))
+typealias DbColumnType = "id" | "string" | "int" | "bool" | "datetime" | "decimal"
+typealias CloudZoneExposure = "public" | "private" | "restricted"
+typealias CloudNodeKind =
+  "internet" | "service" | "database" | "queue" | "bucket" | "secret" | "cache" | "external"
+typealias DataClassification = "public" | "internal" | "personal" | "confidential" | "secret"
+typealias ReleaseGateKind = "test" | "approval" | "health" | "security" | "manual"
+typealias ReleaseStrategy = "direct" | "rolling" | "canary" | "blueGreen"
+typealias RuntimeDependencyKind = "http" | "database" | "queue" | "cache" | "external"
+typealias RuntimeSignalKind = "metric" | "log" | "trace" | "synthetic"
+typealias RuntimeAlertSeverity = "info" | "ticket" | "page"
+typealias RuntimeRunbookExecutionStatus = "pass" | "fail"
+typealias IntentCapabilityKind = "read" | "write" | "clock" | "network" | "id-generation" | "external"
+typealias IntentValueType = "string" | "integer" | "boolean" | "identifier"
+typealias IntentRefinementKind = "function" | "http-route" | "transaction" | "queue-topic" | "worker"
+typealias IntentHttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
+typealias IntentTransactionIsolation = "read-committed" | "repeatable-read" | "serializable"
+typealias IntentScenarioKind = "success" | "rejection" | "retry" | "conflict" | "timeout"
+typealias IntentAccessDecision = "allow" | "deny"
+typealias IntentSemanticBindingKind = "http-route" | "db-transaction" | "cloud-resource" | "otel-attribute"
+typealias IntentClaimKind = "behavior" | "safety" | "security" | "temporal" | "compliance"
+typealias IntentAssuranceTaskKind = "property-test" | "formal-model" | "runtime-observation" | "manual-review"
+typealias DomainPackHelperReturn = "term" | "rule"
+typealias RuleCoverageMode = "rule" | "clause"
+typealias AppProfileGate =
+  "check"
+    | "drift"
+    | "domain-coverage"
+    | "import-real-app"
+    | "observed-fixture"
+    | "reconcile-real-app"
+    | "reverse-coverage"
+typealias AppProfileScenarioKind =
+  "baseline-no-drift"
+    | "remove-release-gate"
+    | "add-observed-release-gate"
+    | "remove-route"
+    | "add-observed-route"
+    | "remove-contract-schema"
+    | "add-observed-contract-schema"
+    | "remove-workflow"
+    | "add-observed-workflow"
+    | "remove-data-store"
+    | "add-observed-data-store"
+    | "remove-runtime-dependency"
+    | "add-observed-runtime-dependency"
+typealias AppProfileScenarioCategory =
+  "release-gate" | "route" | "contract-schema" | "workflow" | "data-store" | "runtime-dependency"
+typealias AppProfileScenarioExpectation = "pass" | "fail"
+typealias AppProfileChangeDrift = "no-drift" | "implementation-missing" | "spec-missing" | "mixed"
+typealias RealAppImportFactKind =
+  "route"
+    | "contract-path"
+    | "contract-schema"
+    | "workflow"
+    | "infrastructure-source"
+    | "infrastructure-environment"
+    | "infrastructure-resource"
+    | "infrastructure-schedule"
+typealias ExternalRealAppImportExclusionKind = "unsupported" | "sanitized" | "out-of-scope"
+typealias SpecReadingExpectation = "entailed" | "contradicted" | "not-supported"
+typealias SpecCompatibility = "compatible" | "breaking" | "narrowing" | "widening" | "unknown"
+typealias SpecChangeReviewStep =
+  "check-before"
+    | "check-after"
+    | "impact"
+    | "compatibility"
+    | "breaking-policy"
+    | "evidence-ref"
+    | "coverage-after"
+typealias SpecChangeEvidenceKind =
+  "migration-plan" | "deprecation-plan" | "rollout-plan" | "owner-approval"
+
+typealias WorldMode = "open" | "closed"
+typealias ReviewStatus = "draft" | "review" | "approved"
+typealias TermKind =
+  "actor"
+    | "role"
+    | "entity"
+    | "value"
+    | "enum"
+    | "relation"
+    | "event"
+    | "state"
+    | "action"
+    | "quantity"
+typealias SpecKind =
+  "decision"
+    | "invariant"
+    | "transition"
+    | "obligation"
+    | "permission"
+    | "prohibition"
+    | "exception"
+    | "witness"
+    | "example"
+    | "non_goal"
+    | "equivalence"
+typealias Backend =
+  "node" | "pkl" | "lean" | "alloy" | "tla" | "rego" | "cue" | "playwright" | "runtime" | "manual"
+typealias CheckAssuranceKind = "reference" | "executed" | "mutation-tested" | "bounded" | "proved"
+typealias AssuranceEvidenceSchemaVersion = "1.0"
+typealias AssuranceEvidenceScope = "generator" | "clause"
+typealias AssuranceEvidenceResult = "pass" | "fail" | "skip"
+typealias AssuranceEvidenceTimestamp = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"#)))
+typealias ClauseBackendSupport = "unmapped" | "textual" | "structural" | "semantic"
+typealias ProjectionKind =
+  "markdown" | "quickcheck" | "lean" | "alloy" | "tla" | "tla-cfg" | "source-map" | "generated-manifest"
+typealias ProjectionMatrix = "locales" | "single"
+typealias ProjectionFreshness = "exact"
+
+/// A language-independent text node.
+///
+/// `default` is what humans see when a requested locale is missing.
+/// `labels` stores locale-specific renderings without changing stable ids.
+class LocalizedText {
+  default: String(length > 0)
+  labels: Mapping<Locale, String(length > 0)> = new {}
+}
+
+function text(jaText: String, enText: String): LocalizedText = new {
+  default = jaText
+  labels {
+    ["ja"] = jaText
+    ["en"] = enText
+  }
+}
+
+/// A review plan for changing a spec master.
+///
+/// This records the before/after models plus the gates that must pass before a
+/// change is accepted. The CLI expands it into a deterministic human and JSON
+/// review report.
+class SpecChangeReview {
+  id: Identifier
+  beforeModelPath: String(length > 0)
+  afterModelPath: String(length > 0)
+  expectedCompatibility: SpecCompatibility? = null
+  allowedCompatibility: Listing<SpecCompatibility> = new {}
+  requiredSteps: Listing<SpecChangeReviewStep> = new {}
+  breakingRequires: Listing<SpecChangeEvidenceKind> = new {}
+  evidence: Listing<SpecChangeEvidence> = new {}
+}
+
+class SpecChangeEvidence {
+  kind: SpecChangeEvidenceKind
+  ref: String(length > 0)
+  text: LocalizedText? = null
+}
+
+/// Domain vocabulary. Rules should refer to terms by stable ids.
+class Term {
+  id: Identifier
+  kind: TermKind
+  text: LocalizedText
+  aliases: Mapping<Locale, Listing<String(length > 0)>> = new {}
+  world: WorldMode = "open"
+  values: Listing<Identifier> = new {}
+  supersedes: Listing<Identifier> = new {}
+}
+
+function term(termId: Identifier, termKind: TermKind, jaText: String, enText: String): Term = new {
+  id = termId
+  kind = termKind
+  text = text(jaText, enText)
+}
+
+/// A typed expression AST.
+///
+/// This is intentionally small. `atom` is an uninterpreted predicate over
+/// string arguments, `eq`/`neq` compare two symbolic arguments, boolean
+/// operators compose child expressions, and `exists`/`forall` bind `name` over
+/// one child. `expr` strings stay available as a compatibility and display
+/// layer, while `ast` carries the portable structure used by deterministic
+/// backend projections.
+class ExprAst {
+  op: ExprOp
+  name: Identifier? = null
+  args: Listing<String(length > 0)> = new {}
+  children: Listing<ExprAst> = new {}
+}
+
+/// A claim fragment.
+///
+/// `expr` is a stable compatibility and display string. It is not natural
+/// language; natural-language renderings belong in `text`. When `ast` is
+/// present, generators should treat it as the structured source.
+class Clause {
+  expr: Expr
+  ast: ExprAst? = null
+  text: LocalizedText? = null
+}
+
+function clause(clauseExpr: Expr, jaText: String, enText: String): Clause = new {
+  expr = clauseExpr
+  text = text(jaText, enText)
+}
+
+class CheckTarget {
+  backend: Backend
+  ref: String(length > 0)
+  mode: "generated" | "linked" | "manual" = "linked"
+  covers: Listing<String(matches(Regex(#"^(when|must|mustNot)\[[0-9]+\]$"#)))> = new {}
+  /// Epistemic claims made by this target. `reference` only means that `ref`
+  /// resolves; stronger claims require an entry in `assuranceEvidence`.
+  assurances: Listing<CheckAssuranceKind> = new { "reference" }
+  assuranceEvidence: Mapping<CheckAssuranceKind, String(length > 0)> = new {}
+}
+
+/// Identity of a model captured by an assurance evidence run.
+class AssuranceEvidenceModel {
+  id: Identifier
+  version: Version
+  digest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+}
+
+/// Tool identity recorded when a generated backend is executed.
+class AssuranceEvidenceTool {
+  name: String(length > 0)
+  version: String? = null
+}
+
+/// One generated artifact execution. Generator-scoped execution is not a
+/// proof of the source business clauses.
+class AssuranceEvidenceArtifact {
+  id: Identifier
+  backend: "quickcheck" | "lean" | "tla" | "alloy"
+  scope: AssuranceEvidenceScope
+  propertyIds: Listing<String(length > 0)> = new {}
+  digest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  result: AssuranceEvidenceResult
+  tool: AssuranceEvidenceTool
+  theorem: String? = null
+  bounds: Mapping<String, String(length > 0)> = new {}
+}
+
+/// Backend applicability for one source Clause.ast selector.
+class AssuranceEvidenceClauseBackend {
+  backend: "quickcheck" | "lean" | "tla" | "alloy"
+  support: ClauseBackendSupport
+  generatedSelectors: Listing<String(length > 0)> = new {}
+}
+
+class AssuranceEvidenceClauseBinding {
+  ruleId: Identifier
+  selector: String(matches(Regex(#"^(when|must|mustNot)\[[0-9]+\]$"#)))
+  astDigest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  operators: Listing<ExprOp> = new {}
+  backends: Listing<AssuranceEvidenceClauseBackend> = new {}
+}
+
+/// Deterministic verification evidence. `executedAt` is supplied by the run;
+/// all freshness decisions use digests rather than wall-clock age.
+class AssuranceEvidenceManifest {
+  schemaVersion: AssuranceEvidenceSchemaVersion
+  executedAt: AssuranceEvidenceTimestamp
+  model: AssuranceEvidenceModel
+  sourceMapDigest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
+  artifacts: Listing<AssuranceEvidenceArtifact> = new {}
+  clauseBindings: Listing<AssuranceEvidenceClauseBinding> = new {}
+}
+
+function linkedCheck(checkBackend: Backend, checkRef: String): CheckTarget = new {
+  backend = checkBackend
+  ref = checkRef
+}
+
+function generatedCheck(checkBackend: Backend, checkRef: String): CheckTarget = new {
+  backend = checkBackend
+  ref = checkRef
+  mode = "generated"
+}
+
+function nodeCheck(checkRef: String): CheckTarget = linkedCheck("node", checkRef)
+
+class ImplementationRef {
+  kind: "code" | "test" | "runtime" | "doc" | "proof" | "model"
+  path: String(length > 0)
+  symbol: String? = null
+}
+
+/// A concrete atom valuation used by a finite implementation conformance case.
+///
+/// Atom arguments are values after `bindings` substitution. A missing atom is
+/// interpreted as false by the reference evaluator, so every test input stays
+/// finite and explicit.
+class ConformanceAtom {
+  name: Identifier
+  args: Listing<String(length > 0)> = new {}
+  value: Boolean
+}
+
+/// One finite input for comparing a Clause.ast reference interpretation with
+/// an implementation adapter. `shrinksTo` declares an author-reviewed smaller
+/// witness, rather than claiming a universal shrinker for arbitrary domains.
+class ConformanceCase {
+  id: Identifier
+  bindings: Mapping<Identifier, String> = new {}
+  atoms: Listing<ConformanceAtom> = new {}
+  domain: Listing<String(length > 0)> = new {}
+  shrinksTo: Identifier? = null
+}
+
+/// An implementation conformance target.
+///
+/// The adapter function receives `{ bindings, atoms, domain }` and must return
+/// a Boolean. A passing target is executable conformance evidence; it is not a
+/// proof that arbitrary application behavior refines the source Clause.
+class ConformanceTarget {
+  id: Identifier
+  rule: Identifier
+  selector: String(matches(Regex(#"^(when|must|mustNot)\[[0-9]+\]$"#)))
+  implementation: ImplementationRef
+  cases: Listing<ConformanceCase> = new {}
+}
+
+class ConformanceCatalog {
+  targets: Listing<ConformanceTarget> = new {}
+}
+
+/// A deterministic materialized view of the entrypoint's model.
+///
+/// A deterministic materialized view of the entrypoint's model.
+///
+/// `markdown` with the `locales` matrix expands one artifact for every declared
+/// model locale and requires exactly one `{locale}` placeholder. The `single`
+/// matrix materializes one backend artifact at `output`. `provenance` owns the
+/// deterministic manifest for the materialized view.
+class Projection {
+  id: Identifier
+  kind: ProjectionKind
+  source: "self" = "self"
+  matrix: ProjectionMatrix
+  output: String(length > 0)
+  provenance: String(length > 0)
+  freshness: ProjectionFreshness = "exact"
+}
+
+function codeRef(refPath: String, refSymbol: String): ImplementationRef = new {
+  kind = "code"
+  path = refPath
+  symbol = refSymbol
+}
+
+function modelRef(refPath: String): ImplementationRef = new {
+  kind = "model"
+  path = refPath
+}
+
+function runtimeRef(refPath: String): ImplementationRef = new {
+  kind = "runtime"
+  path = refPath
+}

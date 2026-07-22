@@ -1,0 +1,54 @@
+import "../dspec/DailyDrift.pkl" as daily
+
+manifest: daily.Manifest = new {
+  id = "dspec-daily-drift"
+  baseline = "examples/daily-drift-baseline.json"
+  targets {
+    new daily.Target {
+      id = "dspec-self"
+      kind = "tooling-self"
+      modelPath = "examples/dspec.pkl"
+      coreGates {
+        "check"
+        "drift"
+        "coverage"
+        "intent-graph"
+        "generated"
+        "verify-generated"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+    }
+    new daily.Target {
+      id = "sample-webapp"
+      kind = "application"
+      modelPath = "examples/sample-webapp-2026.pkl"
+      coreGates {
+        "check"
+        "drift"
+        "intent-graph"
+        "generated"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+      appProfile = "fixtures/sample-webapp-profile.pkl"
+    }
+    new daily.Target {
+      id = "runtime-evidence"
+      kind = "runtime"
+      modelPath = "fixtures/runtime-model.pkl"
+      coreGates {
+        "check"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+      runtimeEvidence = "fixtures/runtime-evidence-collector.json"
+    }
+  }
+}

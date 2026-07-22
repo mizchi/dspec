@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "bytes": 38616,
+      "digest": "sha256:3c2d1d1417e05b7cb9836325c16cb154162b56439cf34affb663717abdad7923",
+      "locale": null,
+      "path": "generated/backends/dspec-self.als"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/alloy",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-16T16:26:31.985Z",
+  "model": {
+    "digest": "sha256:15a5d8d11466c08c1d614c0207be88afff5573107711f5394e1cbd6e233dd232",
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "emitter": {
+      "name": "dspec/alloy",
+      "version": "1.0"
+    },
+    "freshness": "exact",
+    "id": "self-alloy",
+    "kind": "alloy",
+    "matrix": "single",
+    "output": "generated/backends/dspec-self.als",
+    "provenance": "generated/backends/dspec-self.alloy.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}
