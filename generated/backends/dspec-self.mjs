@@ -2258,6 +2258,63 @@ export const rules = [
     "mustNot": []
   },
   {
+    "id": "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN",
+    "kind": "obligation",
+    "status": "approved",
+    "requiredAssurances": [
+      "reference"
+    ],
+    "checks": [
+      {
+        "backend": "node",
+        "ref": "test/domain-core.test.mjs#compiles Entity, Value Object, Aggregate, Command, Event, and Invariant declarations into a language-neutral IR",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
+      },
+      {
+        "backend": "node",
+        "ref": "test/domain-cli.test.mjs#generates a TypeScript domain scaffold at a caller-selected path",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
+      },
+      {
+        "backend": "node",
+        "ref": "test/domain-cli.test.mjs#tracks formalization artifact paths in the normal drift gate",
+        "automated": true,
+        "assurances": [
+          "reference"
+        ],
+        "assuranceEvidence": {}
+      }
+    ],
+    "terms": [
+      "concept.domain_aggregate",
+      "concept.domain_codegen_ir",
+      "concept.domain_formalization",
+      "concept.domain_model"
+    ],
+    "when": [],
+    "must": [
+      {
+        "expr": "domain.invariant.rule linkedTo domain.formalization.target",
+        "astSemanticsVersion": null,
+        "ast": null
+      },
+      {
+        "expr": "domain.codegenIR preserves entities valueObjects aggregates commands events fields",
+        "astSemanticsVersion": null,
+        "ast": null
+      }
+    ],
+    "mustNot": []
+  },
+  {
     "id": "DSPEC-DOMAIN-PRESET-PACK",
     "kind": "obligation",
     "status": "approved",
@@ -6806,6 +6863,7 @@ export const approvedRuleIds = [
   "DSPEC-DOCUMENTED-CLI-EXAMPLES",
   "DSPEC-DOGFOOD-TASK",
   "DSPEC-DOMAIN-COVERAGE-ORACLE",
+  "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN",
   "DSPEC-DOMAIN-PRESET-PACK",
   "DSPEC-DRIFT-CHECK-TARGET",
   "DSPEC-DRIFT-IMPLEMENTATION-REF",

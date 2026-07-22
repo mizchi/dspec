@@ -643,6 +643,10 @@ model: d.Model = new {
     d.term("concept.intent_refinement", "relation", "Intent refinement", "Intent refinement")
     d.term("concept.intent_protocol_test", "entity", "Intent protocol test", "Intent protocol test")
     d.term("concept.intent_grpc_endpoint", "relation", "Intent gRPC endpoint", "Intent gRPC endpoint")
+    d.term("concept.domain_model", "entity", "DDD ドメインモデル", "DDD domain model")
+    d.term("concept.domain_aggregate", "entity", "DDD 集約", "DDD aggregate")
+    d.term("concept.domain_formalization", "relation", "ドメイン形式化対応", "domain formalization link")
+    d.term("concept.domain_codegen_ir", "entity", "ドメイン codegen IR", "domain code-generation IR")
     d.term("concept.intent_goal", "entity", "Intent goal", "Intent goal")
     d.term("concept.intent_claim", "entity", "Intent claim", "Intent claim")
     d.term("concept.intent_assurance_task", "entity", "Intent assurance task", "Intent assurance task")
@@ -6843,6 +6847,49 @@ model: d.Model = new {
       }
       rationale =
         "DSL は単一言語の生成テストではなく、型付き domain case を transport adapter に渡す可搬な oracle にする。有限ケースの成功は任意入力の実装等価性を証明しない。"
+    }
+
+    new d.Rule {
+      id = "DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN"
+      kind = "obligation"
+      text =
+        text(
+          "DDD ドメインモデルは不変条件を規範 Rule と形式化 artifact に明示接続し、言語非依存 IR から実装雛形を生成する",
+          "The DDD domain model explicitly links invariants to normative Rules and formal artifacts, then generates implementation scaffolds from a language-neutral IR",
+        )
+      terms {
+        "concept.domain_model"
+        "concept.domain_aggregate"
+        "concept.domain_formalization"
+        "concept.domain_codegen_ir"
+      }
+      must {
+        d.clause(
+          "domain.invariant.rule linkedTo domain.formalization.target",
+          "ドメイン不変条件は Rule と選択した形式化 target を明示する",
+          "A domain invariant explicitly names its Rule and selected formalization target",
+        )
+        d.clause(
+          "domain.codegenIR preserves entities valueObjects aggregates commands events fields",
+          "codegen IR は Entity、Value Object、Aggregate、Command、Event、field の形を保持する",
+          "The code-generation IR preserves Entity, Value Object, Aggregate, Command, Event, and field shape",
+        )
+      }
+      reviewStatus = "approved"
+      checks {
+        d.nodeCheck("test/domain-core.test.mjs#compiles Entity, Value Object, Aggregate, Command, Event, and Invariant declarations into a language-neutral IR")
+        d.nodeCheck("test/domain-cli.test.mjs#generates a TypeScript domain scaffold at a caller-selected path")
+        d.nodeCheck("test/domain-cli.test.mjs#tracks formalization artifact paths in the normal drift gate")
+      }
+      implementedBy {
+        d.codeRef("dspec/schema/Claims.pkl", "DomainModel")
+        d.codeRef("dspec/schema/Claims.pkl", "DomainFormalization")
+        d.codeRef("src/core/domain.mjs", "domainCodegenIr")
+        d.codeRef("src/core/domain.mjs", "renderDomainTypescript")
+        d.codeRef("src/cli.mjs", "runDomainCommand")
+      }
+      rationale =
+        "生成するのは型・port・雛形までとし、業務判断や永続化を推測しない。任意言語の renderer は Pkl を再解釈せず versioned IR を入力にする。"
     }
 
     new d.Rule {

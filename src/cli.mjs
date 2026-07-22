@@ -41,6 +41,11 @@ import {
   validateProtocolTests,
 } from "./core/protocol-tests.mjs";
 import {
+  domainCodegenIr,
+  renderDomainTypescript,
+  validateDomainModel,
+} from "./core/domain.mjs";
+import {
   RealAppCoreError,
   diffRealAppImportFacts,
   evaluateRealAppImport,
@@ -98,6 +103,7 @@ const TOP_LEVEL_COMMANDS = [
   { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
   { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
+  { name: "domain", usage: "dspec domain <ir|generate> ..." },
   { name: "intent", usage: "dspec intent <verify|exercise|generate-tests|test|schema> ..." },
   { name: "daily-drift", usage: "dspec daily-drift <collect|approve> ..." },
   { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
@@ -269,6 +275,102 @@ function explainUsage() {
 
 Run the verification gates and normalize failures into source-linked diagnostics.
 `;
+}
+
+function domainUsage() {
+  return `usage:
+  dspec domain ir [--json] <model.pkl>
+  dspec domain generate --language typescript [--json] [--output <file.ts>] <model.pkl>
+
+Compile Entity, Value Object, Aggregate, Command, Domain Event, Invariant, and
+Formalization declarations to a language-neutral IR. The built-in TypeScript
+renderer emits domain-layer types, ports, event payloads, and deliberately
+incomplete constructor stubs. Other language generators consume the IR rather
+than reinterpreting the Pkl domain model.
+`;
+}
+
+function parseDomainArgs(args, subcommand) {
+  let json = false;
+  let language = null;
+  let outputFile = null;
+  const positional = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--language") {
+      language = args[index + 1] ?? null;
+      index += 1;
+      if (!language || language.startsWith("-")) throw new CommandError(`domain generate requires a language\n${domainUsage()}`);
+      continue;
+    }
+    if (arg === "--output") {
+      outputFile = args[index + 1] ?? null;
+      index += 1;
+      if (!outputFile || outputFile.startsWith("-")) throw new CommandError(`domain generate requires an output path\n${domainUsage()}`);
+      continue;
+    }
+    if (arg.startsWith("-")) throw new CommandError(`unknown domain ${subcommand} option: ${arg}\n${domainUsage()}`);
+    positional.push(arg);
+  }
+  if (positional.length !== 1) throw new CommandError(domainUsage());
+  if (subcommand === "ir" && (language || outputFile)) throw new CommandError(`domain ir does not accept --language or --output\n${domainUsage()}`);
+  if (subcommand === "generate" && language !== "typescript") {
+    throw new CommandError(`unsupported built-in domain language: ${language ?? "missing"}; use domain ir for an external renderer\n${domainUsage()}`);
+  }
+  return { json, language, outputFile, modelFile: positional[0] };
+}
+
+function writeDomainGeneratedSource(path, source) {
+  mkdirSync(dirname(resolve(path)), { recursive: true });
+  writeFileSync(path, source);
+  return { path, bytes: Buffer.byteLength(source, "utf8"), digest: assuranceDigest(source) };
+}
+
+function runDomainCommand(args) {
+  const [subcommand, ...rest] = args;
+  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    process.stdout.write(domainUsage());
+    return;
+  }
+  if (!["ir", "generate"].includes(subcommand)) throw new CommandError(`unknown domain subcommand: ${subcommand}\n${domainUsage()}`);
+  const options = parseDomainArgs(rest, subcommand);
+  const model = loadModel(options.modelFile);
+  const ir = domainCodegenIr(model);
+  const errors = [...new Set([...validate(model), ...ir.errors])].sort();
+  const report = {
+    ...ir,
+    status: errors.length === 0 ? "pass" : "fail",
+    errors,
+  };
+  if (subcommand === "ir") {
+    process.stdout.write(stableJson(report));
+    if (report.status === "fail") throw new CommandError("domain IR generation failed\n");
+    return;
+  }
+  if (report.status === "fail") {
+    if (options.json) process.stdout.write(stableJson(report));
+    throw new CommandError("domain code generation failed\n");
+  }
+  const source = renderDomainTypescript(model);
+  const generated = {
+    ...report,
+    language: options.language,
+    sourceDigest: assuranceDigest(source),
+    ...(options.outputFile ? { output: writeDomainGeneratedSource(options.outputFile, source) } : {}),
+  };
+  if (options.json) {
+    process.stdout.write(stableJson(generated));
+    return;
+  }
+  if (!options.outputFile) {
+    process.stdout.write(source);
+    return;
+  }
+  process.stdout.write(`ok: ${model.id} generated ${options.language} domain scaffold ${generated.output.path}\n`);
 }
 
 function specChangeCompatUsage() {
@@ -2075,6 +2177,10 @@ function runtimePattern(model) {
   return model.patterns?.runtime ?? null;
 }
 
+function domainPattern(model) {
+  return model.patterns?.domain ?? null;
+}
+
 function intentPattern(model) {
   return model.patterns?.intent ?? null;
 }
@@ -3460,6 +3566,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
   validateDataModel(errors, model);
   validateReleaseModel(errors, model);
   validateRuntimeModel(errors, model);
+  errors.push(...validateDomainModel(model));
   validateIntentModel(errors, model);
   if (list(intentPattern(model)?.tests).length > 0) errors.push(...validateProtocolTests(model));
   validateDomainPacks(errors, model);
@@ -3537,6 +3644,13 @@ function validateImplementationRefs(model) {
     validateReferences(task.id, [task.target], {
       path: "intent assurance task target path",
       symbol: "intent assurance task target symbol",
+    });
+  }
+  const domain = domainPattern(model);
+  for (const formalization of list(domain?.formalizations)) {
+    validateReferences(formalization.id, [formalization.target], {
+      path: "domain formalization target path",
+      symbol: "domain formalization target symbol",
     });
   }
 
@@ -10292,6 +10406,25 @@ function intentExecutionPolicySource(process, processIndex) {
   };
 }
 
+function domainDeclarationSource(collection, declaration, index) {
+  return {
+    kind: "domainDeclaration",
+    declarationKind: collection,
+    declarationId: declaration.id,
+    path: `model.patterns.domain.${collection}[${index}]`,
+  };
+}
+
+function domainFieldSource(collection, declaration, declarationIndex, field, fieldIndex) {
+  return {
+    kind: "domainField",
+    declarationKind: collection,
+    declarationId: declaration.id,
+    fieldId: field.id,
+    path: `model.patterns.domain.${collection}[${declarationIndex}].fields[${fieldIndex}]`,
+  };
+}
+
 function generatedEntry(generated, source, extra = {}) {
   return { generated, source, ...extra };
 }
@@ -10360,6 +10493,26 @@ function emitSourceMapObject(model, requestedLocale) {
       artifacts[artifactKind].push(
         generatedEntry(`${artifactKind}.projection.${projection.id}`, projectionSource(projection, index), { locale }),
       );
+    }
+  }
+
+  const domain = domainPattern(model);
+  if (domain) {
+    for (const collection of ["enums", "valueObjects", "entities", "aggregates", "commands", "events", "invariants", "formalizations"]) {
+      const declarations = list(domain[collection]);
+      for (const declaration of declarations.slice().sort(byId)) {
+        const declarationIndex = declarations.findIndex((candidate) => candidate.id === declaration.id);
+        const source = domainDeclarationSource(collection, declaration, declarationIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.domain.${collection}.${declaration.id}`, source));
+        if (!Object.hasOwn(declaration, "fields")) continue;
+        for (const field of list(declaration.fields).slice().sort(byId)) {
+          const fieldIndex = list(declaration.fields).findIndex((candidate) => candidate.id === field.id);
+          artifacts.markdown.push(generatedEntry(
+            `markdown.domain.${collection}.${declaration.id}.fields.${field.id}`,
+            domainFieldSource(collection, declaration, declarationIndex, field, fieldIndex),
+          ));
+        }
+      }
     }
   }
 
@@ -11776,6 +11929,87 @@ function renderCounterexampleReport(report) {
   return `${lines.join("\n")}\n`;
 }
 
+function appendDomainModelMarkdown(lines, model, locale) {
+  const domain = domainPattern(model);
+  if (!domain) return;
+
+  const renderText = (entry) => {
+    if (!entry.text) return;
+    lines.push(text(entry.text, locale));
+    lines.push("");
+  };
+  const renderFields = (fields) => {
+    for (const field of list(fields).slice().sort(byId)) {
+      const target = field.target ? ` -> \`${field.target}\`` : "";
+      const collection = field.collection ? "[]" : "";
+      const required = field.required === false ? " optional" : " required";
+      lines.push(`- field: \`${field.id}\` ${field.type}${target}${collection}${required}`);
+      if (field.text) lines.push(`  - description: ${text(field.text, locale)}`);
+    }
+  };
+  const renderTarget = (target) => {
+    if (!target) return;
+    const symbol = target.symbol ? `#${target.symbol}` : "";
+    lines.push(`- target: ${target.kind} ${target.path}${symbol}`);
+  };
+
+  lines.push("## Domain Model", "");
+  for (const entry of list(domain.enums).slice().sort(byId)) {
+    lines.push(`### Enum ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- values: ${list(entry.values).map((value) => `\`${value}\``).join(", ")}`, "");
+  }
+  for (const entry of list(domain.valueObjects).slice().sort(byId)) {
+    lines.push(`### Value Object ${entry.id}`, "");
+    renderText(entry);
+    renderFields(entry.fields);
+    lines.push("");
+  }
+  for (const entry of list(domain.entities).slice().sort(byId)) {
+    lines.push(`### Entity ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- identity: \`${entry.identity}\``);
+    renderFields(entry.fields);
+    lines.push("");
+  }
+  for (const entry of list(domain.aggregates).slice().sort(byId)) {
+    lines.push(`### Aggregate ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- root: \`${entry.root}\``);
+    for (const member of list(entry.members).slice().sort()) lines.push(`- member: \`${member}\``);
+    lines.push("");
+  }
+  for (const entry of list(domain.commands).slice().sort(byId)) {
+    lines.push(`### Command ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- aggregate: \`${entry.aggregate}\``);
+    renderFields(entry.fields);
+    lines.push("");
+  }
+  for (const entry of list(domain.events).slice().sort(byId)) {
+    lines.push(`### Event ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- aggregate: \`${entry.aggregate}\``);
+    renderFields(entry.fields);
+    lines.push("");
+  }
+  for (const entry of list(domain.invariants).slice().sort(byId)) {
+    lines.push(`### Domain Invariant ${entry.id}`, "");
+    renderText(entry);
+    if (entry.aggregate) lines.push(`- aggregate: \`${entry.aggregate}\``);
+    lines.push(`- rule: \`${entry.rule}\``, "");
+  }
+  for (const entry of list(domain.formalizations).slice().sort(byId)) {
+    lines.push(`### Domain Formalization ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- rule: \`${entry.rule}\``);
+    lines.push(`- kind: \`${entry.kind}\``);
+    lines.push(`- assurance: \`${entry.assurance}\``);
+    renderTarget(entry.target);
+    lines.push("");
+  }
+}
+
 function render(model, requestedLocale) {
   const locale = requestedLocale ?? model.primaryLocale;
   const lines = [
@@ -11807,6 +12041,8 @@ function render(model, requestedLocale) {
       lines.push(`  - except: ${exceptionId}`);
     }
   }
+
+  appendDomainModelMarkdown(lines, model, locale);
 
   const intent = intentPattern(model);
   if (intent) {
@@ -12072,6 +12308,8 @@ function emitMarkdown(model, requestedLocale) {
     }
     lines.push("");
   }
+
+  appendDomainModelMarkdown(lines, model, locale);
 
   const db = dbPattern(model);
   if (db) {
@@ -17126,6 +17364,15 @@ function domainCoverageCandidateIds(kind, id) {
   if (kind === "intent.effect") push(id, `effect.${id}`, `intent.effect.${id}`);
   if (kind === "intent.refinement") push(id, `refinement.${id}`, `intent.refinement.${id}`);
   if (kind === "intent.executionPolicy") push(`execution.${id}`, `intent.execution.${id}`);
+  if (kind === "domain.enum") push(id, `enum.${id}`, `domain.enum.${id}`);
+  if (kind === "domain.valueObject") push(id, `valueObject.${id}`, `domain.valueObject.${id}`);
+  if (kind === "domain.entity") push(id, `entity.${id}`, `domain.entity.${id}`);
+  if (kind === "domain.aggregate") push(id, `aggregate.${id}`, `domain.aggregate.${id}`);
+  if (kind === "domain.command") push(id, `command.${id}`, `domain.command.${id}`);
+  if (kind === "domain.event") push(id, `event.${id}`, `domain.event.${id}`);
+  if (kind === "domain.invariant") push(id, `invariant.${id}`, `domain.invariant.${id}`);
+  if (kind === "domain.formalization") push(id, `formalization.${id}`, `domain.formalization.${id}`);
+  if (kind === "domain.field") push(id, `field.${id}`, `domain.field.${id}`);
   return candidates.sort();
 }
 
@@ -17172,6 +17419,30 @@ function domainCoverageElements(model) {
     runtimeServices(runtime).forEach((service, index) => elements.push(domainCoverageElement("runtime.service", service.id, `model.patterns.runtime.services[${index}]`)));
     runtimeDependencies(runtime).forEach((dependency, index) => elements.push(domainCoverageElement("runtime.dependency", dependency.id, `model.patterns.runtime.dependencies[${index}]`)));
     runtimeSlos(runtime).forEach((slo, index) => elements.push(domainCoverageElement("runtime.slo", slo.id, `model.patterns.runtime.slos[${index}]`)));
+  }
+
+  const domain = domainPattern(model);
+  if (domain) {
+    list(domain.enums).forEach((entry, index) => elements.push(domainCoverageElement("domain.enum", entry.id, `model.patterns.domain.enums[${index}]`)));
+    list(domain.valueObjects).forEach((entry, index) => {
+      elements.push(domainCoverageElement("domain.valueObject", entry.id, `model.patterns.domain.valueObjects[${index}]`));
+      list(entry.fields).forEach((field, fieldIndex) => elements.push(domainCoverageElement("domain.field", `valueObject/${entry.id}/${field.id}`, `model.patterns.domain.valueObjects[${index}].fields[${fieldIndex}]`)));
+    });
+    list(domain.entities).forEach((entry, index) => {
+      elements.push(domainCoverageElement("domain.entity", entry.id, `model.patterns.domain.entities[${index}]`));
+      list(entry.fields).forEach((field, fieldIndex) => elements.push(domainCoverageElement("domain.field", `entity/${entry.id}/${field.id}`, `model.patterns.domain.entities[${index}].fields[${fieldIndex}]`)));
+    });
+    list(domain.aggregates).forEach((entry, index) => elements.push(domainCoverageElement("domain.aggregate", entry.id, `model.patterns.domain.aggregates[${index}]`)));
+    list(domain.commands).forEach((entry, index) => {
+      elements.push(domainCoverageElement("domain.command", entry.id, `model.patterns.domain.commands[${index}]`));
+      list(entry.fields).forEach((field, fieldIndex) => elements.push(domainCoverageElement("domain.field", `command/${entry.id}/${field.id}`, `model.patterns.domain.commands[${index}].fields[${fieldIndex}]`)));
+    });
+    list(domain.events).forEach((entry, index) => {
+      elements.push(domainCoverageElement("domain.event", entry.id, `model.patterns.domain.events[${index}]`));
+      list(entry.fields).forEach((field, fieldIndex) => elements.push(domainCoverageElement("domain.field", `event/${entry.id}/${field.id}`, `model.patterns.domain.events[${index}].fields[${fieldIndex}]`)));
+    });
+    list(domain.invariants).forEach((entry, index) => elements.push(domainCoverageElement("domain.invariant", entry.id, `model.patterns.domain.invariants[${index}]`)));
+    list(domain.formalizations).forEach((entry, index) => elements.push(domainCoverageElement("domain.formalization", entry.id, `model.patterns.domain.formalizations[${index}]`)));
   }
 
   const intent = intentPattern(model);
@@ -18770,7 +19041,7 @@ async function run(argv) {
     return;
   }
 
-  if (!["spec-change", "evidence", "generated", "scaffold", "intent", "daily-drift", "trace", "translation"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+  if (!["spec-change", "evidence", "generated", "scaffold", "domain", "intent", "daily-drift", "trace", "translation"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     process.stdout.write(topLevelCommandHelp(commandSpec));
     return;
   }
@@ -18820,6 +19091,11 @@ async function run(argv) {
 
   if (command === "daily-drift") {
     runDailyDrift(args);
+    return;
+  }
+
+  if (command === "domain") {
+    runDomainCommand(args);
     return;
   }
 

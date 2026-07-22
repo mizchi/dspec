@@ -341,6 +341,8 @@ node src/cli.mjs verify-generated --json examples/dspec.pkl
 node src/cli.mjs evidence create --output /tmp/dspec-evidence.json fixtures/typed-ast.pkl
 node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl /tmp/dspec-evidence.json
 node src/cli.mjs evidence refresh fixtures/typed-ast.pkl /tmp/dspec-evidence.json
+node src/cli.mjs domain ir fixtures/domain-codegen.pkl
+node src/cli.mjs domain generate --language typescript --output /tmp/commerce-domain.ts fixtures/domain-codegen.pkl
 node src/cli.mjs intent exercise --json --output /tmp/dspec-intent-exercise.json fixtures/intent-contract.pkl fixtures/intent-traces.json
 node src/cli.mjs intent generate-tests --json fixtures/intent-contract-http.pkl
 node src/cli.mjs intent test --json --http-base-url http://127.0.0.1:3000 fixtures/intent-contract-http.pkl
@@ -942,6 +944,20 @@ or other clients while making the selected runner and finite-case boundary
 explicit evidence rather than a claim of universal implementation equivalence.
 See [`docs/protocol-tests.md`](docs/protocol-tests.md) for the Pkl shape and
 runner contract.
+
+`patterns.domain` is the DDD-oriented source for `DomainEnum`, Value Object,
+Entity, Aggregate, Command, Domain Event, and Domain Invariant declarations.
+An Invariant points to its normative Rule; `DomainFormalization` records which
+Behavior, LeanCore, AlloyBehavior, or direct formal-link artifact checks that
+Rule and is included in normal implementation-drift checks. `dspec domain ir`
+emits a stable language-neutral code-generation IR. The built-in
+`dspec domain generate --language typescript` renderer produces only domain
+types, repository ports, command/event payloads, and intentionally incomplete
+constructor stubs. It never invents persistence, transport, validation-library,
+or business-decision code. Other language renderers consume the same IR rather
+than reinterpreting Pkl. The Markdown projection and source map retain each
+DDD declaration and field for source-level traceability. See
+[`docs/domain-model.md`](docs/domain-model.md).
 
 `IntentScenario` may be categorized (`success`, `rejection`, `retry`,
 `conflict`, or `timeout`) and marked required. `intent corpus` keeps normal

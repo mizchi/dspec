@@ -69,6 +69,13 @@ export {
 } from "./protocol-tests.mjs";
 
 export {
+  DOMAIN_CODEGEN_IR_SCHEMA_VERSION,
+  domainCodegenIr,
+  renderDomainTypescript,
+  validateDomainModel,
+} from "./domain.mjs";
+
+export {
   LEAN_SEMANTIC_CORE_SCHEMA_VERSION,
   boundedReachabilityReport,
   encodeLeanBooleanFormulaTseitin,

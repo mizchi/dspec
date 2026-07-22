@@ -711,6 +711,21 @@
       "translationHash": "sha256:2849a93ec05244775a77a17eb6beb32c1ed01a3ba20b4824c55bd37068946fb5"
     },
     {
+      "key": "rule:DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[0].text#en",
+      "sourceHash": "sha256:193a77cf72c7fdd1838618132c8c41dac491b1dbece545f12710f51fe1598124",
+      "translationHash": "sha256:30bea2f37d55c58fe2343e8851d8df5fcbde3531c00a353a62d8333d78ac950c"
+    },
+    {
+      "key": "rule:DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[1].text#en",
+      "sourceHash": "sha256:5f355eeac1a40f46dadb328a552b846ca61b49ddb25d5eb69d9fcf8dd5077289",
+      "translationHash": "sha256:b69d857183ac4332dce67e9ff93f5352dd8f1468880421e759aeff99898b9151"
+    },
+    {
+      "key": "rule:DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.text#en",
+      "sourceHash": "sha256:cef49dc063faf9f87a542cbb5d7f5961eff3138602f07aafb29e4ca04527307d",
+      "translationHash": "sha256:b3e98ef1778b2915f03a88730638a41e8afa071423226482f11ac9253d2c3736"
+    },
+    {
       "key": "rule:DSPEC-DOMAIN-PRESET-PACK.must[0].text#en",
       "sourceHash": "sha256:e978367d069c31280ec654c03a18fe498b91f78764b1a08eb7fe860088735f84",
       "translationHash": "sha256:5628fc66acd9a174826374c0026542d14c29c4e68c3672ebbc4375703ebe6bba"
@@ -2419,6 +2434,26 @@
       "key": "term:concept.db_transaction.text#en",
       "sourceHash": "sha256:cb266928a5a15a0f6debd0c507782d6fd8c50d7436b4d0fcdfe567a85e004f30",
       "translationHash": "sha256:cb266928a5a15a0f6debd0c507782d6fd8c50d7436b4d0fcdfe567a85e004f30"
+    },
+    {
+      "key": "term:concept.domain_aggregate.text#en",
+      "sourceHash": "sha256:f4a055a949ea1fb0737b48ec2a20c4f91a6b0896dab8916639159c7a6b4ab4a3",
+      "translationHash": "sha256:4c0a750b423e5d5e7a1cd96e30d83ee05acb5850c4deb4108d7506137a4f30d2"
+    },
+    {
+      "key": "term:concept.domain_codegen_ir.text#en",
+      "sourceHash": "sha256:6f871ae3975a573181274e926f501b51fa26d4c48b67b0170b5fd04f25d36a73",
+      "translationHash": "sha256:54f7b6a1727de67ee6bbd4ba81f46388d6e869493841016db69092fec41e9098"
+    },
+    {
+      "key": "term:concept.domain_formalization.text#en",
+      "sourceHash": "sha256:dbb50d7e4000a8883b615a39dd93f06dc65638eaff812a1a9876a54112fbc0c5",
+      "translationHash": "sha256:ba3087bc19e7b11022414516cc19e22ea467c371fda4631e4f764f9c4a094e0a"
+    },
+    {
+      "key": "term:concept.domain_model.text#en",
+      "sourceHash": "sha256:5efb94469feb56b2d4fc7fdcb2b81b31bed812894278ee1f3e7bb19384ba4f76",
+      "translationHash": "sha256:9d9914060168143671982535cda4f246cd2fa005e4917c61efbb6c7b292cf351"
     },
     {
       "key": "term:concept.expr_ast.text#en",

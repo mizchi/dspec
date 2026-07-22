@@ -33,6 +33,7 @@
     "./external-holdouts": "./src/core/external-holdouts.mjs",
     "./intent": "./src/core/intent.mjs",
     "./protocol-tests": "./src/core/protocol-tests.mjs",
+    "./domain": "./src/core/domain.mjs",
     "./projection": "./src/core/projection.mjs",
     "./schema": "./dspec/Schema.pkl"
   },

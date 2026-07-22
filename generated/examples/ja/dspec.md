@@ -6,13 +6,13 @@
 
 ## Review Summary
 
-- approvedRules: `78`
-- automatedCheckTargets: `351`
-- implementationRefs: `732`
+- approvedRules: `79`
+- automatedCheckTargets: `354`
+- implementationRefs: `737`
 - projections: `8`
 - domainElements: `21`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=351, executed=5, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=354, executed=5, mutation-tested=1, bounded=0, proved=0`
 
 ## Projections
 
@@ -174,6 +174,10 @@
 - `concept.db_mapping` (relation): DB migration mapping
 - `concept.db_migration` (action): DB migration
 - `concept.db_transaction` (action): DB transaction
+- `concept.domain_aggregate` (entity): DDD 集約
+- `concept.domain_codegen_ir` (entity): ドメイン codegen IR
+- `concept.domain_formalization` (relation): ドメイン形式化対応
+- `concept.domain_model` (entity): DDD ドメインモデル
 - `concept.expr_ast` (value): Clause.ast expression AST
 - `concept.inferon` (entity): inferon 的な仕様 claim
 - `concept.intent_assurance_task` (entity): Intent assurance task
@@ -1347,6 +1351,39 @@ domain pattern の各要素は approved rule の安定 ID に接地する
 - selector: DSPEC-DOMAIN-COVERAGE-ORACLE.must[0]
 - selector: DSPEC-DOMAIN-COVERAGE-ORACLE.must[1]
 
+### DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN
+
+DDD ドメインモデルは不変条件を規範 Rule と形式化 artifact に明示接続し、言語非依存 IR から実装雛形を生成する
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `concept.domain_aggregate`
+- term: `concept.domain_codegen_ir`
+- term: `concept.domain_formalization`
+- term: `concept.domain_model`
+- must: `domain.invariant.rule linkedTo domain.formalization.target`
+- must: `domain.codegenIR preserves entities valueObjects aggregates commands events fields`
+- check: node test/domain-core.test.mjs#compiles Entity, Value Object, Aggregate, Command, Event, and Invariant declarations into a language-neutral IR [reference]
+- check: node test/domain-cli.test.mjs#generates a TypeScript domain scaffold at a caller-selected path [reference]
+- check: node test/domain-cli.test.mjs#tracks formalization artifact paths in the normal drift gate [reference]
+- implementation: code dspec/schema/Claims.pkl#DomainModel
+- implementation: code dspec/schema/Claims.pkl#DomainFormalization
+- implementation: code src/core/domain.mjs#domainCodegenIr
+- implementation: code src/core/domain.mjs#renderDomainTypescript
+- implementation: code src/cli.mjs#runDomainCommand
+- rationale: 生成するのは型・port・雛形までとし、業務判断や永続化を推測しない。任意言語の renderer は Pkl を再解釈せず versioned IR を入力にする。
+
+#### Review
+
+- source: model.rules[78]
+- coverage: rule
+- automatedChecks: 3
+- implementationRefs: 5
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[0]
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[1]
+
 ### DSPEC-DOMAIN-PRESET-PACK
 
 domain preset pack は Core IR に展開される authoring layer として提供される
@@ -1967,7 +2004,7 @@ Intent の Goal は Claim、保証タスク、実装 semantic binding まで追�
 
 #### Review
 
-- source: model.rules[79]
+- source: model.rules[80]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 6
@@ -2272,7 +2309,7 @@ Lean は等価性 fragment の Clause を満足関係と clause 定理として�
 
 #### Review
 
-- source: model.rules[78]
+- source: model.rules[79]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0

@@ -1,8 +1,8 @@
 {
   "artifacts": [
     {
-      "bytes": 63032,
-      "digest": "sha256:60e96caa0f74a961995f53daf309f692cdc61aa4307f9ff355ec2fc9d7208553",
+      "bytes": 63749,
+      "digest": "sha256:2f5edf7ff80e13559a658336a602ba1355ed176b2fa63616c63ebba0cfb92ce1",
       "locale": null,
       "path": "generated/backends/DSpecSelf.lean"
     }
@@ -11,9 +11,9 @@
     "name": "dspec/lean",
     "version": "1.0"
   },
-  "generatedAt": "2026-07-22T18:00:26.826Z",
+  "generatedAt": "2026-07-22T19:23:02.986Z",
   "model": {
-    "digest": "sha256:24d952fd5cac66f04cb0461153380adc52d3bafcc82c6b10275ae8b90a439ee1",
+    "digest": "sha256:cf8a09dde1e234084860d3fb6b9a25a6c014caf47ae8a2670158c772e4773fa8",
     "id": "dspec-self",
     "version": "0.1.0"
   },
