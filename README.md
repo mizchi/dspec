@@ -231,6 +231,8 @@ node src/cli.mjs devshell-smoke --json
 node src/cli.mjs verify-generated examples/dspec.pkl
 node src/cli.mjs verify-generated --json examples/dspec.pkl
 node src/cli.mjs verify-generated --json --require-formal-tools fixtures/typed-ast.pkl
+node src/cli.mjs traceability --gate --require-executed-formal-tools examples/tetris.pkl
+node src/cli.mjs formal-mutation --json --require-formal-tools fixtures/tetris-alloy.pkl
 node src/cli.mjs evidence create --output evidence.json fixtures/typed-ast.pkl
 node src/cli.mjs evidence verify --json fixtures/typed-ast.pkl evidence.json
 node src/cli.mjs evidence refresh fixtures/typed-ast.pkl evidence.json
@@ -950,7 +952,12 @@ runner contract.
 Entity, Aggregate, Command, Domain Event, and Domain Invariant declarations.
 An Invariant points to its normative Rule; `DomainFormalization` records which
 Behavior, LeanCore, AlloyBehavior, or direct formal-link artifact checks that
-Rule and is included in normal implementation-drift checks. `dspec domain ir`
+Rule and is included in normal implementation-drift checks.
+`DomainFormalizationRefinement` explicitly connects an abstract formalization
+to a concrete one through named conditions and the concrete model's stable
+checks; traceability requires evidence for both endpoints and those checks.
+This is bounded evidence for the declared correspondence, not an automatic
+claim that production code refines either model. `dspec domain ir`
 emits a stable language-neutral code-generation IR. The built-in
 `dspec domain generate --language typescript` renderer produces only domain
 types, repository ports, command/event payloads, and intentionally incomplete

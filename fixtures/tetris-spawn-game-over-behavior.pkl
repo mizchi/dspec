@@ -1,0 +1,55 @@
+import "../examples/tetris.pkl" as base
+import "../dspec/Schema.pkl" as d
+import "../dspec/Behavior.pkl" as b
+
+/// This state machine starts immediately before a spawn attempt. Whether the
+/// spawn footprint collides is abstracted to the `spawnBlocked` input action;
+/// the coordinate-level collision calculation remains a later model slice.
+model: d.Model = base.model
+
+behavior: b.Behavior = new {
+  id = "tetris.spawn-game-over.behavior-v1"
+  terms { "tetris.active-piece"; "tetris.board"; "tetris.game-over"; "tetris.tetromino" }
+  states {
+    b.state("game-status", 0)
+  }
+  actions {
+    new b.Action {
+      id = "spawnBlocked"
+      requires = b.equals(b.current("game-status"), b.number(0))
+      ensures { b.set("game-status", b.number(1)) }
+    }
+  }
+  invariants {
+    new b.Invariant {
+      id = "game-status-is-bounded"
+      rule = "TETRIS-SPAWN-GAME-OVER"
+      constraint = b.atMost(b.current("game-status"), b.number(1))
+    }
+  }
+  reachability {
+    new b.ReachabilityCheck {
+      id = "tetris.spawn-collision.game-over.reachable"
+      rule = "TETRIS-SPAWN-GAME-OVER"
+      maxSteps = 1
+      expectation = "reachable"
+      target = b.equals(b.current("game-status"), b.number(1))
+    }
+  }
+  temporal {
+    new b.TemporalCheck {
+      id = "tetris.spawn-collision.eventually-game-over"
+      rule = "TETRIS-SPAWN-GAME-OVER"
+      scope = "path"
+      path { new b.ActionStep { action = "spawnBlocked" } }
+      formula = b.eventually(b.satisfies(b.equals(b.current("game-status"), b.number(1))))
+      expectation = "holds"
+    }
+  }
+  grounding = new b.Grounding {
+    maxSteps = 1
+    actions {
+      new b.ActionGrounding { action = "spawnBlocked"; implementation = d.codeRef("fixtures/tetris-lifecycle-implementation.mjs", "spawnBlocked") }
+    }
+  }
+}

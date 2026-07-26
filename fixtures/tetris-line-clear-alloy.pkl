@@ -1,0 +1,17 @@
+import "../examples/tetris.pkl" as base
+import "../dspec/Schema.pkl" as d
+import "../dspec/TetrisLineClear.pkl" as t
+
+model: d.Model = base.model
+
+/// The finite scope deliberately contains all 2^16 locked-cell subsets. A
+/// coordinate's y value increases upward, so rows above a cleared row fall to
+/// smaller y values.
+tetrisLineClearAlloy: t.TetrisLineClearAlloy = new {
+  id = "tetris.line-clear.alloy-v1"
+  terms { "tetris.board"; "tetris.cell"; "tetris.line-clear"; "tetris.lock" }
+  board = new t.Board { width = 4; height = 4 }
+  checks {
+    t.clearAndCompact("tetris.full-row.clear-and-compact.holds", "TETRIS-CLEAR-FULL-ROWS", 2, "holds")
+  }
+}

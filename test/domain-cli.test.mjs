@@ -96,6 +96,9 @@ test("renders DDD declarations and their source links in the Markdown projection
   assert.match(markdown.stdout, /### Aggregate purchase-order/);
   assert.match(markdown.stdout, /### Command create-purchase-order/);
   assert.match(markdown.stdout, /### Domain Formalization order-total-alloy/);
+  assert.match(markdown.stdout, /assumption: The bounded model abstracts an order to its reservation relation\./);
+  assert.match(markdown.stdout, /action: `create` → command: `create-purchase-order` → events: `purchase-order-created`/);
+  assert.match(markdown.stdout, /expected check: `order-total-alloy\.holds`/);
   assert.match(markdown.stdout, /## Specification Relationships/);
   assert.match(markdown.stdout, /checks-rule/);
   assert.match(markdown.stdout, /```mermaid/);
@@ -122,5 +125,7 @@ test("renders the specification relationship document from domain declarations",
   assert.match(result.stdout, /# Specification Relationships commerce-domain-fixture/);
   assert.match(result.stdout, /domain\/invariant\/order-total-non-negative/);
   assert.match(result.stdout, /domain\/formalization\/order-total-alloy/);
+  assert.match(result.stdout, /formal-action\/order-total-alloy\/create/);
+  assert.match(result.stdout, /implements-command/);
   assert.match(result.stdout, /```mermaid/);
 });

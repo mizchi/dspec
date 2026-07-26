@@ -93,6 +93,15 @@ model: d.Model = new {
             kind = "model"
             path = "fixtures/alloy-behavior-reservation.pkl"
           }
+          assumptions { "The bounded model abstracts an order to its reservation relation." }
+          actionMappings {
+            new d.DomainFormalizationAction {
+              action = "create"
+              command = "create-purchase-order"
+              events { "purchase-order-created" }
+            }
+          }
+          checks { "order-total-alloy.holds" }
         }
       }
     }

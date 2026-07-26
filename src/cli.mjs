@@ -49,6 +49,17 @@ import {
   validateDomainModel,
 } from "./core/domain.mjs";
 import {
+  domainTraceabilityReport,
+  renderDomainTraceabilityMarkdown,
+} from "./core/traceability.mjs";
+import {
+  verifyBehaviorImplementation,
+  verifyBehaviorModel,
+} from "./core/behavior.mjs";
+import { verifyAlloyBehaviorModel, verifyAlloyBehaviorWithAnalyzer } from "./core/alloy-behavior.mjs";
+import { verifyTetrisAlloyImplementation, verifyTetrisAlloyModel, verifyTetrisAlloyMutationWithAnalyzer, verifyTetrisAlloyWithAnalyzer } from "./core/tetris-alloy.mjs";
+import { verifyTetrisLineClearAlloyModel, verifyTetrisLineClearAlloyWithAnalyzer } from "./core/tetris-line-clear-alloy.mjs";
+import {
   RealAppCoreError,
   diffRealAppImportFacts,
   evaluateRealAppImport,
@@ -103,6 +114,8 @@ const TOP_LEVEL_COMMANDS = [
   { name: "conformance", usage: "dspec conformance [--json|--markdown] <model.pkl>" },
   { name: "query", usage: "dspec query [--json|--markdown] [--locale <locale>] [--answer <answer.json>] <model.pkl> <rule|term|evidence|impact|clause> <id> [selector]" },
   { name: "domain-coverage", usage: "dspec domain-coverage [--json] <model.pkl>" },
+  { name: "traceability", usage: "dspec traceability [--json|--markdown] [--gate] [--execute-formal-tools|--require-executed-formal-tools] <model.pkl>" },
+  { name: "formal-mutation", usage: "dspec formal-mutation [--json] [--require-formal-tools] <alloy-model.pkl>" },
   { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
   { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
@@ -293,6 +306,31 @@ incomplete constructor stubs. Other language generators consume the IR rather
 than reinterpreting the Pkl domain model. relationships renders the declared
 links among DDD declarations, normative Rules, checks, implementation evidence,
 and formalization artifacts as JSON, Markdown, or Mermaid.
+`;
+}
+
+function traceabilityUsage() {
+  return `usage:
+  dspec traceability [--json|--markdown] [--gate] [--execute-formal-tools|--require-executed-formal-tools] <model.pkl>
+
+Execute declared behavior and reference Alloy formalization targets, then
+report the bidirectional Rule → formal action → Command/Event →
+checker-evidence graph. --execute-formal-tools additionally runs Alloy 6 when
+available; --require-executed-formal-tools makes unavailable or failed formal
+tools fail the traceability result.
+Without --gate, uncovered declarations produce status=attention but do not
+fail the command. --gate makes every missing link or failed evidence result a
+CI failure.
+`;
+}
+
+function formalMutationUsage() {
+  return `usage:
+  dspec formal-mutation [--json] [--require-formal-tools] <alloy-model.pkl>
+
+Execute the mutation suite declared by a supported formal model. A mutation
+passes only when the original assertion has an Alloy counterexample. The first
+supported model is dspec.TetrisAlloy.
 `;
 }
 
@@ -4124,6 +4162,283 @@ function parseConformanceArgs(args) {
   }
   if (!file || (json && markdown)) throw new CommandError(usage());
   return { file, json, markdown };
+}
+
+function parseTraceabilityArgs(args) {
+  let json = false;
+  let markdown = false;
+  let gate = false;
+  let executeFormalTools = false;
+  let requireExecutedFormalTools = false;
+  let file = null;
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--gate") {
+      gate = true;
+      continue;
+    }
+    if (arg === "--execute-formal-tools") {
+      executeFormalTools = true;
+      continue;
+    }
+    if (arg === "--require-executed-formal-tools") {
+      executeFormalTools = true;
+      requireExecutedFormalTools = true;
+      continue;
+    }
+    if (!file && !arg.startsWith("-")) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(traceabilityUsage());
+  }
+  if (!file || (json && markdown)) throw new CommandError(traceabilityUsage());
+  return { file, json, markdown, gate, executeFormalTools, requireExecutedFormalTools };
+}
+
+function parseFormalMutationArgs(args) {
+  let json = false;
+  let requireFormalTools = false;
+  let file = null;
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--require-formal-tools") {
+      requireFormalTools = true;
+      continue;
+    }
+    if (!file && !arg.startsWith("-")) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(formalMutationUsage());
+  }
+  if (!file) throw new CommandError(formalMutationUsage());
+  return { file, json, requireFormalTools };
+}
+
+function behaviorTraceabilityEvidence(formalization, document, reference, grounding) {
+  const boundedChecks = list(reference.boundedReachability?.checks).map((check) => ({
+    id: check.id,
+    status: check.status,
+    assurance: check.assurance,
+    counterexample: check.status === "fail" && check.witness
+      ? { path: check.witness.path, trace: [check.witness.state], violation: { index: check.witness.depth, state: check.witness.state } }
+      : null,
+  }));
+  const temporalChecks = list(reference.temporal?.checks).map((check) => ({
+    id: check.id,
+    status: check.status,
+    assurance: check.assurance,
+    counterexample: check.witness ?? (check.violation
+      ? { path: [], trace: list(check.trace), violation: check.violation }
+      : null),
+  }));
+  return {
+    formalization: formalization.id,
+    status: reference.status === "pass" && grounding.status === "pass" ? "pass" : "fail",
+    actions: list(document.behavior?.actions).map((action) => action.id),
+    checks: [...boundedChecks, ...temporalChecks],
+    counterexamples: grounding.counterexample ? [{
+      check: "implementation-grounding",
+      path: grounding.counterexample.path,
+      trace: [grounding.counterexample.state, grounding.counterexample.actual?.state].filter(Boolean),
+      violation: { index: grounding.counterexample.depth, state: grounding.counterexample.actual?.state ?? grounding.counterexample.state },
+    }] : [],
+    errors: [...list(reference.errors), ...list(grounding.errors)],
+  };
+}
+
+function alloyToolExecution(analyzer, { requested, command }) {
+  if (!requested) {
+    return {
+      engine: "alloy6",
+      command,
+      version: null,
+      requested: false,
+      status: "not-requested",
+      reason: null,
+    };
+  }
+  const version = spawnSync(command, ["version"], { encoding: "utf8" });
+  return {
+    engine: "alloy6",
+    command,
+    version: version.status === 0 ? version.stdout.trim() || null : null,
+    requested: true,
+    status: analyzer.status,
+    reason: analyzer.reason ?? null,
+  };
+}
+
+function alloyTraceabilityEvidence(formalization, reference, analyzer, {
+  actions,
+  requested,
+  required,
+  command,
+}) {
+  const execution = alloyToolExecution(analyzer, { requested, command });
+  const analyzerAvailable = execution.status === "pass" || execution.status === "fail";
+  const checks = analyzerAvailable ? list(analyzer.checks) : list(reference.checks);
+  const toolFailed = execution.status === "fail" || (required && execution.status !== "pass");
+  const status = reference.status === "pass" && !toolFailed ? "pass" : "fail";
+  const errors = [
+    ...list(reference.errors),
+    ...list(analyzer?.errors),
+    ...(required && execution.status !== "pass"
+      ? [`formal tool execution is required but ${execution.engine} is ${execution.status}: ${execution.reason ?? "no executed evidence"}`]
+      : []),
+  ];
+  return {
+    formalization: formalization.id,
+    status,
+    execution,
+    actions,
+    checks: checks.map((check) => ({
+      id: check.id,
+      status: check.status,
+      assurance: check.assurance,
+      counterexample: check.status === "fail" ? check.counterexample ?? check.witness ?? null : null,
+    })),
+    counterexamples: [],
+    errors,
+  };
+}
+
+function alloyBehaviorTraceabilityEvidence(formalization, document, reference, analyzer, options) {
+  const evidence = alloyTraceabilityEvidence(formalization, reference, analyzer, { actions: [], ...options });
+  return {
+    // The initial reservation DSL has generated action names, rather than an
+    // action catalog. Keep this empty so an explicit mapping cannot silently
+    // claim it was executed.
+    ...evidence,
+  };
+}
+
+function normalizedTetrisGroundingCounterexample(counterexample) {
+  if (!counterexample) return null;
+  const state = {
+    board: `${counterexample.board.width}x${counterexample.board.height}`,
+    locked: counterexample.locked.map(([x, y]) => `(${x},${y})`).join(", "),
+    "expected spawn-open": counterexample.expected?.spawnOpen ?? null,
+    "actual spawn-open": counterexample.actual?.spawnOpen ?? null,
+  };
+  return { trace: [state], violation: { index: 0, state } };
+}
+
+function tetrisAlloyTraceabilityEvidence(formalization, reference, analyzer, grounding, options) {
+  const evidence = alloyTraceabilityEvidence(formalization, reference, analyzer, {
+    actions: ["rotate", "rejectRotation", "translateLeft", "rejectTranslateLeft", "startGameAtSpawn", "blockedSpawnGameOver", "stutter"],
+    ...options,
+  });
+  if (!grounding || grounding.status === "skip") return evidence;
+  const groundingCheck = {
+    id: grounding.check,
+    status: grounding.status,
+    assurance: grounding.assurance,
+    counterexample: grounding.status === "fail" ? normalizedTetrisGroundingCounterexample(grounding.counterexample) : null,
+  };
+  return {
+    ...evidence,
+    status: evidence.status === "pass" && grounding.status === "pass" ? "pass" : "fail",
+    checks: [...evidence.checks, groundingCheck],
+    errors: [...evidence.errors, ...list(grounding.errors)],
+  };
+}
+
+function tetrisLineClearAlloyTraceabilityEvidence(formalization, reference, analyzer, options) {
+  return alloyTraceabilityEvidence(formalization, reference, analyzer, {
+    actions: ["clearFullRows", "stutter"],
+    ...options,
+  });
+}
+
+async function formalizationEvidence(model, {
+  executeFormalTools = false,
+  requireExecutedFormalTools = false,
+  alloyCommand = process.env.ALLOY6_COMMAND ?? "alloy6",
+} = {}) {
+  const cache = new Map();
+  const analyzerCache = new Map();
+  const groundingCache = new Map();
+  const entries = [];
+  for (const formalization of list(domainPattern(model)?.formalizations)) {
+    const path = formalization.target?.path;
+    if (!path) {
+      entries.push({
+        formalization: formalization.id,
+        status: "fail",
+        actions: [],
+        checks: [],
+        counterexamples: [],
+        errors: [`formalization target path is missing: ${formalization.id}`],
+      });
+      continue;
+    }
+    let document;
+    try {
+      if (!cache.has(path)) cache.set(path, evalPklJson(path));
+      document = cache.get(path);
+      if (formalization.kind === "behavior") {
+        const reference = verifyBehaviorModel(document);
+        const grounding = await verifyBehaviorImplementation(document, { projectRoot: process.cwd() });
+        entries.push(behaviorTraceabilityEvidence(formalization, document, reference, grounding));
+      } else if (formalization.kind === "alloy-behavior") {
+        const options = {
+          requested: executeFormalTools,
+          required: requireExecutedFormalTools,
+          command: alloyCommand,
+        };
+        if (document.tetrisAlloy) {
+          if (executeFormalTools && !analyzerCache.has(path)) {
+            analyzerCache.set(path, verifyTetrisAlloyWithAnalyzer(document, { command: alloyCommand }));
+          }
+          if (!groundingCache.has(path)) {
+            groundingCache.set(path, await verifyTetrisAlloyImplementation(document, { projectRoot: process.cwd() }));
+          }
+          entries.push(tetrisAlloyTraceabilityEvidence(formalization, verifyTetrisAlloyModel(document), analyzerCache.get(path) ?? null, groundingCache.get(path), options));
+        } else if (document.tetrisLineClearAlloy) {
+          if (executeFormalTools && !analyzerCache.has(path)) {
+            analyzerCache.set(path, verifyTetrisLineClearAlloyWithAnalyzer(document, { command: alloyCommand }));
+          }
+          entries.push(tetrisLineClearAlloyTraceabilityEvidence(formalization, verifyTetrisLineClearAlloyModel(document), analyzerCache.get(path) ?? null, options));
+        } else {
+          if (executeFormalTools && !analyzerCache.has(path)) {
+            analyzerCache.set(path, verifyAlloyBehaviorWithAnalyzer(document, { command: alloyCommand }));
+          }
+          entries.push(alloyBehaviorTraceabilityEvidence(formalization, document, verifyAlloyBehaviorModel(document), analyzerCache.get(path) ?? null, options));
+        }
+      } else {
+        entries.push({
+          formalization: formalization.id,
+          status: "unexecuted",
+          actions: [],
+          checks: [],
+          counterexamples: [],
+          errors: [`no traceability runner for formalization kind: ${formalization.kind}`],
+        });
+      }
+    } catch (error) {
+      entries.push({
+        formalization: formalization.id,
+        status: "fail",
+        actions: [],
+        checks: [],
+        counterexamples: [],
+        errors: [error instanceof Error ? error.message : String(error)],
+      });
+    }
+  }
+  return entries;
 }
 
 function parseQueryArgs(args) {
@@ -12045,6 +12360,13 @@ function appendDomainModelMarkdown(lines, model, locale) {
     lines.push(`- kind: \`${entry.kind}\``);
     lines.push(`- assurance: \`${entry.assurance}\``);
     renderTarget(entry.target);
+    for (const assumption of list(entry.assumptions)) lines.push(`- assumption: ${assumption}`);
+    for (const mapping of list(entry.actionMappings).slice().sort((left, right) => String(left.action).localeCompare(String(right.action)))) {
+      const command = mapping.command ? `command: \`${mapping.command}\`` : null;
+      const events = list(mapping.events).length > 0 ? `events: ${list(mapping.events).slice().sort().map((event) => `\`${event}\``).join(", ")}` : null;
+      lines.push(`- action: ${[`\`${mapping.action}\``, command, events].filter(Boolean).join(" → ")}`);
+    }
+    for (const check of list(entry.checks).slice().sort()) lines.push(`- expected check: \`${check}\``);
     lines.push("");
   }
 }
@@ -19198,6 +19520,58 @@ async function run(argv) {
     const rendered = renderConformanceReport(report);
     if (report.status === "fail") throw new CommandError(rendered);
     process.stdout.write(rendered);
+    return;
+  }
+
+  if (command === "traceability") {
+    const { file, json, markdown, gate, executeFormalTools, requireExecutedFormalTools } = parseTraceabilityArgs(args);
+    const model = loadModel(file);
+    const errors = validate(model);
+    if (errors.length > 0) {
+      throw new CommandError(`${errors.join("\n")}\n`);
+    }
+
+    const report = domainTraceabilityReport(model, await formalizationEvidence(model, {
+      executeFormalTools,
+      requireExecutedFormalTools,
+    }));
+    if (json) {
+      process.stdout.write(stableJson(report));
+    } else if (markdown) {
+      process.stdout.write(renderDomainTraceabilityMarkdown(report, { locale: model.primaryLocale }));
+    } else {
+      process.stdout.write(
+        `ok: ${model.id} traceability (${report.status}; ${report.summary.anomalies} gaps)\n`,
+      );
+    }
+
+    if (report.status === "fail" || (gate && report.status !== "pass")) {
+      throw new CommandError(
+        `traceability ${report.status}: ${report.summary.anomalies} gaps\n`,
+      );
+    }
+    return;
+  }
+
+  if (command === "formal-mutation") {
+    const { file, json, requireFormalTools } = parseFormalMutationArgs(args);
+    const document = evalPklJson(file);
+    if (!document.tetrisAlloy) throw new CommandError(`formal mutation is not supported for this model: ${file}\n`);
+    const report = verifyTetrisAlloyMutationWithAnalyzer(document, {
+      command: process.env.ALLOY6_COMMAND ?? "alloy6",
+    });
+    if (json) {
+      process.stdout.write(stableJson(report));
+    } else if (report.status === "pass") {
+      process.stdout.write(`ok: ${document.tetrisAlloy.id} formal mutations (${report.mutations.length}/${report.mutations.length} detected)\n`);
+    } else if (report.status === "skip") {
+      process.stdout.write(`skipped: ${document.tetrisAlloy.id} formal mutations (${report.reason})\n`);
+    } else {
+      process.stdout.write(`formal mutation failed: ${report.errors.join("; ")}\n`);
+    }
+    if (report.status === "fail" || (requireFormalTools && report.status !== "pass")) {
+      throw new CommandError(`formal mutation ${report.status}: ${report.errors?.join("; ") ?? report.reason ?? "formal tool unavailable"}\n`);
+    }
     return;
   }
 

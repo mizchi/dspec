@@ -1,0 +1,40 @@
+{
+  "artifacts": [
+    {
+      "bytes": 43102,
+      "digest": "sha256:662688a1fe71b8666b8ab7adc863c66b9e7ec54095587ca90224dd5f648a3cfd",
+      "locale": "en",
+      "path": "docs/generated/tetris/en/rules.md"
+    },
+    {
+      "bytes": 43363,
+      "digest": "sha256:41124e69053f16d39c6c034e161dbe6f00ed191a8b9e14fcf0aad9e5614f63b8",
+      "locale": "ja",
+      "path": "docs/generated/tetris/ja/rules.md"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/markdown",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-25T19:03:33.997Z",
+  "model": {
+    "digest": "sha256:4e0efde99b417983efc1e2042c26f2fb0526541d984cd661296d913ebfdcd40f",
+    "id": "tetris-baseline",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "emitter": {
+      "name": "dspec/markdown",
+      "version": "1.0"
+    },
+    "freshness": "exact",
+    "id": "tetris-rules-markdown",
+    "kind": "markdown",
+    "matrix": "locales",
+    "output": "docs/generated/tetris/{locale}/rules.md",
+    "provenance": "docs/generated/tetris/provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

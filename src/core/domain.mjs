@@ -1,6 +1,8 @@
 export const DOMAIN_CODEGEN_IR_SCHEMA_VERSION = "1.0";
 export const DOMAIN_RELATIONSHIP_GRAPH_SCHEMA_VERSION = "1.0";
 
+const DOMAIN_REFINEMENT_KINDS = new Set(["input-abstraction", "transition-refinement"]);
+
 const FIELD_TYPES = new Set([
   "string",
   "integer",
@@ -83,8 +85,10 @@ function uniqueIds(errors, owner, values) {
 function fieldMaps(domainModel) {
   return {
     aggregates: new Map(list(domainModel?.aggregates).map((entry) => [entry.id, entry])),
+    commands: new Map(list(domainModel?.commands).map((entry) => [entry.id, entry])),
     entities: new Map(list(domainModel?.entities).map((entry) => [entry.id, entry])),
     enums: new Map(list(domainModel?.enums).map((entry) => [entry.id, entry])),
+    events: new Map(list(domainModel?.events).map((entry) => [entry.id, entry])),
     valueObjects: new Map(list(domainModel?.valueObjects).map((entry) => [entry.id, entry])),
   };
 }
@@ -140,6 +144,7 @@ export function validateDomainModel(model) {
   const events = list(domainModel.events);
   const invariants = list(domainModel.invariants);
   const formalizations = list(domainModel.formalizations);
+  const refinements = list(domainModel.refinements);
   const maps = fieldMaps(domainModel);
   const ruleIds = new Set(list(model?.rules).map((rule) => rule.id));
 
@@ -151,6 +156,7 @@ export function validateDomainModel(model) {
   uniqueIds(errors, "domain event", events);
   uniqueIds(errors, "domain invariant", invariants);
   uniqueIds(errors, "domain formalization", formalizations);
+  uniqueIds(errors, "domain refinement", refinements);
 
   const renderedTypes = new Map();
   for (const [kind, entries] of [["enum", enums], ["value object", valueObjects], ["entity", entities], ["command", commands], ["event", events]]) {
@@ -231,6 +237,55 @@ export function validateDomainModel(model) {
     if (!formalization?.id) continue;
     if (!ruleIds.has(formalization.rule)) errors.push(`unknown domain formalization rule: ${formalization.id} -> ${formalization.rule ?? "missing"}`);
     if (!formalization.target?.path) errors.push(`domain formalization target is missing: ${formalization.id}`);
+    const actionIds = new Set();
+    for (const mapping of list(formalization.actionMappings)) {
+      if (!mapping?.action) {
+        errors.push(`domain formalization action is missing: ${formalization.id}`);
+        continue;
+      }
+      if (actionIds.has(mapping.action)) errors.push(`duplicate domain formalization action: ${formalization.id} -> ${mapping.action}`);
+      actionIds.add(mapping.action);
+      if (mapping.command && !maps.commands.has(mapping.command)) {
+        errors.push(`unknown domain formalization command: ${formalization.id} -> ${mapping.command}`);
+      }
+      const eventIds = new Set();
+      for (const event of list(mapping.events)) {
+        if (eventIds.has(event)) errors.push(`duplicate domain formalization event: ${formalization.id}.${mapping.action} -> ${event}`);
+        eventIds.add(event);
+        if (!maps.events.has(event)) errors.push(`unknown domain formalization event: ${formalization.id}.${mapping.action} -> ${event}`);
+      }
+    }
+    const checkIds = new Set();
+    for (const check of list(formalization.checks)) {
+      if (checkIds.has(check)) errors.push(`duplicate domain formalization check: ${formalization.id} -> ${check}`);
+      checkIds.add(check);
+    }
+  }
+  const formalizationById = new Map(formalizations.map((formalization) => [formalization?.id, formalization]));
+  for (const refinement of refinements) {
+    if (!refinement?.id) continue;
+    if (!DOMAIN_REFINEMENT_KINDS.has(refinement.kind)) {
+      errors.push(`unknown domain refinement kind: ${refinement.id} -> ${refinement.kind ?? "missing"}`);
+    }
+    const source = formalizationById.get(refinement.sourceFormalization);
+    const target = formalizationById.get(refinement.targetFormalization);
+    if (!source) errors.push(`unknown domain refinement source formalization: ${refinement.id} -> ${refinement.sourceFormalization ?? "missing"}`);
+    if (!target) errors.push(`unknown domain refinement target formalization: ${refinement.id} -> ${refinement.targetFormalization ?? "missing"}`);
+    if (source && target && source.id === target.id) {
+      errors.push(`domain refinement source and target must differ: ${refinement.id} -> ${source.id}`);
+    }
+    if (!refinement.sourceCondition) errors.push(`domain refinement source condition is missing: ${refinement.id}`);
+    if (!refinement.targetCondition) errors.push(`domain refinement target condition is missing: ${refinement.id}`);
+    const checkIds = new Set();
+    const targetChecks = new Set(list(target?.checks));
+    if (list(refinement.checks).length === 0) errors.push(`domain refinement has no checks: ${refinement.id}`);
+    for (const check of list(refinement.checks)) {
+      if (checkIds.has(check)) errors.push(`duplicate domain refinement check: ${refinement.id} -> ${check}`);
+      checkIds.add(check);
+      if (target && !targetChecks.has(check)) {
+        errors.push(`domain refinement check is not declared by target formalization: ${refinement.id} -> ${check}`);
+      }
+    }
   }
 
   return errors.sort();
@@ -275,10 +330,11 @@ export function domainCodegenIr(model) {
       schemaVersion: DOMAIN_CODEGEN_IR_SCHEMA_VERSION,
       status: "fail",
       model: { id: model?.id ?? null, version: model?.version ?? null },
-      summary: { enums: 0, valueObjects: 0, entities: 0, aggregates: 0, commands: 0, events: 0, invariants: 0, formalizations: 0 },
+      summary: { enums: 0, valueObjects: 0, entities: 0, aggregates: 0, commands: 0, events: 0, invariants: 0, formalizations: 0, refinements: 0 },
       types: empty,
       invariants: [],
       formalizations: [],
+      refinements: [],
       errors,
     };
   }
@@ -341,11 +397,27 @@ export function domainCodegenIr(model) {
     kind: entry.kind,
     assurance: entry.assurance,
     assumptions: list(entry.assumptions).slice().sort(),
+    actionMappings: list(entry.actionMappings).map((mapping) => ({
+      action: mapping.action,
+      command: mapping.command ?? null,
+      events: list(mapping.events).slice().sort(),
+    })).sort((left, right) => left.action.localeCompare(right.action)),
+    checks: list(entry.checks).slice().sort(),
     target: {
       kind: entry.target.kind,
       path: entry.target.path,
       symbol: entry.target.symbol ?? null,
     },
+  }));
+  const refinements = list(domainModel.refinements).slice().sort(byId).map((entry) => ({
+    id: entry.id,
+    kind: entry.kind,
+    sourceFormalization: entry.sourceFormalization,
+    targetFormalization: entry.targetFormalization,
+    sourceCondition: entry.sourceCondition,
+    targetCondition: entry.targetCondition,
+    assumptions: list(entry.assumptions).slice().sort(),
+    checks: list(entry.checks).slice().sort(),
   }));
   return {
     schemaVersion: DOMAIN_CODEGEN_IR_SCHEMA_VERSION,
@@ -360,10 +432,12 @@ export function domainCodegenIr(model) {
       events: types.events.length,
       invariants: list(domainModel.invariants).length,
       formalizations: formalizations.length,
+      refinements: refinements.length,
     },
     types,
     invariants,
     formalizations,
+    refinements,
     errors: [],
   };
 }
@@ -423,6 +497,7 @@ export function domainRelationshipGraph(model) {
     { collection: "events", kind: "event", prefix: "domain/event" },
     { collection: "invariants", kind: "invariant", prefix: "domain/invariant" },
     { collection: "formalizations", kind: "formalization", prefix: "domain/formalization" },
+    { collection: "refinements", kind: "refinement", prefix: "domain/refinement" },
   ];
 
   const ruleNode = (ruleId) => {
@@ -482,6 +557,24 @@ export function domainRelationshipGraph(model) {
       if (collection === "formalizations") {
         addEdge(declarationId, "checks-rule", ruleNode(declaration.rule));
         addEdge(declarationId, "uses-artifact", artifactNode(declaration.target));
+        for (const mapping of list(declaration.actionMappings).slice().sort((left, right) => String(left.action).localeCompare(String(right.action)))) {
+          const actionId = addNode(`formal-action/${declaration.id}/${mapping.action}`, "formal-action", `formal action ${declaration.id}.${mapping.action}`);
+          addEdge(declarationId, "models-action", actionId);
+          if (mapping.command) addEdge(actionId, "implements-command", domainTargetNode("command", mapping.command));
+          for (const event of list(mapping.events).slice().sort()) addEdge(actionId, "emits-event", domainTargetNode("event", event));
+        }
+        for (const check of list(declaration.checks).slice().sort()) {
+          const checkId = addNode(`formal-check/${declaration.id}/${check}`, "formal-check", `formal check ${declaration.id}.${check}`);
+          addEdge(declarationId, "asserts-check", checkId);
+        }
+      }
+      if (collection === "refinements") {
+        addEdge(declarationId, "abstracts-formalization", domainTargetNode("formalization", declaration.sourceFormalization));
+        addEdge(declarationId, "refines-to-formalization", domainTargetNode("formalization", declaration.targetFormalization));
+        for (const check of list(declaration.checks).slice().sort()) {
+          const checkId = addNode(`formal-check/${declaration.targetFormalization}/${check}`, "formal-check", `formal check ${declaration.targetFormalization}.${check}`);
+          addEdge(declarationId, "asserts-check", checkId);
+        }
       }
     }
   }

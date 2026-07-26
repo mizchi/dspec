@@ -441,6 +441,16 @@ class DomainInvariant {
 /// Declares which deliberately authored formal artifact checks a Rule. This is
 /// a traceable choice of formalization, not an assertion that generated code is
 /// semantically equivalent to the domain model.
+///
+/// `action` is the formal model's action identifier. `command` and `events`
+/// connect that action to the ubiquitous language without prescribing a
+/// framework handler or claiming a complete implementation refinement.
+class DomainFormalizationAction {
+  action: Identifier
+  command: Identifier? = null
+  events: Listing<Identifier> = new {}
+}
+
 class DomainFormalization {
   id: Identifier
   rule: Identifier
@@ -448,6 +458,31 @@ class DomainFormalization {
   assurance: CheckAssuranceKind
   target: ImplementationRef
   assumptions: Listing<String(length > 0)> = new {}
+  actionMappings: Listing<DomainFormalizationAction> = new {}
+  /// Stable assertion identifiers expected from the target's checker report.
+  /// They make stale or incomplete evidence mechanically visible.
+  checks: Listing<Identifier> = new {}
+  text: LocalizedText? = null
+}
+
+/// Names the semantic role of an explicit link from an abstract
+/// formalization to a more concrete one. The link itself does not assert a
+/// complete proof of refinement: its stable `checks` name the bounded
+/// evidence that must be present in the concrete target.
+typealias DomainRefinementKind = "input-abstraction" | "transition-refinement"
+
+/// Connects two declared formalizations without hiding the abstraction step
+/// inside a prose assumption. `sourceCondition` and `targetCondition` are
+/// reviewable semantic labels; `checks` are the executable evidence anchors.
+class DomainFormalizationRefinement {
+  id: Identifier
+  kind: DomainRefinementKind
+  sourceFormalization: Identifier
+  targetFormalization: Identifier
+  sourceCondition: String(length > 0)
+  targetCondition: String(length > 0)
+  assumptions: Listing<String(length > 0)> = new {}
+  checks: Listing<Identifier> = new {}
   text: LocalizedText? = null
 }
 
@@ -463,6 +498,7 @@ class DomainModel {
   events: Listing<DomainEvent> = new {}
   invariants: Listing<DomainInvariant> = new {}
   formalizations: Listing<DomainFormalization> = new {}
+  refinements: Listing<DomainFormalizationRefinement> = new {}
 }
 
 /// One typed value accepted or produced by an Intent process.

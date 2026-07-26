@@ -1,0 +1,114 @@
+/// A deliberately narrow Alloy 6 frontend for the first relational slice of
+/// Tetris: a finite board, a four-cell tetromino, occupancy, and the outcome
+/// of a requested rotation. It does not encode coordinates, SRS kicks,
+/// scoring, line clears, or spawn rules.
+module dspec.TetrisAlloy
+
+import "./Schema.pkl" as d
+
+typealias Identifier = String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+typealias CheckKind = "alwaysInBounds" | "alwaysDisjoint" | "collisionRotationRejected" | "illegalTranslationRejected" | "clearSpawnStartsGame" | "blockedSpawnGameOver" | "spawnAvailabilityRefinesCoordinates"
+typealias Expectation = "holds" | "violated"
+
+class Board {
+  width: Int(this >= 1)
+  height: Int(this >= 1)
+  /// One occupied cell makes a colliding rotation concrete in the bounded
+  /// witness. This is a model scope, not the game's full initial state.
+  initialLockedCells: Int(this >= 1)
+}
+
+class Tetromino {
+  id: Identifier
+  /// The JavaScript frontend enforces exactly four cells.
+  blockCount: Int(this >= 1)
+}
+
+class Check {
+  id: Identifier
+  rule: Identifier
+  kind: CheckKind
+  expectation: Expectation
+  maxSteps: Int(this >= 1)
+}
+
+/// Grounds the coordinate-level `spawn-open` abstraction against a pure
+/// application adapter. The adapter receives `{ board, locked }` and returns
+/// `{ spawnOpen: 0 | 1 }`; the JavaScript verifier enumerates the selected
+/// finite board scope. This is conformance evidence, not an implementation
+/// refinement proof beyond that scope.
+class SpawnAvailabilityGrounding {
+  check: Identifier
+  implementation: d.ImplementationRef
+}
+
+function alwaysInBounds(checkId: Identifier, ruleId: Identifier, maximumSteps: Int(this >= 1), expected: Expectation): Check = new {
+  id = checkId
+  rule = ruleId
+  kind = "alwaysInBounds"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+function alwaysDisjoint(checkId: Identifier, ruleId: Identifier, maximumSteps: Int(this >= 1), expected: Expectation): Check = new {
+  id = checkId
+  rule = ruleId
+  kind = "alwaysDisjoint"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+function collisionRotationRejected(checkId: Identifier, ruleId: Identifier, maximumSteps: Int(this >= 1), expected: Expectation): Check = new {
+  id = checkId
+  rule = ruleId
+  kind = "collisionRotationRejected"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+function illegalTranslationRejected(checkId: Identifier, ruleId: Identifier, maximumSteps: Int(this >= 1), expected: Expectation): Check = new {
+  id = checkId
+  rule = ruleId
+  kind = "illegalTranslationRejected"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+/// Uses the finite board's actual spawn footprint rather than an unconstrained
+/// Boolean input. The JavaScript and Alloy backends keep one clear and one
+/// blocked witness so this implication cannot pass vacuously.
+function clearSpawnStartsGame(checkId: Identifier, ruleId: Identifier, maximumSteps: Int(this >= 1), expected: Expectation): Check = new {
+  id = checkId
+  rule = ruleId
+  kind = "clearSpawnStartsGame"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+function blockedSpawnGameOver(checkId: Identifier, ruleId: Identifier, maximumSteps: Int(this >= 1), expected: Expectation): Check = new {
+  id = checkId
+  rule = ruleId
+  kind = "blockedSpawnGameOver"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+/// Makes the abstraction boundary explicit: `spawn-open = 1` corresponds to
+/// an unblocked concrete spawn footprint. The generated Alloy assertion
+/// checks that correspondence over the selected finite board scope.
+function spawnAvailabilityRefinesCoordinates(checkId: Identifier, ruleId: Identifier, maximumSteps: Int(this >= 1), expected: Expectation): Check = new {
+  id = checkId
+  rule = ruleId
+  kind = "spawnAvailabilityRefinesCoordinates"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+class TetrisAlloy {
+  id: Identifier
+  terms: Listing<Identifier> = new {}
+  board: Board
+  tetromino: Tetromino
+  spawnAvailabilityGrounding: SpawnAvailabilityGrounding? = null
+  checks: Listing<Check> = new {}
+}

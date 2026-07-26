@@ -193,6 +193,66 @@ test("searches the explicitly finite action domain for bounded reachability", ()
   });
 });
 
+test("keeps the initial bounded-reachability frontier separate from discovered nodes", () => {
+  const system = {
+    id: "counter",
+    stateFields: [{ id: "count" }],
+    initialValues: [{ field: "count", value: 0 }],
+    actions: [{
+      id: "increment",
+      parameters: [],
+      guard: {
+        kind: "le",
+        terms: [
+          { kind: "literal", field: null, value: 0, children: [] },
+          { kind: "state", field: "count", value: null, children: [] },
+        ],
+        children: [],
+      },
+      updates: [{
+        field: "count",
+        value: {
+          kind: "add",
+          field: null,
+          value: null,
+          children: [
+            { kind: "state", field: "count", value: null, children: [] },
+            { kind: "literal", field: null, value: 1, children: [] },
+          ],
+        },
+      }],
+    }],
+    invariants: [],
+    boundedReachability: [{
+      id: "counter.reaches-three",
+      maxSteps: 3,
+      expectation: "reachable",
+      target: {
+        kind: "eq",
+        terms: [
+          { kind: "state", field: "count", value: null, children: [] },
+          { kind: "literal", field: null, value: 3, children: [] },
+        ],
+        children: [],
+      },
+    }],
+  };
+
+  const report = boundedReachabilityReport(system);
+
+  assert.equal(report.status, "pass");
+  assert.equal(report.checkedStates, 4);
+  assert.deepEqual(report.checks[0].witness, {
+    depth: 3,
+    state: { count: 3 },
+    path: [
+      { id: "increment", input: {} },
+      { id: "increment", input: {} },
+      { id: "increment", input: {} },
+    ],
+  });
+});
+
 test("keeps a bounded reachability witness when an unreachable claim is false", () => {
   const document = purchaseDocument();
   const check = document.leanCore.transitionSystem.boundedReachability

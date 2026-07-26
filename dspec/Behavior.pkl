@@ -110,12 +110,21 @@ function next(childFormula: TemporalFormula): TemporalFormula = new { kind = "ne
 function always(childFormula: TemporalFormula): TemporalFormula = new { kind = "always"; children { childFormula } }
 function eventually(childFormula: TemporalFormula): TemporalFormula = new { kind = "eventually"; children { childFormula } }
 
+/// A scheduling premise for one explicit finite trace. This records an
+/// assumption made by the selected path; it is deliberately not an infinite
+/// LTL fairness declaration.
+class FairSchedulingAssumption {
+  action: Identifier
+  reason: String(length > 0)
+}
+
 class TemporalCheck {
   id: Identifier
   rule: Identifier
   scope: TemporalScope = "path"
   maxSteps: Int? = null
   path: Listing<ActionStep> = new {}
+  fairness: Listing<FairSchedulingAssumption> = new {}
   formula: TemporalFormula
   expectation: TemporalExpectation
 }

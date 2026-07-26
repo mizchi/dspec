@@ -80,6 +80,12 @@ export {
 } from "./domain.mjs";
 
 export {
+  DOMAIN_TRACEABILITY_SCHEMA_VERSION,
+  domainTraceabilityReport,
+  renderDomainTraceabilityMarkdown,
+} from "./traceability.mjs";
+
+export {
   LEAN_SEMANTIC_CORE_SCHEMA_VERSION,
   boundedReachabilityReport,
   encodeLeanBooleanFormulaTseitin,
@@ -125,6 +131,25 @@ export {
   verifyAlloyBehaviorScopeMatrix,
   verifyAlloyBehaviorWithAnalyzer,
 } from "./alloy-behavior.mjs";
+
+export {
+  TETRIS_ALLOY_MODEL_SCHEMA_VERSION,
+  compileTetrisAlloyModel,
+  compileTetrisAlloyMutation,
+  validateTetrisAlloyModel,
+  verifyTetrisAlloyImplementation,
+  verifyTetrisAlloyMutationWithAnalyzer,
+  verifyTetrisAlloyModel,
+  verifyTetrisAlloyWithAnalyzer,
+} from "./tetris-alloy.mjs";
+
+export {
+  TETRIS_LINE_CLEAR_ALLOY_MODEL_SCHEMA_VERSION,
+  compileTetrisLineClearAlloyModel,
+  validateTetrisLineClearAlloyModel,
+  verifyTetrisLineClearAlloyModel,
+  verifyTetrisLineClearAlloyWithAnalyzer,
+} from "./tetris-line-clear-alloy.mjs";
 
 export {
   FORMAL_LINKS_SCHEMA_VERSION,

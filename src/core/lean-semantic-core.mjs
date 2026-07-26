@@ -385,6 +385,15 @@ function temporalScope(check) {
   return check?.scope ?? "path";
 }
 
+function temporalHasSchedulingAssumptions(check) {
+  return list(check?.fairness).length > 0;
+}
+
+function temporalAssurance(check) {
+  if (temporalScope(check) === "allPaths") return "bounded-all-paths";
+  return temporalHasSchedulingAssumptions(check) ? "finite-scheduled-trace" : "finite-trace";
+}
+
 /** Validate finite temporal checks against the closed transition-system AST. */
 export function validateLeanTemporalChecks(temporalChecks, system) {
   const errors = [];
@@ -399,6 +408,8 @@ export function validateLeanTemporalChecks(temporalChecks, system) {
       errors.push(`unsupported temporal expectation: ${check.id} -> ${check.expectation ?? "missing"}`);
     }
     const scope = temporalScope(check);
+    const fairness = list(check.fairness);
+    duplicateIds(fairness.map((assumption) => ({ id: assumption?.action })), `scheduling assumption for ${check.id}`, errors);
     if (!TEMPORAL_SCOPES.has(scope)) {
       errors.push(`unsupported temporal scope: ${check.id} -> ${scope}`);
     } else if (scope === "allPaths") {
@@ -407,6 +418,9 @@ export function validateLeanTemporalChecks(temporalChecks, system) {
       }
       if (list(check.path).length > 0) {
         errors.push(`all-path temporal check cannot declare an explicit path: ${check.id}`);
+      }
+      if (fairness.length > 0) {
+        errors.push(`all-path temporal check cannot declare scheduling assumptions: ${check.id}`);
       }
       for (const action of actions.values()) {
         for (const parameter of list(action.parameters)) {
@@ -436,6 +450,17 @@ export function validateLeanTemporalChecks(temporalChecks, system) {
         }
         for (const parameter of parameterFields) {
           if (!inputFields.has(parameter)) errors.push(`missing temporal path input: ${check.id}[${index}] -> ${parameter}`);
+        }
+      }
+      const pathActions = new Set(list(check.path).map((step) => step?.action).filter(Boolean));
+      for (const assumption of fairness) {
+        if (!actions.has(assumption?.action)) {
+          errors.push(`unknown scheduling assumption action: ${check.id} -> ${assumption?.action ?? "missing"}`);
+        } else if (!pathActions.has(assumption.action)) {
+          errors.push(`scheduling assumption action is absent from explicit path: ${check.id} -> ${assumption.action}`);
+        }
+        if (typeof assumption?.reason !== "string" || assumption.reason.length === 0) {
+          errors.push(`scheduling assumption requires a reason: ${check.id} -> ${assumption?.action ?? "missing"}`);
         }
       }
     }
@@ -1465,10 +1490,16 @@ export function evaluateLeanTemporalChecks(system, temporalChecks) {
         : (holds ? "fail" : "pass");
       checks.push({
         id: check.id,
-        assurance: "finite-trace",
+        assurance: temporalAssurance(check),
         expectation: check.expectation,
         status,
         trace,
+        ...(temporalHasSchedulingAssumptions(check) ? {
+          fairness: list(check.fairness).map((assumption) => ({
+            action: assumption.action,
+            reason: assumption.reason,
+          })),
+        } : {}),
         violation: holds ? null : temporalViolation(system, trace, check.formula),
       });
     } catch (error) {
@@ -1538,7 +1569,11 @@ export function boundedReachabilityReport(system) {
   const invocations = enumerateActionInvocations(system);
   const nodes = [{ depth: 0, state: initial, path: [] }];
   const visited = new Set([stateKey(initial, stateFields)]);
-  let frontier = nodes;
+  // `nodes` accumulates every discovered state for witness selection. The
+  // current frontier must be a different array: otherwise appending a newly
+  // discovered state while iterating depth zero makes the iterator consume the
+  // newly appended state too, effectively discarding the max-steps bound.
+  let frontier = [...nodes];
 
   for (let depth = 1; depth <= maxSteps; depth += 1) {
     const nextFrontier = [];
@@ -1769,7 +1804,7 @@ export function leanSemanticCoreSourceMap(document) {
     source: core.source,
   }));
   const temporalChecks = list(core.temporalChecks).map((check) => ({
-    assurance: temporalScope(check) === "allPaths" ? "bounded-all-paths" : "finite-trace",
+    assurance: temporalAssurance(check),
     claimId: check.id,
     declaration: check.declaration,
     ruleId: check.rule,

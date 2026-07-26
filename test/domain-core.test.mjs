@@ -61,6 +61,28 @@ function fixtureModel() {
           kind: "alloy-behavior",
           assurance: "bounded",
           target: { kind: "model", path: "fixtures/order-behavior.pkl" },
+          actionMappings: [{
+            action: "create",
+            command: "create-purchase-order",
+            events: ["purchase-order-created"],
+          }],
+          checks: ["order.total.holds"],
+        }, {
+          id: "order-total-behavior",
+          rule: "ORDER-TOTAL-NON-NEGATIVE",
+          kind: "behavior",
+          assurance: "bounded",
+          target: { kind: "model", path: "fixtures/order-behavior.pkl" },
+          checks: ["order.total.behavior.holds"],
+        }],
+        refinements: [{
+          id: "order-total-input-abstraction",
+          kind: "input-abstraction",
+          sourceFormalization: "order-total-behavior",
+          targetFormalization: "order-total-alloy",
+          sourceCondition: "total-input >= 0",
+          targetCondition: "no negative order total exists",
+          checks: ["order.total.holds"],
         }],
       },
     },
@@ -78,8 +100,9 @@ test("compiles Entity, Value Object, Aggregate, Command, Event, and Invariant de
     entities: 1,
     enums: 1,
     events: 1,
-    formalizations: 1,
+    formalizations: 2,
     invariants: 1,
+    refinements: 1,
     valueObjects: 1,
   });
   assert.deepEqual(ir.types.entities[0], {
@@ -99,7 +122,32 @@ test("compiles Entity, Value Object, Aggregate, Command, Event, and Invariant de
     kind: "alloy-behavior",
     assurance: "bounded",
     assumptions: [],
+    actionMappings: [{
+      action: "create",
+      command: "create-purchase-order",
+      events: ["purchase-order-created"],
+    }],
+    checks: ["order.total.holds"],
     target: { kind: "model", path: "fixtures/order-behavior.pkl", symbol: null },
+  }, {
+    id: "order-total-behavior",
+    rule: "ORDER-TOTAL-NON-NEGATIVE",
+    kind: "behavior",
+    assurance: "bounded",
+    assumptions: [],
+    actionMappings: [],
+    checks: ["order.total.behavior.holds"],
+    target: { kind: "model", path: "fixtures/order-behavior.pkl", symbol: null },
+  }]);
+  assert.deepEqual(ir.refinements, [{
+    id: "order-total-input-abstraction",
+    kind: "input-abstraction",
+    sourceFormalization: "order-total-behavior",
+    targetFormalization: "order-total-alloy",
+    sourceCondition: "total-input >= 0",
+    targetCondition: "no negative order total exists",
+    assumptions: [],
+    checks: ["order.total.holds"],
   }]);
   assert.deepEqual(ir.invariants, [{
     id: "order-total-non-negative",
@@ -145,6 +193,13 @@ test("projects DDD declarations, rules, evidence, and formalizations into one re
   assert.ok(graph.edges.some((edge) => edge.from === "domain/command/create-purchase-order" && edge.relation === "targets-aggregate" && edge.to === "domain/aggregate/purchase-order"));
   assert.ok(graph.edges.some((edge) => edge.from === "domain/invariant/order-total-non-negative" && edge.relation === "states-rule" && edge.to === "rule/ORDER-TOTAL-NON-NEGATIVE"));
   assert.ok(graph.edges.some((edge) => edge.from === "domain/formalization/order-total-alloy" && edge.relation === "checks-rule" && edge.to === "rule/ORDER-TOTAL-NON-NEGATIVE"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/formalization/order-total-alloy" && edge.relation === "models-action" && edge.to === "formal-action/order-total-alloy/create"));
+  assert.ok(graph.edges.some((edge) => edge.from === "formal-action/order-total-alloy/create" && edge.relation === "implements-command" && edge.to === "domain/command/create-purchase-order"));
+  assert.ok(graph.edges.some((edge) => edge.from === "formal-action/order-total-alloy/create" && edge.relation === "emits-event" && edge.to === "domain/event/purchase-order-created"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/formalization/order-total-alloy" && edge.relation === "asserts-check" && edge.to === "formal-check/order-total-alloy/order.total.holds"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/order-total-input-abstraction" && edge.relation === "abstracts-formalization" && edge.to === "domain/formalization/order-total-behavior"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/order-total-input-abstraction" && edge.relation === "refines-to-formalization" && edge.to === "domain/formalization/order-total-alloy"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/order-total-input-abstraction" && edge.relation === "asserts-check" && edge.to === "formal-check/order-total-alloy/order.total.holds"));
   assert.ok(graph.edges.some((edge) => edge.from === "rule/ORDER-TOTAL-NON-NEGATIVE" && edge.relation === "has-check" && edge.to.startsWith("check/node/")));
   assert.ok(graph.edges.some((edge) => edge.from === "rule/ORDER-TOTAL-NON-NEGATIVE" && edge.relation === "implemented-by" && edge.to === "artifact/code/src/core/domain.mjs#renderDomainTypescript"));
 
@@ -189,4 +244,16 @@ test("rejects an Aggregate whose root is not one of its declared Entity members"
 
   assert.equal(ir.status, "fail");
   assert.deepEqual(ir.errors, ["domain aggregate purchase-order must include its root purchase-order in members"]);
+});
+
+test("requires a refinement to anchor every check in its concrete formalization", () => {
+  const model = fixtureModel();
+  model.patterns.domain.refinements[0].checks = ["order.total.missing.holds"];
+
+  const ir = domainCodegenIr(model);
+
+  assert.equal(ir.status, "fail");
+  assert.deepEqual(ir.errors, [
+    "domain refinement check is not declared by target formalization: order-total-input-abstraction -> order.total.missing.holds",
+  ]);
 });

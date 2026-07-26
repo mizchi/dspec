@@ -140,6 +140,10 @@ export function compileBehaviorModel(document) {
         action: step?.action ?? null,
         input: Object.entries(record(step?.input) ?? {}).map(([field, value]) => ({ field, value })),
       })),
+      fairness: list(check?.fairness).map((assumption) => ({
+        action: assumption?.action ?? null,
+        reason: assumption?.reason ?? null,
+      })),
       formula: compileTemporalFormula(check?.formula),
       expectation: check?.expectation ?? null,
     })),

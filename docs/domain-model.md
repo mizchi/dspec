@@ -76,6 +76,35 @@ must still be interpreted according to its declared assurance: a bounded Alloy
 check is not a Lean proof, and neither proves that arbitrary application code
 matches the model.
 
+## Explicit refinement links
+
+When one model deliberately abstracts another, state that connection as a
+`DomainFormalizationRefinement` rather than only mentioning it in an
+assumption. It names the abstract and concrete formalizations, the condition
+on each side, and the stable check produced by the concrete model.
+
+```pkl
+new d.DomainFormalizationRefinement {
+  id = "spawn-open-from-coordinates"
+  kind = "input-abstraction"
+  sourceFormalization = "start-game-behavior"
+  targetFormalization = "coordinate-start-spawn-alloy"
+  sourceCondition = "spawn-open = 1"
+  targetCondition = "no (SpawnScenario.spawn & SpawnScenario.locked)"
+  checks { "tetris.coordinate-spawn.availability-refines-coordinates.holds" }
+}
+```
+
+The checker rejects an unknown endpoint, a self-link, an empty check list, or
+a check not declared by the concrete formalization. Traceability then requires
+passing evidence for both endpoints and for every named check. The condition
+strings remain reviewable labels; the bounded assertion named by `checks` is
+the machine-checkable evidence. A passing bounded check still establishes only
+the selected scope, not a complete refinement proof or application-code
+conformance. A concrete model may also contribute a finite implementation
+conformance check; that is separate evidence and must say which adapter and
+finite input space it exercised.
+
 ## Language-neutral IR
 
 ```sh
@@ -100,7 +129,8 @@ The relationship graph makes the links that are otherwise implicit in separate
 declarations reviewable in one place. It includes field references, Aggregate
 boundaries, Commands and Events, Invariant-to-Rule links, Formalization-to-
 artifact links, and each linked Rule's terms, checks, and implementation
-references.
+references. It also includes refinement nodes that connect an abstract
+formalization to its concrete target and assertion evidence.
 
 ```sh
 # Reviewable document with a Mermaid diagram

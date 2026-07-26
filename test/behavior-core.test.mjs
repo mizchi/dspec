@@ -78,6 +78,45 @@ test("compiles a Lean-free behavior DSL into the closed semantic model", () => {
   assert.match(compiled.generatedLeanSource, /def denote \(state : State\) \(action : Action\) : Option State/);
 });
 
+test("labels explicit scheduled traces as assumptions, not as a general fairness proof", () => {
+  const document = purchaseDocument();
+  const temporal = {
+    id: "purchase.eventually-empty-under-schedule.holds",
+    rule: "PURCHASE-CAPACITY",
+    scope: "path",
+    path: [{ action: "purchase", input: { quantity: 10 } }],
+    fairness: [{
+      action: "purchase",
+      reason: "The test scheduler supplies the declared purchase action.",
+    }],
+    formula: {
+      kind: "eventually",
+      constraint: null,
+      children: [{
+        kind: "state",
+        constraint: structuredClone(document.behavior.reachability[0].target),
+        children: [],
+      }],
+    },
+    expectation: "holds",
+  };
+  document.behavior.temporal = [temporal];
+
+  const compiled = compileBehaviorModel(document);
+  assert.deepEqual(compiled.temporalChecks[0].fairness, [{
+    action: "purchase",
+    reason: "The test scheduler supplies the declared purchase action.",
+  }]);
+
+  const report = verifyBehaviorModel(document);
+  assert.equal(report.status, "pass");
+  assert.equal(report.temporal.checks[0].assurance, "finite-scheduled-trace");
+  assert.deepEqual(report.temporal.checks[0].fairness, [{
+    action: "purchase",
+    reason: "The test scheduler supplies the declared purchase action.",
+  }]);
+});
+
 test("checks domain constraints and preserves an all-path counterexample", () => {
   const report = verifyBehaviorModel(purchaseDocument());
 
