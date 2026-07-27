@@ -12,11 +12,11 @@
       "executed": 5,
       "mutation-tested": 1,
       "proved": 0,
-      "reference": 77
+      "reference": 79
     },
     "rules": {
-      "satisfied": 77,
-      "total": 77
+      "satisfied": 79,
+      "total": 79
     },
     "targets": {
       "byKind": {
@@ -24,9 +24,9 @@
         "executed": 5,
         "mutation-tested": 1,
         "proved": 0,
-        "reference": 347
+        "reference": 356
       },
-      "total": 347
+      "total": 356
     }
   },
   "errors": [],
@@ -34,6 +34,6 @@
     "id": "dspec-self",
     "version": "0.1.0"
   },
-  "references": 1104,
+  "references": 1126,
   "status": "pass"
 }
