@@ -1,0 +1,71 @@
+import "../dspec/Schema.pkl" as d
+
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "localized-markdown"
+    kind = "markdown"
+    matrix = "locales"
+    output = "generated/projection-kinds/{locale}/spec.md"
+    provenance = "generated/projection-kinds/markdown.provenance.json"
+  }
+  new d.Projection {
+    id = "quickcheck"
+    kind = "quickcheck"
+    matrix = "single"
+    output = "generated/projection-kinds/spec.mjs"
+    provenance = "generated/projection-kinds/quickcheck.provenance.json"
+  }
+  new d.Projection {
+    id = "lean"
+    kind = "lean"
+    matrix = "single"
+    output = "generated/projection-kinds/Spec.lean"
+    provenance = "generated/projection-kinds/lean.provenance.json"
+  }
+  new d.Projection {
+    id = "alloy"
+    kind = "alloy"
+    matrix = "single"
+    output = "generated/projection-kinds/spec.als"
+    provenance = "generated/projection-kinds/alloy.provenance.json"
+  }
+  new d.Projection {
+    id = "tla"
+    kind = "tla"
+    matrix = "single"
+    output = "generated/projection-kinds/Spec.tla"
+    provenance = "generated/projection-kinds/tla.provenance.json"
+  }
+  new d.Projection {
+    id = "tla-cfg"
+    kind = "tla-cfg"
+    matrix = "single"
+    output = "generated/projection-kinds/Spec.cfg"
+    provenance = "generated/projection-kinds/tla-cfg.provenance.json"
+  }
+  new d.Projection {
+    id = "source-map"
+    kind = "source-map"
+    matrix = "single"
+    output = "generated/projection-kinds/source-map.json"
+    provenance = "generated/projection-kinds/source-map.provenance.json"
+  }
+  new d.Projection {
+    id = "generated-manifest"
+    kind = "generated-manifest"
+    matrix = "single"
+    output = "generated/projection-kinds/manifest.json"
+    provenance = "generated/projection-kinds/manifest.provenance.json"
+  }
+}
+
+model: d.Model = new {
+  id = "projection-all-kinds"
+  name = d.text("All projection kinds", "All projection kinds")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales {
+    "en"
+    "ja"
+  }
+}

@@ -1,0 +1,45 @@
+import "intent-contract.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  rules {
+    new d.Rule {
+      id = "INTENT-EXECUTION-BOUNDED"
+      kind = "invariant"
+      text = text("Intent 実行方針は有限に検査される", "Intent execution policy is checked finitely")
+      must {
+        d.clause("intent.execution.bounded", "Intent 実行方針は有限に検査される", "Intent execution policy is checked finitely")
+        d.clause("intent.execution.request.approve", "申請承認の実行方針を根拠づける", "Ground the request approval execution policy")
+      }
+      reviewStatus = "approved"
+      checks {
+        new d.CheckTarget {
+          backend = "node"
+          ref = "test/cli.test.mjs#projects bounded Intent execution policies into Markdown, QuickCheck, and TLA+"
+        }
+      }
+    }
+  }
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      processes = new {
+        (base.model.patterns.intent.processes[0]) {
+          execution = new d.IntentExecutionPolicy {
+            maxInFlight = 2
+            idempotencyKey = "requestId"
+            timeoutSteps = 2
+            timeoutMs = 1000
+          }
+        }
+      }
+    }
+  }
+}

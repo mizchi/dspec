@@ -1,0 +1,23 @@
+amends "pkl:test"
+
+import "../dspec/Schema.pkl" as d
+
+local model: d.Model = new {
+  id = "pkl-package-api"
+  name = d.text("Pkl package API", "Pkl package API")
+  version = "0.0.0"
+  primaryLocale = "en"
+  locales { "en" }
+}
+
+facts {
+  ["Schema facade exports Model"] {
+    model.id == "pkl-package-api"
+  }
+  ["Schema facade exports nodeCheck"] {
+    d.nodeCheck("tests/api.mjs#schema facade").backend == "node"
+  }
+  ["Schema facade exports codeRef"] {
+    d.codeRef("src/api.mjs", "run").kind == "code"
+  }
+}

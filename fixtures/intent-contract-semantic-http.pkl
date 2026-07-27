@@ -1,0 +1,25 @@
+import "intent-contract-http.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      semanticBindings {
+        new d.IntentSemanticBinding {
+          id = "request.approve-http-route"
+          process = "request.approve"
+          refinement = "request.approve-handler"
+          kind = "http-route"
+          target = "POST /requests/approve"
+        }
+        new d.IntentSemanticBinding {
+          id = "request.approve-otel-process"
+          process = "request.approve"
+          kind = "otel-attribute"
+          target = "dspec.intent.process"
+          value = "request.approve"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+import "../dspec/DailyDrift.pkl" as daily
+
+manifest: daily.Manifest = new {
+  id = "daily-drift-runtime"
+  targets {
+    new daily.Target {
+      id = "runtime-evidence"
+      kind = "runtime"
+      modelPath = "fixtures/runtime-model.pkl"
+      coreGates {
+        "check"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+      runtimeEvidence = "fixtures/runtime-evidence-collector.json"
+    }
+  }
+}

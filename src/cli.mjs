@@ -1,15 +1,24 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   CLAUSE_AST_SEMANTICS_VERSION,
   validateClauseAst,
 } from "./core/clause-ast.mjs";
+import {
+  conformanceReport,
+  validateConformanceModel,
+} from "./core/conformance.mjs";
+import {
+  querySpec,
+  renderSpecQueryMarkdown,
+  verifySpecAnswer,
+} from "./core/spec-query.mjs";
 import {
   ASSURANCE_EVIDENCE_SCHEMA_VERSION,
   assuranceDigest,
@@ -19,7 +28,40 @@ import {
   verifyAssuranceEvidenceManifest,
 } from "./core/assurance-evidence.mjs";
 import {
+  executeIntentRefinements,
+  exerciseIntentExecutionPolicies,
+  intentScenarioCorpusReport,
+  intentTraceCoverage,
+  intentTraceMutationReport,
+  intentTraceSchema,
+  verifyIntentTraces,
+} from "./core/intent.mjs";
+import {
+  protocolTestPlan,
+  validateProtocolTests,
+} from "./core/protocol-tests.mjs";
+import {
+  domainCodegenIr,
+  domainRelationshipGraph,
+  renderDomainRelationshipMarkdown,
+  renderDomainRelationshipMermaid,
+  renderDomainTypescript,
+  validateDomainModel,
+} from "./core/domain.mjs";
+import {
+  domainTraceabilityReport,
+  renderDomainTraceabilityMarkdown,
+} from "./core/traceability.mjs";
+import {
+  verifyBehaviorImplementation,
+  verifyBehaviorModel,
+} from "./core/behavior.mjs";
+import { verifyAlloyBehaviorModel, verifyAlloyBehaviorWithAnalyzer } from "./core/alloy-behavior.mjs";
+import { verifyTetrisAlloyImplementation, verifyTetrisAlloyModel, verifyTetrisAlloyMutationWithAnalyzer, verifyTetrisAlloyWithAnalyzer } from "./core/tetris-alloy.mjs";
+import { verifyTetrisLineClearAlloyModel, verifyTetrisLineClearAlloyWithAnalyzer } from "./core/tetris-line-clear-alloy.mjs";
+import {
   RealAppCoreError,
+  diffRealAppImportFacts,
   evaluateRealAppImport,
   importInfrastructureDocuments,
   infrastructureBindingId,
@@ -27,8 +69,15 @@ import {
   infrastructureDataStore,
   infrastructureDependencyKind,
   infrastructureService,
+  realAppImportFacts,
   realAppObservedDomain,
 } from "./core/real-app.mjs";
+import {
+  externalHoldoutCorpusReport,
+  externalHoldoutMutationReport,
+  normalizeRealAppImportFacts,
+  renderExternalHoldoutCorpusMarkdown,
+} from "./core/external-holdouts.mjs";
 import {
   createProjectionSnapshot,
   planProjectionChanges,
@@ -38,16 +87,41 @@ import {
   projectionStableJson,
   validateProjectionContracts,
 } from "./core/projection.mjs";
+import {
+  createTraceLock,
+  traceCheck,
+  traceSnapshot,
+} from "./core/trace-lock.mjs";
+import {
+  createTranslationLock,
+  translationCheck,
+  translationSnapshot,
+} from "./core/translation-lock.mjs";
 import { applyProjectionTransaction, recoverProjectionLock } from "./projection-filesystem.mjs";
+import { PklAdapterError, evaluatePklJson } from "./adapters/pkl.mjs";
 
 const TOP_LEVEL_COMMANDS = [
+  { name: "init", usage: "dspec init [--json] [--force] [--output <model.pkl>] [--lock <lock.json>] [model.pkl]" },
+  { name: "verify", usage: "dspec verify [--json] [--lock <lock.json>] [--require-lock] <model.pkl>" },
+  { name: "lock", usage: "dspec lock [--json] [--force] [--output <lock.json>] <model.pkl>" },
+  { name: "trace", usage: "dspec trace <reconcile|check> ..." },
+  { name: "translation", usage: "dspec translation <reconcile|check> ..." },
+  { name: "scaffold", usage: "dspec scaffold rule [--json] [--force] [--output <rule.pkl>] [--kind <kind>] [--term <id>] [--implementation <path#symbol>] [--test <path#anchor>] <model.pkl> <rule-id>" },
+  { name: "explain", usage: "dspec explain [--json|--markdown] [--lock <lock.json>] [--require-lock] <model.pkl>" },
   { name: "check", usage: "dspec check [--json] <model.pkl>" },
   { name: "drift", usage: "dspec drift [--json] <model.pkl>" },
   { name: "coverage", usage: "dspec coverage [--json] <model.pkl>" },
+  { name: "conformance", usage: "dspec conformance [--json|--markdown] <model.pkl>" },
+  { name: "query", usage: "dspec query [--json|--markdown] [--locale <locale>] [--answer <answer.json>] <model.pkl> <rule|term|evidence|impact|clause> <id> [selector]" },
   { name: "domain-coverage", usage: "dspec domain-coverage [--json] <model.pkl>" },
+  { name: "traceability", usage: "dspec traceability [--json|--markdown] [--gate] [--execute-formal-tools|--require-executed-formal-tools] <model.pkl>" },
+  { name: "formal-mutation", usage: "dspec formal-mutation [--json] [--require-formal-tools] <alloy-model.pkl>" },
   { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
   { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
+  { name: "domain", usage: "dspec domain <ir|generate|relationships> ..." },
+  { name: "intent", usage: "dspec intent <verify|exercise|generate-tests|test|schema> ..." },
+  { name: "daily-drift", usage: "dspec daily-drift <collect|approve> ..." },
   { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
   { name: "generated", usage: "dspec generated <check|unlock> ..." },
   {
@@ -62,6 +136,7 @@ const TOP_LEVEL_COMMANDS = [
   { name: "check-sql-queries", usage: "dspec check-sql-queries [--json] <model.pkl> <queries.sql>" },
   { name: "import-real-app", usage: "dspec import-real-app [--json|--pkl] <app-root>" },
   { name: "evaluate-real-app-import", usage: "dspec evaluate-real-app-import [--json] <evaluation.pkl>" },
+  { name: "evaluate-external-holdouts", usage: "dspec evaluate-external-holdouts [--json|--markdown] <corpus.pkl>" },
   { name: "reconcile-real-app", usage: "dspec reconcile-real-app [--json] <model.pkl> <observed.json>" },
   { name: "reverse-coverage", usage: "dspec reverse-coverage [--json] <model.pkl> <observed.json>" },
   { name: "check-app-profile", usage: "dspec check-app-profile [--json|--markdown] [--fix [--dry-run]] <profile.pkl...>" },
@@ -121,9 +196,9 @@ Typical flow:
 
 function evidenceUsage() {
   return `usage:
-  dspec evidence create [--json] [--output <manifest.json>] [--executed-at <iso>] [--require-formal-tools] <model.pkl>
+  dspec evidence create [--json] [--output <manifest.json>] [--executed-at <iso>] [--intent-report <exercise.json>] [--require-formal-tools] <model.pkl>
   dspec evidence verify [--json] <model.pkl> <manifest.json>
-  dspec evidence refresh [--json] [--executed-at <iso>] [--require-formal-tools] <model.pkl> <manifest.json>
+  dspec evidence refresh [--json] [--executed-at <iso>] [--intent-report <exercise.json>] [--require-formal-tools] <model.pkl> <manifest.json>
 `;
 }
 
@@ -132,6 +207,243 @@ function generatedUsage() {
   dspec generated check [--json] [--root <dir>] <model.pkl>
   dspec generated unlock [--json] [--force] [--root <dir>]
 `;
+}
+
+function initUsage() {
+  return `usage:
+  dspec init [--json] [--force] [--output <model.pkl>] [--lock <lock.json>] [model.pkl]
+
+Create a minimal Pkl model that imports this dspec package's Schema.pkl.
+
+Options:
+  --json                Emit the creation report as JSON.
+  --force               Replace an existing output file.
+  --output <model.pkl>  Select the output file (default: dspec.pkl).
+  --lock <lock.json>    Select the schema lock file (default: <model>.lock.json).
+`;
+}
+
+function lockUsage() {
+  return `usage:
+  dspec lock [--json] [--force] [--output <lock.json>] <model.pkl>
+
+Record the imported Schema.pkl module graph and package metadata in a lock file.
+
+Options:
+  --json               Emit the lock report as JSON.
+  --force              Replace an existing lock file.
+  --output <lock.json> Select the lock file (default: <model>.lock.json).
+`;
+}
+
+function traceUsage() {
+  return `usage:
+  dspec trace reconcile [--json] [--output <trace.lock.json>] <model.pkl>
+  dspec trace check [--json] [--gate] [--diff] [--lock <trace.lock.json>] <model.pkl>
+
+Materialize and compare a reviewed hash lock for Rule.id, its specification
+content, and explicitly declared implementation/test/check references.
+
+reconcile is the explicit approval step that replaces the trace lock.
+check reports drift without failing by default; add --gate for CI or a hook.
+--diff limits the gate to links whose source path is changed in the Git worktree.
+coverage (uncovered, impl-only, test-only, verified) is reported separately
+from hash drift.
+`;
+}
+
+function translationUsage() {
+  return `usage:
+  dspec translation reconcile [--json] [--output <translation.lock.json>] <model.pkl>
+  dspec translation check [--json] [--gate] [--lock <translation.lock.json>] <model.pkl>
+
+Materialize and compare a reviewed source-to-translation lock for LocalizedText.
+
+The model primaryLocale is the source language. i18n.requiredLocales selects
+targets; when it is empty, every declared non-primary locale is a target.
+reconcile is the explicit review step that replaces the translation lock.
+check reports stale source/translation or terminology changes; add --gate for CI.
+It detects freshness and required labels, not semantic equivalence of languages.
+`;
+}
+
+function scaffoldUsage() {
+  return `usage:
+  dspec scaffold rule [--json] [--force] [--output <rule.pkl>] [--kind <kind>] [--term <id>] [--implementation <path#symbol>] [--test <path#anchor>] <model.pkl> <rule-id>
+
+Emit a typed draft Rule fragment. The source model supplies its Schema.pkl import
+and vocabulary; the command never edits the source model automatically.
+
+Options:
+  --json                           Emit the scaffold report as JSON.
+  --force                          Replace an existing output file.
+  --output <rule.pkl>              Write the Pkl fragment instead of stdout.
+  --kind <kind>                    Rule kind (default: invariant).
+  --term <id>                      Refer to an existing vocabulary term; repeatable.
+  --implementation <path#symbol>  Add a code implementation reference.
+  --test <path#anchor>             Add a linked Node test check target.
+`;
+}
+
+function explainUsage() {
+  return `usage:
+  dspec explain [--json|--markdown] [--lock <lock.json>] [--require-lock] <model.pkl>
+
+Run the verification gates and normalize failures into source-linked diagnostics.
+`;
+}
+
+function domainUsage() {
+  return `usage:
+  dspec domain ir [--json] <model.pkl>
+  dspec domain generate --language typescript [--json] [--output <file.ts>] <model.pkl>
+  dspec domain relationships [--json|--markdown|--mermaid] [--output <file>] <model.pkl>
+
+Compile Entity, Value Object, Aggregate, Command, Domain Event, Invariant, and
+Formalization declarations to a language-neutral IR. The built-in TypeScript
+renderer emits domain-layer types, ports, event payloads, and deliberately
+incomplete constructor stubs. Other language generators consume the IR rather
+than reinterpreting the Pkl domain model. relationships renders the declared
+links among DDD declarations, normative Rules, checks, implementation evidence,
+and formalization artifacts as JSON, Markdown, or Mermaid.
+`;
+}
+
+function traceabilityUsage() {
+  return `usage:
+  dspec traceability [--json|--markdown] [--gate] [--execute-formal-tools|--require-executed-formal-tools] <model.pkl>
+
+Execute declared behavior and reference Alloy formalization targets, then
+report the bidirectional Rule → formal action → Command/Event →
+checker-evidence graph. --execute-formal-tools additionally runs Alloy 6 when
+available; --require-executed-formal-tools makes unavailable or failed formal
+tools fail the traceability result.
+Without --gate, uncovered declarations produce status=attention but do not
+fail the command. --gate makes every missing link or failed evidence result a
+CI failure.
+`;
+}
+
+function formalMutationUsage() {
+  return `usage:
+  dspec formal-mutation [--json] [--require-formal-tools] <alloy-model.pkl>
+
+Execute the mutation suite declared by a supported formal model. A mutation
+passes only when the original assertion has an Alloy counterexample. The first
+supported model is dspec.TetrisAlloy.
+`;
+}
+
+function parseDomainArgs(args, subcommand) {
+  let json = false;
+  let markdown = false;
+  let mermaid = false;
+  let language = null;
+  let outputFile = null;
+  const positional = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--mermaid") {
+      mermaid = true;
+      continue;
+    }
+    if (arg === "--language") {
+      language = args[index + 1] ?? null;
+      index += 1;
+      if (!language || language.startsWith("-")) throw new CommandError(`domain generate requires a language\n${domainUsage()}`);
+      continue;
+    }
+    if (arg === "--output") {
+      outputFile = args[index + 1] ?? null;
+      index += 1;
+      if (!outputFile || outputFile.startsWith("-")) throw new CommandError(`domain generate requires an output path\n${domainUsage()}`);
+      continue;
+    }
+    if (arg.startsWith("-")) throw new CommandError(`unknown domain ${subcommand} option: ${arg}\n${domainUsage()}`);
+    positional.push(arg);
+  }
+  if (positional.length !== 1) throw new CommandError(domainUsage());
+  if (Number(json) + Number(markdown) + Number(mermaid) > 1) throw new CommandError(`domain ${subcommand} accepts one output format\n${domainUsage()}`);
+  if (subcommand === "ir" && (language || outputFile || markdown || mermaid)) throw new CommandError(`domain ir does not accept --language, --output, --markdown, or --mermaid\n${domainUsage()}`);
+  if (subcommand === "generate" && language !== "typescript") {
+    throw new CommandError(`unsupported built-in domain language: ${language ?? "missing"}; use domain ir for an external renderer\n${domainUsage()}`);
+  }
+  if (subcommand === "generate" && (markdown || mermaid)) throw new CommandError(`domain generate does not accept --markdown or --mermaid\n${domainUsage()}`);
+  if (subcommand === "relationships" && language) throw new CommandError(`domain relationships does not accept --language\n${domainUsage()}`);
+  return { json, markdown, mermaid, language, outputFile, modelFile: positional[0] };
+}
+
+function writeDomainGeneratedSource(path, source) {
+  mkdirSync(dirname(resolve(path)), { recursive: true });
+  writeFileSync(path, source);
+  return { path, bytes: Buffer.byteLength(source, "utf8"), digest: assuranceDigest(source) };
+}
+
+function runDomainCommand(args) {
+  const [subcommand, ...rest] = args;
+  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    process.stdout.write(domainUsage());
+    return;
+  }
+  if (!["ir", "generate", "relationships"].includes(subcommand)) throw new CommandError(`unknown domain subcommand: ${subcommand}\n${domainUsage()}`);
+  const options = parseDomainArgs(rest, subcommand);
+  const model = loadModel(options.modelFile);
+  if (subcommand === "relationships") {
+    const graph = domainRelationshipGraph(model);
+    const errors = [...new Set([...validate(model), ...graph.errors])].sort();
+    const report = { ...graph, status: errors.length === 0 ? "pass" : "fail", errors };
+    const source = options.json
+      ? stableJson(report)
+      : options.mermaid
+        ? renderDomainRelationshipMermaid(report)
+        : renderDomainRelationshipMarkdown(report);
+    const output = options.outputFile ? writeDomainGeneratedSource(options.outputFile, source) : null;
+    if (options.json && output) process.stdout.write(stableJson({ ...report, output }));
+    else if (output) process.stdout.write(`ok: ${model.id} generated domain relationship document ${output.path}\n`);
+    else process.stdout.write(source);
+    if (report.status === "fail") throw new CommandError("domain relationship generation failed\n");
+    return;
+  }
+  const ir = domainCodegenIr(model);
+  const errors = [...new Set([...validate(model), ...ir.errors])].sort();
+  const report = {
+    ...ir,
+    status: errors.length === 0 ? "pass" : "fail",
+    errors,
+  };
+  if (subcommand === "ir") {
+    process.stdout.write(stableJson(report));
+    if (report.status === "fail") throw new CommandError("domain IR generation failed\n");
+    return;
+  }
+  if (report.status === "fail") {
+    if (options.json) process.stdout.write(stableJson(report));
+    throw new CommandError("domain code generation failed\n");
+  }
+  const source = renderDomainTypescript(model);
+  const generated = {
+    ...report,
+    language: options.language,
+    sourceDigest: assuranceDigest(source),
+    ...(options.outputFile ? { output: writeDomainGeneratedSource(options.outputFile, source) } : {}),
+  };
+  if (options.json) {
+    process.stdout.write(stableJson(generated));
+    return;
+  }
+  if (!options.outputFile) {
+    process.stdout.write(source);
+    return;
+  }
+  process.stdout.write(`ok: ${model.id} generated ${options.language} domain scaffold ${generated.output.path}\n`);
 }
 
 function specChangeCompatUsage() {
@@ -144,6 +456,1289 @@ Options:
   --json      Emit the compatibility report as JSON.
   --markdown  Emit a human-readable Markdown review report.
 `;
+}
+
+function intentUsage() {
+  return `usage:
+  dspec intent verify [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
+  dspec intent exercise [--json|--markdown] [--policy] [--timeout-ms <positive-int>] [--http-base-url <url>] [--output <report.json>] <model.pkl> <traces.json>
+  dspec intent generate-tests [--json] [--output <plan.json>] <model.pkl>
+  dspec intent test [--json|--markdown] [--timeout-ms <positive-int>] [--http-base-url <url>] [--grpc-runner <script-or-executable>] [--output <report.json>] <model.pkl>
+  dspec intent access [--json] <model.pkl> <process-id> <actor-or-role-id>
+  dspec intent bindings [--json|--markdown] <model.pkl> <observed-bindings.json>
+    dspec intent graph [--json|--markdown] [--locale <locale>] <model.pkl>
+  dspec intent corpus [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
+  dspec intent coverage [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
+  dspec intent mutation [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
+  dspec intent schema <model.pkl>
+
+Validate bounded implementation observations against typed Intent Process
+contracts and explicit refinement mappings, execute refinements, measure
+scenario corpus coverage, observation coverage, generate nearby negative trace
+cases, emit the trace document shape, or generate and execute reviewed finite
+protocol test vectors. generate-tests is transport-neutral. test invokes HTTP
+directly and invokes gRPC through the supplied JSON runner. The --policy
+option replays observed inputs, including duplicate idempotency keys, to a
+configured test or staging implementation.
+`;
+}
+
+function dailyDriftUsage() {
+  return `usage:
+  dspec daily-drift collect [--generated-at <iso>] [--require-formal-tools] [--fail-on-drift] [--baseline <approved-baseline.json>] [--output <directory>] <daily-drift-targets.pkl>
+  dspec daily-drift approve --approved-by <identity> --approval-id <id> --spec-change-review <target-id>=<review.pkl> [--spec-change-review <target-id>=<review.pkl> ...] [--generated-at <iso>] [--require-formal-tools] [--baseline <approved-baseline.json>] [--output <directory>] <daily-drift-targets.pkl>
+
+Collect an artifact-only daily Intent-to-formal-to-implementation drift packet,
+or write a replacement baseline after deterministic collection succeeds.
+`;
+}
+
+const DAILY_DRIFT_PACKET_SCRIPT = fileURLToPath(
+  new URL("../scripts/generate-daily-drift-packet.mjs", import.meta.url),
+);
+
+function runDailyDrift(args) {
+  const [operation, ...forwarded] = args;
+  if (!operation || operation === "--help" || operation === "-h" || operation === "help") {
+    process.stdout.write(dailyDriftUsage());
+    return;
+  }
+  if (!new Set(["collect", "approve"]).has(operation)) {
+    throw new CommandError(`unknown daily-drift operation: ${operation}\n${dailyDriftUsage()}`);
+  }
+
+  const childArgs = operation === "approve" ? ["--write-baseline", ...forwarded] : forwarded;
+  const result = spawnSync(process.execPath, [DAILY_DRIFT_PACKET_SCRIPT, ...childArgs], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  if (result.error) throw new CommandError(result.error.message);
+  if (result.stdout) process.stdout.write(result.stdout);
+  if (result.stderr) process.stderr.write(result.stderr);
+  if (typeof result.status === "number" && result.status !== 0) process.exitCode = result.status;
+}
+
+const DEFAULT_INTENT_EXERCISE_TIMEOUT_MS = 5000;
+const INTENT_FUNCTION_RUNNER = fileURLToPath(new URL("./adapters/intent-function-runner.mjs", import.meta.url));
+const INTENT_TRANSACTION_RUNNER = fileURLToPath(new URL("./adapters/intent-transaction-runner.mjs", import.meta.url));
+
+function parseIntentTraceArgs(args, subcommand) {
+  let json = false;
+  let markdown = false;
+  let outputFile = null;
+  let timeoutMs = DEFAULT_INTENT_EXERCISE_TIMEOUT_MS;
+  let httpBaseUrl = null;
+  let policy = false;
+  const positional = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--output") {
+      outputFile = args[index + 1] ?? null;
+      index += 1;
+      if (!outputFile) throw new CommandError(`missing value for --output\n${intentUsage()}`);
+      continue;
+    }
+    if (arg === "--timeout-ms") {
+      const value = args[index + 1] ?? null;
+      index += 1;
+      if (subcommand !== "exercise" || !value || !/^[1-9][0-9]*$/.test(value)) {
+        throw new CommandError(`--timeout-ms requires a positive integer for intent exercise\n${intentUsage()}`);
+      }
+      timeoutMs = Number(value);
+      continue;
+    }
+    if (arg === "--policy") {
+      if (subcommand !== "exercise") throw new CommandError(`--policy is available only for intent exercise\n${intentUsage()}`);
+      policy = true;
+      continue;
+    }
+    if (arg === "--http-base-url") {
+      const value = args[index + 1] ?? null;
+      index += 1;
+      if (subcommand !== "exercise" || !value) {
+        throw new CommandError(`--http-base-url requires a URL for intent exercise\n${intentUsage()}`);
+      }
+      try {
+        const url = new URL(value);
+        if (!['http:', 'https:'].includes(url.protocol)) throw new Error("unsupported protocol");
+      } catch {
+        throw new CommandError(`--http-base-url requires an http or https URL\n${intentUsage()}`);
+      }
+      httpBaseUrl = value;
+      continue;
+    }
+    if (arg.startsWith("-")) throw new CommandError(`unknown intent ${subcommand} option: ${arg}\n${intentUsage()}`);
+    positional.push(arg);
+  }
+  if (json && markdown) throw new CommandError(`intent ${subcommand} accepts only one output format\n${intentUsage()}`);
+  if (positional.length !== 2) throw new CommandError(intentUsage());
+  return { json, markdown, outputFile, timeoutMs, httpBaseUrl, policy, modelFile: positional[0], traceFile: positional[1] };
+}
+
+function parseIntentProtocolTestArgs(args, subcommand) {
+  let json = false;
+  let markdown = false;
+  let outputFile = null;
+  let timeoutMs = DEFAULT_INTENT_EXERCISE_TIMEOUT_MS;
+  let httpBaseUrl = null;
+  let grpcRunner = null;
+  const positional = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--output") {
+      outputFile = args[index + 1] ?? null;
+      index += 1;
+      if (!outputFile) throw new CommandError(`missing value for --output\n${intentUsage()}`);
+      continue;
+    }
+    if (arg === "--timeout-ms") {
+      const value = args[index + 1] ?? null;
+      index += 1;
+      if (subcommand !== "test" || !value || !/^[1-9][0-9]*$/.test(value)) {
+        throw new CommandError(`--timeout-ms requires a positive integer for intent test\n${intentUsage()}`);
+      }
+      timeoutMs = Number(value);
+      continue;
+    }
+    if (arg === "--http-base-url") {
+      const value = args[index + 1] ?? null;
+      index += 1;
+      if (subcommand !== "test" || !value) {
+        throw new CommandError(`--http-base-url requires a URL for intent test\n${intentUsage()}`);
+      }
+      try {
+        const url = new URL(value);
+        if (!["http:", "https:"].includes(url.protocol)) throw new Error("unsupported protocol");
+      } catch {
+        throw new CommandError(`--http-base-url requires an http or https URL\n${intentUsage()}`);
+      }
+      httpBaseUrl = value;
+      continue;
+    }
+    if (arg === "--grpc-runner") {
+      grpcRunner = args[index + 1] ?? null;
+      index += 1;
+      if (subcommand !== "test" || !grpcRunner || grpcRunner.startsWith("-")) {
+        throw new CommandError(`--grpc-runner requires a script or executable for intent test\n${intentUsage()}`);
+      }
+      continue;
+    }
+    if (arg.startsWith("-")) throw new CommandError(`unknown intent ${subcommand} option: ${arg}\n${intentUsage()}`);
+    positional.push(arg);
+  }
+  if (json && markdown) throw new CommandError(`intent ${subcommand} accepts only one output format\n${intentUsage()}`);
+  if (subcommand === "generate-tests" && markdown) throw new CommandError(`intent generate-tests supports JSON only\n${intentUsage()}`);
+  if (positional.length !== 1) throw new CommandError(intentUsage());
+  return { json, markdown, outputFile, timeoutMs, httpBaseUrl, grpcRunner, modelFile: positional[0] };
+}
+
+function parseIntentAccessArgs(args) {
+  let json = false;
+  const positional = [];
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg.startsWith("-")) throw new CommandError(`unknown intent access option: ${arg}\n${intentUsage()}`);
+    positional.push(arg);
+  }
+  if (positional.length !== 3) throw new CommandError(intentUsage());
+  return { json, modelFile: positional[0], process: positional[1], subject: positional[2] };
+}
+
+function parseIntentBindingArgs(args) {
+  let json = false;
+  let markdown = false;
+  const positional = [];
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg.startsWith("-")) throw new CommandError(`unknown intent bindings option: ${arg}\n${intentUsage()}`);
+    positional.push(arg);
+  }
+  if (json && markdown) throw new CommandError(`intent bindings accepts only one output format\n${intentUsage()}`);
+  if (positional.length !== 2) throw new CommandError(intentUsage());
+  return { json, markdown, modelFile: positional[0], observedFile: positional[1] };
+}
+
+function parseIntentGraphArgs(args) {
+  let json = false;
+  let markdown = false;
+  let locale = null;
+  const positional = [];
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--locale") {
+      locale = args[index + 1];
+      index += 1;
+      if (!locale || locale.startsWith("-")) throw new CommandError(`intent graph requires a locale value\n${intentUsage()}`);
+      continue;
+    }
+    if (arg.startsWith("-")) throw new CommandError(`unknown intent graph option: ${arg}\n${intentUsage()}`);
+    positional.push(arg);
+  }
+  if (json && markdown) throw new CommandError(`intent graph accepts only one output format\n${intentUsage()}`);
+  if (positional.length !== 1) throw new CommandError(intentUsage());
+  return { json, markdown, locale, modelFile: positional[0] };
+}
+
+function renderIntentTraceMarkdown(report) {
+  const lines = [
+    `# Intent Trace Verification ${report.model.id}`,
+    "",
+    `- status: \`${report.status}\``,
+    `- model: \`${report.model.id}@${report.model.version}\``,
+    `- traces: \`${report.summary.traces}\``,
+    `- steps: \`${report.summary.steps}\``,
+    `- refinements: \`${report.summary.refinements}\``,
+    `- contracts: \`${report.summary.contracts}\``,
+    "",
+    "## Evidence",
+    "",
+    "| Check | Scope | Status | Errors |",
+    "| --- | --- | --- | --- |",
+  ];
+  if (typeof report.summary.executedRefinements === "number") {
+    lines.splice(7, 0, `- executed refinements: \`${report.summary.executedRefinements}\``);
+  }
+  for (const check of report.evidence.checks) {
+    lines.push(`| ${check.id} | ${check.scope} | ${check.status} | ${check.errors.length} |`);
+  }
+  lines.push("", "## Traces", "", "| Trace | Source | Steps | Status |", "| --- | --- | --- | --- |");
+  for (const trace of report.traces) {
+    lines.push(`| ${trace.id ?? ""} | ${trace.source ?? ""} | ${trace.steps} | ${trace.status} |`);
+  }
+  if (Array.isArray(report.executions)) {
+    lines.push("", "## Executions", "", "| Trace | Step | Process | Refinement | Status |", "| --- | --- | --- | --- | --- |");
+    for (const execution of report.executions) {
+      lines.push(`| ${execution.traceId} | ${execution.step} | ${execution.process} | ${execution.refinement} | ${execution.status} |`);
+    }
+  }
+  if (report.executionPolicy) {
+    lines.push("", "## Execution Policy Observation", "");
+    if (report.executionPolicy.reason) lines.push(`- reason: ${report.executionPolicy.reason}`);
+    lines.push("| Process | Refinement | Replays | Client max in-flight | Status |", "| --- | --- | --- | --- | --- |");
+    for (const observation of report.executionPolicy.observations) {
+      lines.push(`| ${observation.process} | ${observation.refinement} | ${observation.pressure.replayCount} | ${observation.pressure.maxObservedInFlight} | ${observation.status} |`);
+    }
+    lines.push("", "Client-side pressure and equal observed responses do not prove an implementation's internal queue, distributed idempotency store, or database isolation.");
+  }
+  if (report.errors.length > 0) {
+    lines.push("", "## Errors", "");
+    for (const error of report.errors) lines.push(`- ${error}`);
+  }
+  lines.push("", "## Assumptions", "");
+  for (const assumption of report.evidence.assumptions) lines.push(`- ${assumption}`);
+  return `${lines.join("\n")}\n`;
+}
+
+function renderIntentCoverageMarkdown(report) {
+  const lines = [
+    `# Intent Trace Coverage ${report.model.id}`,
+    "",
+    `- status: \`${report.status}\``,
+    `- model: \`${report.model.id}@${report.model.version}\``,
+    `- coverage: \`${report.summary.coverage}\``,
+    `- covered: \`${report.summary.covered}/${report.summary.targets}\``,
+    "",
+    "| Kind | Targets | Covered | Uncovered |",
+    "| --- | --- | --- | --- |",
+  ];
+  for (const entry of report.summary.byKind) {
+    lines.push(`| ${entry.kind} | ${entry.targets} | ${entry.covered} | ${entry.uncovered} |`);
+  }
+  lines.push("", "## Targets", "", "| Kind | Target | Observations |", "| --- | --- | --- |");
+  for (const target of report.targets) {
+    const observations = target.observations.map((observation) => `${observation.traceId}#${observation.step}`).join(", ");
+    lines.push(`| ${target.kind} | ${target.id} | ${observations || "uncovered"} |`);
+  }
+  if (report.errors.length > 0) {
+    lines.push("", "## Errors", "");
+    for (const error of report.errors) lines.push(`- ${error}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function renderIntentScenarioCorpusMarkdown(report) {
+  const lines = [
+    `# Intent Scenario Corpus ${report.model.id}`,
+    "",
+    `- status: \`${report.status}\``,
+    `- model: \`${report.model.id}@${report.model.version}\``,
+    `- coverage: \`${report.summary.coverage}\``,
+    `- covered: \`${report.summary.covered}/${report.summary.required}\` required scenarios`,
+    "",
+    "## Observations",
+    "",
+    "| Scenario | Trace | Status |",
+    "| --- | --- | --- |",
+  ];
+  for (const observation of report.observations) {
+    lines.push(`| ${observation.scenario ?? "unassigned"} | ${observation.trace} | ${observation.status} |`);
+  }
+  if (report.suggestions.length > 0) {
+    lines.push("", "## Suggested Cases", "", "| Scenario | Initial State | Steps | Expected State | Reason |", "| --- | --- | --- | --- | --- |");
+    for (const suggestion of report.suggestions) {
+      const steps = suggestion.steps.map((step) => `${step.process} -> ${step.outcome}`).join("; ");
+      lines.push(`| ${suggestion.scenario} | ${suggestion.initialState} | ${steps} | ${suggestion.expectedState} | ${suggestion.reason} |`);
+    }
+  }
+  if (report.errors.length > 0) {
+    lines.push("", "## Errors", "");
+    for (const error of report.errors) lines.push(`- ${error}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function intentAccessPolicyDecision(model, processId, subjectId) {
+  const policies = intentAccessPolicies(intentPattern(model))
+    .filter((policy) => policy.process === processId && policy.subject === subjectId)
+    .slice()
+    .sort((left, right) => right.priority - left.priority || left.id.localeCompare(right.id));
+  return policies[0] ?? null;
+}
+
+function semanticBindingRecord(binding) {
+  return {
+    kind: binding.kind,
+    target: binding.target,
+    value: binding.value ?? null,
+  };
+}
+
+function semanticBindingKey(binding) {
+  const record = semanticBindingRecord(binding);
+  return `${record.kind}\u0000${record.target}\u0000${record.value ?? ""}`;
+}
+
+function intentSemanticBindingReport(model, document) {
+  const errors = validate(model);
+  const observed = [];
+  if (!document || typeof document !== "object" || Array.isArray(document)) {
+    errors.push("invalid semantic binding observation document");
+  } else {
+    if (document.schemaVersion !== "1.0") {
+      errors.push(`unsupported semantic binding schema version: ${document.schemaVersion ?? "missing"}`);
+    }
+    if (document.model?.id !== model.id) {
+      errors.push(`semantic binding model id mismatch: expected ${model.id}, got ${document.model?.id ?? "missing"}`);
+    }
+    if (document.model?.version !== model.version) {
+      errors.push(`semantic binding model version mismatch: expected ${model.version}, got ${document.model?.version ?? "missing"}`);
+    }
+    if (!Array.isArray(document.bindings)) {
+      errors.push("semantic binding observation document bindings must be an array");
+    } else {
+      for (const [index, binding] of document.bindings.entries()) {
+        if (!binding || typeof binding !== "object" || Array.isArray(binding)) {
+          errors.push(`invalid observed semantic binding at index ${index}`);
+          continue;
+        }
+        if (typeof binding.kind !== "string" || binding.kind.length === 0) {
+          errors.push(`observed semantic binding ${index} missing kind`);
+          continue;
+        }
+        if (typeof binding.target !== "string" || binding.target.length === 0) {
+          errors.push(`observed semantic binding ${index} missing target`);
+          continue;
+        }
+        if (binding.value !== null && binding.value !== undefined && typeof binding.value !== "string") {
+          errors.push(`observed semantic binding ${index} invalid value`);
+          continue;
+        }
+        observed.push({ kind: binding.kind, target: binding.target, value: binding.value ?? null });
+      }
+    }
+  }
+
+  const expected = intentSemanticBindings(intentPattern(model)).slice().sort(byId);
+  const expectedByKey = new Map(expected.map((binding) => [semanticBindingKey(binding), binding]));
+  const observedKeys = new Set();
+  for (const binding of observed) {
+    const key = semanticBindingKey(binding);
+    if (observedKeys.has(key)) errors.push(`duplicate observed semantic binding: ${binding.kind} ${binding.target}`);
+    observedKeys.add(key);
+  }
+  const missing = expected.filter((binding) => binding.required !== false && !observedKeys.has(semanticBindingKey(binding)));
+  const unmodeled = observed
+    .filter((binding) => !expectedByKey.has(semanticBindingKey(binding)))
+    .sort((left, right) => semanticBindingKey(left).localeCompare(semanticBindingKey(right)));
+  for (const binding of missing) errors.push(`missing required semantic binding: ${binding.id}`);
+  for (const binding of unmodeled) errors.push(`unmodeled observed semantic binding: ${binding.kind} ${binding.target}`);
+
+  const matched = expected.filter((binding) => observedKeys.has(semanticBindingKey(binding))).length;
+  return {
+    model: { id: model.id, version: model.version },
+    status: errors.length === 0 ? "pass" : "fail",
+    summary: {
+      matched,
+      missing: missing.length,
+      observed: observed.length,
+      required: expected.filter((binding) => binding.required !== false).length,
+      unmodeled: unmodeled.length,
+    },
+    missing: missing.map((binding) => ({ id: binding.id, ...semanticBindingRecord(binding) })),
+    unmodeled,
+    errors,
+  };
+}
+
+function renderIntentSemanticBindingMarkdown(report) {
+  const lines = [
+    `# Intent Semantic Bindings ${report.model.id}`,
+    "",
+    `- status: \`${report.status}\``,
+    `- matched: \`${report.summary.matched}/${report.summary.required}\` required bindings`,
+  ];
+  if (report.missing.length > 0) {
+    lines.push("", "## Missing", "");
+    for (const binding of report.missing) lines.push(`- ${binding.id}: ${binding.kind} ${binding.target}${binding.value === null ? "" : ` = ${binding.value}`}`);
+  }
+  if (report.unmodeled.length > 0) {
+    lines.push("", "## Unmodeled", "");
+    for (const binding of report.unmodeled) lines.push(`- ${binding.kind} ${binding.target}${binding.value === null ? "" : ` = ${binding.value}`}`);
+  }
+  if (report.errors.length > 0) {
+    lines.push("", "## Errors", "");
+    for (const error of report.errors) lines.push(`- ${error}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function intentClaimTaskCoverage(intent) {
+  const covered = new Map();
+  for (const task of intentAssuranceTasks(intent)) {
+    for (const claimId of list(task.claims)) {
+      covered.set(claimId, [...(covered.get(claimId) ?? []), task.id]);
+    }
+  }
+  return covered;
+}
+
+function intentClaimBindingCoverage(intent) {
+  const covered = new Map();
+  for (const binding of intentSemanticBindings(intent)) {
+    for (const claimId of list(binding.claims)) {
+      covered.set(claimId, [...(covered.get(claimId) ?? []), binding.id]);
+    }
+  }
+  return covered;
+}
+
+function intentGraphReport(model) {
+  const errors = validate(model);
+  const intent = intentPattern(model);
+  const goals = intentGoals(intent).slice().sort(byId);
+  const claims = intentClaims(intent).slice().sort(byId);
+  const tasks = intentAssuranceTasks(intent).slice().sort(byId);
+  const bindings = intentSemanticBindings(intent).slice().sort(byId);
+  const taskCoverage = intentClaimTaskCoverage(intent);
+  const bindingCoverage = intentClaimBindingCoverage(intent);
+  const implementationCoveredClaims = claims.filter((claim) => claim.requiredImplementationBinding === false || bindingCoverage.has(claim.id));
+
+  return {
+    model: { id: model.id, version: model.version },
+    status: errors.length === 0 ? "pass" : "fail",
+    summary: {
+      bindings: bindings.length,
+      claims: claims.length,
+      formalTasks: tasks.filter((task) => task.kind === "formal-model").length,
+      goals: goals.length,
+      implementationCoveredClaims: implementationCoveredClaims.length,
+      intents: new Set(goals.flatMap((goal) => list(goal.intents))).size,
+      taskCoveredClaims: claims.filter((claim) => taskCoverage.has(claim.id)).length,
+      tasks: tasks.length,
+    },
+    goals: goals.map((goal) => ({
+      id: goal.id,
+      priority: goal.priority,
+      intents: list(goal.intents).slice().sort(),
+      claims: list(goal.claims).slice().sort(),
+      nonGoals: list(goal.nonGoals).length,
+    })),
+    claims: claims.map((claim) => ({
+      id: claim.id,
+      kind: claim.kind,
+      processes: list(claim.processes).slice().sort(),
+      requiredImplementationBinding: claim.requiredImplementationBinding !== false,
+      tasks: list(taskCoverage.get(claim.id)).slice().sort(),
+      bindings: list(bindingCoverage.get(claim.id)).slice().sort(),
+    })),
+    tasks: tasks.map((task) => ({
+      id: task.id,
+      claims: list(task.claims).slice().sort(),
+      kind: task.kind,
+      backend: task.backend,
+      assurance: task.assurance,
+      target: { kind: task.target.kind, path: task.target.path, symbol: task.target.symbol ?? null },
+      assumptions: list(task.assumptions).slice().sort(),
+    })),
+    bindings: bindings.map((binding) => ({
+      id: binding.id,
+      claims: list(binding.claims).slice().sort(),
+      kind: binding.kind,
+      process: binding.process,
+      refinement: binding.refinement ?? null,
+      target: binding.target,
+      value: binding.value ?? null,
+    })),
+    ...(errors.length > 0 ? { errors } : {}),
+  };
+}
+
+function renderIntentGraphMarkdown(report, model, locale) {
+  const intent = intentPattern(model);
+  const goalsById = new Map(intentGoals(intent).map((goal) => [goal.id, goal]));
+  const claimsById = new Map(intentClaims(intent).map((claim) => [claim.id, claim]));
+  const tasksById = new Map(intentAssuranceTasks(intent).map((task) => [task.id, task]));
+  const lines = [
+    `# Intent Goal Graph ${report.model.id}`,
+    "",
+    `- status: \`${report.status}\``,
+    `- goals: \`${report.summary.goals}\``,
+    `- claims: \`${report.summary.claims}\``,
+    `- tasks: \`${report.summary.tasks}\``,
+    `- bindings: \`${report.summary.bindings}\``,
+  ];
+  for (const goal of report.goals) {
+    const source = goalsById.get(goal.id);
+    lines.push("", `### Goal ${goal.id}`, "");
+    if (source?.text) lines.push(text(source.text, locale), "");
+    lines.push(`- intents: ${goal.intents.map((id) => `\`${id}\``).join(", ") || "none"}`, `- claims: ${goal.claims.map((id) => `\`${id}\``).join(", ") || "none"}`);
+    for (const nonGoal of list(source?.nonGoals)) lines.push(`- non-goal: ${text(nonGoal, locale)}`);
+  }
+  for (const claim of report.claims) {
+    const source = claimsById.get(claim.id);
+    lines.push("", `### Claim ${claim.id}`, "");
+    if (source?.text) lines.push(text(source.text, locale), "");
+    lines.push(`- kind: \`${claim.kind}\``, `- processes: ${claim.processes.map((id) => `\`${id}\``).join(", ") || "none"}`, `- tasks: ${claim.tasks.map((id) => `\`${id}\``).join(", ") || "none"}`, `- bindings: ${claim.bindings.map((id) => `\`${id}\``).join(", ") || "none"}`, `- implementation binding required: \`${claim.requiredImplementationBinding}\``);
+  }
+  for (const task of report.tasks) {
+    const source = tasksById.get(task.id);
+    lines.push("", `### Assurance Task ${task.id}`, "");
+    if (source?.text) lines.push(text(source.text, locale), "");
+    lines.push(`- kind: \`${task.kind}\``, `- backend: \`${task.backend}\``, `- assurance: \`${task.assurance}\``, `- claims: ${task.claims.map((id) => `\`${id}\``).join(", ") || "none"}`, `- target: \`${task.target.kind} ${task.target.path}${task.target.symbol ? `#${task.target.symbol}` : ""}\``);
+    for (const assumption of task.assumptions) lines.push(`- assumption: ${assumption}`);
+  }
+  if (report.errors?.length > 0) lines.push("", "## Errors", "", ...report.errors.map((error) => `- ${error}`));
+  return `${lines.join("\n")}\n`;
+}
+
+function appendIntentGoalGraphMarkdown(lines, intent, locale) {
+  for (const goal of intentGoals(intent).sort(byId)) {
+    lines.push(`### Goal ${goal.id}`);
+    lines.push("");
+    lines.push(text(goal.text, locale));
+    lines.push("");
+    lines.push(`- priority: \`${goal.priority}\``);
+    for (const processId of list(goal.intents).sort()) {
+      lines.push(`- intent: \`${processId}\``);
+    }
+    for (const claimId of list(goal.claims).sort()) {
+      lines.push(`- claim: \`${claimId}\``);
+    }
+    for (const nonGoal of list(goal.nonGoals)) {
+      lines.push(`- non-goal: ${text(nonGoal, locale)}`);
+    }
+    lines.push("");
+  }
+
+  for (const claim of intentClaims(intent).sort(byId)) {
+    lines.push(`### Claim ${claim.id}`);
+    lines.push("");
+    lines.push(text(claim.text, locale));
+    lines.push("");
+    lines.push(`- kind: \`${claim.kind}\``);
+    for (const processId of list(claim.processes).sort()) {
+      lines.push(`- process: \`${processId}\``);
+    }
+    lines.push(`- implementation binding required: \`${claim.requiredImplementationBinding !== false}\``);
+    lines.push("");
+  }
+
+  for (const task of intentAssuranceTasks(intent).sort(byId)) {
+    lines.push(`### Assurance Task ${task.id}`);
+    lines.push("");
+    lines.push(text(task.text, locale));
+    lines.push("");
+    lines.push(`- kind: \`${task.kind}\``);
+    lines.push(`- backend: \`${task.backend}\``);
+    lines.push(`- assurance: \`${task.assurance}\``);
+    for (const claimId of list(task.claims).sort()) {
+      lines.push(`- claim: \`${claimId}\``);
+    }
+    const symbol = task.target.symbol ? `#${task.target.symbol}` : "";
+    lines.push(`- target: ${task.target.kind} ${task.target.path}${symbol}`);
+    for (const assumption of list(task.assumptions)) {
+      lines.push(`- assumption: ${assumption}`);
+    }
+    lines.push("");
+  }
+}
+
+function renderIntentMutationMarkdown(report) {
+  const lines = [
+    `# Intent Trace Mutation Score ${report.model.id}`,
+    "",
+    `- status: \`${report.status}\``,
+    `- score: \`${report.score}\``,
+    `- detected: \`${report.detected}/${report.generated}\``,
+    "",
+    "| Mutation | Kind | Trace | Step | Actual | Status | Shrinks | Errors |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+  ];
+  for (const mutation of report.mutations) {
+    lines.push(`| ${mutation.id} | ${mutation.kind} | ${mutation.traceId} | ${mutation.step} | ${mutation.actual} | ${mutation.status} | ${JSON.stringify(stableObject(mutation.shrinks))} | ${list(mutation.errors).join("<br>")} |`);
+  }
+  if (report.errors.length > 0) {
+    lines.push("", "## Errors", "");
+    for (const error of report.errors) lines.push(`- ${error}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function writeIntentTraceReport(path, report) {
+  const content = stableJson(report);
+  mkdirSync(dirname(resolve(path)), { recursive: true });
+  writeFileSync(path, content);
+  return { path, bytes: Buffer.byteLength(content, "utf8"), digest: assuranceDigest(content) };
+}
+
+function writeIntentAnalysisReport(report, options, render, successMessage) {
+  if (options.outputFile) report.output = writeIntentTraceReport(options.outputFile, report);
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    if (report.status === "fail") throw new CommandError("intent trace analysis failed\n");
+    return;
+  }
+  const markdown = render(report);
+  if (options.markdown) {
+    process.stdout.write(markdown);
+    if (report.status === "fail") throw new CommandError("intent trace analysis failed\n");
+    return;
+  }
+  if (report.status === "fail") throw new CommandError(markdown);
+  process.stdout.write(successMessage);
+}
+
+function intentTraceVerificationReport(model, traceDocument) {
+  return verifyIntentTraces(model, traceDocument, {
+    staticErrors: validate(model),
+    refinementErrors: validateDrift(model).errors,
+  });
+}
+
+function attachIntentTraceDocumentEvidence(report, model, traceFile) {
+  report.evidence.document = {
+    path: traceFile,
+    digest: assuranceDigest(readFileSync(resolve(traceFile), "utf8")),
+    modelDigest: assuranceDigest(model),
+  };
+  return report;
+}
+
+function generatedProtocolTraceReport(model, plan) {
+  const report = intentTraceVerificationReport(model, plan.traceDocument);
+  report.evidence.document = {
+    kind: "generated-protocol-test-plan",
+    digest: assuranceDigest(plan.traceDocument),
+    planDigest: assuranceDigest(plan),
+    modelDigest: assuranceDigest(model),
+  };
+  report.evidence.assumptions = [
+    ...report.evidence.assumptions,
+    "protocol test traces are generated from reviewed finite IntentProtocolTest cases; they do not prove behavior outside those cases",
+  ];
+  return report;
+}
+
+function intentImplementationPath(modelFile, implementation) {
+  const candidates = [
+    resolve(implementation.path),
+    resolve(dirname(resolve(modelFile)), implementation.path),
+  ];
+  return candidates.find((candidate) => existsSync(candidate)) ?? candidates[0];
+}
+
+function nodePermissionReadRoots(modelFile, implementationPath) {
+  return [...new Set([
+    resolve(process.cwd()),
+    dirname(resolve(modelFile)),
+    dirname(implementationPath),
+  ])].sort();
+}
+
+function intentInvocationTimeoutMs(context, fallbackTimeoutMs) {
+  const declared = context?.process?.execution?.timeoutMs;
+  return Number.isInteger(declared) && declared > 0 ? declared : fallbackTimeoutMs;
+}
+
+function invokeIntentChild(args, request, timeoutMs, label) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(process.execPath, args, {
+      cwd: process.cwd(),
+      stdio: ["pipe", "ignore", "pipe", "pipe"],
+    });
+    let settled = false;
+    let timedOut = false;
+    let stderr = "";
+    let raw = "";
+    const settle = (callback) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      callback();
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeoutMs);
+    child.stderr.setEncoding("utf8");
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    const reportStream = child.stdio[3];
+    reportStream.setEncoding("utf8");
+    reportStream.on("data", (chunk) => { raw += chunk; });
+    child.on("error", (error) => settle(() => rejectPromise(error)));
+    child.on("close", () => settle(() => {
+      if (timedOut) {
+        rejectPromise(new Error(`execution timed out after ${timeoutMs}ms`));
+        return;
+      }
+      let report;
+      try {
+        report = JSON.parse(raw.trim());
+      } catch {
+        rejectPromise(new Error(`${label} produced no valid report${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
+        return;
+      }
+      if (report.status !== "pass") {
+        rejectPromise(new Error(report.error ?? `${label} failed`));
+        return;
+      }
+      resolvePromise(report);
+    }));
+    child.stdin.end(JSON.stringify(request));
+  });
+}
+
+function invokeExternalJson(command, args, request, timeoutMs, label) {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const child = spawn(command, args, {
+      cwd: process.cwd(),
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    let settled = false;
+    let timedOut = false;
+    let stdout = "";
+    let stderr = "";
+    const settle = (callback) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      callback();
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeoutMs);
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk) => { stdout += chunk; });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("error", (error) => settle(() => rejectPromise(error)));
+    child.on("close", (code) => settle(() => {
+      if (timedOut) {
+        rejectPromise(new Error(`${label} timed out after ${timeoutMs}ms`));
+        return;
+      }
+      if (code !== 0) {
+        rejectPromise(new Error(`${label} exited with status ${code}${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
+        return;
+      }
+      try {
+        resolvePromise(JSON.parse(stdout.trim()));
+      } catch {
+        rejectPromise(new Error(`${label} produced no valid JSON response${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
+      }
+    }));
+    child.stdin.end(JSON.stringify(request));
+  });
+}
+
+function intentRefinementInvoker(modelFile, { timeoutMs, httpBaseUrl, grpcRunner = null }) {
+  const implementations = new Map();
+  const registerImplementation = (refinement, adapter, details = {}) => {
+    const implementation = refinement.implementation;
+    const path = intentImplementationPath(modelFile, implementation);
+    const implementationKey = `${refinement.id}\u0000${adapter}\u0000${path}\u0000${implementation.symbol}`;
+    if (!implementations.has(implementationKey)) {
+      implementations.set(implementationKey, {
+        refinement: refinement.id,
+        adapter,
+        kind: implementation.kind,
+        path: implementation.path,
+        symbol: implementation.symbol,
+        digest: existsSync(path) ? fileDigest(path) : null,
+        ...details,
+      });
+    }
+    return path;
+  };
+  const invokeFunction = async (refinement, input, context) => {
+    const implementation = refinement.implementation;
+    if (!implementation || !["code", "test"].includes(implementation.kind)) {
+      throw new Error(`Intent function refinement must use a code or test reference: ${refinement.id}`);
+    }
+    const path = registerImplementation(refinement, "node-permission-child-process");
+    const readRoots = nodePermissionReadRoots(modelFile, path);
+    const report = await invokeIntentChild(
+      [
+        "--permission",
+        ...readRoots.map((root) => `--allow-fs-read=${root}`),
+        INTENT_FUNCTION_RUNNER,
+        path,
+        implementation.symbol,
+      ],
+      { input },
+      intentInvocationTimeoutMs(context, timeoutMs),
+      "isolated runner",
+    );
+    return report.output;
+  };
+  const invokeHttpRoute = async (refinement, input, context) => {
+    const implementation = refinement.implementation;
+    const endpoint = refinement.http;
+    if (!implementation || !endpoint) throw new Error(`Intent HTTP refinement requires implementation and http endpoint: ${refinement.id}`);
+    if (!httpBaseUrl) throw new Error(`HTTP route execution requires --http-base-url: ${refinement.id}`);
+    const path = registerImplementation(refinement, "http-fetch", {
+      endpoint: {
+        method: endpoint.method,
+        path: endpoint.path,
+        expectedStatus: endpoint.expectedStatus,
+      },
+    });
+    if (!existsSync(path)) throw new Error(`Intent HTTP refinement implementation is missing: ${implementation.path}`);
+    const url = new URL(endpoint.path, httpBaseUrl);
+    let body = input === undefined ? null : JSON.stringify(input);
+    if (endpoint.method === "GET") {
+      for (const [key, value] of Object.entries(input && typeof input === "object" && !Array.isArray(input) ? input : {}).sort(([left], [right]) => left.localeCompare(right))) {
+        if (value !== null && value !== undefined) url.searchParams.append(key, String(value));
+      }
+      body = null;
+    }
+    const controller = new AbortController();
+    const invocationTimeoutMs = intentInvocationTimeoutMs(context, timeoutMs);
+    const timer = setTimeout(() => controller.abort(), invocationTimeoutMs);
+    let response;
+    try {
+      response = await fetch(url, {
+        method: endpoint.method,
+        headers: body === null ? { accept: "application/json" } : { accept: "application/json", "content-type": "application/json" },
+        ...(body === null ? {} : { body }),
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (controller.signal.aborted) throw new Error(`HTTP request timed out after ${invocationTimeoutMs}ms`);
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+    const expectedStatus = context?.expectedTransport?.expectedStatus ?? endpoint.expectedStatus;
+    if (response.status !== expectedStatus) {
+      throw new Error(`HTTP ${endpoint.method} ${endpoint.path} expected status ${expectedStatus}, got ${response.status}`);
+    }
+    const responseBody = await response.text();
+    if (responseBody.length === 0) return null;
+    try {
+      return JSON.parse(responseBody);
+    } catch {
+      throw new Error(`HTTP ${endpoint.method} ${endpoint.path} returned invalid JSON`);
+    }
+  };
+  const invokeGrpcMethod = async (refinement, input, context) => {
+    const implementation = refinement.implementation;
+    const endpoint = refinement.grpc;
+    if (!implementation || !endpoint) throw new Error(`Intent gRPC refinement requires implementation and grpc endpoint: ${refinement.id}`);
+    if (!grpcRunner) throw new Error(`gRPC method execution requires --grpc-runner: ${refinement.id}`);
+    const runnerPath = resolve(grpcRunner);
+    if (!existsSync(runnerPath)) throw new Error(`gRPC runner is missing: ${grpcRunner}`);
+    const sourcePath = registerImplementation(refinement, "grpc-external-runner", {
+      endpoint: {
+        method: endpoint.method,
+        expectedCode: endpoint.expectedCode,
+      },
+      runner: grpcRunner,
+    });
+    if (!existsSync(sourcePath)) throw new Error(`Intent gRPC refinement implementation is missing: ${implementation.path}`);
+    const invocationTimeoutMs = intentInvocationTimeoutMs(context, timeoutMs);
+    const isNodeScript = /\.(?:[cm]?js)$/i.test(runnerPath);
+    const response = await invokeExternalJson(
+      isNodeScript ? process.execPath : runnerPath,
+      isNodeScript ? [runnerPath] : [],
+      {
+        protocol: "dspec-grpc-runner-v1",
+        method: endpoint.method,
+        input,
+        timeoutMs: invocationTimeoutMs,
+      },
+      invocationTimeoutMs,
+      "gRPC runner",
+    );
+    if (!response || typeof response !== "object" || Array.isArray(response)) {
+      throw new Error("gRPC runner returned an invalid response record");
+    }
+    const expectedCode = context?.expectedTransport?.expectedCode ?? endpoint.expectedCode;
+    if (response.code !== expectedCode) {
+      throw new Error(`gRPC ${endpoint.method} expected code ${expectedCode}, got ${response.code ?? "missing"}`);
+    }
+    if (!("output" in response)) throw new Error(`gRPC ${endpoint.method} response is missing output`);
+    return response.output;
+  };
+  const invokeTransaction = async (refinement, input, context) => {
+    const implementation = refinement.implementation;
+    const endpoint = refinement.transaction;
+    if (!implementation || !["code", "test"].includes(implementation.kind)) {
+      throw new Error(`Intent transaction refinement must use a code or test reference: ${refinement.id}`);
+    }
+    if (!endpoint) throw new Error(`Intent transaction refinement requires transaction endpoint: ${refinement.id}`);
+    const dbTransaction = dbTransactions(dbPattern(context?.model)).find((candidate) => candidate.id === endpoint.dbTransaction);
+    if (!dbTransaction) throw new Error(`Intent transaction refinement references unknown DB transaction: ${endpoint.dbTransaction}`);
+    const path = registerImplementation(refinement, "node-transaction-journal-child-process", {
+      transaction: {
+        dbTransaction: endpoint.dbTransaction,
+        isolation: endpoint.isolation,
+      },
+    });
+    const readRoots = nodePermissionReadRoots(modelFile, path);
+    const report = await invokeIntentChild(
+      [
+        "--permission",
+        ...readRoots.map((root) => `--allow-fs-read=${root}`),
+        INTENT_TRANSACTION_RUNNER,
+        path,
+        implementation.symbol,
+      ],
+      {
+        input,
+        transaction: {
+          id: dbTransaction.id,
+          isolation: endpoint.isolation,
+          reads: list(dbTransaction.reads),
+          writes: list(dbTransaction.writes),
+          effects: list(context?.outcome?.effects).map((effect) => effect.id),
+        },
+      },
+      intentInvocationTimeoutMs(context, timeoutMs),
+      "transaction runner",
+    );
+    return {
+      __dspecIntentExecution: true,
+      output: report.output,
+      effects: report.transaction?.effects ?? [],
+      transaction: report.transaction ?? null,
+    };
+  };
+  const invoke = async (refinement, input, context) => {
+    if (refinement.kind === "function") return invokeFunction(refinement, input, context);
+    if (refinement.kind === "http-route") return invokeHttpRoute(refinement, input, context);
+    if (refinement.kind === "grpc-method") return invokeGrpcMethod(refinement, input, context);
+    if (refinement.kind === "transaction") return invokeTransaction(refinement, input, context);
+    throw new Error(`Intent refinement cannot be exercised: ${refinement.id} (${refinement.kind})`);
+  };
+  return {
+    invoke,
+    evidence() {
+      const records = [...implementations.values()].sort((left, right) => left.refinement.localeCompare(right.refinement));
+      const adapters = [...new Set(records.map((record) => record.adapter))].sort();
+      const runner = adapters.length === 1 ? adapters[0] ?? "none" : "mixed";
+      return {
+        runner,
+        invocation: "per-case",
+        timeoutMs,
+        node: process.version,
+        ...(adapters.some((adapter) => ["node-permission-child-process", "node-transaction-journal-child-process"].includes(adapter)) ? {
+          permissions: {
+            fsRead: "model-and-implementation-roots",
+            fsWrite: false,
+            childProcess: false,
+            worker: false,
+            network: "not-enforced",
+          },
+        } : {}),
+        implementations: records,
+      };
+    },
+  };
+}
+
+function writeIntentCommandReport(report, options, successMessage) {
+  if (options.outputFile) report.output = writeIntentTraceReport(options.outputFile, report);
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    if (report.status === "fail") throw new CommandError("intent trace verification failed\n");
+    return;
+  }
+  const markdown = renderIntentTraceMarkdown(report);
+  if (options.markdown) {
+    process.stdout.write(markdown);
+    if (report.status === "fail") throw new CommandError("intent trace verification failed\n");
+    return;
+  }
+  if (report.status === "fail") throw new CommandError(`${markdown}`);
+  process.stdout.write(successMessage);
+}
+
+async function runIntentCommand(args) {
+  const [subcommand, ...rest] = args;
+  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    process.stdout.write(intentUsage());
+    return;
+  }
+  if (subcommand === "schema") {
+    if (rest.length !== 1 || rest[0].startsWith("-")) throw new CommandError(intentUsage());
+    process.stdout.write(stableJson(intentTraceSchema(loadModel(rest[0]))));
+    return;
+  }
+  if (subcommand === "generate-tests") {
+    const options = parseIntentProtocolTestArgs(rest, subcommand);
+    const model = loadModel(options.modelFile);
+    const plan = protocolTestPlan(model);
+    const modelErrors = validate(model);
+    const errors = [...new Set([...modelErrors, ...plan.errors])].sort();
+    const report = {
+      ...plan,
+      status: errors.length === 0 ? "pass" : "fail",
+      errors,
+    };
+    if (options.outputFile) report.output = writeIntentTraceReport(options.outputFile, report);
+    if (options.json) process.stdout.write(stableJson(report));
+    else process.stdout.write(`ok: ${model.id} protocol test plan (${plan.summary.cases} cases)\n`);
+    if (report.status === "fail") throw new CommandError("intent protocol test generation failed\n");
+    return;
+  }
+  if (subcommand === "test") {
+    const options = parseIntentProtocolTestArgs(rest, subcommand);
+    const model = loadModel(options.modelFile);
+    const plan = protocolTestPlan(model);
+    const traceReport = generatedProtocolTraceReport(model, plan);
+    const runner = intentRefinementInvoker(options.modelFile, options);
+    const preconditionErrors = plan.summary.cases === 0 ? ["protocol test plan has no cases"] : [];
+    const exercise = traceReport.status === "pass" && plan.status === "pass" && preconditionErrors.length === 0
+      ? await executeIntentRefinements(model, plan.traceDocument, runner.invoke)
+      : {
+        status: "skip",
+        summary: { executedRefinements: 0 },
+        executions: [],
+        errors: [],
+        reason: preconditionErrors[0] ?? "protocol test plan validation failed",
+      };
+    const errors = [...new Set([...traceReport.errors, ...plan.errors, ...preconditionErrors, ...exercise.errors])].sort();
+    const report = {
+      ...traceReport,
+      executedAt: new Date().toISOString(),
+      status: errors.length === 0 ? "pass" : "fail",
+      summary: { ...traceReport.summary, ...plan.summary, executedRefinements: exercise.summary.executedRefinements },
+      protocolTestPlan: {
+        schemaVersion: plan.protocolTestPlanSchemaVersion,
+        summary: plan.summary,
+        operations: plan.operations,
+        errors: plan.errors,
+      },
+      executions: exercise.executions,
+      evidence: {
+        ...traceReport.evidence,
+        assumptions: [
+          ...traceReport.evidence.assumptions,
+          "the selected HTTP endpoint or gRPC runner is trusted to represent the target test or staging deployment",
+        ],
+        execution: runner.evidence(),
+        checks: [
+          ...traceReport.evidence.checks,
+          {
+            id: "intent-generated-protocol-plan",
+            scope: "protocol-test-plan",
+            status: plan.status === "pass" && preconditionErrors.length === 0 ? "pass" : "fail",
+            errors: [...plan.errors, ...preconditionErrors],
+          },
+          {
+            id: "intent-executed-refinement",
+            scope: "refinement-execution",
+            status: exercise.status,
+            errors: exercise.errors,
+            ...(exercise.reason ? { reason: exercise.reason } : {}),
+          },
+        ],
+      },
+      errors,
+    };
+    writeIntentCommandReport(report, options, `ok: ${model.id} generated protocol tests (${exercise.summary.executedRefinements}/${plan.summary.cases} cases)\n`);
+    return;
+  }
+  if (subcommand === "access") {
+    const options = parseIntentAccessArgs(rest);
+    const model = loadModel(options.modelFile);
+    const errors = validate(model);
+    const intentProcess = intentProcesses(intentPattern(model)).find((candidate) => candidate.id === options.process);
+    const subject = list(model.vocabulary).find((candidate) => candidate.id === options.subject);
+    if (!intentProcess) errors.push(`unknown intent access process: ${options.process}`);
+    if (!subject || !["actor", "role"].includes(subject.kind)) {
+      errors.push(`intent access subject must be an actor or role: ${options.subject}`);
+    }
+    const policy = intentProcess && subject ? intentAccessPolicyDecision(model, options.process, options.subject) : null;
+    const report = {
+      decision: policy?.decision ?? "unspecified",
+      model: { id: model.id, version: model.version },
+      policy: policy
+        ? { id: policy.id, overrides: list(policy.overrides).slice().sort(), priority: policy.priority }
+        : null,
+      process: options.process,
+      status: errors.length === 0 ? "pass" : "fail",
+      subject: options.subject,
+      ...(errors.length > 0 ? { errors } : {}),
+    };
+    if (options.json) process.stdout.write(stableJson(report));
+    else process.stdout.write(`ok: ${model.id} intent access ${options.process} ${options.subject} -> ${report.decision}\n`);
+    if (errors.length > 0) throw new CommandError("intent access resolution failed\n");
+    return;
+  }
+  if (subcommand === "bindings") {
+    const options = parseIntentBindingArgs(rest);
+    const model = loadModel(options.modelFile);
+    const report = intentSemanticBindingReport(model, readJsonFile(options.observedFile, "semantic binding observation document"));
+    if (options.json) process.stdout.write(stableJson(report));
+    else if (options.markdown) process.stdout.write(renderIntentSemanticBindingMarkdown(report));
+    else process.stdout.write(report.status === "pass" ? `ok: ${model.id} semantic bindings (${report.summary.matched}/${report.summary.required})\n` : renderIntentSemanticBindingMarkdown(report));
+    if (report.status === "fail") throw new CommandError("intent semantic binding drift detected\n");
+    return;
+  }
+  if (subcommand === "graph") {
+    const options = parseIntentGraphArgs(rest);
+    const model = loadModel(options.modelFile);
+    const report = intentGraphReport(model);
+    const locale = options.locale ?? model.primaryLocale;
+    if (options.json) process.stdout.write(stableJson(report));
+    else if (options.markdown) process.stdout.write(renderIntentGraphMarkdown(report, model, locale));
+    else process.stdout.write(report.status === "pass"
+      ? `ok: ${report.model.id} intent graph (${report.summary.goals} goals, ${report.summary.claims} claims)\n`
+      : renderIntentGraphMarkdown(report, model, locale));
+    if (report.status === "fail") throw new CommandError("intent goal graph validation failed\n");
+    return;
+  }
+  if (!["verify", "exercise", "corpus", "coverage", "mutation"].includes(subcommand)) throw new CommandError(`unknown intent subcommand: ${subcommand}\n${intentUsage()}`);
+  const options = parseIntentTraceArgs(rest, subcommand);
+  const model = loadModel(options.modelFile);
+  const traceDocument = readJsonFile(options.traceFile, "intent trace document");
+  const traceReport = attachIntentTraceDocumentEvidence(intentTraceVerificationReport(model, traceDocument), model, options.traceFile);
+  if (subcommand === "verify") {
+    writeIntentCommandReport(traceReport, options, `ok: ${model.id} intent traces (${traceReport.summary.traces} traces, ${traceReport.summary.steps} steps)\n`);
+    return;
+  }
+  const verificationOptions = {
+    staticErrors: validate(model),
+    refinementErrors: validateDrift(model).errors,
+  };
+  if (subcommand === "corpus") {
+    const report = intentScenarioCorpusReport(model, traceDocument, verificationOptions);
+    report.document = traceReport.evidence.document;
+    writeIntentAnalysisReport(report, options, renderIntentScenarioCorpusMarkdown, `ok: ${model.id} intent scenario corpus (${report.summary.covered}/${report.summary.required} required scenarios)\n`);
+    return;
+  }
+  if (subcommand === "coverage") {
+    const report = intentTraceCoverage(model, traceDocument, verificationOptions);
+    report.document = traceReport.evidence.document;
+    writeIntentAnalysisReport(report, options, renderIntentCoverageMarkdown, `ok: ${model.id} intent trace coverage (${report.summary.covered}/${report.summary.targets} targets)\n`);
+    return;
+  }
+  if (subcommand === "mutation") {
+    const report = intentTraceMutationReport(model, traceDocument, verificationOptions);
+    report.document = traceReport.evidence.document;
+    writeIntentAnalysisReport(report, options, renderIntentMutationMarkdown, `ok: ${model.id} intent trace mutations (${report.detected}/${report.generated} detected)\n`);
+    return;
+  }
+  const runner = intentRefinementInvoker(options.modelFile, options);
+  const exercise = traceReport.status === "pass"
+    ? await executeIntentRefinements(model, traceDocument, runner.invoke)
+    : { status: "skip", summary: { executedRefinements: 0 }, executions: [], errors: [], reason: "intent trace verification failed" };
+  const executionPolicy = options.policy
+    ? (traceReport.status === "pass" && exercise.status === "pass"
+      ? await exerciseIntentExecutionPolicies(model, traceDocument, runner.invoke)
+      : {
+        status: "skip",
+        summary: { policies: 0, replays: 0 },
+        observations: [],
+        errors: [],
+        reason: exercise.status === "fail" ? "refinement execution failed" : "intent trace verification failed",
+      })
+    : null;
+  const errors = [...traceReport.errors, ...exercise.errors, ...list(executionPolicy?.errors)];
+  const report = {
+    ...traceReport,
+    executedAt: new Date().toISOString(),
+    status: errors.length === 0 ? "pass" : "fail",
+    summary: { ...traceReport.summary, executedRefinements: exercise.summary.executedRefinements },
+    executions: exercise.executions,
+    ...(executionPolicy ? { executionPolicy } : {}),
+    evidence: {
+      ...traceReport.evidence,
+      ...(executionPolicy ? {
+        assumptions: [
+          ...traceReport.evidence.assumptions,
+          "Execution-policy replay records client-side pressure and finite output/effect consistency; it does not prove an implementation's internal queue, distributed idempotency store, DB isolation, or deployed capacity.",
+        ],
+      } : {}),
+      execution: runner.evidence(),
+      checks: [
+        ...traceReport.evidence.checks,
+        {
+          id: "intent-executed-refinement",
+          scope: "refinement-execution",
+          status: exercise.status,
+          errors: exercise.errors,
+          ...(exercise.reason ? { reason: exercise.reason } : {}),
+        },
+        ...(executionPolicy ? [{
+          id: "intent-execution-policy-observation",
+          scope: "execution-policy",
+          status: executionPolicy.status,
+          errors: executionPolicy.errors,
+          ...(executionPolicy.reason ? { reason: executionPolicy.reason } : {}),
+        }] : []),
+      ],
+    },
+    errors,
+  };
+  writeIntentCommandReport(report, options, `ok: ${model.id} intent refinement exercise (${exercise.summary.executedRefinements} cases)\n`);
 }
 
 function specChangeReviewUsage() {
@@ -189,18 +1784,13 @@ class CommandError extends Error {
 }
 
 function evalPklJson(file) {
-  const result = spawnSync("pkl", ["eval", "-f", "json", file], {
-    encoding: "utf8",
-  });
-
-  if (result.status !== 0) {
-    throw new CommandError(result.stderr || result.stdout || `pkl eval failed: ${file}`, result.status ?? 1);
-  }
-
   try {
-    return JSON.parse(result.stdout);
+    return evaluatePklJson(file);
   } catch (error) {
-    throw new CommandError(`failed to parse pkl json output for ${file}: ${error.message}`);
+    if (error instanceof PklAdapterError) {
+      throw new CommandError(error.message, error.status);
+    }
+    throw error;
   }
 }
 
@@ -210,6 +1800,14 @@ function loadModel(file) {
     throw new CommandError(`missing top-level model: ${file}`);
   }
   return { ...document.model, projections: list(document.projections) };
+}
+
+function loadTraceDocument(file) {
+  const document = evalPklJson(file);
+  if (!document || typeof document !== "object" || !document.model) {
+    throw new CommandError(`missing top-level model: ${file}`);
+  }
+  return { ...document, model: { ...document.model, projections: list(document.projections) } };
 }
 
 function loadAppProfile(file) {
@@ -242,6 +1840,14 @@ function loadRealAppImportEvaluation(file) {
     throw new CommandError(`missing top-level realAppImportEval: ${file}`);
   }
   return document.realAppImportEval;
+}
+
+function loadExternalRealAppImportCorpus(file) {
+  const document = evalPklJson(file);
+  if (!document || typeof document !== "object" || !document.externalHoldoutImportCorpus) {
+    throw new CommandError(`missing top-level externalHoldoutImportCorpus: ${file}`);
+  }
+  return document.externalHoldoutImportCorpus;
 }
 
 function loadSpecChangeReview(file) {
@@ -580,6 +2186,16 @@ function hasSymbol(content, symbol) {
   return new RegExp(`\\b(function|class|typealias|const|let|var)\\s+${escaped}\\b`).test(content);
 }
 
+function hasModuleSymbol(path, symbol, seen = new Set()) {
+  const absolutePath = resolve(path);
+  if (seen.has(absolutePath) || !existsSync(absolutePath)) return false;
+  seen.add(absolutePath);
+  const content = readFileSync(absolutePath, "utf8");
+  if (hasSymbol(content, symbol)) return true;
+  const baseModule = content.match(/^\s*(?:amends|extends)\s+"([^"]+)"/m)?.[1];
+  return baseModule ? hasModuleSymbol(resolve(dirname(absolutePath), baseModule), symbol, seen) : false;
+}
+
 function hasNodeTestAnchor(content, anchor) {
   const escaped = escapeRegex(anchor);
   return new RegExp(`\\b(it|test|describe)\\(\\s*["'\`]${escaped}["'\`]`).test(content);
@@ -632,6 +2248,14 @@ function releasePattern(model) {
 
 function runtimePattern(model) {
   return model.patterns?.runtime ?? null;
+}
+
+function domainPattern(model) {
+  return model.patterns?.domain ?? null;
+}
+
+function intentPattern(model) {
+  return model.patterns?.intent ?? null;
 }
 
 function projections(model) {
@@ -793,6 +2417,64 @@ function runtimeRunbookExecutions(runtime) {
 
 function runtimeDependencyTraces(runtime) {
   return list(runtime?.dependencyTraces);
+}
+
+function runtimeIntentExecutions(runtime) {
+  return list(runtime?.intentExecutions);
+}
+
+function intentCapabilities(intent) {
+  return list(intent?.capabilities);
+}
+
+function intentOutcomes(intent) {
+  return list(intent?.outcomes);
+}
+
+function intentProcesses(intent) {
+  return list(intent?.processes);
+}
+
+function constructionAuthorities(intent) {
+  return list(intent?.constructionAuthorities);
+}
+
+function intentAccessPolicies(intent) {
+  return list(intent?.accessPolicies);
+}
+
+function intentGoals(intent) {
+  return list(intent?.goals);
+}
+
+function intentClaims(intent) {
+  return list(intent?.claims);
+}
+
+function intentAssuranceTasks(intent) {
+  return list(intent?.assuranceTasks);
+}
+
+function intentSemanticBindings(intent) {
+  return list(intent?.semanticBindings);
+}
+
+function intentScenarios(intent) {
+  return list(intent?.scenarios);
+}
+
+function intentRefinements(process) {
+  return list(process?.refinements);
+}
+
+function checkUniqueIdentifiers(errors, label, identifiers) {
+  const seen = new Set();
+  for (const identifier of identifiers) {
+    if (seen.has(identifier)) {
+      errors.push(`duplicate ${label}: ${identifier}`);
+    }
+    seen.add(identifier);
+  }
 }
 
 function dbColumnRefParts(ref) {
@@ -1108,6 +2790,7 @@ function validateRuntimeModel(errors, model) {
   const alertPolicies = runtimeAlertPolicies(runtime);
   const runbookExecutions = runtimeRunbookExecutions(runtime);
   const dependencyTraces = runtimeDependencyTraces(runtime);
+  const intentExecutions = runtimeIntentExecutions(runtime);
   checkUnique(errors, "runtime service id", services);
   checkUnique(errors, "runtime dependency id", dependencies);
   checkUnique(errors, "runtime signal id", signals);
@@ -1118,6 +2801,7 @@ function validateRuntimeModel(errors, model) {
   checkUnique(errors, "runtime alert policy id", alertPolicies);
   checkUnique(errors, "runtime runbook execution id", runbookExecutions);
   checkUnique(errors, "runtime dependency trace id", dependencyTraces);
+  checkUnique(errors, "runtime intent execution id", intentExecutions);
 
   const serviceIds = new Set(services.map((service) => service.id));
   const signalIds = new Set(signals.map((signal) => signal.id));
@@ -1126,6 +2810,7 @@ function validateRuntimeModel(errors, model) {
   const alertsById = new Map(alerts.map((alert) => [alert.id, alert]));
   const signalsById = new Map(signals.map((signal) => [signal.id, signal]));
   const slosById = new Map(slos.map((slo) => [slo.id, slo]));
+  const processesById = new Map(intentProcesses(intentPattern(model)).map((process) => [process.id, process]));
 
   for (const dependency of dependencies) {
     if (!serviceIds.has(dependency.service)) {
@@ -1212,6 +2897,579 @@ function validateRuntimeModel(errors, model) {
     }
     if (trace.observedLatencyMs !== null && trace.observedLatencyMs !== undefined && trace.observedLatencyMs < 0) {
       errors.push(`negative runtime dependency trace latency: ${trace.id}`);
+    }
+  }
+
+  for (const execution of intentExecutions) {
+    const process = processesById.get(execution.process);
+    if (!process) {
+      errors.push(`unknown runtime Intent execution process: ${execution.id} -> ${execution.process}`);
+    } else if (!intentRefinements(process).some((refinement) => refinement.id === execution.refinement)) {
+      errors.push(`unknown runtime Intent execution refinement: ${execution.id} -> ${execution.refinement}`);
+    }
+    if (execution.observedLatencyMs !== null && execution.observedLatencyMs !== undefined && execution.observedLatencyMs < 0) {
+      errors.push(`negative runtime Intent execution latency: ${execution.id}`);
+    }
+    if (execution.maxInFlightObserved !== null && execution.maxInFlightObserved !== undefined && execution.maxInFlightObserved < 0) {
+      errors.push(`negative runtime Intent execution max in-flight: ${execution.id}`);
+    }
+  }
+}
+
+function intentAllowedValueMatchesType(field, value) {
+  if (field.type === "string") return true;
+  if (field.type === "integer") return /^-?\d+$/.test(value);
+  if (field.type === "boolean") return value === "true" || value === "false";
+  return /^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$/.test(value);
+}
+
+function validateIntentDataContract(errors, owner, contract) {
+  if (!contract) return;
+  const fields = list(contract.fields);
+  checkUnique(errors, `intent contract field id in ${owner}`, fields);
+  for (const field of fields) {
+    checkUniqueIdentifiers(errors, `intent contract allowed value in ${owner}.${field.id}`, list(field.allowedValues));
+    if ((field.minimum !== null && field.minimum !== undefined) || (field.maximum !== null && field.maximum !== undefined)) {
+      if (field.type !== "integer") {
+        errors.push(`intent contract range requires integer field: ${owner}.${field.id}`);
+      }
+      if (field.minimum !== null && field.minimum !== undefined && field.maximum !== null && field.maximum !== undefined && field.minimum > field.maximum) {
+        errors.push(`intent contract minimum exceeds maximum: ${owner}.${field.id}`);
+      }
+    }
+    if (field.pattern) {
+      if (!["string", "identifier"].includes(field.type)) {
+        errors.push(`intent contract pattern requires string field: ${owner}.${field.id}`);
+      }
+      try {
+        new RegExp(field.pattern);
+      } catch {
+        errors.push(`invalid intent contract pattern: ${owner}.${field.id}`);
+      }
+    }
+    for (const value of list(field.allowedValues)) {
+      if (!intentAllowedValueMatchesType(field, value)) {
+        errors.push(`intent contract allowed value has wrong type: ${owner}.${field.id} -> ${value}`);
+      }
+    }
+  }
+  list(contract.clauses).forEach((clause, index) => {
+    validateExprAst(errors, `${owner} clauses[${index}]`, clause.ast);
+  });
+}
+
+function validateIntentFieldBindings(errors, owner, contract, bindings) {
+  const fields = new Map(list(contract?.fields).map((field) => [field.id, field]));
+  const contractFields = list(bindings).map((binding) => binding.contractField);
+  const implementationFields = list(bindings).map((binding) => binding.implementationField);
+  checkUniqueIdentifiers(errors, `intent refinement contract field in ${owner}`, contractFields);
+  checkUniqueIdentifiers(errors, `intent refinement implementation field in ${owner}`, implementationFields);
+  for (const binding of list(bindings)) {
+    if (!fields.has(binding.contractField)) {
+      errors.push(`unknown intent refinement contract field: ${owner} -> ${binding.contractField}`);
+    }
+  }
+  for (const field of fields.values()) {
+    if (field.required !== false && !contractFields.includes(field.id)) {
+      errors.push(`intent refinement missing required field binding: ${owner} -> ${field.id}`);
+    }
+  }
+}
+
+function validateIntentModel(errors, model) {
+  const intent = intentPattern(model);
+  if (!intent) return;
+
+  const capabilities = intentCapabilities(intent);
+  const outcomes = intentOutcomes(intent);
+  const processes = intentProcesses(intent);
+  const authorities = constructionAuthorities(intent);
+  const accessPolicies = intentAccessPolicies(intent);
+  const goals = intentGoals(intent);
+  const claims = intentClaims(intent);
+  const assuranceTasks = intentAssuranceTasks(intent);
+  const semanticBindings = intentSemanticBindings(intent);
+  const scenarios = intentScenarios(intent);
+  checkUnique(errors, "intent capability id", capabilities);
+  checkUnique(errors, "intent outcome id", outcomes);
+  checkUnique(errors, "intent process id", processes);
+  checkUnique(errors, "construction authority id", authorities);
+  checkUnique(errors, "intent access policy id", accessPolicies);
+  checkUnique(errors, "intent goal id", goals);
+  checkUnique(errors, "intent claim id", claims);
+  checkUnique(errors, "intent assurance task id", assuranceTasks);
+  checkUnique(errors, "intent semantic binding id", semanticBindings);
+  checkUnique(errors, "intent scenario id", scenarios);
+
+  const stateIds = new Set(list(model.vocabulary).filter((term) => term.kind === "state").map((term) => term.id));
+  const capabilityIds = new Set(capabilities.map((capability) => capability.id));
+  const dbTransactionIds = new Set(dbTransactions(dbPattern(model)).map((transaction) => transaction.id));
+  const outcomesById = new Map(outcomes.map((outcome) => [outcome.id, outcome]));
+  const processesById = new Map(processes.map((process) => [process.id, process]));
+  const claimsById = new Map(claims.map((claim) => [claim.id, claim]));
+  const vocabularyById = new Map(list(model.vocabulary).map((term) => [term.id, term]));
+  const outcomeStates = new Set();
+  const refinementIds = new Set();
+
+  for (const outcome of outcomes) {
+    if (!stateIds.has(outcome.state)) {
+      errors.push(`unknown intent outcome state: ${outcome.id} -> ${outcome.state}`);
+    }
+    if (outcomeStates.has(outcome.state)) {
+      errors.push(`duplicate intent outcome state: ${outcome.state}`);
+    }
+    outcomeStates.add(outcome.state);
+    validateIntentDataContract(errors, `${outcome.id} output`, outcome.outputContract);
+    const effects = list(outcome.effects);
+    checkUnique(errors, `intent outcome effect id in ${outcome.id}`, effects);
+    for (const effect of effects) {
+      if (!capabilityIds.has(effect.capability)) {
+        errors.push(`unknown intent outcome effect capability: ${outcome.id}.${effect.id} -> ${effect.capability}`);
+      }
+      validateIntentDataContract(errors, `${outcome.id} effect ${effect.id} output`, effect.outputContract);
+    }
+  }
+
+  const accessPoliciesById = new Map(accessPolicies.map((policy) => [policy.id, policy]));
+  const accessPolicyPriorities = new Map();
+  for (const policy of accessPolicies) {
+    if (!processesById.has(policy.process)) {
+      errors.push(`unknown intent access policy process: ${policy.id} -> ${policy.process}`);
+    }
+    const subject = vocabularyById.get(policy.subject);
+    if (!subject || !["actor", "role"].includes(subject.kind)) {
+      errors.push(`intent access policy subject must be an actor or role: ${policy.id} -> ${policy.subject}`);
+    }
+    checkUniqueIdentifiers(errors, `intent access policy override in ${policy.id}`, list(policy.overrides));
+    const priorityKey = `${policy.process}\u0000${policy.subject}\u0000${policy.priority}`;
+    accessPolicyPriorities.set(priorityKey, [...(accessPolicyPriorities.get(priorityKey) ?? []), policy]);
+  }
+
+  const claimGoals = new Map();
+  for (const goal of goals) {
+    const goalIntents = list(goal.intents);
+    const goalClaims = list(goal.claims);
+    checkUniqueIdentifiers(errors, `intent goal process in ${goal.id}`, goalIntents);
+    checkUniqueIdentifiers(errors, `intent goal claim in ${goal.id}`, goalClaims);
+    if (goalIntents.length === 0) errors.push(`intent goal has no processes: ${goal.id}`);
+    if (goalClaims.length === 0) errors.push(`intent goal has no claims: ${goal.id}`);
+    for (const processId of goalIntents) {
+      if (!processesById.has(processId)) {
+        errors.push(`unknown intent goal process: ${goal.id} -> ${processId}`);
+      }
+    }
+    for (const claimId of goalClaims) {
+      if (!claimsById.has(claimId)) {
+        errors.push(`unknown intent goal claim: ${goal.id} -> ${claimId}`);
+        continue;
+      }
+      claimGoals.set(claimId, [...(claimGoals.get(claimId) ?? []), goal]);
+    }
+  }
+
+  const taskCoveredClaimIds = new Set();
+  for (const claim of claims) {
+    const claimProcesses = list(claim.processes);
+    checkUniqueIdentifiers(errors, `intent claim process in ${claim.id}`, claimProcesses);
+    if (claimProcesses.length === 0) errors.push(`intent claim has no processes: ${claim.id}`);
+    for (const processId of claimProcesses) {
+      if (!processesById.has(processId)) {
+        errors.push(`unknown intent claim process: ${claim.id} -> ${processId}`);
+      }
+    }
+    const parents = list(claimGoals.get(claim.id));
+    if (parents.length === 0) {
+      errors.push(`intent claim has no goal: ${claim.id}`);
+    }
+    if (parents.length > 1) {
+      errors.push(`intent claim belongs to multiple goals: ${claim.id}`);
+    }
+    for (const goal of parents) {
+      for (const processId of claimProcesses) {
+        if (!list(goal.intents).includes(processId)) {
+          errors.push(`intent claim process is outside goal intent: ${claim.id} -> ${processId}`);
+        }
+      }
+    }
+  }
+
+  for (const task of assuranceTasks) {
+    const taskClaims = list(task.claims);
+    checkUniqueIdentifiers(errors, `intent assurance task claim in ${task.id}`, taskClaims);
+    if (taskClaims.length === 0) errors.push(`intent assurance task has no claims: ${task.id}`);
+    for (const claimId of taskClaims) {
+      if (!claimsById.has(claimId)) {
+        errors.push(`unknown intent assurance task claim: ${task.id} -> ${claimId}`);
+      } else {
+        taskCoveredClaimIds.add(claimId);
+      }
+    }
+    if (task.kind === "property-test") {
+      if (!["node", "playwright"].includes(task.backend)) {
+        errors.push(`intent property-test task requires node or playwright backend: ${task.id}`);
+      }
+      if (!["executed", "mutation-tested"].includes(task.assurance)) {
+        errors.push(`intent property-test task requires executed or mutation-tested assurance: ${task.id}`);
+      }
+    }
+    if (task.kind === "formal-model") {
+      if (!["lean", "alloy", "tla"].includes(task.backend)) {
+        errors.push(`intent formal-model task requires lean, alloy, or tla backend: ${task.id}`);
+      }
+      if (!(["model", "proof"].includes(task.target.kind))) {
+        errors.push(`intent formal-model task requires a model or proof target: ${task.id}`);
+      }
+      const expectedAssurance = task.backend === "lean" ? "proved" : "bounded";
+      if (task.assurance !== expectedAssurance) {
+        errors.push(`intent formal-model task assurance mismatch: ${task.id} -> ${task.backend} requires ${expectedAssurance}`);
+      }
+    }
+    if (task.kind === "runtime-observation") {
+      if (task.backend !== "runtime" || task.assurance !== "executed" || task.target.kind !== "runtime") {
+        errors.push(`intent runtime-observation task requires runtime executed evidence: ${task.id}`);
+      }
+    }
+    if (task.kind === "manual-review") {
+      if (task.backend !== "manual" || task.assurance !== "reference") {
+        errors.push(`intent manual-review task requires manual reference assurance: ${task.id}`);
+      }
+    }
+  }
+  for (const claim of claims) {
+    if (!taskCoveredClaimIds.has(claim.id)) {
+      errors.push(`intent claim has no assurance task: ${claim.id}`);
+    }
+  }
+
+  const bindingCoveredClaimIds = new Set();
+  const semanticBindingKeys = new Set();
+  const cloudNodeIds = new Set(cloudNodes(cloudPattern(model)).map((node) => node.id));
+  for (const binding of semanticBindings) {
+    const bindingClaims = list(binding.claims);
+    checkUniqueIdentifiers(errors, `intent semantic binding claim in ${binding.id}`, bindingClaims);
+    for (const claimId of bindingClaims) {
+      const claim = claimsById.get(claimId);
+      if (!claim) {
+        errors.push(`unknown intent semantic binding claim: ${binding.id} -> ${claimId}`);
+      } else {
+        bindingCoveredClaimIds.add(claimId);
+        if (!list(claim.processes).includes(binding.process)) {
+          errors.push(`intent semantic binding process is outside claim: ${binding.id} -> ${claimId}`);
+        }
+      }
+    }
+    const process = processesById.get(binding.process);
+    if (!process) {
+      errors.push(`unknown intent semantic binding process: ${binding.id} -> ${binding.process}`);
+      continue;
+    }
+    const refinement = binding.refinement
+      ? intentRefinements(process).find((candidate) => candidate.id === binding.refinement)
+      : null;
+    if (binding.refinement && !refinement) {
+      errors.push(`unknown intent semantic binding refinement: ${binding.id} -> ${binding.refinement}`);
+    }
+    const key = `${binding.kind}\u0000${binding.target}\u0000${binding.value ?? ""}`;
+    if (semanticBindingKeys.has(key)) {
+      errors.push(`duplicate intent semantic binding target: ${binding.kind} ${binding.target}`);
+    }
+    semanticBindingKeys.add(key);
+    if (binding.kind === "http-route") {
+      if (!binding.refinement || !refinement || refinement.kind !== "http-route" || !refinement.http) {
+        errors.push(`intent semantic HTTP binding requires an HTTP refinement: ${binding.id}`);
+      } else {
+        const expectedTarget = `${refinement.http.method} ${refinement.http.path}`;
+        if (binding.target !== expectedTarget) {
+          errors.push(`intent semantic HTTP binding target mismatch: ${binding.id} expected ${expectedTarget}, got ${binding.target}`);
+        }
+      }
+    }
+    if (binding.kind === "db-transaction") {
+      if (!binding.refinement || !refinement || refinement.kind !== "transaction" || !refinement.transaction) {
+        errors.push(`intent semantic DB binding requires a transaction refinement: ${binding.id}`);
+      } else if (binding.target !== refinement.transaction.dbTransaction) {
+        errors.push(`intent semantic DB binding target mismatch: ${binding.id} expected ${refinement.transaction.dbTransaction}, got ${binding.target}`);
+      }
+    }
+    if (binding.kind === "cloud-resource" && !cloudNodeIds.has(binding.target)) {
+      errors.push(`unknown intent semantic cloud resource: ${binding.id} -> ${binding.target}`);
+    }
+    if (binding.kind === "otel-attribute" && (binding.value === null || binding.value === undefined || binding.value.length === 0)) {
+      errors.push(`intent semantic OTel attribute requires a value: ${binding.id}`);
+    }
+  }
+  for (const claim of claims) {
+    if (claim.requiredImplementationBinding !== false && !bindingCoveredClaimIds.has(claim.id)) {
+      errors.push(`intent claim has no implementation binding: ${claim.id}`);
+    }
+  }
+  for (const [priorityKey, policies] of accessPolicyPriorities) {
+    if (policies.length < 2) continue;
+    const [process, subject, priority] = priorityKey.split("\u0000");
+    errors.push(`ambiguous intent access policy precedence: ${process} -> ${subject} at priority ${priority}`);
+  }
+  for (const policy of accessPolicies) {
+    for (const overriddenId of list(policy.overrides)) {
+      const overridden = accessPoliciesById.get(overriddenId);
+      if (!overridden) {
+        errors.push(`unknown intent access policy override: ${policy.id} -> ${overriddenId}`);
+        continue;
+      }
+      if (overridden.id === policy.id) {
+        errors.push(`intent access policy cannot override itself: ${policy.id}`);
+      }
+      if (overridden.process !== policy.process || overridden.subject !== policy.subject) {
+        errors.push(`intent access policy override target differs in process or subject: ${policy.id} -> ${overridden.id}`);
+      }
+      if (policy.priority <= overridden.priority) {
+        errors.push(`intent access policy override must have higher priority: ${policy.id} -> ${overridden.id}`);
+      }
+    }
+  }
+
+  for (const process of processes) {
+    if (!stateIds.has(process.input)) {
+      errors.push(`unknown intent process input state: ${process.id} -> ${process.input}`);
+    }
+    validateIntentDataContract(errors, `${process.id} input`, process.inputContract);
+    const execution = process.execution;
+    if (execution && (!Number.isInteger(execution.maxInFlight) || execution.maxInFlight < 1)) {
+      errors.push(`intent execution maxInFlight must be a positive integer: ${process.id}`);
+    }
+    if (execution?.timeoutSteps !== null && execution?.timeoutSteps !== undefined
+      && (!Number.isInteger(execution.timeoutSteps) || execution.timeoutSteps < 1)) {
+      errors.push(`intent execution timeoutSteps must be a positive integer: ${process.id}`);
+    }
+    if (execution?.timeoutMs !== null && execution?.timeoutMs !== undefined
+      && (!Number.isInteger(execution.timeoutMs) || execution.timeoutMs < 1)) {
+      errors.push(`intent execution timeoutMs must be a positive integer: ${process.id}`);
+    }
+    if (execution?.idempotencyKey) {
+      const idempotencyField = list(process.inputContract?.fields)
+        .find((field) => field.id === execution.idempotencyKey);
+      if (!idempotencyField) {
+        errors.push(`intent execution idempotency key is not an input field: ${process.id} -> ${execution.idempotencyKey}`);
+      } else if (idempotencyField.required === false) {
+        errors.push(`intent execution idempotency key must be required: ${process.id} -> ${execution.idempotencyKey}`);
+      } else if (!["identifier", "string"].includes(idempotencyField.type)) {
+        errors.push(`intent execution idempotency key must have identifier or string type: ${process.id} -> ${execution.idempotencyKey}`);
+      }
+    }
+
+    const declaredOutcomes = list(process.outcomes);
+    const constructedOutcomes = list(process.constructs);
+    const requiredCapabilities = list(process.requires);
+    const effectCapabilities = list(process.effects);
+    checkUniqueIdentifiers(errors, `intent process outcome in ${process.id}`, declaredOutcomes);
+    checkUniqueIdentifiers(errors, `intent process construct in ${process.id}`, constructedOutcomes);
+    checkUniqueIdentifiers(errors, `intent process required capability in ${process.id}`, requiredCapabilities);
+    checkUniqueIdentifiers(errors, `intent process effect capability in ${process.id}`, effectCapabilities);
+
+    if (declaredOutcomes.length === 0) {
+      errors.push(`intent process has no outcomes: ${process.id}`);
+    }
+
+    for (const outcomeId of declaredOutcomes) {
+      if (!outcomesById.has(outcomeId)) {
+        errors.push(`unknown intent process outcome: ${process.id} -> ${outcomeId}`);
+      }
+    }
+    for (const outcomeId of constructedOutcomes) {
+      if (!outcomesById.has(outcomeId)) {
+        errors.push(`unknown intent process constructed outcome: ${process.id} -> ${outcomeId}`);
+      } else if (!declaredOutcomes.includes(outcomeId)) {
+        errors.push(`intent process constructs undeclared outcome: ${process.id} -> ${outcomeId}`);
+      }
+    }
+    for (const outcomeId of declaredOutcomes) {
+      if (!constructedOutcomes.includes(outcomeId)) {
+        errors.push(`intent process outcome has no construction path: ${process.id} -> ${outcomeId}`);
+      }
+    }
+    for (const capabilityId of requiredCapabilities) {
+      if (!capabilityIds.has(capabilityId)) {
+        errors.push(`unknown intent process required capability: ${process.id} -> ${capabilityId}`);
+      }
+    }
+    for (const capabilityId of effectCapabilities) {
+      if (!capabilityIds.has(capabilityId)) {
+        errors.push(`unknown intent process effect capability: ${process.id} -> ${capabilityId}`);
+      }
+    }
+    for (const outcomeId of declaredOutcomes) {
+      const outcome = outcomesById.get(outcomeId);
+      for (const effect of list(outcome?.effects)) {
+        if (!effectCapabilities.includes(effect.capability)) {
+          errors.push(`intent process effect capability is not declared for outcome effect: ${process.id}.${outcomeId}.${effect.id} -> ${effect.capability}`);
+        }
+      }
+    }
+
+    const outcomeStateIds = new Set(
+      declaredOutcomes.map((outcomeId) => outcomesById.get(outcomeId)?.state).filter((stateId) => stateId),
+    );
+    const transitionedStates = new Set();
+    for (const transition of list(process.transitions)) {
+      if (!stateIds.has(transition.from)) {
+        errors.push(`unknown intent process transition source state: ${process.id} -> ${transition.from}`);
+      }
+      if (!stateIds.has(transition.to)) {
+        errors.push(`unknown intent process transition target state: ${process.id} -> ${transition.to}`);
+      }
+      if (transition.from !== process.input) {
+        errors.push(`intent process transition source differs from input: ${process.id} -> ${transition.from}`);
+      }
+      if (!outcomeStateIds.has(transition.to)) {
+        errors.push(`intent process transition target is not an outcome: ${process.id} -> ${transition.to}`);
+      }
+      transitionedStates.add(transition.to);
+    }
+    for (const outcomeId of declaredOutcomes) {
+      const outcome = outcomesById.get(outcomeId);
+      if (outcome && !transitionedStates.has(outcome.state)) {
+        errors.push(`intent process outcome has no transition: ${process.id} -> ${outcomeId}`);
+      }
+    }
+
+    const refinements = intentRefinements(process);
+    checkUnique(errors, `intent refinement id in ${process.id}`, refinements);
+    for (const refinement of refinements) {
+      if (refinementIds.has(refinement.id)) {
+        errors.push(`duplicate intent refinement id: ${refinement.id}`);
+      }
+      refinementIds.add(refinement.id);
+      if (refinement.kind === "http-route" && !refinement.http) {
+        errors.push(`intent HTTP refinement requires endpoint: ${process.id}.${refinement.id}`);
+      }
+      if (refinement.kind !== "http-route" && refinement.http) {
+        errors.push(`intent refinement HTTP endpoint requires http-route kind: ${process.id}.${refinement.id}`);
+      }
+      if (refinement.kind === "grpc-method" && !refinement.grpc) {
+        errors.push(`intent gRPC refinement requires endpoint: ${process.id}.${refinement.id}`);
+      }
+      if (refinement.kind !== "grpc-method" && refinement.grpc) {
+        errors.push(`intent refinement gRPC endpoint requires grpc-method kind: ${process.id}.${refinement.id}`);
+      }
+      if (refinement.kind === "transaction" && !refinement.transaction) {
+        errors.push(`intent transaction refinement requires endpoint: ${process.id}.${refinement.id}`);
+      }
+      if (refinement.kind !== "transaction" && refinement.transaction) {
+        errors.push(`intent refinement transaction endpoint requires transaction kind: ${process.id}.${refinement.id}`);
+      }
+      if (refinement.transaction && !dbTransactionIds.has(refinement.transaction.dbTransaction)) {
+        errors.push(`unknown intent transaction refinement DB transaction: ${process.id}.${refinement.id} -> ${refinement.transaction.dbTransaction}`);
+      }
+      validateIntentFieldBindings(errors, `${process.id}.${refinement.id} input`, process.inputContract, refinement.inputBindings);
+      const bindingsByOutcome = new Map();
+      checkUniqueIdentifiers(errors, `intent refinement outcome binding in ${process.id}.${refinement.id}`, list(refinement.outcomeBindings).map((binding) => binding.outcome));
+      for (const binding of list(refinement.outcomeBindings)) {
+        if (!declaredOutcomes.includes(binding.outcome)) {
+          errors.push(`unknown intent refinement outcome: ${process.id}.${refinement.id} -> ${binding.outcome}`);
+          continue;
+        }
+        bindingsByOutcome.set(binding.outcome, binding);
+        const outcome = outcomesById.get(binding.outcome);
+        validateIntentFieldBindings(errors, `${process.id}.${refinement.id} outcome ${binding.outcome}`, outcome?.outputContract, binding.fields);
+        const outcomeEffects = list(outcome?.effects);
+        const effectBindings = list(binding.effectBindings);
+        checkUniqueIdentifiers(errors, `intent refinement effect binding in ${process.id}.${refinement.id} outcome ${binding.outcome}`, effectBindings.map((effectBinding) => effectBinding.effect));
+        const effectBindingsById = new Map();
+        for (const effectBinding of effectBindings) {
+          const effect = outcomeEffects.find((candidate) => candidate.id === effectBinding.effect);
+          if (!effect) {
+            errors.push(`unknown intent refinement outcome effect: ${process.id}.${refinement.id}.${binding.outcome} -> ${effectBinding.effect}`);
+            continue;
+          }
+          effectBindingsById.set(effect.id, effectBinding);
+          validateIntentFieldBindings(errors, `${process.id}.${refinement.id} outcome ${binding.outcome} effect ${effect.id}`, effect.outputContract, effectBinding.fields);
+        }
+        for (const effect of outcomeEffects) {
+          if (list(effect.outputContract?.fields).some((field) => field.required !== false) && !effectBindingsById.has(effect.id)) {
+            errors.push(`intent refinement missing effect binding: ${process.id}.${refinement.id}.${binding.outcome} -> ${effect.id}`);
+          }
+        }
+      }
+      for (const outcomeId of declaredOutcomes) {
+        const outcome = outcomesById.get(outcomeId);
+        if (list(outcome?.outputContract?.fields).some((field) => field.required !== false) && !bindingsByOutcome.has(outcomeId)) {
+          errors.push(`intent refinement missing outcome binding: ${process.id}.${refinement.id} -> ${outcomeId}`);
+        }
+      }
+    }
+  }
+
+  const authorityPairs = new Set();
+  const authorityPairsByOutcome = new Map();
+  for (const authority of authorities) {
+    const process = processesById.get(authority.process);
+    const outcome = outcomesById.get(authority.outcome);
+    if (!process) {
+      errors.push(`unknown construction authority process: ${authority.id} -> ${authority.process}`);
+    }
+    if (!outcome) {
+      errors.push(`unknown construction authority outcome: ${authority.id} -> ${authority.outcome}`);
+    }
+    const pair = `${authority.process}\u0000${authority.outcome}`;
+    if (authorityPairs.has(pair)) {
+      errors.push(`duplicate construction authority: ${authority.process} -> ${authority.outcome}`);
+    }
+    authorityPairs.add(pair);
+    if (process && outcome && !list(process.constructs).includes(outcome.id)) {
+      errors.push(`construction authority is not declared by process: ${authority.id} -> ${authority.outcome}`);
+    }
+    if (outcome) {
+      authorityPairsByOutcome.set(outcome.id, (authorityPairsByOutcome.get(outcome.id) ?? 0) + 1);
+    }
+  }
+
+  for (const process of processes) {
+    for (const outcomeId of list(process.constructs)) {
+      if (!authorityPairs.has(`${process.id}\u0000${outcomeId}`)) {
+        errors.push(`intent process construction has no authority: ${process.id} -> ${outcomeId}`);
+      }
+    }
+  }
+  for (const outcome of outcomes) {
+    if (!authorityPairsByOutcome.has(outcome.id)) {
+      errors.push(`intent outcome has no construction authority: ${outcome.id}`);
+    }
+  }
+
+  for (const scenario of scenarios) {
+    if (!stateIds.has(scenario.initialState)) {
+      errors.push(`unknown intent scenario initial state: ${scenario.id} -> ${scenario.initialState}`);
+    }
+    if (!stateIds.has(scenario.expectedState)) {
+      errors.push(`unknown intent scenario expected state: ${scenario.id} -> ${scenario.expectedState}`);
+    }
+    const steps = list(scenario.steps);
+    if (steps.length === 0) {
+      errors.push(`intent scenario has no steps: ${scenario.id}`);
+      continue;
+    }
+
+    let currentState = scenario.initialState;
+    for (const [index, step] of steps.entries()) {
+      const process = processesById.get(step.process);
+      const outcome = outcomesById.get(step.outcome);
+      const context = `${scenario.id}[${index}]`;
+      if (!process) {
+        errors.push(`unknown intent scenario process: ${context} -> ${step.process}`);
+      }
+      if (!outcome) {
+        errors.push(`unknown intent scenario outcome: ${context} -> ${step.outcome}`);
+      }
+      if (!process || !outcome) continue;
+      if (process.input !== currentState) {
+        errors.push(`intent scenario input state mismatch: ${context} expected ${currentState}, process accepts ${process.input}`);
+      }
+      if (!list(process.outcomes).includes(outcome.id)) {
+        errors.push(`intent scenario outcome is not declared by process: ${context} -> ${outcome.id}`);
+      }
+      currentState = outcome.state;
+    }
+    if (currentState !== scenario.expectedState) {
+      errors.push(`intent scenario expected state mismatch: ${scenario.id} expected ${scenario.expectedState}, actual ${currentState}`);
     }
   }
 }
@@ -1381,9 +3639,13 @@ function validate(model, { requireFormalEvidence = false } = {}) {
   validateDataModel(errors, model);
   validateReleaseModel(errors, model);
   validateRuntimeModel(errors, model);
+  errors.push(...validateDomainModel(model));
+  validateIntentModel(errors, model);
+  if (list(intentPattern(model)?.tests).length > 0) errors.push(...validateProtocolTests(model));
   validateDomainPacks(errors, model);
   validateI18nContract(errors, model);
   validateProjections(errors, model);
+  errors.push(...validateConformanceModel(model));
 
   return errors;
 }
@@ -1416,21 +3678,53 @@ function validateImplementationRefs(model) {
   const errors = [];
   let count = 0;
 
-  for (const rule of list(model.rules)) {
-    for (const ref of list(rule.implementedBy)) {
+  const validateReferences = (owner, refs, labels) => {
+    for (const ref of list(refs)) {
       count += 1;
       if (!existsSync(resolve(ref.path))) {
-        errors.push(`missing implementation path: ${rule.id} -> ${ref.path}`);
+        errors.push(`missing ${labels.path}: ${owner} -> ${ref.path}`);
         continue;
       }
       if (!ref.symbol) {
         continue;
       }
-      const content = readTextFile(ref.path);
-      if (!hasSymbol(content, ref.symbol)) {
-        errors.push(`missing implementation symbol: ${rule.id} -> ${ref.path}#${ref.symbol}`);
+      if (!hasModuleSymbol(ref.path, ref.symbol)) {
+        errors.push(`missing ${labels.symbol}: ${owner} -> ${ref.path}#${ref.symbol}`);
       }
     }
+  };
+
+  for (const rule of list(model.rules)) {
+    validateReferences(rule.id, rule.implementedBy, {
+      path: "implementation path",
+      symbol: "implementation symbol",
+    });
+  }
+  const intent = intentPattern(model);
+  for (const process of intentProcesses(intent)) {
+    validateReferences(process.id, process.implementedBy, {
+      path: "intent process implementation path",
+      symbol: "intent process implementation symbol",
+    });
+    for (const refinement of intentRefinements(process)) {
+      validateReferences(`${process.id}.${refinement.id}`, [refinement.implementation], {
+        path: "intent refinement implementation path",
+        symbol: "intent refinement implementation symbol",
+      });
+    }
+  }
+  for (const task of intentAssuranceTasks(intent)) {
+    validateReferences(task.id, [task.target], {
+      path: "intent assurance task target path",
+      symbol: "intent assurance task target symbol",
+    });
+  }
+  const domain = domainPattern(model);
+  for (const formalization of list(domain?.formalizations)) {
+    validateReferences(formalization.id, [formalization.target], {
+      path: "domain formalization target path",
+      symbol: "domain formalization target symbol",
+    });
   }
 
   return { errors, count };
@@ -1660,6 +3954,530 @@ function parseRenderArgs(args) {
   return { file, locale };
 }
 
+function parseInitArgs(args) {
+  let force = false;
+  let json = false;
+  let outputFile = "dspec.pkl";
+  let lockFile = null;
+  let outputSpecified = false;
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--force") {
+      force = true;
+    } else if (arg === "--json") {
+      json = true;
+    } else if (arg === "--output") {
+      outputFile = args[index + 1] ?? "";
+      outputSpecified = true;
+      index += 1;
+    } else if (arg === "--lock") {
+      lockFile = args[index + 1] ?? "";
+      index += 1;
+    } else if (!arg.startsWith("-") && !outputSpecified) {
+      outputFile = arg;
+      outputSpecified = true;
+    } else {
+      throw new CommandError(initUsage());
+    }
+  }
+  if (!outputFile || outputFile.startsWith("-")) throw new CommandError(initUsage());
+  if (lockFile !== null && (!lockFile || lockFile.startsWith("-"))) throw new CommandError(initUsage());
+  return { force, json, outputFile, lockFile };
+}
+
+function parseLockArgs(args) {
+  let force = false;
+  let json = false;
+  let outputFile = null;
+  let file = null;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--force") {
+      force = true;
+    } else if (arg === "--json") {
+      json = true;
+    } else if (arg === "--output") {
+      outputFile = args[index + 1] ?? "";
+      index += 1;
+    } else if (!arg.startsWith("-") && !file) {
+      file = arg;
+    } else {
+      throw new CommandError(lockUsage());
+    }
+  }
+
+  if (!file || (outputFile !== null && (!outputFile || outputFile.startsWith("-")))) {
+    throw new CommandError(lockUsage());
+  }
+  return { file, force, json, outputFile };
+}
+
+function parseVerifyArgs(args) {
+  let file = null;
+  let json = false;
+  let lockFile = null;
+  let requireLock = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+    } else if (arg === "--lock") {
+      lockFile = args[index + 1] ?? "";
+      index += 1;
+    } else if (arg === "--require-lock") {
+      requireLock = true;
+    } else if (!arg.startsWith("-") && !file) {
+      file = arg;
+    } else {
+      throw new CommandError("usage: dspec verify [--json] [--lock <lock.json>] [--require-lock] <model.pkl>\n");
+    }
+  }
+  if (!file || (lockFile !== null && (!lockFile || lockFile.startsWith("-")))) {
+    throw new CommandError("usage: dspec verify [--json] [--lock <lock.json>] [--require-lock] <model.pkl>\n");
+  }
+  return { file, json, lockFile, requireLock };
+}
+
+function parseExplainArgs(args) {
+  let file = null;
+  let json = false;
+  let markdown = false;
+  let lockFile = null;
+  let requireLock = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+    } else if (arg === "--markdown") {
+      markdown = true;
+    } else if (arg === "--lock") {
+      lockFile = args[index + 1] ?? "";
+      index += 1;
+    } else if (arg === "--require-lock") {
+      requireLock = true;
+    } else if (!arg.startsWith("-") && !file) {
+      file = arg;
+    } else {
+      throw new CommandError(explainUsage());
+    }
+  }
+  if (!file || (json && markdown) || (lockFile !== null && (!lockFile || lockFile.startsWith("-")))) {
+    throw new CommandError(explainUsage());
+  }
+  return { file, json, markdown, lockFile, requireLock };
+}
+
+const SCAFFOLD_RULE_KINDS = new Set([
+  "decision",
+  "invariant",
+  "transition",
+  "obligation",
+  "permission",
+  "prohibition",
+  "exception",
+  "witness",
+  "example",
+  "non_goal",
+  "equivalence",
+]);
+
+function parseScaffoldRuleReference(value, option) {
+  const { path, anchor } = splitRef(value);
+  if (!path || !anchor) {
+    throw new CommandError(`${option} must use path#symbol-or-anchor: ${value}\n`);
+  }
+  return { path, anchor };
+}
+
+function parseScaffoldRuleArgs(args) {
+  let json = false;
+  let force = false;
+  let outputFile = null;
+  let kind = "invariant";
+  const terms = [];
+  let implementation = null;
+  let test = null;
+  const positional = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+    } else if (arg === "--force") {
+      force = true;
+    } else if (arg === "--output") {
+      outputFile = args[index + 1] ?? "";
+      index += 1;
+    } else if (arg === "--kind") {
+      kind = args[index + 1] ?? "";
+      index += 1;
+    } else if (arg === "--term") {
+      terms.push(args[index + 1] ?? "");
+      index += 1;
+    } else if (arg === "--implementation") {
+      implementation = parseScaffoldRuleReference(args[index + 1] ?? "", "--implementation");
+      index += 1;
+    } else if (arg === "--test") {
+      test = parseScaffoldRuleReference(args[index + 1] ?? "", "--test");
+      index += 1;
+    } else if (!arg.startsWith("-")) {
+      positional.push(arg);
+    } else {
+      throw new CommandError(scaffoldUsage());
+    }
+  }
+
+  const [modelFile, ruleId] = positional;
+  if (positional.length !== 2 || !modelFile || !ruleId || !SCAFFOLD_RULE_KINDS.has(kind)) {
+    throw new CommandError(scaffoldUsage());
+  }
+  if (!terms.every(Boolean) || (outputFile !== null && (!outputFile || outputFile.startsWith("-")))) {
+    throw new CommandError(scaffoldUsage());
+  }
+  return { modelFile, ruleId, json, force, outputFile, kind, terms, implementation, test };
+}
+
+function parseConformanceArgs(args) {
+  let json = false;
+  let markdown = false;
+  let file = null;
+
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (!file) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(`unexpected argument: ${arg}`);
+  }
+  if (!file || (json && markdown)) throw new CommandError(usage());
+  return { file, json, markdown };
+}
+
+function parseTraceabilityArgs(args) {
+  let json = false;
+  let markdown = false;
+  let gate = false;
+  let executeFormalTools = false;
+  let requireExecutedFormalTools = false;
+  let file = null;
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--gate") {
+      gate = true;
+      continue;
+    }
+    if (arg === "--execute-formal-tools") {
+      executeFormalTools = true;
+      continue;
+    }
+    if (arg === "--require-executed-formal-tools") {
+      executeFormalTools = true;
+      requireExecutedFormalTools = true;
+      continue;
+    }
+    if (!file && !arg.startsWith("-")) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(traceabilityUsage());
+  }
+  if (!file || (json && markdown)) throw new CommandError(traceabilityUsage());
+  return { file, json, markdown, gate, executeFormalTools, requireExecutedFormalTools };
+}
+
+function parseFormalMutationArgs(args) {
+  let json = false;
+  let requireFormalTools = false;
+  let file = null;
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--require-formal-tools") {
+      requireFormalTools = true;
+      continue;
+    }
+    if (!file && !arg.startsWith("-")) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(formalMutationUsage());
+  }
+  if (!file) throw new CommandError(formalMutationUsage());
+  return { file, json, requireFormalTools };
+}
+
+function behaviorTraceabilityEvidence(formalization, document, reference, grounding) {
+  const boundedChecks = list(reference.boundedReachability?.checks).map((check) => ({
+    id: check.id,
+    status: check.status,
+    assurance: check.assurance,
+    counterexample: check.status === "fail" && check.witness
+      ? { path: check.witness.path, trace: [check.witness.state], violation: { index: check.witness.depth, state: check.witness.state } }
+      : null,
+  }));
+  const temporalChecks = list(reference.temporal?.checks).map((check) => ({
+    id: check.id,
+    status: check.status,
+    assurance: check.assurance,
+    counterexample: check.witness ?? (check.violation
+      ? { path: [], trace: list(check.trace), violation: check.violation }
+      : null),
+  }));
+  return {
+    formalization: formalization.id,
+    status: reference.status === "pass" && grounding.status === "pass" ? "pass" : "fail",
+    actions: list(document.behavior?.actions).map((action) => action.id),
+    checks: [...boundedChecks, ...temporalChecks],
+    counterexamples: grounding.counterexample ? [{
+      check: "implementation-grounding",
+      path: grounding.counterexample.path,
+      trace: [grounding.counterexample.state, grounding.counterexample.actual?.state].filter(Boolean),
+      violation: { index: grounding.counterexample.depth, state: grounding.counterexample.actual?.state ?? grounding.counterexample.state },
+    }] : [],
+    errors: [...list(reference.errors), ...list(grounding.errors)],
+  };
+}
+
+function alloyToolExecution(analyzer, { requested, command }) {
+  if (!requested) {
+    return {
+      engine: "alloy6",
+      command,
+      version: null,
+      requested: false,
+      status: "not-requested",
+      reason: null,
+    };
+  }
+  const version = spawnSync(command, ["version"], { encoding: "utf8" });
+  return {
+    engine: "alloy6",
+    command,
+    version: version.status === 0 ? version.stdout.trim() || null : null,
+    requested: true,
+    status: analyzer.status,
+    reason: analyzer.reason ?? null,
+  };
+}
+
+function alloyTraceabilityEvidence(formalization, reference, analyzer, {
+  actions,
+  requested,
+  required,
+  command,
+}) {
+  const execution = alloyToolExecution(analyzer, { requested, command });
+  const analyzerAvailable = execution.status === "pass" || execution.status === "fail";
+  const checks = analyzerAvailable ? list(analyzer.checks) : list(reference.checks);
+  const toolFailed = execution.status === "fail" || (required && execution.status !== "pass");
+  const status = reference.status === "pass" && !toolFailed ? "pass" : "fail";
+  const errors = [
+    ...list(reference.errors),
+    ...list(analyzer?.errors),
+    ...(required && execution.status !== "pass"
+      ? [`formal tool execution is required but ${execution.engine} is ${execution.status}: ${execution.reason ?? "no executed evidence"}`]
+      : []),
+  ];
+  return {
+    formalization: formalization.id,
+    status,
+    execution,
+    actions,
+    checks: checks.map((check) => ({
+      id: check.id,
+      status: check.status,
+      assurance: check.assurance,
+      counterexample: check.status === "fail" ? check.counterexample ?? check.witness ?? null : null,
+    })),
+    counterexamples: [],
+    errors,
+  };
+}
+
+function alloyBehaviorTraceabilityEvidence(formalization, document, reference, analyzer, options) {
+  const evidence = alloyTraceabilityEvidence(formalization, reference, analyzer, { actions: [], ...options });
+  return {
+    // The initial reservation DSL has generated action names, rather than an
+    // action catalog. Keep this empty so an explicit mapping cannot silently
+    // claim it was executed.
+    ...evidence,
+  };
+}
+
+function normalizedTetrisGroundingCounterexample(counterexample) {
+  if (!counterexample) return null;
+  const state = {
+    board: `${counterexample.board.width}x${counterexample.board.height}`,
+    locked: counterexample.locked.map(([x, y]) => `(${x},${y})`).join(", "),
+    "expected spawn-open": counterexample.expected?.spawnOpen ?? null,
+    "actual spawn-open": counterexample.actual?.spawnOpen ?? null,
+  };
+  return { trace: [state], violation: { index: 0, state } };
+}
+
+function tetrisAlloyTraceabilityEvidence(formalization, reference, analyzer, grounding, options) {
+  const evidence = alloyTraceabilityEvidence(formalization, reference, analyzer, {
+    actions: ["rotate", "rejectRotation", "translateLeft", "rejectTranslateLeft", "startGameAtSpawn", "blockedSpawnGameOver", "stutter"],
+    ...options,
+  });
+  if (!grounding || grounding.status === "skip") return evidence;
+  const groundingCheck = {
+    id: grounding.check,
+    status: grounding.status,
+    assurance: grounding.assurance,
+    counterexample: grounding.status === "fail" ? normalizedTetrisGroundingCounterexample(grounding.counterexample) : null,
+  };
+  return {
+    ...evidence,
+    status: evidence.status === "pass" && grounding.status === "pass" ? "pass" : "fail",
+    checks: [...evidence.checks, groundingCheck],
+    errors: [...evidence.errors, ...list(grounding.errors)],
+  };
+}
+
+function tetrisLineClearAlloyTraceabilityEvidence(formalization, reference, analyzer, options) {
+  return alloyTraceabilityEvidence(formalization, reference, analyzer, {
+    actions: ["clearFullRows", "stutter"],
+    ...options,
+  });
+}
+
+async function formalizationEvidence(model, {
+  executeFormalTools = false,
+  requireExecutedFormalTools = false,
+  alloyCommand = process.env.ALLOY6_COMMAND ?? "alloy6",
+} = {}) {
+  const cache = new Map();
+  const analyzerCache = new Map();
+  const groundingCache = new Map();
+  const entries = [];
+  for (const formalization of list(domainPattern(model)?.formalizations)) {
+    const path = formalization.target?.path;
+    if (!path) {
+      entries.push({
+        formalization: formalization.id,
+        status: "fail",
+        actions: [],
+        checks: [],
+        counterexamples: [],
+        errors: [`formalization target path is missing: ${formalization.id}`],
+      });
+      continue;
+    }
+    let document;
+    try {
+      if (!cache.has(path)) cache.set(path, evalPklJson(path));
+      document = cache.get(path);
+      if (formalization.kind === "behavior") {
+        const reference = verifyBehaviorModel(document);
+        const grounding = await verifyBehaviorImplementation(document, { projectRoot: process.cwd() });
+        entries.push(behaviorTraceabilityEvidence(formalization, document, reference, grounding));
+      } else if (formalization.kind === "alloy-behavior") {
+        const options = {
+          requested: executeFormalTools,
+          required: requireExecutedFormalTools,
+          command: alloyCommand,
+        };
+        if (document.tetrisAlloy) {
+          if (executeFormalTools && !analyzerCache.has(path)) {
+            analyzerCache.set(path, verifyTetrisAlloyWithAnalyzer(document, { command: alloyCommand }));
+          }
+          if (!groundingCache.has(path)) {
+            groundingCache.set(path, await verifyTetrisAlloyImplementation(document, { projectRoot: process.cwd() }));
+          }
+          entries.push(tetrisAlloyTraceabilityEvidence(formalization, verifyTetrisAlloyModel(document), analyzerCache.get(path) ?? null, groundingCache.get(path), options));
+        } else if (document.tetrisLineClearAlloy) {
+          if (executeFormalTools && !analyzerCache.has(path)) {
+            analyzerCache.set(path, verifyTetrisLineClearAlloyWithAnalyzer(document, { command: alloyCommand }));
+          }
+          entries.push(tetrisLineClearAlloyTraceabilityEvidence(formalization, verifyTetrisLineClearAlloyModel(document), analyzerCache.get(path) ?? null, options));
+        } else {
+          if (executeFormalTools && !analyzerCache.has(path)) {
+            analyzerCache.set(path, verifyAlloyBehaviorWithAnalyzer(document, { command: alloyCommand }));
+          }
+          entries.push(alloyBehaviorTraceabilityEvidence(formalization, document, verifyAlloyBehaviorModel(document), analyzerCache.get(path) ?? null, options));
+        }
+      } else {
+        entries.push({
+          formalization: formalization.id,
+          status: "unexecuted",
+          actions: [],
+          checks: [],
+          counterexamples: [],
+          errors: [`no traceability runner for formalization kind: ${formalization.kind}`],
+        });
+      }
+    } catch (error) {
+      entries.push({
+        formalization: formalization.id,
+        status: "fail",
+        actions: [],
+        checks: [],
+        counterexamples: [],
+        errors: [error instanceof Error ? error.message : String(error)],
+      });
+    }
+  }
+  return entries;
+}
+
+function parseQueryArgs(args) {
+  let json = false;
+  let markdown = false;
+  let locale = null;
+  let answerFile = null;
+  const positional = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (arg === "--locale") {
+      locale = args[index + 1];
+      index += 1;
+      continue;
+    }
+    if (arg === "--answer") {
+      answerFile = args[index + 1];
+      index += 1;
+      continue;
+    }
+    positional.push(arg);
+  }
+
+  const [file, kind, id, selector, ...extra] = positional;
+  if (!file || !kind || !id || extra.length > 0 || (kind === "clause" && !selector) || (kind !== "clause" && selector) || (json && markdown)) {
+    throw new CommandError(usage());
+  }
+  return { file, kind, id, selector: selector ?? null, locale, answerFile, json, markdown };
+}
+
 function parseEmitArgs(args) {
   const [target, ...rest] = args;
   if (!target) {
@@ -1701,6 +4519,7 @@ function parseEvidenceCreateArgs(args) {
   let outputFile = null;
   let executedAt = null;
   let requireFormalTools = false;
+  const intentReportFiles = [];
   const files = [];
 
   for (let index = 0; index < args.length; index += 1) {
@@ -1725,6 +4544,13 @@ function parseEvidenceCreateArgs(args) {
       if (!executedAt) throw new CommandError("--executed-at requires an ISO timestamp\n");
       continue;
     }
+    if (arg === "--intent-report") {
+      const reportFile = args[index + 1];
+      index += 1;
+      if (!reportFile) throw new CommandError("--intent-report requires an Intent exercise report path\n");
+      intentReportFiles.push(reportFile);
+      continue;
+    }
     files.push(arg);
   }
   if (files.length !== 1) throw new CommandError(evidenceUsage());
@@ -1734,6 +4560,7 @@ function parseEvidenceCreateArgs(args) {
     outputFile,
     executedAt: executedAt ?? new Date().toISOString(),
     requireFormalTools,
+    intentReportFiles,
   };
 }
 
@@ -1755,6 +4582,7 @@ function parseEvidenceRefreshArgs(args) {
   let json = false;
   let executedAt = null;
   let requireFormalTools = false;
+  const intentReportFiles = [];
   const files = [];
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -1772,6 +4600,13 @@ function parseEvidenceRefreshArgs(args) {
       if (!executedAt) throw new CommandError("--executed-at requires an ISO timestamp\n");
       continue;
     }
+    if (arg === "--intent-report") {
+      const reportFile = args[index + 1];
+      index += 1;
+      if (!reportFile) throw new CommandError("--intent-report requires an Intent exercise report path\n");
+      intentReportFiles.push(reportFile);
+      continue;
+    }
     files.push(arg);
   }
   if (files.length !== 2) throw new CommandError(evidenceUsage());
@@ -1781,6 +4616,7 @@ function parseEvidenceRefreshArgs(args) {
     json,
     executedAt: executedAt ?? new Date().toISOString(),
     requireFormalTools,
+    intentReportFiles,
   };
 }
 
@@ -1828,6 +4664,122 @@ function parseJsonReportArgs(args) {
     throw new CommandError(usage());
   }
   return { file, json };
+}
+
+function parseTraceArgs(args) {
+  const [operation, ...rest] = args;
+  if (!operation || !["reconcile", "check"].includes(operation)) {
+    throw new CommandError(traceUsage());
+  }
+  let json = false;
+  let gate = false;
+  let diff = false;
+  let output = null;
+  let lock = null;
+  let file = null;
+  for (let index = 0; index < rest.length; index += 1) {
+    const arg = rest[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--gate" && operation === "check") {
+      gate = true;
+      continue;
+    }
+    if (arg === "--diff" && operation === "check") {
+      diff = true;
+      continue;
+    }
+    if (arg === "--output" && operation === "reconcile") {
+      output = rest[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+    if (arg === "--lock" && operation === "check") {
+      lock = rest[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+    if (!file) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(traceUsage());
+  }
+  if (!file || !file.endsWith(".pkl") || (output !== null && !output) || (lock !== null && !lock)) {
+    throw new CommandError(traceUsage());
+  }
+  return { operation, file, json, gate, diff, output, lock };
+}
+
+function parseTranslationArgs(args) {
+  const [operation, ...rest] = args;
+  if (!operation || !["reconcile", "check"].includes(operation)) {
+    throw new CommandError(translationUsage());
+  }
+  let json = false;
+  let gate = false;
+  let output = null;
+  let lock = null;
+  let file = null;
+  for (let index = 0; index < rest.length; index += 1) {
+    const arg = rest[index];
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--gate" && operation === "check") {
+      gate = true;
+      continue;
+    }
+    if (arg === "--output" && operation === "reconcile") {
+      output = rest[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+    if (arg === "--lock" && operation === "check") {
+      lock = rest[index + 1] ?? "";
+      index += 1;
+      continue;
+    }
+    if (!file) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(translationUsage());
+  }
+  if (!file || !file.endsWith(".pkl") || (output !== null && !output) || (lock !== null && !lock)) {
+    throw new CommandError(translationUsage());
+  }
+  return { operation, file, json, gate, output, lock };
+}
+
+function parseExternalHoldoutArgs(args) {
+  let json = false;
+  let markdown = false;
+  let file = null;
+
+  for (const arg of args) {
+    if (arg === "--json") {
+      json = true;
+      continue;
+    }
+    if (arg === "--markdown") {
+      markdown = true;
+      continue;
+    }
+    if (!file) {
+      file = arg;
+      continue;
+    }
+    throw new CommandError(usage());
+  }
+
+  if (!file || (json && markdown)) {
+    throw new CommandError(usage());
+  }
+  return { file, json, markdown };
 }
 
 function parseProjectionArgs(args, usageText = usage(), { allowGenerationOptions = false } = {}) {
@@ -3006,8 +5958,9 @@ function importRealApp(root) {
 
 function realAppImportEvaluationAppRoot(evaluation, file) {
   if (isAbsolute(evaluation.appRoot)) return evaluation.appRoot;
-  if (existsSync(resolve(evaluation.appRoot))) return evaluation.appRoot;
-  return resolve(dirname(resolve(file)), evaluation.appRoot);
+  const relativeToEvaluation = resolvePathRelativeToFile(file, evaluation.appRoot);
+  if (existsSync(relativeToEvaluation)) return relativeToEvaluation;
+  return resolve(evaluation.appRoot);
 }
 
 function realAppImportEvaluationReport(evaluation, file) {
@@ -3021,6 +5974,70 @@ function renderRealAppImportEvaluationReport(report) {
   }
   return `${report.errors.join("\n")}\n`;
 }
+
+function externalHoldoutPath(ownerFile, path) {
+  if (isAbsolute(path)) return path;
+  const fromOwner = resolvePathRelativeToFile(ownerFile, path);
+  if (existsSync(fromOwner)) return fromOwner;
+  return resolve(path);
+}
+
+function externalRealAppImportHoldoutReport(holdout, corpusFile) {
+  const evaluationFile = externalHoldoutPath(corpusFile, holdout.evaluationPath);
+  const evaluation = loadRealAppImportEvaluation(evaluationFile);
+  const appRoot = realAppImportEvaluationAppRoot(evaluation, evaluationFile);
+  const app = importRealApp(appRoot);
+  const evaluationReport = evaluateRealAppImport(evaluation, app);
+  return {
+    holdout: {
+      id: holdout.id,
+      sourceRepository: holdout.sourceRepository,
+      sourceRevision: holdout.sourceRevision,
+      capturedOn: holdout.capturedOn,
+      estimatedAuthoringMinutes: holdout.estimatedAuthoringMinutes,
+      manualMappings: list(holdout.manualMappings),
+      exclusions: list(holdout.exclusions),
+    },
+    authoredIntent: {
+      evaluationPath: holdout.evaluationPath,
+      facts: normalizeRealAppImportFacts(list(evaluation.expectedFacts)),
+    },
+    observedImplementation: {
+      appRoot: evaluation.appRoot,
+      facts: realAppImportFacts(app),
+    },
+    evaluation: evaluationReport,
+  };
+}
+
+function externalRealAppImportMutationReport(mutation, corpusFile) {
+  const beforeApp = importRealApp(externalHoldoutPath(corpusFile, mutation.beforeAppRoot));
+  const afterApp = importRealApp(externalHoldoutPath(corpusFile, mutation.afterAppRoot));
+  const delta = diffRealAppImportFacts(realAppImportFacts(beforeApp), realAppImportFacts(afterApp));
+  return externalHoldoutMutationReport({
+    id: mutation.id,
+    sourceRepository: mutation.sourceRepository,
+    sourceBeforeRevision: mutation.sourceBeforeRevision,
+    sourceAfterRevision: mutation.sourceAfterRevision,
+    beforeAppRoot: mutation.beforeAppRoot,
+    afterAppRoot: mutation.afterAppRoot,
+    expectedAddedFacts: list(mutation.expectedAddedFacts),
+    expectedRemovedFacts: list(mutation.expectedRemovedFacts),
+    addedFacts: delta.added,
+    removedFacts: delta.removed,
+  });
+}
+
+function externalRealAppImportCorpusReport(corpus, corpusFile) {
+  const holdouts = list(corpus.holdouts).map((holdout) => externalRealAppImportHoldoutReport(holdout, corpusFile));
+  const mutations = list(corpus.mutations).map((mutation) => externalRealAppImportMutationReport(mutation, corpusFile));
+  return externalHoldoutCorpusReport({
+    id: corpus.id,
+    holdouts,
+    mutations,
+  });
+}
+
 function emitPklRecord(lines, indent, className, fields) {
   lines.push(`${indent}new d.${className} {`);
   for (const [field, value] of Object.entries(fields)) {
@@ -3585,6 +6602,494 @@ function scaffoldAppProfileDocument({ modelFile, appRoot, observedFacts = null, 
 function pklImportPath(fromFile, targetFile) {
   const raw = relative(dirname(resolve(fromFile)), resolve(targetFile)).replace(/\\/g, "/");
   return raw.startsWith(".") ? raw : `./${raw}`;
+}
+
+function initializedModelId(outputFile) {
+  const normalized = basename(outputFile, ".pkl")
+    .replace(/[^A-Za-z0-9_.\-/]+/g, "-")
+    .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, "");
+  return normalized || "dspec-model";
+}
+
+function installedSchemaPath(outputFile) {
+  let directory = dirname(resolve(outputFile));
+  while (true) {
+    const candidate = join(directory, "node_modules", "@mizchi", "dspec", "dspec", "Schema.pkl");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(directory);
+    if (parent === directory) break;
+    directory = parent;
+  }
+  return resolve(dirname(fileURLToPath(import.meta.url)), "..", "dspec", "Schema.pkl");
+}
+
+function renderInitializedModel({ id, schemaImportPath }) {
+  return `import ${pklString(schemaImportPath)} as d
+
+model: d.Model = new {
+  id = ${pklString(id)}
+  name = d.text("仕様", "Specification")
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales { "en" }
+}
+`;
+}
+
+function defaultSchemaLockPath(modelFile) {
+  const extension = ".pkl";
+  const base = modelFile.endsWith(extension) ? modelFile.slice(0, -extension.length) : modelFile;
+  return `${base}.lock.json`;
+}
+
+function defaultTraceLockPath(modelFile) {
+  const extension = ".pkl";
+  const base = modelFile.endsWith(extension) ? modelFile.slice(0, -extension.length) : modelFile;
+  return `${base}.trace.lock.json`;
+}
+
+function defaultTranslationLockPath(modelFile) {
+  const extension = ".pkl";
+  const base = modelFile.endsWith(extension) ? modelFile.slice(0, -extension.length) : modelFile;
+  return `${base}.translation.lock.json`;
+}
+
+function relativeWorktreePath(path) {
+  return relative(process.cwd(), resolve(path)).replaceAll("\\", "/");
+}
+
+function changedWorktreePaths() {
+  const tracked = spawnSync("git", ["diff", "--name-only", "HEAD"], { encoding: "utf8" });
+  if (tracked.status !== 0) return { paths: new Set(), error: tracked.stderr || "git diff failed" };
+  const untracked = spawnSync("git", ["ls-files", "--others", "--exclude-standard"], { encoding: "utf8" });
+  if (untracked.status !== 0) return { paths: new Set(), error: untracked.stderr || "git ls-files failed" };
+  return {
+    paths: new Set(`${tracked.stdout}\n${untracked.stdout}`.split("\n").map((path) => path.trim()).filter(Boolean)),
+    error: null,
+  };
+}
+
+function traceKeyPath(key) {
+  const separator = String(key).indexOf(":");
+  if (separator < 0) return null;
+  const pathAndSymbol = String(key).slice(separator + 1);
+  return pathAndSymbol.split("#", 1)[0];
+}
+
+function scopeTraceReportToDiff(report, modelFile) {
+  const changed = changedWorktreePaths();
+  if (changed.error) {
+    return {
+      ...report,
+      status: "fail",
+      errors: [...report.errors, `trace diff scope failed: ${changed.error.trim()}`],
+      scope: { kind: "diff", changedPaths: [] },
+    };
+  }
+  const modelPath = relativeWorktreePath(modelFile);
+  const drift = report.drift.filter((entry) => {
+    if (entry.kind.startsWith("rule-")) return changed.paths.has(modelPath);
+    const sourcePath = traceKeyPath(entry.key);
+    return sourcePath !== null && changed.paths.has(sourcePath);
+  });
+  return {
+    ...report,
+    status: report.errors.length === 0 && drift.length === 0 ? "pass" : "fail",
+    drift,
+    scope: { kind: "diff", changedPaths: [...changed.paths].sort() },
+  };
+}
+
+function renderTraceReport(report) {
+  if (report.status === "pass") {
+    return `ok: ${report.model.id} trace (${report.scope?.kind ?? "all"}, ${report.coverage.filter((entry) => entry.status === "verified").length}/${report.coverage.length} verified)\n`;
+  }
+  const lines = ["trace drift:"];
+  for (const entry of report.drift) {
+    lines.push(`  ${entry.kind}: ${entry.rule} -> ${entry.key}`);
+  }
+  for (const error of report.errors) lines.push(`  error: ${error}`);
+  return `${lines.join("\n")}\n`;
+}
+
+function runTrace(args) {
+  if (hasHelpFlag(args)) {
+    process.stdout.write(traceUsage());
+    return;
+  }
+  const options = parseTraceArgs(args);
+  const document = loadTraceDocument(options.file);
+  if (options.operation === "reconcile") {
+    const snapshot = traceSnapshot(document);
+    if (snapshot.status === "fail") throw new CommandError(`${snapshot.errors.join("\n")}\n`);
+    const lock = createTraceLock(snapshot);
+    const output = resolve(options.output ?? defaultTraceLockPath(options.file));
+    mkdirSync(dirname(output), { recursive: true });
+    writeFileSync(output, stableJson(lock));
+    const report = { status: "pass", model: snapshot.model, lock: { path: output, rules: lock.rules.length, digest: sha256Digest(stableJson(lock)) } };
+    if (options.json) {
+      process.stdout.write(stableJson(report));
+      return;
+    }
+    process.stdout.write(`ok: reconciled trace ${report.lock.path} (${report.lock.rules} rules)\n`);
+    return;
+  }
+
+  const lockPath = resolve(options.lock ?? defaultTraceLockPath(options.file));
+  if (!existsSync(lockPath)) {
+    throw new CommandError(`trace lock not found: ${lockPath}; run dspec trace reconcile ${options.file}\n`);
+  }
+  let report = traceCheck(document, readJsonFile(lockPath, "trace lock"));
+  if (options.diff) report = scopeTraceReportToDiff(report, options.file);
+  else report = { ...report, scope: { kind: "all", changedPaths: [] } };
+  if (options.json) process.stdout.write(stableJson(report));
+  else process.stdout.write(renderTraceReport(report));
+  if (options.gate && report.status === "fail") {
+    throw new CommandError("trace gate failed\n");
+  }
+}
+
+function renderTranslationReport(report) {
+  if (report.status === "pass") {
+    return `ok: ${report.model.id} translations (${report.entries.length} bindings)\n`;
+  }
+  const lines = ["translation drift:"];
+  for (const entry of report.drift) lines.push(`  ${entry.kind}: ${entry.key}`);
+  for (const error of report.errors) lines.push(`  error: ${error}`);
+  return `${lines.join("\n")}\n`;
+}
+
+function runTranslation(args) {
+  if (hasHelpFlag(args)) {
+    process.stdout.write(translationUsage());
+    return;
+  }
+  const options = parseTranslationArgs(args);
+  const document = loadTraceDocument(options.file);
+  if (options.operation === "reconcile") {
+    const snapshot = translationSnapshot(document);
+    if (snapshot.status === "fail") throw new CommandError(`${snapshot.errors.join("\n")}\n`);
+    const lock = createTranslationLock(snapshot);
+    const output = resolve(options.output ?? defaultTranslationLockPath(options.file));
+    mkdirSync(dirname(output), { recursive: true });
+    writeFileSync(output, stableJson(lock));
+    const report = {
+      status: "pass",
+      model: snapshot.model,
+      lock: { path: output, bindings: lock.entries.length, digest: sha256Digest(stableJson(lock)) },
+    };
+    if (options.json) {
+      process.stdout.write(stableJson(report));
+      return;
+    }
+    process.stdout.write(`ok: reconciled translations ${report.lock.path} (${report.lock.bindings} bindings)\n`);
+    return;
+  }
+
+  const lockPath = resolve(options.lock ?? defaultTranslationLockPath(options.file));
+  if (!existsSync(lockPath)) {
+    throw new CommandError(`translation lock not found: ${lockPath}; run dspec translation reconcile ${options.file}\n`);
+  }
+  const report = translationCheck(document, readJsonFile(lockPath, "translation lock"));
+  if (options.json) process.stdout.write(stableJson(report));
+  else process.stdout.write(renderTranslationReport(report));
+  if (options.gate && report.status === "fail") {
+    throw new CommandError("translation gate failed\n");
+  }
+}
+
+function schemaImportFromModel(modelFile) {
+  const source = readTextFile(modelFile);
+  const importPath = source.match(/^\s*import\s+"([^"\n]*Schema\.pkl)"\s+as\s+[A-Za-z_][A-Za-z0-9_]*\s*$/m)?.[1];
+  if (!importPath) {
+    throw new CommandError(`model does not import a Schema.pkl module: ${modelFile}\n`);
+  }
+  return importPath;
+}
+
+function enclosingPklProject(modelFile) {
+  let directory = dirname(resolve(modelFile));
+  while (true) {
+    const projectFile = join(directory, "PklProject");
+    if (existsSync(projectFile)) return projectFile;
+    const parent = dirname(directory);
+    if (parent === directory) return null;
+    directory = parent;
+  }
+}
+
+function localPklDependencyRoot(modelFile, alias) {
+  const projectFile = enclosingPklProject(modelFile);
+  if (!projectFile) return null;
+  const projectSource = readFileSync(projectFile, "utf8");
+  const declaration = projectSource.match(new RegExp(`\\["${escapeRegex(alias)}"\\]\\s*=\\s*import\\("([^"\\n]+)"\\)`));
+  if (!declaration) return null;
+  const dependencyProject = resolve(dirname(projectFile), declaration[1]);
+  return dirname(dependencyProject);
+}
+
+function resolveSchemaModulePath(modelFile, importPath) {
+  if (!importPath.startsWith("@")) return resolvePathRelativeToFile(modelFile, importPath);
+  const match = importPath.match(/^@([^/]+)\/(.+)$/);
+  if (!match) throw new CommandError(`unsupported schema import: ${importPath}\n`);
+  const dependencyRoot = localPklDependencyRoot(modelFile, match[1]);
+  if (!dependencyRoot) {
+    throw new CommandError(`schema lock requires a local Pkl dependency: ${importPath}\n`);
+  }
+  return resolve(dependencyRoot, match[2]);
+}
+
+function schemaModuleFiles(schemaFile, seen = new Set()) {
+  const absolutePath = resolve(schemaFile);
+  if (seen.has(absolutePath)) return [];
+  seen.add(absolutePath);
+  if (!existsSync(absolutePath)) {
+    throw new CommandError(`schema module does not exist: ${absolutePath}\n`);
+  }
+  const source = readFileSync(absolutePath, "utf8");
+  const inherited = Array.from(source.matchAll(/^\s*(?:amends|extends)\s+"([^"\n]+)"/gm), (match) => match[1])
+    .filter((path) => !path.includes(":"));
+  return [absolutePath, ...inherited.flatMap((path) => schemaModuleFiles(resolve(dirname(absolutePath), path), seen))];
+}
+
+function schemaPackage(schemaFile) {
+  let directory = dirname(resolve(schemaFile));
+  while (true) {
+    const manifestPath = join(directory, "package.json");
+    if (existsSync(manifestPath)) {
+      try {
+        const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+        if (typeof manifest.name === "string" && typeof manifest.version === "string") {
+          return { name: manifest.name, version: manifest.version };
+        }
+      } catch {
+        // A malformed package manifest does not prevent file-level schema locking.
+      }
+    }
+    const parent = dirname(directory);
+    if (parent === directory) return null;
+    directory = parent;
+  }
+}
+
+function schemaLockDocument(modelFile, lockFile) {
+  const importPath = schemaImportFromModel(modelFile);
+  const schemaFile = resolveSchemaModulePath(modelFile, importPath);
+  const modules = schemaModuleFiles(schemaFile);
+  const files = [modules[0], ...modules.slice(1).sort()]
+    .map((path) => ({ path: pklImportPath(lockFile, path), digest: fileDigest(path) }));
+  return {
+    schemaLockVersion: 1,
+    model: {
+      schemaImportPath: importPath,
+    },
+    schema: {
+      rootPath: pklImportPath(lockFile, schemaFile),
+      files,
+      package: schemaPackage(schemaFile),
+    },
+  };
+}
+
+function writeSchemaLock({ modelFile, lockFile, force = false }) {
+  const outputPath = resolve(lockFile);
+  if (existsSync(outputPath) && !force) {
+    throw new CommandError(`refusing to overwrite existing schema lock: ${lockFile}; use --force\n`);
+  }
+  const document = schemaLockDocument(modelFile, outputPath);
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, stableJson(document));
+  return {
+    path: lockFile,
+    files: document.schema.files.length,
+    package: document.schema.package,
+  };
+}
+
+function schemaLockReport(modelFile, { lockFile = null, requireLock = false } = {}) {
+  const selectedLockFile = lockFile ?? defaultSchemaLockPath(modelFile);
+  const lockPath = resolve(selectedLockFile);
+  const explicitlyRequested = lockFile !== null;
+  if (!existsSync(lockPath)) {
+    const errors = requireLock || explicitlyRequested ? [`schema lock not found: ${selectedLockFile}`] : [];
+    return {
+      status: errors.length > 0 ? "fail" : "skip",
+      configured: false,
+      path: selectedLockFile,
+      reason: "schema lock not found",
+      errors,
+    };
+  }
+
+  let lock;
+  try {
+    lock = JSON.parse(readFileSync(lockPath, "utf8"));
+  } catch (error) {
+    const errors = [`failed to parse schema lock: ${selectedLockFile}: ${error.message}`];
+    return { status: "fail", configured: true, path: selectedLockFile, errors };
+  }
+
+  const errors = [];
+  if (lock.schemaLockVersion !== 1) errors.push(`unsupported schema lock version: ${lock.schemaLockVersion ?? "missing"}`);
+  let importPath = null;
+  try {
+    importPath = schemaImportFromModel(modelFile);
+  } catch (error) {
+    errors.push(error.message.trim());
+  }
+  if (importPath !== null && lock.model?.schemaImportPath !== importPath) {
+    errors.push(`schema import changed: lock has ${lock.model?.schemaImportPath ?? "missing"}, model has ${importPath}`);
+  }
+
+  let schemaFile = null;
+  if (importPath !== null) {
+    try {
+      schemaFile = resolveSchemaModulePath(modelFile, importPath);
+    } catch (error) {
+      errors.push(error.message.trim());
+    }
+  }
+  const expectedRootPath = schemaFile === null ? null : pklImportPath(lockPath, schemaFile);
+  if (expectedRootPath !== null && lock.schema?.rootPath !== expectedRootPath) {
+    errors.push(`schema root changed: lock has ${lock.schema?.rootPath ?? "missing"}, model resolves ${expectedRootPath}`);
+  }
+  const files = Array.isArray(lock.schema?.files) ? lock.schema.files : [];
+  if (files.length === 0) errors.push("schema lock has no module files");
+  for (const entry of files) {
+    if (!entry || typeof entry.path !== "string" || typeof entry.digest !== "string") {
+      errors.push("schema lock has an invalid module file entry");
+      continue;
+    }
+    const path = resolvePathRelativeToFile(lockPath, entry.path);
+    if (!existsSync(path)) {
+      errors.push(`schema module missing: ${entry.path}`);
+      continue;
+    }
+    const digest = fileDigest(path);
+    if (digest !== entry.digest) errors.push(`schema module digest changed: ${entry.path}`);
+  }
+  const currentPackage = schemaFile === null || !existsSync(schemaFile) ? null : schemaPackage(schemaFile);
+  if (JSON.stringify(lock.schema?.package ?? null) !== JSON.stringify(currentPackage)) {
+    errors.push("schema package metadata changed");
+  }
+
+  return {
+    status: reportStatus(errors),
+    configured: true,
+    path: selectedLockFile,
+    files: files.length,
+    package: lock.schema?.package ?? null,
+    errors,
+  };
+}
+
+function initializeModel({ outputFile, lockFile = null, force = false }) {
+  const outputPath = resolve(outputFile);
+  const selectedLockFile = lockFile ?? defaultSchemaLockPath(outputFile);
+  const lockPath = resolve(selectedLockFile);
+  if (existsSync(outputPath) && !force) {
+    throw new CommandError(`refusing to overwrite existing model: ${outputFile}; use --force\n`);
+  }
+  if (existsSync(lockPath) && !force) {
+    throw new CommandError(`refusing to overwrite existing schema lock: ${selectedLockFile}; use --force\n`);
+  }
+  const schemaImportPath = pklImportPath(outputPath, installedSchemaPath(outputPath));
+  const id = initializedModelId(outputPath);
+  const rendered = renderInitializedModel({ id, schemaImportPath });
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, rendered);
+  const lock = writeSchemaLock({ modelFile: outputPath, lockFile: selectedLockFile, force: true });
+  return {
+    path: outputFile,
+    schemaImportPath,
+    bytes: Buffer.byteLength(rendered, "utf8"),
+    lock,
+  };
+}
+
+function scaffoldRuleDocument({ modelFile, outputFile = null, ruleId, kind, terms, implementation, test }) {
+  const model = loadModel(modelFile);
+  const vocabulary = new Set(list(model.vocabulary).map((term) => term.id));
+  for (const term of terms) {
+    if (!vocabulary.has(term)) throw new CommandError(`unknown vocabulary term: ${term}\n`);
+  }
+  const modelSchemaImport = schemaImportFromModel(modelFile);
+  const schemaFile = resolveSchemaModulePath(modelFile, modelSchemaImport);
+  const schemaImportPath = outputFile ? pklImportPath(outputFile, schemaFile) : modelSchemaImport;
+  const lines = [
+    `import ${pklString(schemaImportPath)} as d`,
+    "",
+    "rule: d.Rule = new {",
+    `  id = ${pklString(ruleId)}`,
+    `  kind = ${pklString(kind)}`,
+    `  text = d.text(${pklString(`${ruleId} を満たす`)}, ${pklString(`${ruleId} holds`)})`,
+  ];
+  if (terms.length > 0) {
+    lines.push("  terms {");
+    for (const term of terms) lines.push(`    ${pklString(term)}`);
+    lines.push("  }");
+  }
+  lines.push('  reviewStatus = "draft"');
+  if (test) {
+    lines.push("  checks {", `    d.nodeCheck(${pklString(`${test.path}#${test.anchor}`)})`, "  }");
+  }
+  if (implementation) {
+    lines.push(
+      "  implementedBy {",
+      `    d.codeRef(${pklString(implementation.path)}, ${pklString(implementation.anchor)})`,
+      "  }",
+    );
+  }
+  lines.push("}");
+  return {
+    model: modelReport(model),
+    schemaImportPath,
+    source: `${lines.join("\n")}\n`,
+  };
+}
+
+function writeScaffoldedRule(outputFile, source, force = false) {
+  const path = resolve(outputFile);
+  if (existsSync(path) && !force) {
+    throw new CommandError(`refusing to overwrite existing rule scaffold: ${outputFile}; use --force\n`);
+  }
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, source);
+  return { path: outputFile, bytes: Buffer.byteLength(source, "utf8") };
+}
+
+function runScaffoldCommand(args) {
+  const [subcommand, ...rest] = args;
+  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
+    process.stdout.write(scaffoldUsage());
+    return;
+  }
+  if (subcommand !== "rule") {
+    throw new CommandError(`unknown scaffold subcommand: ${subcommand}\n${scaffoldUsage()}`);
+  }
+  if (hasHelpFlag(rest)) {
+    process.stdout.write(scaffoldUsage());
+    return;
+  }
+  const options = parseScaffoldRuleArgs(rest);
+  const scaffold = scaffoldRuleDocument(options);
+  const output = options.outputFile ? writeScaffoldedRule(options.outputFile, scaffold.source, options.force) : null;
+  const report = {
+    status: "pass",
+    model: scaffold.model,
+    rule: { id: options.ruleId, kind: options.kind, terms: options.terms },
+    output,
+    ...(options.json || output ? { source: scaffold.source } : {}),
+  };
+  if (options.json) {
+    process.stdout.write(stableJson(report));
+    return;
+  }
+  if (output) {
+    process.stdout.write(`ok: wrote draft rule scaffold ${output.path}\n`);
+    return;
+  }
+  process.stdout.write(scaffold.source);
 }
 
 function scaffoldAppProfile(args = {}) {
@@ -6069,6 +9574,21 @@ function normalizeRuntimeEvidenceImport(document) {
       timedOut: optionalImportBoolean(errors, path, record, "timedOut", false),
     };
   });
+  const intentExecutions = providerList(document, "otel", "intentExecutions").map((record, index) => {
+    const path = `otel.intentExecutions[${index}]`;
+    return {
+      duplicateSuppressed: optionalImportBoolean(errors, path, record, "duplicateSuppressed", false),
+      id: requiredImportString(errors, path, record, "id"),
+      idempotencyKeyObserved: optionalImportBoolean(errors, path, record, "idempotencyKeyObserved", false),
+      maxInFlightObserved: optionalImportInt(errors, path, record, "maxInFlightObserved", { min: 0 }),
+      observedAt: optionalImportIsoDate(errors, path, record, "observedAt"),
+      observedLatencyMs: optionalImportInt(errors, path, record, "observedLatencyMs", { min: 0 }),
+      process: requiredImportString(errors, path, record, "process"),
+      refinement: requiredImportString(errors, path, record, "refinement"),
+      source: optionalImportString(errors, path, record, "source"),
+      timedOut: optionalImportBoolean(errors, path, record, "timedOut", false),
+    };
+  });
 
   if (errors.length > 0) {
     throw new CommandError(`${errors.join("\n")}\n`);
@@ -6077,6 +9597,7 @@ function normalizeRuntimeEvidenceImport(document) {
   return {
     alertPolicies: alertPolicies.sort(byId),
     dependencyTraces: dependencyTraces.sort(byId),
+    intentExecutions: intentExecutions.sort(byId),
     runbookExecutions: runbookExecutions.sort(byId),
     telemetry: telemetry.sort(byId),
   };
@@ -6133,6 +9654,14 @@ function emitRuntimeEvidencePkl(evidence) {
     lines.push("dependencyTraces {");
     for (const record of evidence.dependencyTraces) {
       pushPklRecord(lines, "RuntimeDependencyTrace", record, ["id", "dependency", "observedLatencyMs", "timedOut", "idempotencyKeyObserved", "observedAt", "source"]);
+    }
+    lines.push("}");
+  }
+  if (evidence.intentExecutions.length > 0) {
+    if (lines.length > 0) lines.push("");
+    lines.push("intentExecutions {");
+    for (const record of evidence.intentExecutions) {
+      pushPklRecord(lines, "RuntimeIntentExecution", record, ["id", "process", "refinement", "observedLatencyMs", "maxInFlightObserved", "timedOut", "idempotencyKeyObserved", "duplicateSuppressed", "observedAt", "source"]);
     }
     lines.push("}");
   }
@@ -6230,11 +9759,33 @@ function collectOtelDependencyTraces(payload) {
   });
 }
 
+function collectOtelIntentExecutions(payload) {
+  return list(payload?.spans).map((span, index) => {
+    const attributes = span?.attributes ?? {};
+    const id = span?.span_id ?? span?.spanId ?? span?.id ?? `otel-intent-execution-${index}`;
+    const durationMs = span?.duration_ms ?? span?.durationMs ?? (span?.duration_nano !== undefined ? Math.round(Number(span.duration_nano) / 1000000) : null);
+    const maxInFlightObserved = numericValue(attributes["dspec.execution.max_in_flight"] ?? attributes["dspec.execution.maxInFlight"]);
+    return {
+      duplicateSuppressed: Boolean(attributes["dspec.execution.duplicate_suppressed"] ?? attributes["dspec.execution.duplicateSuppressed"] ?? false),
+      id,
+      idempotencyKeyObserved: Boolean(attributes["http.request.header.idempotency-key.present"] ?? attributes["idempotency_key_present"] ?? false),
+      maxInFlightObserved: Number.isInteger(maxInFlightObserved) ? maxInFlightObserved : null,
+      observedAt: coerceIsoDate(span?.observed_at ?? span?.observedAt ?? span?.start_time ?? span?.startTime ?? null),
+      observedLatencyMs: durationMs,
+      process: attributes["dspec.intent.process"] ?? attributes["intent.process"] ?? null,
+      refinement: attributes["dspec.intent.refinement"] ?? attributes["intent.refinement"] ?? null,
+      source: span?.source ?? `otel:${span?.trace_id ?? span?.traceId ?? id}`,
+      timedOut: Boolean(attributes["timeout"] ?? attributes["timeout.observed"] ?? span?.status?.code === "TIMEOUT"),
+    };
+  });
+}
+
 function collectorAdapter(provider, kind) {
   if (provider === "prometheus" && kind === "telemetry") return collectPrometheusTelemetry;
   if (provider === "pagerduty" && kind === "alertPolicies") return collectPagerDutyAlertPolicies;
   if (provider === "incident" && kind === "runbookExecutions") return collectIncidentRunbookExecutions;
   if (provider === "otel" && kind === "dependencyTraces") return collectOtelDependencyTraces;
+  if (provider === "otel" && kind === "intentExecutions") return collectOtelIntentExecutions;
   return null;
 }
 
@@ -6299,7 +9850,7 @@ async function collectRuntimeEvidence(manifest, baseDir = process.cwd()) {
   const errors = [];
   const collected = {
     incident: { runbookExecutions: [] },
-    otel: { dependencyTraces: [] },
+    otel: { dependencyTraces: [], intentExecutions: [] },
     pagerduty: { alertPolicies: [] },
     prometheus: { telemetry: [] },
   };
@@ -6323,6 +9874,7 @@ async function collectRuntimeEvidence(manifest, baseDir = process.cwd()) {
   normalizeRuntimeEvidenceImport(collected);
   collected.incident.runbookExecutions.sort(byId);
   collected.otel.dependencyTraces.sort(byId);
+  collected.otel.intentExecutions.sort(byId);
   collected.pagerduty.alertPolicies.sort(byId);
   collected.prometheus.telemetry.sort(byId);
   return collected;
@@ -6338,8 +9890,10 @@ function runtimeSignalForSlo(runtime, slo) {
     .sort(byId)[0] ?? null;
 }
 
-function runtimeCollectorSources(runtime) {
-  if (!runtime) return [];
+function runtimeCollectorSources(model) {
+  const runtime = runtimePattern(model);
+  const intent = intentPattern(model);
+  if (!runtime && !intent) return [];
 
   const sources = [];
   const runbookById = new Map(runtimeRunbooks(runtime).map((runbook) => [runbook.id, runbook]));
@@ -6457,6 +10011,50 @@ function runtimeCollectorSources(runtime) {
       });
     });
 
+  intentProcesses(intent)
+    .slice()
+    .sort(byId)
+    .filter((process) => process.execution)
+    .forEach((process) => {
+      const processIndex = intentProcesses(intent).findIndex((candidate) => candidate.id === process.id);
+      const policy = process.execution;
+      intentRefinements(process)
+        .slice()
+        .sort(byId)
+        .forEach((refinement) => {
+          const executionId = `${process.id}-${refinement.id}-execution`;
+          sources.push({
+            expects: {
+              duplicateSuppressed: Boolean(policy.idempotencyKey),
+              id: executionId,
+              idempotencyKeyObserved: Boolean(policy.idempotencyKey),
+              maxInFlightObservedAtMost: policy.maxInFlight,
+              observedLatencyMsAtMost: policy.timeoutMs ?? null,
+              process: process.id,
+              refinement: refinement.id,
+              timedOut: false,
+            },
+            kind: "intentExecutions",
+            path: runtimeCollectorFile("otel", executionId),
+            provider: "otel",
+            query: {
+              process: process.id,
+              refinement: refinement.id,
+              requiredAttributes: {
+                "dspec.execution.duplicate_suppressed": Boolean(policy.idempotencyKey),
+                "dspec.execution.max_in_flight": policy.maxInFlight,
+                "dspec.intent.process": process.id,
+                "dspec.intent.refinement": refinement.id,
+                "http.request.header.idempotency-key.present": Boolean(policy.idempotencyKey),
+              },
+              timeoutMs: policy.timeoutMs ?? null,
+            },
+            source: "file",
+            sourceMap: intentExecutionPolicySource(process, processIndex),
+          });
+        });
+    });
+
   return sources.sort((left, right) => {
     const provider = left.provider.localeCompare(right.provider);
     if (provider !== 0) return provider;
@@ -6469,7 +10067,7 @@ function runtimeCollectorSources(runtime) {
 function runtimeCollectorManifest(model) {
   return {
     modelId: model.id,
-    sources: runtimeCollectorSources(runtimePattern(model)),
+    sources: runtimeCollectorSources(model),
   };
 }
 
@@ -6546,13 +10144,34 @@ function runtimeEvidencePayloadForSource(source) {
       ],
     };
   }
+  if (source.provider === "otel" && source.kind === "intentExecutions") {
+    const timedOut = expects.timedOut ?? false;
+    return {
+      spans: [
+        {
+          attributes: {
+            "dspec.execution.duplicate_suppressed": expects.duplicateSuppressed ?? false,
+            "dspec.execution.max_in_flight": expects.maxInFlightObservedAtMost ?? 0,
+            "dspec.intent.process": expects.process,
+            "dspec.intent.refinement": expects.refinement,
+            "http.request.header.idempotency-key.present": expects.idempotencyKeyObserved ?? false,
+            ...(timedOut ? { timeout: true } : {}),
+          },
+          duration_ms: expects.observedLatencyMsAtMost ?? 0,
+          name: expects.refinement,
+          span_id: expects.id,
+          status: { code: timedOut ? "TIMEOUT" : "OK" },
+        },
+      ],
+    };
+  }
   return {};
 }
 
 function runtimeCollectorFixtureManifest(model) {
   return {
     modelId: model.id,
-    sources: runtimeCollectorSources(runtimePattern(model)).map((source) => ({
+    sources: runtimeCollectorSources(model).map((source) => ({
       ...source,
       payload: runtimeEvidencePayloadForSource(source),
       source: "inline",
@@ -6569,6 +10188,7 @@ function runtimeEvidenceRecordsForSource(evidence, source) {
   if (source.provider === "pagerduty" && source.kind === "alertPolicies") return evidence.alertPolicies;
   if (source.provider === "incident" && source.kind === "runbookExecutions") return evidence.runbookExecutions;
   if (source.provider === "otel" && source.kind === "dependencyTraces") return evidence.dependencyTraces;
+  if (source.provider === "otel" && source.kind === "intentExecutions") return evidence.intentExecutions;
   return [];
 }
 
@@ -6577,6 +10197,7 @@ function runtimeEvidenceRecordKind(source) {
   if (source.provider === "pagerduty" && source.kind === "alertPolicies") return "alertPolicy";
   if (source.provider === "incident" && source.kind === "runbookExecutions") return "runbookExecution";
   if (source.provider === "otel" && source.kind === "dependencyTraces") return "dependencyTrace";
+  if (source.provider === "otel" && source.kind === "intentExecutions") return "intentExecution";
   return "runtimeEvidence";
 }
 
@@ -6628,10 +10249,10 @@ function checkExpectedAtLeast(failures, source, record, field, property) {
   }
 }
 
-function checkExpectedAtMost(failures, source, record, field, property) {
-  const expected = source.expects?.[field];
+function checkExpectedAtMost(failures, source, record, expectedField, observedField, property) {
+  const expected = source.expects?.[expectedField];
   if (expected === null || expected === undefined) return;
-  const observed = record.observedLatencyMs ?? null;
+  const observed = record[observedField] ?? null;
   if (observed === null || observed > expected) {
     failures.push(expectationFailure(source, property, expected, observed));
   }
@@ -6738,9 +10359,17 @@ function verifyRuntimeEvidenceSource(source, evidence) {
     checkExpectedEqual(failures, source, record, "status", "runbookExecution.status");
   } else if (kind === "dependencyTrace") {
     checkExpectedEqual(failures, source, record, "dependency", "dependencyTrace.dependency");
-    checkExpectedAtMost(failures, source, record, "observedLatencyMsAtMost", "dependencyTrace.observedLatencyMsAtMost");
+    checkExpectedAtMost(failures, source, record, "observedLatencyMsAtMost", "observedLatencyMs", "dependencyTrace.observedLatencyMsAtMost");
     checkExpectedEqual(failures, source, record, "timedOut", "dependencyTrace.timedOut");
     checkExpectedEqual(failures, source, record, "idempotencyKeyObserved", "dependencyTrace.idempotencyKeyObserved");
+  } else if (kind === "intentExecution") {
+    checkExpectedEqual(failures, source, record, "process", "intentExecution.process");
+    checkExpectedEqual(failures, source, record, "refinement", "intentExecution.refinement");
+    checkExpectedAtMost(failures, source, record, "maxInFlightObservedAtMost", "maxInFlightObserved", "intentExecution.maxInFlightObservedAtMost");
+    checkExpectedEqual(failures, source, record, "timedOut", "intentExecution.timedOut");
+    checkExpectedEqual(failures, source, record, "idempotencyKeyObserved", "intentExecution.idempotencyKeyObserved");
+    checkExpectedEqual(failures, source, record, "duplicateSuppressed", "intentExecution.duplicateSuppressed");
+    checkExpectedAtMost(failures, source, record, "observedLatencyMsAtMost", "observedLatencyMs", "intentExecution.observedLatencyMsAtMost");
   }
   checkExpectedFreshness(failures, source, record, kind);
 
@@ -7039,6 +10668,113 @@ function runtimeDependencyTraceSource(trace, index) {
   return { kind: "runtimeDependencyTrace", traceId: trace.id, path: `model.patterns.runtime.dependencyTraces[${index}]` };
 }
 
+function runtimeIntentExecutionSource(execution, index) {
+  return { kind: "runtimeIntentExecution", executionId: execution.id, path: `model.patterns.runtime.intentExecutions[${index}]` };
+}
+
+function intentCapabilitySource(capability, index) {
+  return { kind: "intentCapability", capabilityId: capability.id, path: `model.patterns.intent.capabilities[${index}]` };
+}
+
+function intentOutcomeSource(outcome, index) {
+  return { kind: "intentOutcome", outcomeId: outcome.id, path: `model.patterns.intent.outcomes[${index}]` };
+}
+
+function intentProcessSource(process, index) {
+  return { kind: "intentProcess", processId: process.id, path: `model.patterns.intent.processes[${index}]` };
+}
+
+function constructionAuthoritySource(authority, index) {
+  return { kind: "constructionAuthority", authorityId: authority.id, path: `model.patterns.intent.constructionAuthorities[${index}]` };
+}
+
+function intentAccessPolicySource(policy, index) {
+  return { kind: "intentAccessPolicy", policyId: policy.id, path: `model.patterns.intent.accessPolicies[${index}]` };
+}
+
+function intentGoalSource(goal, index) {
+  return { kind: "intentGoal", goalId: goal.id, path: `model.patterns.intent.goals[${index}]` };
+}
+
+function intentClaimSource(claim, index) {
+  return { kind: "intentClaim", claimId: claim.id, path: `model.patterns.intent.claims[${index}]` };
+}
+
+function intentAssuranceTaskSource(task, index) {
+  return { kind: "intentAssuranceTask", taskId: task.id, path: `model.patterns.intent.assuranceTasks[${index}]` };
+}
+
+function intentSemanticBindingSource(binding, index) {
+  return { kind: "intentSemanticBinding", bindingId: binding.id, path: `model.patterns.intent.semanticBindings[${index}]` };
+}
+
+function intentScenarioSource(scenario, index) {
+  return { kind: "intentScenario", scenarioId: scenario.id, path: `model.patterns.intent.scenarios[${index}]` };
+}
+
+function intentInputFieldSource(process, processIndex, field, fieldIndex) {
+  return {
+    kind: "intentInputField",
+    processId: process.id,
+    fieldId: field.id,
+    path: `model.patterns.intent.processes[${processIndex}].inputContract.fields[${fieldIndex}]`,
+  };
+}
+
+function intentOutputFieldSource(outcome, outcomeIndex, field, fieldIndex) {
+  return {
+    kind: "intentOutputField",
+    outcomeId: outcome.id,
+    fieldId: field.id,
+    path: `model.patterns.intent.outcomes[${outcomeIndex}].outputContract.fields[${fieldIndex}]`,
+  };
+}
+
+function intentEffectSource(outcome, outcomeIndex, effect, effectIndex) {
+  return {
+    kind: "intentEffect",
+    outcomeId: outcome.id,
+    effectId: effect.id,
+    path: `model.patterns.intent.outcomes[${outcomeIndex}].effects[${effectIndex}]`,
+  };
+}
+
+function intentRefinementSource(process, processIndex, refinement, refinementIndex) {
+  return {
+    kind: "intentRefinement",
+    processId: process.id,
+    refinementId: refinement.id,
+    path: `model.patterns.intent.processes[${processIndex}].refinements[${refinementIndex}]`,
+  };
+}
+
+function intentExecutionPolicySource(process, processIndex) {
+  return {
+    kind: "intentExecutionPolicy",
+    processId: process.id,
+    path: `model.patterns.intent.processes[${processIndex}].execution`,
+  };
+}
+
+function domainDeclarationSource(collection, declaration, index) {
+  return {
+    kind: "domainDeclaration",
+    declarationKind: collection,
+    declarationId: declaration.id,
+    path: `model.patterns.domain.${collection}[${index}]`,
+  };
+}
+
+function domainFieldSource(collection, declaration, declarationIndex, field, fieldIndex) {
+  return {
+    kind: "domainField",
+    declarationKind: collection,
+    declarationId: declaration.id,
+    fieldId: field.id,
+    path: `model.patterns.domain.${collection}[${declarationIndex}].fields[${fieldIndex}]`,
+  };
+}
+
 function generatedEntry(generated, source, extra = {}) {
   return { generated, source, ...extra };
 }
@@ -7082,6 +10818,8 @@ function emitSourceMapObject(model, requestedLocale) {
     tla: [generatedEntry("tla.module", modelSource())],
     tlaCfg: [generatedEntry("tlaCfg.config", modelSource())],
     lean: [generatedEntry("lean.namespace", modelSource())],
+    sourceMap: [generatedEntry("sourceMap.document", modelSource(), { locale })],
+    generatedManifest: [generatedEntry("generatedManifest.document", modelSource(), { locale })],
     runtimeCollector: [generatedEntry("runtimeCollector.manifest", modelSource())],
   };
 
@@ -7091,9 +10829,45 @@ function emitSourceMapObject(model, requestedLocale) {
 
   for (const projection of projections(model).slice().sort(byId)) {
     const index = projections(model).findIndex((candidate) => candidate.id === projection.id);
-    artifacts.markdown.push(
-      generatedEntry(`markdown.projection.${projection.id}`, projectionSource(projection, index), { locale }),
-    );
+    const artifactKind = {
+      markdown: "markdown",
+      quickcheck: "quickcheck",
+      lean: "lean",
+      alloy: "alloy",
+      tla: "tla",
+      "tla-cfg": "tlaCfg",
+      "source-map": "sourceMap",
+      "generated-manifest": "generatedManifest",
+    }[projection.kind];
+    if (artifactKind) {
+      artifacts[artifactKind].push(
+        generatedEntry(`${artifactKind}.projection.${projection.id}`, projectionSource(projection, index), { locale }),
+      );
+    }
+  }
+
+  const domain = domainPattern(model);
+  if (domain) {
+    artifacts.markdown.push(generatedEntry("markdown.domain.relationships", {
+      kind: "domainRelationshipGraph",
+      path: "model.patterns.domain",
+    }));
+    for (const collection of ["enums", "valueObjects", "entities", "aggregates", "commands", "events", "invariants", "formalizations"]) {
+      const declarations = list(domain[collection]);
+      for (const declaration of declarations.slice().sort(byId)) {
+        const declarationIndex = declarations.findIndex((candidate) => candidate.id === declaration.id);
+        const source = domainDeclarationSource(collection, declaration, declarationIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.domain.${collection}.${declaration.id}`, source));
+        if (!Object.hasOwn(declaration, "fields")) continue;
+        for (const field of list(declaration.fields).slice().sort(byId)) {
+          const fieldIndex = list(declaration.fields).findIndex((candidate) => candidate.id === field.id);
+          artifacts.markdown.push(generatedEntry(
+            `markdown.domain.${collection}.${declaration.id}.fields.${field.id}`,
+            domainFieldSource(collection, declaration, declarationIndex, field, fieldIndex),
+          ));
+        }
+      }
+    }
   }
 
   const db = dbPattern(model);
@@ -7516,11 +11290,15 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RTR", trace.id)}`, source));
         artifacts.tla.push(generatedEntry(`tla.RuntimeDependencyTraces[${trace.id}]`, source));
       });
-    for (const source of runtimeCollectorSources(runtime)) {
-      artifacts.runtimeCollector.push(
-        generatedEntry(`runtimeCollector.sources.${source.provider}.${source.kind}.${source.expects.id}`, source.sourceMap),
-      );
-    }
+    runtimeIntentExecutions(runtime)
+      .slice()
+      .sort(byId)
+      .forEach((execution) => {
+        const executionIndex = runtimeIntentExecutions(runtime).findIndex((candidate) => candidate.id === execution.id);
+        const source = runtimeIntentExecutionSource(execution, executionIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.runtime.intentExecutions.${execution.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.intentExecutions.${execution.id}`, source));
+      });
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyRuntimeCriticalSlosHavePageAlert", { kind: "runtimePolicy", path: "model.patterns.runtime.slos" }));
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyRuntimePageAlertsHaveTestedRunbook", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyRuntimeDependenciesHaveTimeout", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencies" }));
@@ -7557,6 +11335,178 @@ function emitSourceMapObject(model, requestedLocale) {
     artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimePageAlertsHaveEnabledPolicy", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
     artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimePageAlertsHaveExecutedRunbook", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
     artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimeDependencyTracesWithinTimeout", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencyTraces" }));
+  }
+  for (const source of runtimeCollectorSources(model)) {
+    artifacts.runtimeCollector.push(
+      generatedEntry(`runtimeCollector.sources.${source.provider}.${source.kind}.${source.expects.id}`, source.sourceMap),
+    );
+  }
+
+  const intent = intentPattern(model);
+  if (intent) {
+    intentCapabilities(intent)
+      .slice()
+      .sort(byId)
+      .forEach((capability) => {
+        const capabilityIndex = intentCapabilities(intent).findIndex((candidate) => candidate.id === capability.id);
+        const source = intentCapabilitySource(capability, capabilityIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.capabilities.${capability.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.capabilities.${capability.id}`, source));
+        artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("IC", capability.id)}`, source));
+        artifacts.tla.push(generatedEntry(`tla.IntentCapabilities[${capability.id}]`, source));
+      });
+    intentOutcomes(intent)
+      .slice()
+      .sort(byId)
+      .forEach((outcome) => {
+        const outcomeIndex = intentOutcomes(intent).findIndex((candidate) => candidate.id === outcome.id);
+        const source = intentOutcomeSource(outcome, outcomeIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.outcomes.${outcome.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.outcomes.${outcome.id}`, source));
+        artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("IO", outcome.id)}`, source));
+        artifacts.tla.push(generatedEntry(`tla.IntentOutcomes[${outcome.id}]`, source));
+        list(outcome.outputContract?.fields)
+          .slice()
+          .sort(byId)
+          .forEach((field) => {
+            const fieldIndex = list(outcome.outputContract?.fields).findIndex((candidate) => candidate.id === field.id);
+            const fieldSource = intentOutputFieldSource(outcome, outcomeIndex, field, fieldIndex);
+            artifacts.markdown.push(generatedEntry(`markdown.intent.outcomes.${outcome.id}.output.fields.${field.id}`, fieldSource));
+            artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.outcomes.${outcome.id}.output.fields.${field.id}`, fieldSource));
+          });
+        list(outcome.effects)
+          .slice()
+          .sort(byId)
+          .forEach((effect) => {
+            const effectIndex = list(outcome.effects).findIndex((candidate) => candidate.id === effect.id);
+            const effectSource = intentEffectSource(outcome, outcomeIndex, effect, effectIndex);
+            artifacts.markdown.push(generatedEntry(`markdown.intent.outcomes.${outcome.id}.effects.${effect.id}`, effectSource));
+            artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.outcomes.${outcome.id}.effects.${effect.id}`, effectSource));
+          });
+      });
+    intentProcesses(intent)
+      .slice()
+      .sort(byId)
+      .forEach((process) => {
+        const processIndex = intentProcesses(intent).findIndex((candidate) => candidate.id === process.id);
+        const source = intentProcessSource(process, processIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.processes.${process.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.processes.${process.id}`, source));
+        artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("IP", process.id)}`, source));
+        artifacts.tla.push(generatedEntry(`tla.IntentProcesses[${process.id}]`, source));
+        if (process.execution) {
+          const executionSource = intentExecutionPolicySource(process, processIndex);
+          artifacts.markdown.push(generatedEntry(`markdown.intent.processes.${process.id}.execution`, executionSource));
+          artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.processes.${process.id}.execution`, executionSource));
+          artifacts.tla.push(generatedEntry(`tla.IntentExecutionPolicy[${process.id}]`, executionSource));
+        }
+        list(process.inputContract?.fields)
+          .slice()
+          .sort(byId)
+          .forEach((field) => {
+            const fieldIndex = list(process.inputContract?.fields).findIndex((candidate) => candidate.id === field.id);
+            const fieldSource = intentInputFieldSource(process, processIndex, field, fieldIndex);
+            artifacts.markdown.push(generatedEntry(`markdown.intent.processes.${process.id}.input.fields.${field.id}`, fieldSource));
+            artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.processes.${process.id}.input.fields.${field.id}`, fieldSource));
+          });
+        intentRefinements(process)
+          .slice()
+          .sort(byId)
+          .forEach((refinement) => {
+            const refinementIndex = intentRefinements(process).findIndex((candidate) => candidate.id === refinement.id);
+            const refinementSource = intentRefinementSource(process, processIndex, refinement, refinementIndex);
+            artifacts.markdown.push(generatedEntry(`markdown.intent.processes.${process.id}.refinements.${refinement.id}`, refinementSource));
+            artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.processes.${process.id}.refinements.${refinement.id}`, refinementSource));
+          });
+      });
+    constructionAuthorities(intent)
+      .slice()
+      .sort(byId)
+      .forEach((authority) => {
+        const authorityIndex = constructionAuthorities(intent).findIndex((candidate) => candidate.id === authority.id);
+        const source = constructionAuthoritySource(authority, authorityIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.constructionAuthorities.${authority.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.constructionAuthorities.${authority.id}`, source));
+        artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("ICA", authority.id)}`, source));
+        artifacts.tla.push(generatedEntry(`tla.IntentAuthorisedConstruction[${authority.id}]`, source));
+      });
+    intentAccessPolicies(intent)
+      .slice()
+      .sort(byId)
+      .forEach((policy) => {
+        const policyIndex = intentAccessPolicies(intent).findIndex((candidate) => candidate.id === policy.id);
+        const source = intentAccessPolicySource(policy, policyIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.accessPolicies.${policy.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.accessPolicies.${policy.id}`, source));
+      });
+    intentGoals(intent)
+      .slice()
+      .sort(byId)
+      .forEach((goal) => {
+        const goalIndex = intentGoals(intent).findIndex((candidate) => candidate.id === goal.id);
+        const source = intentGoalSource(goal, goalIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.goals.${goal.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.goals.${goal.id}`, source));
+      });
+    intentClaims(intent)
+      .slice()
+      .sort(byId)
+      .forEach((claim) => {
+        const claimIndex = intentClaims(intent).findIndex((candidate) => candidate.id === claim.id);
+        const source = intentClaimSource(claim, claimIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.claims.${claim.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.claims.${claim.id}`, source));
+      });
+    intentAssuranceTasks(intent)
+      .slice()
+      .sort(byId)
+      .forEach((task) => {
+        const taskIndex = intentAssuranceTasks(intent).findIndex((candidate) => candidate.id === task.id);
+        const source = intentAssuranceTaskSource(task, taskIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.assuranceTasks.${task.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.assuranceTasks.${task.id}`, source));
+      });
+    intentSemanticBindings(intent)
+      .slice()
+      .sort(byId)
+      .forEach((binding) => {
+        const bindingIndex = intentSemanticBindings(intent).findIndex((candidate) => candidate.id === binding.id);
+        const source = intentSemanticBindingSource(binding, bindingIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.semanticBindings.${binding.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.semanticBindings.${binding.id}`, source));
+      });
+    intentScenarios(intent)
+      .slice()
+      .sort(byId)
+      .forEach((scenario) => {
+        const scenarioIndex = intentScenarios(intent).findIndex((candidate) => candidate.id === scenario.id);
+        const source = intentScenarioSource(scenario, scenarioIndex);
+        artifacts.markdown.push(generatedEntry(`markdown.intent.scenarios.${scenario.id}`, source));
+        artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.scenarios.${scenario.id}`, source));
+        artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("ISC", scenario.id)}`, source));
+        artifacts.tla.push(generatedEntry(`tla.IntentScenarios[${scenario.id}]`, source));
+      });
+    artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentProcessConstructionIsAuthorized", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentScenarioTraceIsContinuous", { kind: "intentPolicy", path: "model.patterns.intent.scenarios" }));
+    artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentProcessRefinementBindingsAreComplete", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentOutcomeEffectBindingsAreComplete", { kind: "intentPolicy", path: "model.patterns.intent.outcomes" }));
+    artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentAccessPolicyOverridesHaveHigherPriority", { kind: "intentPolicy", path: "model.patterns.intent.accessPolicies" }));
+    artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentAccessPoliciesResolveDeterministically", { kind: "intentPolicy", path: "model.patterns.intent.accessPolicies" }));
+    artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentSemanticBindingsAreWellFormed", { kind: "intentPolicy", path: "model.patterns.intent.semanticBindings" }));
+    artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentClaimGraphIsComplete", { kind: "intentPolicy", path: "model.patterns.intent" }));
+    artifacts.alloy.push(generatedEntry("alloy.assert.IntentProcessConstructionIsAuthorized", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tla.push(generatedEntry("tla.IntentProcessConstructionIsAuthorized", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tla.push(generatedEntry("tla.IntentScenarioTraceIsContinuous", { kind: "intentPolicy", path: "model.patterns.intent.scenarios" }));
+    artifacts.tla.push(generatedEntry("tla.IntentExecutionTypeInvariant", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tla.push(generatedEntry("tla.IntentConcurrencyBounded", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tla.push(generatedEntry("tla.IntentIdempotencyKeysAreExclusive", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tla.push(generatedEntry("tla.IntentTimeoutsBounded", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentProcessConstructionIsAuthorized", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentScenarioTraceIsContinuous", { kind: "intentPolicy", path: "model.patterns.intent.scenarios" }));
+    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentExecutionTypeInvariant", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentConcurrencyBounded", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentIdempotencyKeysAreExclusive", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentTimeoutsBounded", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
   }
 
   rules.forEach((rule, sortedRuleIndex) => {
@@ -8333,6 +12283,111 @@ function renderCounterexampleReport(report) {
   return `${lines.join("\n")}\n`;
 }
 
+function appendDomainModelMarkdown(lines, model, locale) {
+  const domain = domainPattern(model);
+  if (!domain) return;
+
+  const renderText = (entry) => {
+    if (!entry.text) return;
+    lines.push(text(entry.text, locale));
+    lines.push("");
+  };
+  const renderFields = (fields) => {
+    for (const field of list(fields).slice().sort(byId)) {
+      const target = field.target ? ` -> \`${field.target}\`` : "";
+      const collection = field.collection ? "[]" : "";
+      const required = field.required === false ? " optional" : " required";
+      lines.push(`- field: \`${field.id}\` ${field.type}${target}${collection}${required}`);
+      if (field.text) lines.push(`  - description: ${text(field.text, locale)}`);
+    }
+  };
+  const renderTarget = (target) => {
+    if (!target) return;
+    const symbol = target.symbol ? `#${target.symbol}` : "";
+    lines.push(`- target: ${target.kind} ${target.path}${symbol}`);
+  };
+
+  lines.push("## Domain Model", "");
+  for (const entry of list(domain.enums).slice().sort(byId)) {
+    lines.push(`### Enum ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- values: ${list(entry.values).map((value) => `\`${value}\``).join(", ")}`, "");
+  }
+  for (const entry of list(domain.valueObjects).slice().sort(byId)) {
+    lines.push(`### Value Object ${entry.id}`, "");
+    renderText(entry);
+    renderFields(entry.fields);
+    lines.push("");
+  }
+  for (const entry of list(domain.entities).slice().sort(byId)) {
+    lines.push(`### Entity ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- identity: \`${entry.identity}\``);
+    renderFields(entry.fields);
+    lines.push("");
+  }
+  for (const entry of list(domain.aggregates).slice().sort(byId)) {
+    lines.push(`### Aggregate ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- root: \`${entry.root}\``);
+    for (const member of list(entry.members).slice().sort()) lines.push(`- member: \`${member}\``);
+    lines.push("");
+  }
+  for (const entry of list(domain.commands).slice().sort(byId)) {
+    lines.push(`### Command ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- aggregate: \`${entry.aggregate}\``);
+    renderFields(entry.fields);
+    lines.push("");
+  }
+  for (const entry of list(domain.events).slice().sort(byId)) {
+    lines.push(`### Event ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- aggregate: \`${entry.aggregate}\``);
+    renderFields(entry.fields);
+    lines.push("");
+  }
+  for (const entry of list(domain.invariants).slice().sort(byId)) {
+    lines.push(`### Domain Invariant ${entry.id}`, "");
+    renderText(entry);
+    if (entry.aggregate) lines.push(`- aggregate: \`${entry.aggregate}\``);
+    lines.push(`- rule: \`${entry.rule}\``, "");
+  }
+  for (const entry of list(domain.formalizations).slice().sort(byId)) {
+    lines.push(`### Domain Formalization ${entry.id}`, "");
+    renderText(entry);
+    lines.push(`- rule: \`${entry.rule}\``);
+    lines.push(`- kind: \`${entry.kind}\``);
+    lines.push(`- assurance: \`${entry.assurance}\``);
+    renderTarget(entry.target);
+    for (const assumption of list(entry.assumptions)) lines.push(`- assumption: ${assumption}`);
+    for (const mapping of list(entry.actionMappings).slice().sort((left, right) => String(left.action).localeCompare(String(right.action)))) {
+      const command = mapping.command ? `command: \`${mapping.command}\`` : null;
+      const events = list(mapping.events).length > 0 ? `events: ${list(mapping.events).slice().sort().map((event) => `\`${event}\``).join(", ")}` : null;
+      lines.push(`- action: ${[`\`${mapping.action}\``, command, events].filter(Boolean).join(" → ")}`);
+    }
+    for (const check of list(entry.checks).slice().sort()) lines.push(`- expected check: \`${check}\``);
+    lines.push("");
+  }
+}
+
+function appendDomainRelationshipMarkdown(lines, model) {
+  if (!domainPattern(model)) return;
+  const graph = domainRelationshipGraph(model);
+  lines.push("## Specification Relationships", "");
+  lines.push(`- nodes: \`${graph.summary.nodes}\``);
+  lines.push(`- relationships: \`${graph.summary.edges}\``);
+  lines.push(`- status: \`${graph.status}\``, "");
+  if (graph.errors.length > 0) {
+    lines.push("### Validation errors", "");
+    for (const error of graph.errors) lines.push(`- ${error}`);
+    lines.push("");
+  }
+  lines.push("### Relationship ledger", "", "| From | Relation | To |", "| --- | --- | --- |");
+  for (const edge of graph.edges) lines.push(`| \`${edge.from}\` | \`${edge.relation}\` | \`${edge.to}\` |`);
+  lines.push("", "### Diagram", "", "```mermaid", renderDomainRelationshipMermaid(graph).trimEnd(), "```", "");
+}
+
 function render(model, requestedLocale) {
   const locale = requestedLocale ?? model.primaryLocale;
   const lines = [
@@ -8365,6 +12420,146 @@ function render(model, requestedLocale) {
     }
   }
 
+  appendDomainModelMarkdown(lines, model, locale);
+  appendDomainRelationshipMarkdown(lines, model);
+
+  const intent = intentPattern(model);
+  if (intent) {
+    const renderIntentContract = (label, contract) => {
+      if (!contract) return;
+      for (const field of list(contract.fields).slice().sort(byId)) {
+        const details = [field.type, field.required !== false ? "required" : "optional"];
+        if (field.minimum !== null && field.minimum !== undefined) details.push(`minimum ${field.minimum}`);
+        if (field.maximum !== null && field.maximum !== undefined) details.push(`maximum ${field.maximum}`);
+        if (list(field.allowedValues).length > 0) details.push(`allowed ${list(field.allowedValues).slice().sort().join("|")}`);
+        if (field.pattern) details.push(`pattern ${field.pattern}`);
+        lines.push(`- ${label} field: \`${field.id}\` (${details.join(", ")})`);
+      }
+      for (const clause of list(contract.clauses)) {
+        lines.push(`- ${label} constraint: ${clauseExpr(clause)}`);
+      }
+    };
+    lines.push("## Intent Model", "");
+    for (const capability of intentCapabilities(intent).sort(byId)) {
+      lines.push(`### Capability ${capability.id}`);
+      lines.push("");
+      lines.push(text(capability.text, locale));
+      lines.push("");
+      lines.push(`- kind: \`${capability.kind}\``);
+      lines.push("");
+    }
+    for (const outcome of intentOutcomes(intent).sort(byId)) {
+      lines.push(`### Outcome ${outcome.id}`);
+      lines.push("");
+      lines.push(text(outcome.text, locale));
+      lines.push("");
+      lines.push(`- state: \`${outcome.state}\``);
+      renderIntentContract("output", outcome.outputContract);
+      for (const effect of list(outcome.effects).slice().sort(byId)) {
+        lines.push(`- effect: \`${effect.id}\` (${effect.required !== false ? "required" : "optional"}, capability \`${effect.capability}\`)`);
+        if (effect.text) lines.push(`  - description: ${text(effect.text, locale)}`);
+        renderIntentContract(`effect ${effect.id} output`, effect.outputContract);
+      }
+      lines.push("");
+    }
+    for (const process of intentProcesses(intent).sort(byId)) {
+      lines.push(`### Process ${process.id}`);
+      lines.push("");
+      lines.push(text(process.text, locale));
+      lines.push("");
+      lines.push(`- input: \`${process.input}\``);
+      renderIntentContract("input", process.inputContract);
+      if (process.execution) {
+        lines.push(`- execution maxInFlight: \`${process.execution.maxInFlight}\``);
+        if (process.execution.idempotencyKey) lines.push(`- execution idempotency key: \`${process.execution.idempotencyKey}\``);
+        if (process.execution.timeoutSteps !== null && process.execution.timeoutSteps !== undefined) {
+          lines.push(`- execution timeout steps: \`${process.execution.timeoutSteps}\``);
+        }
+        if (process.execution.timeoutMs !== null && process.execution.timeoutMs !== undefined) {
+          lines.push(`- execution timeout ms: \`${process.execution.timeoutMs}\``);
+        }
+      }
+      for (const outcomeId of list(process.outcomes).sort()) {
+        lines.push(`- outcome: \`${outcomeId}\``);
+      }
+      for (const capabilityId of list(process.requires).sort()) {
+        lines.push(`- requires: \`${capabilityId}\``);
+      }
+      for (const capabilityId of list(process.effects).sort()) {
+        lines.push(`- effects: \`${capabilityId}\``);
+      }
+      for (const outcomeId of list(process.constructs).sort()) {
+        lines.push(`- constructs: \`${outcomeId}\``);
+      }
+      for (const transition of list(process.transitions).slice().sort((left, right) => `${left.from}\u0000${left.to}`.localeCompare(`${right.from}\u0000${right.to}`))) {
+        lines.push(`- transition: \`${transition.from}\` -> \`${transition.to}\``);
+      }
+      for (const ref of list(process.implementedBy)) {
+        const symbol = ref.symbol ? `#${ref.symbol}` : "";
+        lines.push(`- implementation: ${ref.kind} ${ref.path}${symbol}`);
+      }
+      lines.push("");
+    }
+    for (const authority of constructionAuthorities(intent).sort(byId)) {
+      lines.push(`### Construction Authority ${authority.id}`);
+      lines.push("");
+      if (authority.text) {
+        lines.push(text(authority.text, locale));
+        lines.push("");
+      }
+      lines.push(`- process: \`${authority.process}\``);
+      lines.push(`- outcome: \`${authority.outcome}\``);
+      lines.push("");
+    }
+    for (const policy of intentAccessPolicies(intent).sort(byId)) {
+      lines.push(`### Access Policy ${policy.id}`);
+      lines.push("");
+      if (policy.text) {
+        lines.push(text(policy.text, locale));
+        lines.push("");
+      }
+      lines.push(`- process: \`${policy.process}\``);
+      lines.push(`- subject: \`${policy.subject}\``);
+      lines.push(`- decision: \`${policy.decision}\``);
+      lines.push(`- priority: \`${policy.priority}\``);
+      for (const overriddenId of list(policy.overrides).sort()) {
+        lines.push(`- overrides: \`${overriddenId}\``);
+      }
+      lines.push("");
+    }
+    appendIntentGoalGraphMarkdown(lines, intent, locale);
+    for (const binding of intentSemanticBindings(intent).sort(byId)) {
+      lines.push(`### Semantic Binding ${binding.id}`);
+      lines.push("");
+      if (binding.text) {
+        lines.push(text(binding.text, locale));
+        lines.push("");
+      }
+      lines.push(`- process: \`${binding.process}\``);
+      if (binding.refinement) lines.push(`- refinement: \`${binding.refinement}\``);
+      for (const claimId of list(binding.claims).sort()) lines.push(`- claim: \`${claimId}\``);
+      lines.push(`- kind: \`${binding.kind}\``);
+      lines.push(`- target: \`${binding.target}\``);
+      if (binding.value !== null && binding.value !== undefined) lines.push(`- value: \`${binding.value}\``);
+      lines.push(`- required: \`${binding.required !== false}\``);
+      lines.push("");
+    }
+    for (const scenario of intentScenarios(intent).sort(byId)) {
+      lines.push(`### Scenario ${scenario.id}`);
+      lines.push("");
+      lines.push(text(scenario.text, locale));
+      lines.push("");
+      lines.push(`- kind: \`${scenario.kind}\``);
+      lines.push(`- required: \`${scenario.required !== false}\``);
+      lines.push(`- initialState: \`${scenario.initialState}\``);
+      for (const [index, step] of list(scenario.steps).entries()) {
+        lines.push(`- step[${index}]: \`${step.process}\` -> \`${step.outcome}\``);
+      }
+      lines.push(`- expectedState: \`${scenario.expectedState}\``);
+      lines.push("");
+    }
+  }
+
   if (list(model.decisions).length > 0) {
     lines.push("", "## Decisions");
     for (const decision of list(model.decisions)) {
@@ -8381,7 +12576,8 @@ function runtimeEvidenceRecordCount(model) {
   return runtimeTelemetry(runtime).length
     + runtimeAlertPolicies(runtime).length
     + runtimeRunbookExecutions(runtime).length
-    + runtimeDependencyTraces(runtime).length;
+    + runtimeDependencyTraces(runtime).length
+    + runtimeIntentExecutions(runtime).length;
 }
 
 function markdownReviewSummary(model) {
@@ -8491,6 +12687,9 @@ function emitMarkdown(model, requestedLocale) {
     }
     lines.push("");
   }
+
+  appendDomainModelMarkdown(lines, model, locale);
+  appendDomainRelationshipMarkdown(lines, model);
 
   const db = dbPattern(model);
   if (db) {
@@ -8918,6 +13117,184 @@ function emitMarkdown(model, requestedLocale) {
       }
       lines.push("");
     }
+    for (const execution of runtimeIntentExecutions(runtime).sort(byId)) {
+      lines.push(`### Runtime Intent Execution ${execution.id}`);
+      lines.push("");
+      if (execution.text) {
+        lines.push(text(execution.text, locale));
+        lines.push("");
+      }
+      lines.push(`- process: \`${execution.process}\``);
+      lines.push(`- refinement: \`${execution.refinement}\``);
+      if (execution.observedLatencyMs !== null && execution.observedLatencyMs !== undefined) {
+        lines.push(`- observedLatencyMs: \`${execution.observedLatencyMs}\``);
+      }
+      if (execution.maxInFlightObserved !== null && execution.maxInFlightObserved !== undefined) {
+        lines.push(`- maxInFlightObserved: \`${execution.maxInFlightObserved}\``);
+      }
+      lines.push(`- timedOut: \`${Boolean(execution.timedOut)}\``);
+      lines.push(`- idempotencyKeyObserved: \`${Boolean(execution.idempotencyKeyObserved)}\``);
+      lines.push(`- duplicateSuppressed: \`${Boolean(execution.duplicateSuppressed)}\``);
+      if (execution.source) lines.push(`- source: \`${execution.source}\``);
+      lines.push("");
+    }
+  }
+
+  const intent = intentPattern(model);
+  if (intent) {
+    const renderIntentContract = (label, contract) => {
+      if (!contract) return;
+      for (const field of list(contract.fields).slice().sort(byId)) {
+        const details = [field.type, field.required !== false ? "required" : "optional"];
+        if (field.minimum !== null && field.minimum !== undefined) details.push(`minimum ${field.minimum}`);
+        if (field.maximum !== null && field.maximum !== undefined) details.push(`maximum ${field.maximum}`);
+        if (list(field.allowedValues).length > 0) details.push(`allowed ${list(field.allowedValues).slice().sort().join("|")}`);
+        if (field.pattern) details.push(`pattern ${field.pattern}`);
+        lines.push(`- ${label} field: \`${field.id}\` (${details.join(", ")})`);
+      }
+      for (const clause of list(contract.clauses)) {
+        lines.push(`- ${label} constraint: ${clauseExpr(clause)}`);
+      }
+    };
+    lines.push("## Intent Model", "");
+    for (const capability of intentCapabilities(intent).sort(byId)) {
+      lines.push(`### Capability ${capability.id}`);
+      lines.push("");
+      lines.push(text(capability.text, locale));
+      lines.push("");
+      lines.push(`- kind: \`${capability.kind}\``);
+      lines.push("");
+    }
+    for (const outcome of intentOutcomes(intent).sort(byId)) {
+      lines.push(`### Outcome ${outcome.id}`);
+      lines.push("");
+      lines.push(text(outcome.text, locale));
+      lines.push("");
+      lines.push(`- state: \`${outcome.state}\``);
+      renderIntentContract("output", outcome.outputContract);
+      for (const effect of list(outcome.effects).slice().sort(byId)) {
+        lines.push(`- effect: \`${effect.id}\` (${effect.required !== false ? "required" : "optional"}, capability \`${effect.capability}\`)`);
+        if (effect.text) lines.push(`  - description: ${text(effect.text, locale)}`);
+        renderIntentContract(`effect ${effect.id} output`, effect.outputContract);
+      }
+      lines.push("");
+    }
+    for (const process of intentProcesses(intent).sort(byId)) {
+      lines.push(`### Process ${process.id}`);
+      lines.push("");
+      lines.push(text(process.text, locale));
+      lines.push("");
+      lines.push(`- input: \`${process.input}\``);
+      renderIntentContract("input", process.inputContract);
+      if (process.execution) {
+        lines.push(`- execution maxInFlight: \`${process.execution.maxInFlight}\``);
+        if (process.execution.idempotencyKey) lines.push(`- execution idempotency key: \`${process.execution.idempotencyKey}\``);
+        if (process.execution.timeoutSteps !== null && process.execution.timeoutSteps !== undefined) {
+          lines.push(`- execution timeout steps: \`${process.execution.timeoutSteps}\``);
+        }
+        if (process.execution.timeoutMs !== null && process.execution.timeoutMs !== undefined) {
+          lines.push(`- execution timeout ms: \`${process.execution.timeoutMs}\``);
+        }
+      }
+      for (const outcomeId of list(process.outcomes).sort()) {
+        lines.push(`- outcome: \`${outcomeId}\``);
+      }
+      for (const capabilityId of list(process.requires).sort()) {
+        lines.push(`- requires: \`${capabilityId}\``);
+      }
+      for (const capabilityId of list(process.effects).sort()) {
+        lines.push(`- effects: \`${capabilityId}\``);
+      }
+      for (const outcomeId of list(process.constructs).sort()) {
+        lines.push(`- constructs: \`${outcomeId}\``);
+      }
+      for (const transition of list(process.transitions).slice().sort((left, right) => `${left.from}\u0000${left.to}`.localeCompare(`${right.from}\u0000${right.to}`))) {
+        lines.push(`- transition: \`${transition.from}\` -> \`${transition.to}\``);
+      }
+      for (const refinement of intentRefinements(process).slice().sort(byId)) {
+        const symbol = refinement.implementation.symbol ? `#${refinement.implementation.symbol}` : "";
+        lines.push(`- refinement: \`${refinement.id}\` (${refinement.kind})`);
+        lines.push(`  - implementation: ${refinement.implementation.kind} ${refinement.implementation.path}${symbol}`);
+        if (refinement.http) {
+          lines.push(`  - http: ${refinement.http.method} ${refinement.http.path} (expected status ${refinement.http.expectedStatus})`);
+        }
+        if (refinement.transaction) {
+          lines.push(`  - transaction: \`${refinement.transaction.dbTransaction}\` (isolation ${refinement.transaction.isolation})`);
+        }
+        for (const binding of list(refinement.inputBindings).slice().sort((left, right) => left.contractField.localeCompare(right.contractField))) {
+          lines.push(`  - input binding: \`${binding.contractField}\` -> \`${binding.implementationField}\``);
+        }
+        for (const output of list(refinement.outcomeBindings).slice().sort((left, right) => left.outcome.localeCompare(right.outcome))) {
+          for (const binding of list(output.fields).slice().sort((left, right) => left.contractField.localeCompare(right.contractField))) {
+            lines.push(`  - output binding ${output.outcome}: \`${binding.contractField}\` -> \`${binding.implementationField}\``);
+          }
+          for (const effect of list(output.effectBindings).slice().sort((left, right) => left.effect.localeCompare(right.effect))) {
+            for (const binding of list(effect.fields).slice().sort((left, right) => left.contractField.localeCompare(right.contractField))) {
+              lines.push(`  - effect binding ${output.outcome}/${effect.effect}: \`${binding.contractField}\` -> \`${binding.implementationField}\``);
+            }
+          }
+        }
+      }
+      lines.push("");
+    }
+    for (const authority of constructionAuthorities(intent).sort(byId)) {
+      lines.push(`### Construction Authority ${authority.id}`);
+      lines.push("");
+      if (authority.text) {
+        lines.push(text(authority.text, locale));
+        lines.push("");
+      }
+      lines.push(`- process: \`${authority.process}\``);
+      lines.push(`- outcome: \`${authority.outcome}\``);
+      lines.push("");
+    }
+    for (const policy of intentAccessPolicies(intent).sort(byId)) {
+      lines.push(`### Access Policy ${policy.id}`);
+      lines.push("");
+      if (policy.text) {
+        lines.push(text(policy.text, locale));
+        lines.push("");
+      }
+      lines.push(`- process: \`${policy.process}\``);
+      lines.push(`- subject: \`${policy.subject}\``);
+      lines.push(`- decision: \`${policy.decision}\``);
+      lines.push(`- priority: \`${policy.priority}\``);
+      for (const overriddenId of list(policy.overrides).sort()) {
+        lines.push(`- overrides: \`${overriddenId}\``);
+      }
+      lines.push("");
+    }
+    appendIntentGoalGraphMarkdown(lines, intent, locale);
+    for (const binding of intentSemanticBindings(intent).sort(byId)) {
+      lines.push(`### Semantic Binding ${binding.id}`);
+      lines.push("");
+      if (binding.text) {
+        lines.push(text(binding.text, locale));
+        lines.push("");
+      }
+      lines.push(`- process: \`${binding.process}\``);
+      if (binding.refinement) lines.push(`- refinement: \`${binding.refinement}\``);
+      for (const claimId of list(binding.claims).sort()) lines.push(`- claim: \`${claimId}\``);
+      lines.push(`- kind: \`${binding.kind}\``);
+      lines.push(`- target: \`${binding.target}\``);
+      if (binding.value !== null && binding.value !== undefined) lines.push(`- value: \`${binding.value}\``);
+      lines.push(`- required: \`${binding.required !== false}\``);
+      lines.push("");
+    }
+    for (const scenario of intentScenarios(intent).sort(byId)) {
+      lines.push(`### Scenario ${scenario.id}`);
+      lines.push("");
+      lines.push(text(scenario.text, locale));
+      lines.push("");
+      lines.push(`- kind: \`${scenario.kind}\``);
+      lines.push(`- required: \`${scenario.required !== false}\``);
+      lines.push(`- initialState: \`${scenario.initialState}\``);
+      for (const [index, step] of list(scenario.steps).entries()) {
+        lines.push(`- step[${index}]: \`${step.process}\` -> \`${step.outcome}\``);
+      }
+      lines.push(`- expectedState: \`${scenario.expectedState}\``);
+      lines.push("");
+    }
   }
 
   lines.push("## Decisions", "");
@@ -8951,6 +13328,9 @@ function walkGeneratedFiles(root) {
 }
 
 function projectionPathMatcher(projection) {
+  if (projection.matrix === "single") {
+    return new RegExp(`^${escapeRegex(projection.output)}$`);
+  }
   const [prefix, suffix] = projection.output.split("{locale}");
   return new RegExp(`^${escapeRegex(prefix)}([^/]+)${escapeRegex(suffix)}$`);
 }
@@ -8972,7 +13352,19 @@ function projectionActualPaths(root, projection) {
 
 function projectionSnapshot(model) {
   return createProjectionSnapshot(model, {
-    renderMarkdown: (sourceModel, locale) => emitMarkdown(sourceModel, locale),
+    renderProjection(sourceModel, projection, locale) {
+      switch (projection.kind) {
+        case "markdown": return emitMarkdown(sourceModel, locale);
+        case "quickcheck": return emitQuickcheck(sourceModel);
+        case "lean": return emitLean(sourceModel);
+        case "alloy": return emitAlloy(sourceModel);
+        case "tla": return emitTla(sourceModel);
+        case "tla-cfg": return emitTlaConfig(sourceModel);
+        case "source-map": return emitSourceMap(sourceModel, sourceModel.primaryLocale);
+        case "generated-manifest": return emitGeneratedManifest(sourceModel, sourceModel.primaryLocale);
+        default: throw new Error(`unsupported projection renderer: ${projection.kind}`);
+      }
+    },
   });
 }
 
@@ -8986,7 +13378,7 @@ function projectionObservations(snapshot, { root = process.cwd() } = {}) {
       observations.push({
         content: readFileSync(resolve(root, path), "utf8"),
         kind: "artifact",
-        locale: matched?.[1] ?? null,
+        locale: projection.matrix === "locales" ? matched?.[1] ?? null : null,
         path,
         projectionId: projection.id,
         unexpected: !expected.has(path),
@@ -9447,6 +13839,7 @@ function runtimeProjection(model) {
       alertPolicies: [],
       runbookExecutions: [],
       dependencyTraces: [],
+      intentExecutions: [],
     };
   }
   return {
@@ -9547,6 +13940,218 @@ function runtimeProjection(model) {
         idempotencyKeyObserved: Boolean(trace.idempotencyKeyObserved),
         source: trace.source ?? null,
       })),
+    intentExecutions: runtimeIntentExecutions(runtime)
+      .slice()
+      .sort(byId)
+      .map((execution) => ({
+        id: execution.id,
+        process: execution.process,
+        refinement: execution.refinement,
+        observedLatencyMs: execution.observedLatencyMs ?? null,
+        maxInFlightObserved: execution.maxInFlightObserved ?? null,
+        timedOut: Boolean(execution.timedOut),
+        idempotencyKeyObserved: Boolean(execution.idempotencyKeyObserved),
+        duplicateSuppressed: Boolean(execution.duplicateSuppressed),
+        source: execution.source ?? null,
+      })),
+  };
+}
+
+function intentContractProjection(contract) {
+  if (!contract) return null;
+  return {
+    fields: list(contract.fields)
+      .slice()
+      .sort(byId)
+      .map((field) => ({
+        id: field.id,
+        type: field.type,
+        required: field.required !== false,
+        allowedValues: list(field.allowedValues).slice().sort(),
+        minimum: field.minimum ?? null,
+        maximum: field.maximum ?? null,
+        pattern: field.pattern ?? null,
+      })),
+    clauses: list(contract.clauses).map(clauseProjection),
+  };
+}
+
+function intentRefinementProjection(refinement) {
+  return {
+    id: refinement.id,
+    kind: refinement.kind,
+    implementation: {
+      kind: refinement.implementation.kind,
+      path: refinement.implementation.path,
+      symbol: refinement.implementation.symbol ?? null,
+    },
+    http: refinement.http
+      ? {
+        method: refinement.http.method,
+        path: refinement.http.path,
+        expectedStatus: refinement.http.expectedStatus,
+      }
+      : null,
+    transaction: refinement.transaction
+      ? {
+        dbTransaction: refinement.transaction.dbTransaction,
+        isolation: refinement.transaction.isolation,
+      }
+      : null,
+    inputBindings: list(refinement.inputBindings)
+      .map((binding) => ({ contractField: binding.contractField, implementationField: binding.implementationField }))
+      .sort((left, right) => left.contractField.localeCompare(right.contractField)),
+    outcomeBindings: list(refinement.outcomeBindings)
+      .map((binding) => ({
+        outcome: binding.outcome,
+        fields: list(binding.fields)
+          .map((field) => ({ contractField: field.contractField, implementationField: field.implementationField }))
+          .sort((left, right) => left.contractField.localeCompare(right.contractField)),
+        effectBindings: list(binding.effectBindings)
+          .map((effect) => ({
+            effect: effect.effect,
+            fields: list(effect.fields)
+              .map((field) => ({ contractField: field.contractField, implementationField: field.implementationField }))
+              .sort((left, right) => left.contractField.localeCompare(right.contractField)),
+          }))
+          .sort((left, right) => left.effect.localeCompare(right.effect)),
+      }))
+      .sort((left, right) => left.outcome.localeCompare(right.outcome)),
+  };
+}
+
+function intentProjection(model) {
+  const intent = intentPattern(model);
+  if (!intent) {
+    return {
+      capabilities: [],
+      outcomes: [],
+      processes: [],
+      constructionAuthorities: [],
+      accessPolicies: [],
+      goals: [],
+      claims: [],
+      assuranceTasks: [],
+      semanticBindings: [],
+      scenarios: [],
+    };
+  }
+  return {
+    capabilities: intentCapabilities(intent)
+      .slice()
+      .sort(byId)
+      .map((capability) => ({ id: capability.id, kind: capability.kind })),
+    outcomes: intentOutcomes(intent)
+      .slice()
+      .sort(byId)
+      .map((outcome) => ({
+        id: outcome.id,
+        state: outcome.state,
+        outputContract: intentContractProjection(outcome.outputContract),
+        effects: list(outcome.effects)
+          .slice()
+          .sort(byId)
+          .map((effect) => ({
+            id: effect.id,
+            capability: effect.capability,
+            required: effect.required !== false,
+            outputContract: intentContractProjection(effect.outputContract),
+          })),
+      })),
+    processes: intentProcesses(intent)
+      .slice()
+      .sort(byId)
+      .map((process) => ({
+        id: process.id,
+        input: process.input,
+        inputContract: intentContractProjection(process.inputContract),
+        outcomes: list(process.outcomes).slice().sort(),
+        requires: list(process.requires).slice().sort(),
+        effects: list(process.effects).slice().sort(),
+        constructs: list(process.constructs).slice().sort(),
+        execution: process.execution
+          ? {
+            maxInFlight: process.execution.maxInFlight,
+            idempotencyKey: process.execution.idempotencyKey ?? null,
+            timeoutSteps: process.execution.timeoutSteps ?? null,
+            timeoutMs: process.execution.timeoutMs ?? null,
+          }
+          : null,
+        transitions: list(process.transitions)
+          .map((transition) => ({ from: transition.from, to: transition.to }))
+          .sort((left, right) => `${left.from}\u0000${left.to}`.localeCompare(`${right.from}\u0000${right.to}`)),
+        refinements: intentRefinements(process).slice().sort(byId).map(intentRefinementProjection),
+      })),
+    constructionAuthorities: constructionAuthorities(intent)
+      .slice()
+      .sort(byId)
+      .map((authority) => ({ id: authority.id, process: authority.process, outcome: authority.outcome })),
+    accessPolicies: intentAccessPolicies(intent)
+      .slice()
+      .sort(byId)
+      .map((policy) => ({
+        id: policy.id,
+        process: policy.process,
+        subject: policy.subject,
+        decision: policy.decision,
+        priority: policy.priority,
+        overrides: list(policy.overrides).slice().sort(),
+      })),
+    goals: intentGoals(intent)
+      .slice()
+      .sort(byId)
+      .map((goal) => ({
+        id: goal.id,
+        priority: goal.priority,
+        intents: list(goal.intents).slice().sort(),
+        claims: list(goal.claims).slice().sort(),
+        nonGoals: list(goal.nonGoals).length,
+      })),
+    claims: intentClaims(intent)
+      .slice()
+      .sort(byId)
+      .map((claim) => ({
+        id: claim.id,
+        kind: claim.kind,
+        processes: list(claim.processes).slice().sort(),
+        requiredImplementationBinding: claim.requiredImplementationBinding !== false,
+      })),
+    assuranceTasks: intentAssuranceTasks(intent)
+      .slice()
+      .sort(byId)
+      .map((task) => ({
+        id: task.id,
+        claims: list(task.claims).slice().sort(),
+        kind: task.kind,
+        backend: task.backend,
+        assurance: task.assurance,
+        target: { kind: task.target.kind, path: task.target.path, symbol: task.target.symbol ?? null },
+        assumptions: list(task.assumptions).slice().sort(),
+      })),
+    semanticBindings: intentSemanticBindings(intent)
+      .slice()
+      .sort(byId)
+      .map((binding) => ({
+        id: binding.id,
+        claims: list(binding.claims).slice().sort(),
+        process: binding.process,
+        refinement: binding.refinement ?? null,
+        kind: binding.kind,
+        target: binding.target,
+        value: binding.value ?? null,
+        required: binding.required !== false,
+      })),
+    scenarios: intentScenarios(intent)
+      .slice()
+      .sort(byId)
+      .map((scenario) => ({
+        id: scenario.id,
+        kind: scenario.kind,
+        required: scenario.required !== false,
+        initialState: scenario.initialState,
+        steps: list(scenario.steps).map((step) => ({ process: step.process, outcome: step.outcome })),
+        expectedState: scenario.expectedState,
+      })),
   };
 }
 
@@ -9591,6 +14196,7 @@ export const cloudModel = ${JSON.stringify(cloudProjection(model), null, 2)};
 export const dataModel = ${JSON.stringify(dataProjection(model), null, 2)};
 export const releaseModel = ${JSON.stringify(releaseProjection(model), null, 2)};
 export const runtimeModel = ${JSON.stringify(runtimeProjection(model), null, 2)};
+export const intentModel = ${JSON.stringify(intentProjection(model), null, 2)};
 
 export function* generateRuleIds() {
   for (const rule of rules) yield rule.id;
@@ -9941,6 +14547,151 @@ export function propertyRuntimeDependencyTracesWithinTimeout(trace) {
   return trace.observedLatencyMs <= dependency.timeoutMs;
 }
 
+export function* generateIntentProcesses() {
+  for (const process of intentModel.processes) yield process;
+}
+
+export function* generateIntentAccessPolicies() {
+  for (const policy of intentModel.accessPolicies) yield policy;
+}
+
+export function* generateIntentScenarios() {
+  for (const scenario of intentModel.scenarios) yield scenario;
+}
+
+export function shrinkIntentProcessId(processId) {
+  const index = intentModel.processes.findIndex((process) => process.id === processId);
+  if (index <= 0) return [];
+  return intentModel.processes.slice(0, index).map((process) => process.id);
+}
+
+export function shrinkIntentScenarioId(scenarioId) {
+  const index = intentModel.scenarios.findIndex((scenario) => scenario.id === scenarioId);
+  if (index <= 0) return [];
+  return intentModel.scenarios.slice(0, index).map((scenario) => scenario.id);
+}
+
+export function intentOutcome(id) {
+  return intentModel.outcomes.find((outcome) => outcome.id === id) ?? null;
+}
+
+export function propertyIntentProcessConstructionIsAuthorized(process) {
+  if (!process) return true;
+  return process.outcomes.every((outcomeId) =>
+    process.constructs.includes(outcomeId) &&
+    intentModel.constructionAuthorities.some((authority) => authority.process === process.id && authority.outcome === outcomeId)
+  );
+}
+
+export function propertyIntentAccessPolicyOverridesHaveHigherPriority(policy) {
+  if (!policy) return true;
+  return policy.overrides.every((overriddenId) => {
+    const overridden = intentModel.accessPolicies.find((candidate) => candidate.id === overriddenId);
+    return Boolean(overridden) &&
+      overridden.id !== policy.id &&
+      overridden.process === policy.process &&
+      overridden.subject === policy.subject &&
+      policy.priority > overridden.priority;
+  });
+}
+
+export function propertyIntentAccessPoliciesResolveDeterministically() {
+  const priorities = new Set();
+  for (const policy of intentModel.accessPolicies) {
+    const key = [policy.process, policy.subject, policy.priority].join("\\u0000");
+    if (priorities.has(key)) return false;
+    priorities.add(key);
+  }
+  return true;
+}
+
+export function propertyIntentSemanticBindingsAreWellFormed() {
+  const targets = new Set();
+  return intentModel.semanticBindings.every((binding) => {
+    if (!binding.process || !binding.kind || !binding.target) return false;
+    if (binding.kind === "otel-attribute" && !binding.value) return false;
+    const key = [binding.kind, binding.target, binding.value ?? ""].join("\\u0000");
+    if (targets.has(key)) return false;
+    targets.add(key);
+    return true;
+  });
+}
+
+export function propertyIntentClaimGraphIsComplete() {
+  const claims = new Map(intentModel.claims.map((claim) => [claim.id, claim]));
+  const parentCounts = new Map();
+  const taskClaims = new Set(intentModel.assuranceTasks.flatMap((task) => task.claims));
+  const bindingClaims = new Set(intentModel.semanticBindings.flatMap((binding) => binding.claims));
+  for (const goal of intentModel.goals) {
+    if (goal.intents.length === 0 || goal.claims.length === 0) return false;
+    for (const processId of goal.intents) {
+      if (!intentModel.processes.some((process) => process.id === processId)) return false;
+    }
+    for (const claimId of goal.claims) {
+      if (!claims.has(claimId)) return false;
+      parentCounts.set(claimId, (parentCounts.get(claimId) ?? 0) + 1);
+    }
+  }
+  return intentModel.claims.every((claim) =>
+    parentCounts.get(claim.id) === 1 &&
+    claim.processes.length > 0 &&
+    claim.processes.every((processId) => intentModel.processes.some((process) => process.id === processId)) &&
+    taskClaims.has(claim.id) &&
+    (!claim.requiredImplementationBinding || bindingClaims.has(claim.id))
+  ) && intentModel.assuranceTasks.every((task) =>
+    task.claims.length > 0 && task.claims.every((claimId) => claims.has(claimId))
+  );
+}
+
+export function propertyIntentScenarioTraceIsContinuous(scenario) {
+  if (!scenario) return true;
+  let currentState = scenario.initialState;
+  for (const step of scenario.steps) {
+    const process = intentModel.processes.find((candidate) => candidate.id === step.process);
+    const outcome = intentOutcome(step.outcome);
+    if (!process || !outcome || process.input !== currentState || !process.outcomes.includes(outcome.id)) return false;
+    if (!process.transitions.some((transition) => transition.from === currentState && transition.to === outcome.state)) return false;
+    currentState = outcome.state;
+  }
+  return currentState === scenario.expectedState;
+}
+
+export function intentRequiredContractFieldIds(contract) {
+  return (contract?.fields ?? []).filter((field) => field.required).map((field) => field.id);
+}
+
+export function propertyIntentProcessRefinementBindingsAreComplete(process) {
+  if (!process) return true;
+  const requiredInputFields = intentRequiredContractFieldIds(process.inputContract);
+  return process.refinements.every((refinement) => {
+    const inputBound = new Set(refinement.inputBindings.map((binding) => binding.contractField));
+    if (!requiredInputFields.every((fieldId) => inputBound.has(fieldId))) return false;
+    return process.outcomes.every((outcomeId) => {
+      const outcome = intentOutcome(outcomeId);
+      const binding = refinement.outcomeBindings.find((candidate) => candidate.outcome === outcomeId);
+      const requiredOutputFields = intentRequiredContractFieldIds(outcome?.outputContract);
+      if (requiredOutputFields.length === 0) return true;
+      const outputBound = new Set(binding?.fields?.map((field) => field.contractField) ?? []);
+      return requiredOutputFields.every((fieldId) => outputBound.has(fieldId));
+    });
+  });
+}
+
+export function propertyIntentOutcomeEffectBindingsAreComplete(process) {
+  if (!process) return true;
+  return process.refinements.every((refinement) => process.outcomes.every((outcomeId) => {
+    const outcome = intentOutcome(outcomeId);
+    const binding = refinement.outcomeBindings.find((candidate) => candidate.outcome === outcomeId);
+    return (outcome?.effects ?? []).every((effect) => {
+      const requiredFields = intentRequiredContractFieldIds(effect.outputContract);
+      if (requiredFields.length === 0) return true;
+      const effectBinding = binding?.effectBindings?.find((candidate) => candidate.effect === effect.id);
+      const fields = new Set(effectBinding?.fields?.map((field) => field.contractField) ?? []);
+      return requiredFields.every((fieldId) => fields.has(fieldId));
+    });
+  }));
+}
+
 export function checkAllProperties() {
   const failures = [];
   for (const ruleId of generateApprovedRuleIds()) {
@@ -10075,6 +14826,40 @@ export function checkAllProperties() {
       failures.push({ property: "runtime-dependency-trace-within-timeout", value: trace.id, dependency: trace.dependency, observedLatencyMs: trace.observedLatencyMs, timedOut: trace.timedOut, timeoutMs: dependency?.timeoutMs ?? null, shrinks: [] });
     }
   }
+  for (const process of generateIntentProcesses()) {
+    if (!propertyIntentProcessConstructionIsAuthorized(process)) {
+      failures.push({ property: "intent-process-construction-is-authorized", value: process.id, constructs: process.constructs, shrinks: shrinkIntentProcessId(process.id) });
+    }
+  }
+  for (const policy of generateIntentAccessPolicies()) {
+    if (!propertyIntentAccessPolicyOverridesHaveHigherPriority(policy)) {
+      failures.push({ property: "intent-access-policy-overrides-have-higher-priority", value: policy.id, overrides: policy.overrides, shrinks: [] });
+    }
+  }
+  if (!propertyIntentAccessPoliciesResolveDeterministically()) {
+    failures.push({ property: "intent-access-policies-resolve-deterministically", value: intentModel.accessPolicies.map((policy) => policy.id), shrinks: [] });
+  }
+  if (!propertyIntentSemanticBindingsAreWellFormed()) {
+    failures.push({ property: "intent-semantic-bindings-are-well-formed", value: intentModel.semanticBindings.map((binding) => binding.id), shrinks: [] });
+  }
+  if (!propertyIntentClaimGraphIsComplete()) {
+    failures.push({ property: "intent-claim-graph-is-complete", value: intentModel.claims.map((claim) => claim.id), shrinks: [] });
+  }
+  for (const process of generateIntentProcesses()) {
+    if (!propertyIntentOutcomeEffectBindingsAreComplete(process)) {
+      failures.push({ property: "intent-outcome-effect-bindings-are-complete", value: process.id, shrinks: shrinkIntentProcessId(process.id) });
+    }
+  }
+  for (const scenario of generateIntentScenarios()) {
+    if (!propertyIntentScenarioTraceIsContinuous(scenario)) {
+      failures.push({ property: "intent-scenario-trace-is-continuous", value: scenario.id, steps: scenario.steps, shrinks: shrinkIntentScenarioId(scenario.id) });
+    }
+  }
+  for (const process of generateIntentProcesses()) {
+    if (!propertyIntentProcessRefinementBindingsAreComplete(process)) {
+      failures.push({ property: "intent-process-refinement-bindings-are-complete", value: process.id, shrinks: shrinkIntentProcessId(process.id) });
+    }
+  }
   return failures;
 }
 
@@ -10118,6 +14903,10 @@ function releaseName(prefix, id) {
 }
 
 function runtimeName(prefix, id) {
+  return `${prefix}_${sanitizeIdentifier(id)}`;
+}
+
+function intentName(prefix, id) {
   return `${prefix}_${sanitizeIdentifier(id)}`;
 }
 
@@ -10558,6 +15347,10 @@ function tlaSet(values) {
   return `{${values.map((value) => JSON.stringify(value)).join(", ")}}`;
 }
 
+function tlaTupleSet(pairs) {
+  return `{${pairs.map(([left, right]) => `<<${JSON.stringify(left)}, ${JSON.stringify(right)}>>`).join(", ")}}`;
+}
+
 function emitAlloy(model) {
   const rules = sortedRules(model);
   const lines = [
@@ -10686,17 +15479,18 @@ function emitAlloy(model) {
         }
       }
     }
-    lines.push(`  DbModel.dbWrites = ${writePairs.length > 0 ? writePairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbPreserves = ${preservePairs.length > 0 ? preservePairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbTouches = ${touchPairs.length > 0 ? touchPairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbMigrationPreserves = ${migrationPreservePairs.length > 0 ? migrationPreservePairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbMigrationTouches = ${migrationTouchPairs.length > 0 ? migrationTouchPairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbMigrationMappings = ${migrationMappingPairs.length > 0 ? migrationMappingPairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbMappingCovers = ${mappingCoverPairs.length > 0 ? mappingCoverPairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbMigrationSources = ${migrationSourcePairs.length > 0 ? migrationSourcePairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbMigrationTargets = ${migrationTargetPairs.length > 0 ? migrationTargetPairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbMappingMentionsSource = ${mappingMentionSourcePairs.length > 0 ? mappingMentionSourcePairs.join(" + ") : "none"}`);
-    lines.push(`  DbModel.dbMappingMentionsTarget = ${mappingMentionTargetPairs.length > 0 ? mappingMentionTargetPairs.join(" + ") : "none"}`);
+    const relationOrEmpty = (pairs) => pairs.length > 0 ? pairs.join(" + ") : "none -> none";
+    lines.push(`  DbModel.dbWrites = ${relationOrEmpty(writePairs)}`);
+    lines.push(`  DbModel.dbPreserves = ${relationOrEmpty(preservePairs)}`);
+    lines.push(`  DbModel.dbTouches = ${relationOrEmpty(touchPairs)}`);
+    lines.push(`  DbModel.dbMigrationPreserves = ${relationOrEmpty(migrationPreservePairs)}`);
+    lines.push(`  DbModel.dbMigrationTouches = ${relationOrEmpty(migrationTouchPairs)}`);
+    lines.push(`  DbModel.dbMigrationMappings = ${relationOrEmpty(migrationMappingPairs)}`);
+    lines.push(`  DbModel.dbMappingCovers = ${relationOrEmpty(mappingCoverPairs)}`);
+    lines.push(`  DbModel.dbMigrationSources = ${relationOrEmpty(migrationSourcePairs)}`);
+    lines.push(`  DbModel.dbMigrationTargets = ${relationOrEmpty(migrationTargetPairs)}`);
+    lines.push(`  DbModel.dbMappingMentionsSource = ${relationOrEmpty(mappingMentionSourcePairs)}`);
+    lines.push(`  DbModel.dbMappingMentionsTarget = ${relationOrEmpty(mappingMentionTargetPairs)}`);
     lines.push("}", "", "assert DbTransactionsPreserveInvariants {");
     lines.push("  all tx: DbModel.dbTransactions | DbModel.dbTouches[tx] in DbModel.dbPreserves[tx]");
     lines.push("}", "check DbTransactionsPreserveInvariants");
@@ -10764,8 +15558,9 @@ function emitAlloy(model) {
     lines.push(`  CloudModel.cloudNodes = ${nodeSet.length > 0 ? nodeSet.join(" + ") : "none"}`);
     lines.push(`  CloudModel.cloudFlows = ${flowSet.length > 0 ? flowSet.join(" + ") : "none"}`);
     lines.push(`  CloudModel.cloudPolicies = ${policySet.length > 0 ? policySet.join(" + ") : "none"}`);
-    lines.push(`  CloudModel.cloudFlowFrom = ${flowFromPairs.length > 0 ? flowFromPairs.join(" + ") : "none"}`);
-    lines.push(`  CloudModel.cloudFlowTo = ${flowToPairs.length > 0 ? flowToPairs.join(" + ") : "none"}`);
+    const cloudRelationOrEmpty = (pairs) => pairs.length > 0 ? pairs.join(" + ") : "none -> none";
+    lines.push(`  CloudModel.cloudFlowFrom = ${cloudRelationOrEmpty(flowFromPairs)}`);
+    lines.push(`  CloudModel.cloudFlowTo = ${cloudRelationOrEmpty(flowToPairs)}`);
     lines.push(`  CloudModel.cloudPublicIngress = ${publicIngress.length > 0 ? publicIngress.join(" + ") : "none"}`);
     lines.push(`  CloudModel.cloudSensitiveResources = ${sensitive.length > 0 ? sensitive.join(" + ") : "none"}`);
     lines.push(`  CloudModel.cloudRequiresPolicy = ${requiresPolicy.length > 0 ? requiresPolicy.join(" + ") : "none"}`);
@@ -11103,6 +15898,72 @@ function emitAlloy(model) {
     lines.push("}", "check RuntimeDependencyTracesWithinTimeout");
   }
 
+  const intent = intentPattern(model);
+  if (intent) {
+    lines.push(
+      "",
+      "abstract sig IntentCapability {}",
+      "abstract sig IntentOutcome {}",
+      "abstract sig IntentProcess {}",
+      "abstract sig ConstructionAuthority {}",
+      "abstract sig IntentScenario {}",
+      "one sig IntentModel {",
+      "  intentCapabilities: set IntentCapability,",
+      "  intentOutcomes: set IntentOutcome,",
+      "  intentProcesses: set IntentProcess,",
+      "  constructionAuthorities: set ConstructionAuthority,",
+      "  intentScenarios: set IntentScenario,",
+      "  processOutcomes: IntentProcess -> set IntentOutcome,",
+      "  processConstructs: IntentProcess -> set IntentOutcome,",
+      "  authorisedConstruction: IntentProcess -> IntentOutcome",
+      "}",
+    );
+    for (const capability of intentCapabilities(intent).sort(byId)) {
+      lines.push(`one sig ${intentName("IC", capability.id)} extends IntentCapability {}`);
+    }
+    for (const outcome of intentOutcomes(intent).sort(byId)) {
+      lines.push(`one sig ${intentName("IO", outcome.id)} extends IntentOutcome {}`);
+    }
+    for (const process of intentProcesses(intent).sort(byId)) {
+      lines.push(`one sig ${intentName("IP", process.id)} extends IntentProcess {}`);
+    }
+    for (const authority of constructionAuthorities(intent).sort(byId)) {
+      lines.push(`one sig ${intentName("ICA", authority.id)} extends ConstructionAuthority {}`);
+    }
+    for (const scenario of intentScenarios(intent).sort(byId)) {
+      lines.push(`one sig ${intentName("ISC", scenario.id)} extends IntentScenario {}`);
+    }
+
+    const capabilitySet = intentCapabilities(intent).map((capability) => intentName("IC", capability.id));
+    const outcomeSet = intentOutcomes(intent).map((outcome) => intentName("IO", outcome.id));
+    const processSet = intentProcesses(intent).map((process) => intentName("IP", process.id));
+    const authoritySet = constructionAuthorities(intent).map((authority) => intentName("ICA", authority.id));
+    const scenarioSet = intentScenarios(intent).map((scenario) => intentName("ISC", scenario.id));
+    const processOutcomePairs = intentProcesses(intent).flatMap((process) =>
+      list(process.outcomes).map((outcomeId) => `${intentName("IP", process.id)} -> ${intentName("IO", outcomeId)}`),
+    );
+    const processConstructPairs = intentProcesses(intent).flatMap((process) =>
+      list(process.constructs).map((outcomeId) => `${intentName("IP", process.id)} -> ${intentName("IO", outcomeId)}`),
+    );
+    const authorisedConstructionPairs = constructionAuthorities(intent).map(
+      (authority) => `${intentName("IP", authority.process)} -> ${intentName("IO", authority.outcome)}`,
+    );
+
+    lines.push("", "fact GeneratedIntentModel {");
+    lines.push(`  IntentModel.intentCapabilities = ${capabilitySet.length > 0 ? capabilitySet.join(" + ") : "none"}`);
+    lines.push(`  IntentModel.intentOutcomes = ${outcomeSet.length > 0 ? outcomeSet.join(" + ") : "none"}`);
+    lines.push(`  IntentModel.intentProcesses = ${processSet.length > 0 ? processSet.join(" + ") : "none"}`);
+    lines.push(`  IntentModel.constructionAuthorities = ${authoritySet.length > 0 ? authoritySet.join(" + ") : "none"}`);
+    lines.push(`  IntentModel.intentScenarios = ${scenarioSet.length > 0 ? scenarioSet.join(" + ") : "none"}`);
+    lines.push(`  IntentModel.processOutcomes = ${processOutcomePairs.length > 0 ? processOutcomePairs.join(" + ") : "none"}`);
+    lines.push(`  IntentModel.processConstructs = ${processConstructPairs.length > 0 ? processConstructPairs.join(" + ") : "none"}`);
+    lines.push(`  IntentModel.authorisedConstruction = ${authorisedConstructionPairs.length > 0 ? authorisedConstructionPairs.join(" + ") : "none"}`);
+    lines.push("}", "", "assert IntentProcessConstructionIsAuthorized {");
+    lines.push("  IntentModel.processOutcomes = IntentModel.processConstructs");
+    lines.push("  IntentModel.processConstructs in IntentModel.authorisedConstruction");
+    lines.push("}", "check IntentProcessConstructionIsAuthorized");
+  }
+
   lines.push("", "one sig Model { checks: Rule -> set CheckTarget }", "", "fact GeneratedChecks {");
   const pairs = [];
   rules.forEach((rule, index) => {
@@ -11110,7 +15971,7 @@ function emitAlloy(model) {
       pairs.push(`R_${sanitizeIdentifier(rule.id)} -> C_${index}_${targetIndex}`);
     });
   });
-  lines.push(`  Model.checks = ${pairs.length > 0 ? pairs.join(" + ") : "none"}`);
+  lines.push(`  Model.checks = ${pairs.length > 0 ? pairs.join(" + ") : "none -> CheckTarget"}`);
   lines.push("}", "", "assert ApprovedRulesHaveChecks {");
   lines.push("  all r: ActiveApprovedRule | some Model.checks[r] & AutomatedCheckTarget");
   lines.push("}", "", "assert ActiveApprovedRulesHaveAutomatedSupport {");
@@ -11220,6 +16081,87 @@ function emitTla(model) {
   const runtimeAlertPolicyIds = runtimeAlertPolicies(runtime).map((policy) => policy.id).sort();
   const runtimeRunbookExecutionIds = runtimeRunbookExecutions(runtime).map((execution) => execution.id).sort();
   const runtimeDependencyTraceIds = runtimeDependencyTraces(runtime).map((trace) => trace.id).sort();
+  const intent = intentPattern(model);
+  const intentCapabilityIds = intentCapabilities(intent).map((capability) => capability.id).sort();
+  const intentOutcomeIds = intentOutcomes(intent).map((outcome) => outcome.id).sort();
+  const intentProcessIds = intentProcesses(intent).map((process) => process.id).sort();
+  const intentScenarioIds = intentScenarios(intent).map((scenario) => scenario.id).sort();
+  const intentOutcomeState = intentOutcomes(intent)
+    .slice()
+    .sort(byId)
+    .map((outcome) => `(${JSON.stringify(outcome.id)} :> ${JSON.stringify(outcome.state)})`)
+    .join(" @@ ");
+  const intentProcessInput = intentProcesses(intent)
+    .slice()
+    .sort(byId)
+    .map((process) => `(${JSON.stringify(process.id)} :> ${JSON.stringify(process.input)})`)
+    .join(" @@ ");
+  const intentProcessOutcomes = intentProcesses(intent)
+    .slice()
+    .sort(byId)
+    .map((process) => `(${JSON.stringify(process.id)} :> ${tlaSet(list(process.outcomes).slice().sort())})`)
+    .join(" @@ ");
+  const intentProcessConstructs = intentProcesses(intent)
+    .slice()
+    .sort(byId)
+    .map((process) => `(${JSON.stringify(process.id)} :> ${tlaSet(list(process.constructs).slice().sort())})`)
+    .join(" @@ ");
+  const intentProcessTransitions = intentProcesses(intent)
+    .slice()
+    .sort(byId)
+    .map((process) => `(${JSON.stringify(process.id)} :> ${tlaTupleSet(list(process.transitions).map((transition) => [transition.from, transition.to]))})`)
+    .join(" @@ ");
+  const intentAuthorisedConstruction = tlaTupleSet(
+    constructionAuthorities(intent)
+      .slice()
+      .sort(byId)
+      .map((authority) => [authority.process, authority.outcome]),
+  );
+  const intentScenarioInitialState = intentScenarios(intent)
+    .slice()
+    .sort(byId)
+    .map((scenario) => `(${JSON.stringify(scenario.id)} :> ${JSON.stringify(scenario.initialState)})`)
+    .join(" @@ ");
+  const intentScenarioExpectedState = intentScenarios(intent)
+    .slice()
+    .sort(byId)
+    .map((scenario) => `(${JSON.stringify(scenario.id)} :> ${JSON.stringify(scenario.expectedState)})`)
+    .join(" @@ ");
+  const intentScenarioSteps = intentScenarios(intent)
+    .slice()
+    .sort(byId)
+    .map((scenario) => {
+      const steps = list(scenario.steps).map((step) => `<<${JSON.stringify(step.process)}, ${JSON.stringify(step.outcome)}>>`).join(", ");
+      return `(${JSON.stringify(scenario.id)} :> <<${steps}>>)`;
+    })
+    .join(" @@ ");
+  const intentExecutionProcesses = intentProcesses(intent)
+    .filter((process) => process.execution)
+    .map((process) => process.id)
+    .sort();
+  const intentIdempotentProcesses = intentProcesses(intent)
+    .filter((process) => process.execution?.idempotencyKey)
+    .map((process) => process.id)
+    .sort();
+  const intentTimedProcesses = intentProcesses(intent)
+    .filter((process) => process.execution?.timeoutSteps !== null && process.execution?.timeoutSteps !== undefined)
+    .map((process) => process.id)
+    .sort();
+  const intentProcessMaxInFlight = intentProcesses(intent)
+    .filter((process) => process.execution)
+    .slice()
+    .sort(byId)
+    .map((process) => `(${JSON.stringify(process.id)} :> ${process.execution.maxInFlight})`)
+    .join(" @@ ");
+  const intentProcessTimeoutSteps = intentProcesses(intent)
+    .filter((process) => process.execution?.timeoutSteps !== null && process.execution?.timeoutSteps !== undefined)
+    .slice()
+    .sort(byId)
+    .map((process) => `(${JSON.stringify(process.id)} :> ${process.execution.timeoutSteps})`)
+    .join(" @@ ");
+  const intentExecutionKeyCount = Math.max(1, ...intentProcesses(intent)
+    .filter((process) => process.execution)
+    .map((process) => process.execution.maxInFlight));
   return `---- MODULE ${moduleName} ----
 EXTENDS Sequences, FiniteSets, Naturals, TLC
 
@@ -11386,35 +16328,141 @@ RuntimeExecutedRunbookAlerts == ${tlaSet(runtimeExecutedRunbookAlertIds(runtime)
 
 RuntimeTimeoutCompliantTraces == ${tlaSet(runtimeTimeoutCompliantTraceIds(runtime))}
 
+IntentCapabilities == ${tlaSet(intentCapabilityIds)}
+
+IntentOutcomes == ${tlaSet(intentOutcomeIds)}
+
+IntentProcesses == ${tlaSet(intentProcessIds)}
+
+IntentOutcomeState == ${intentOutcomeState || "[outcome \\in IntentOutcomes |-> \"\"]"}
+
+IntentProcessInput == ${intentProcessInput || "[process \\in IntentProcesses |-> \"\"]"}
+
+IntentProcessOutcomes == ${intentProcessOutcomes || "[process \\in IntentProcesses |-> {}]"}
+
+IntentProcessConstructs == ${intentProcessConstructs || "[process \\in IntentProcesses |-> {}]"}
+
+IntentProcessTransitions == ${intentProcessTransitions || "[process \\in IntentProcesses |-> {}]"}
+
+IntentAuthorisedConstruction == ${intentAuthorisedConstruction}
+
+IntentExecutionProcesses == ${tlaSet(intentExecutionProcesses)}
+
+IntentIdempotentProcesses == ${tlaSet(intentIdempotentProcesses)}
+
+IntentTimedProcesses == ${tlaSet(intentTimedProcesses)}
+
+IntentProcessMaxInFlight == ${intentProcessMaxInFlight || "[process \\in IntentExecutionProcesses |-> 1]"}
+
+IntentProcessTimeoutSteps == ${intentProcessTimeoutSteps || "[process \\in IntentTimedProcesses |-> 1]"}
+
+IntentExecutionKeySpace == 1..${intentExecutionKeyCount}
+
+IntentScenarios == ${tlaSet(intentScenarioIds)}
+
+IntentScenarioInitialState == ${intentScenarioInitialState || "[scenario \\in IntentScenarios |-> \"\"]"}
+
+IntentScenarioExpectedState == ${intentScenarioExpectedState || "[scenario \\in IntentScenarios |-> \"\"]"}
+
+IntentScenarioSteps == ${intentScenarioSteps || "[scenario \\in IntentScenarios |-> <<>>]"}
+
 RuleWorkflowState == {"approved", "verified", "deprecated", "uncovered"}
 
-VARIABLES selectedRule, ruleState, support
+VARIABLES selectedRule, ruleState, support, intentInFlight, intentActiveKeys, intentElapsed
 
-vars == <<selectedRule, ruleState, support>>
+vars == <<selectedRule, ruleState, support, intentInFlight, intentActiveKeys, intentElapsed>>
 
 Init ==
   /\\ selectedRule \\in ActiveApprovedRules
   /\\ ruleState = "approved"
   /\\ support = Checks[selectedRule]
+  /\\ intentInFlight = [process \\in IntentExecutionProcesses |-> 0]
+  /\\ intentActiveKeys = [process \\in IntentExecutionProcesses |-> {}]
+  /\\ intentElapsed = [process \\in IntentExecutionProcesses |-> 0]
 
 MarkVerified ==
   /\\ ruleState = "approved"
   /\\ Len(support) > 0
   /\\ ruleState' = "verified"
-  /\\ UNCHANGED <<selectedRule, support>>
+  /\\ UNCHANGED <<selectedRule, support, intentInFlight, intentActiveKeys, intentElapsed>>
 
 DetectUncovered ==
   /\\ ruleState = "approved"
   /\\ Len(support) = 0
   /\\ ruleState' = "uncovered"
-  /\\ UNCHANGED <<selectedRule, support>>
+  /\\ UNCHANGED <<selectedRule, support, intentInFlight, intentActiveKeys, intentElapsed>>
 
 Deprecate ==
   /\\ ruleState = "approved"
   /\\ ruleState' = "deprecated"
-  /\\ UNCHANGED <<selectedRule, support>>
+  /\\ UNCHANGED <<selectedRule, support, intentInFlight, intentActiveKeys, intentElapsed>>
 
-Next == MarkVerified \\/ DetectUncovered \\/ Deprecate \\/ UNCHANGED vars
+IntentStart(process, key) ==
+  /\\ process \\in IntentExecutionProcesses
+  /\\ key \\in IntentExecutionKeySpace
+  /\\ intentInFlight[process] < IntentProcessMaxInFlight[process]
+  /\\ (process \\notin IntentIdempotentProcesses \\/ key \\notin intentActiveKeys[process])
+  /\\ intentInFlight' = [intentInFlight EXCEPT ![process] = @ + 1]
+  /\\ intentActiveKeys' =
+    IF process \\in IntentIdempotentProcesses
+      THEN [intentActiveKeys EXCEPT ![process] = @ \\cup {key}]
+      ELSE intentActiveKeys
+  /\\ intentElapsed' =
+    IF intentInFlight[process] = 0
+      THEN [intentElapsed EXCEPT ![process] = 0]
+      ELSE intentElapsed
+  /\\ UNCHANGED <<selectedRule, ruleState, support>>
+
+IntentStartAny ==
+  \\E process \\in IntentExecutionProcesses :
+    \\E key \\in IntentExecutionKeySpace :
+      IntentStart(process, key)
+
+IntentComplete(process, key) ==
+  /\\ process \\in IntentExecutionProcesses
+  /\\ key \\in IntentExecutionKeySpace
+  /\\ intentInFlight[process] > 0
+  /\\ (process \\notin IntentIdempotentProcesses \\/ key \\in intentActiveKeys[process])
+  /\\ intentInFlight' = [intentInFlight EXCEPT ![process] = @ - 1]
+  /\\ intentActiveKeys' =
+    IF process \\in IntentIdempotentProcesses
+      THEN [intentActiveKeys EXCEPT ![process] = @ \\ {key}]
+      ELSE intentActiveKeys
+  /\\ intentElapsed' =
+    IF intentInFlight[process] = 1
+      THEN [intentElapsed EXCEPT ![process] = 0]
+      ELSE intentElapsed
+  /\\ UNCHANGED <<selectedRule, ruleState, support>>
+
+IntentCompleteAny ==
+  \\E process \\in IntentExecutionProcesses :
+    \\E key \\in IntentExecutionKeySpace :
+      IntentComplete(process, key)
+
+IntentTick(process) ==
+  /\\ process \\in IntentTimedProcesses
+  /\\ intentInFlight[process] > 0
+  /\\ intentElapsed[process] < IntentProcessTimeoutSteps[process]
+  /\\ intentElapsed' = [intentElapsed EXCEPT ![process] = @ + 1]
+  /\\ UNCHANGED <<selectedRule, ruleState, support, intentInFlight, intentActiveKeys>>
+
+IntentTickAny ==
+  \\E process \\in IntentTimedProcesses : IntentTick(process)
+
+IntentExpire(process) ==
+  /\\ process \\in IntentTimedProcesses
+  /\\ intentInFlight[process] > 0
+  /\\ intentElapsed[process] = IntentProcessTimeoutSteps[process]
+  /\\ intentInFlight' = [intentInFlight EXCEPT ![process] = 0]
+  /\\ intentActiveKeys' = [intentActiveKeys EXCEPT ![process] = {}]
+  /\\ intentElapsed' = [intentElapsed EXCEPT ![process] = 0]
+  /\\ UNCHANGED <<selectedRule, ruleState, support>>
+
+IntentExpireAny ==
+  \\E process \\in IntentTimedProcesses : IntentExpire(process)
+
+Next ==
+  MarkVerified \\/ DetectUncovered \\/ Deprecate \\/ IntentStartAny \\/ IntentCompleteAny \\/ IntentTickAny \\/ IntentExpireAny \\/ UNCHANGED vars
 
 Spec == Init /\\ [][Next]_vars
 
@@ -11505,6 +16553,49 @@ RuntimePageAlertsHaveExecutedRunbook ==
 RuntimeDependencyTracesWithinTimeout ==
   RuntimeDependencyTraces \\subseteq RuntimeTimeoutCompliantTraces
 
+IntentExecutionTypeInvariant ==
+  /\\ intentInFlight \\in [IntentExecutionProcesses -> Nat]
+  /\\ intentActiveKeys \\in [IntentExecutionProcesses -> SUBSET IntentExecutionKeySpace]
+  /\\ intentElapsed \\in [IntentExecutionProcesses -> Nat]
+
+IntentConcurrencyBounded ==
+  \\A process \\in IntentExecutionProcesses :
+    intentInFlight[process] <= IntentProcessMaxInFlight[process]
+
+IntentIdempotencyKeysAreExclusive ==
+  \\A process \\in IntentIdempotentProcesses :
+    Cardinality(intentActiveKeys[process]) = intentInFlight[process]
+
+IntentTimeoutsBounded ==
+  \\A process \\in IntentTimedProcesses :
+    intentElapsed[process] <= IntentProcessTimeoutSteps[process]
+
+IntentProcessConstructionIsAuthorized ==
+  \\A process \\in IntentProcesses :
+    /\\ IntentProcessOutcomes[process] = IntentProcessConstructs[process]
+    /\\ \\A outcome \\in IntentProcessConstructs[process] :
+      <<process, outcome>> \\in IntentAuthorisedConstruction
+
+IntentScenarioStepInputState(scenario, index) ==
+  IF index = 1
+    THEN IntentScenarioInitialState[scenario]
+    ELSE IntentOutcomeState[IntentScenarioSteps[scenario][index - 1][2]]
+
+IntentScenarioStepIsContinuous(scenario, index) ==
+  LET step == IntentScenarioSteps[scenario][index] IN
+    /\\ step[1] \\in IntentProcesses
+    /\\ step[2] \\in IntentOutcomes
+    /\\ IntentProcessInput[step[1]] = IntentScenarioStepInputState(scenario, index)
+    /\\ step[2] \\in IntentProcessOutcomes[step[1]]
+    /\\ <<IntentScenarioStepInputState(scenario, index), IntentOutcomeState[step[2]]>> \\in IntentProcessTransitions[step[1]]
+
+IntentScenarioTraceIsContinuous ==
+  \\A scenario \\in IntentScenarios :
+    /\\ Len(IntentScenarioSteps[scenario]) > 0
+    /\\ \\A index \\in 1..Len(IntentScenarioSteps[scenario]) :
+      IntentScenarioStepIsContinuous(scenario, index)
+    /\\ IntentOutcomeState[IntentScenarioSteps[scenario][Len(IntentScenarioSteps[scenario])][2]] = IntentScenarioExpectedState[scenario]
+
 ====
 `;
 }
@@ -11538,6 +16629,12 @@ INVARIANT RuntimeTelemetryMeetsSlo
 INVARIANT RuntimePageAlertsHaveEnabledPolicy
 INVARIANT RuntimePageAlertsHaveExecutedRunbook
 INVARIANT RuntimeDependencyTracesWithinTimeout
+INVARIANT IntentExecutionTypeInvariant
+INVARIANT IntentConcurrencyBounded
+INVARIANT IntentIdempotencyKeysAreExclusive
+INVARIANT IntentTimeoutsBounded
+INVARIANT IntentProcessConstructionIsAuthorized
+INVARIANT IntentScenarioTraceIsContinuous
 `;
 }
 
@@ -11547,14 +16644,21 @@ function tlaModuleName(model) {
 
 function emitLean(model) {
   const approved = sortedRules(model).filter((rule) => rule.reviewStatus === "approved" && !rule.deprecated);
-  const constructors = approved.map((rule) => `  | ${sanitizeIdentifier(rule.id)}`).join("\n");
+  const constructors = approved.length > 0 ? approved.map((rule) => `  | ${sanitizeIdentifier(rule.id)}`).join("\n") : "  | none";
   const listValues = approved.map((rule) => `RuleId.${sanitizeIdentifier(rule.id)}`).join(", ");
-  const checks = approved
-    .map((rule) => `  | RuleId.${sanitizeIdentifier(rule.id)} => [${automatedCheckTargets(rule).map((target) => JSON.stringify(target.ref)).join(", ")}]`)
-    .join("\n");
-  const clauses = approved
-    .map((rule) => `  | RuleId.${sanitizeIdentifier(rule.id)} => [${ruleClauseExprs(rule).join(", ")}]`)
-    .join("\n");
+  const checks = approved.length > 0
+    ? approved
+      .map((rule) => `  | RuleId.${sanitizeIdentifier(rule.id)} => [${automatedCheckTargets(rule).map((target) => JSON.stringify(target.ref)).join(", ")}]`)
+      .join("\n")
+    : "  | .none => []";
+  const clauses = approved.length > 0
+    ? approved
+      .map((rule) => `  | RuleId.${sanitizeIdentifier(rule.id)} => [${ruleClauseExprs(rule).join(", ")}]`)
+      .join("\n")
+    : "  | .none => []";
+  const coverageProof = approved.length > 0
+    ? "  intro r h\n  cases r <;> decide"
+    : "  intro r h\n  simp_all [approvedRules]";
   const clauseTheorems = leanSemanticClauseProofs(model).map(emitLeanClauseTheorem).join("\n\n");
   return `namespace DSpec.Generated
 
@@ -11605,12 +16709,10 @@ def CoverageInvariant : Prop :=
   forall r, r ∈ approvedRules -> AutomatedSupport r = true
 
 theorem coverage_invariant : CoverageInvariant := by
-  intro r h
-  cases r <;> decide
+${coverageProof}
 
 theorem approved_rules_have_checks : forall r, r ∈ approvedRules -> (checks r).length > 0 := by
-  intro r h
-  cases r <;> decide
+${coverageProof}
 
 end DSpec.Generated
 `;
@@ -11863,6 +16965,12 @@ function validateGeneratedTla(source) {
     "RuntimeEnabledPolicyAlerts",
     "RuntimeExecutedRunbookAlerts",
     "RuntimeTimeoutCompliantTraces",
+    "IntentExecutionProcesses",
+    "IntentIdempotentProcesses",
+    "IntentTimedProcesses",
+    "IntentProcessMaxInFlight",
+    "IntentProcessTimeoutSteps",
+    "IntentExecutionKeySpace",
     "RuleWorkflowState",
     "vars",
     "Init",
@@ -11898,6 +17006,10 @@ function validateGeneratedTla(source) {
     "RuntimePageAlertsHaveEnabledPolicy",
     "RuntimePageAlertsHaveExecutedRunbook",
     "RuntimeDependencyTracesWithinTimeout",
+    "IntentExecutionTypeInvariant",
+    "IntentConcurrencyBounded",
+    "IntentIdempotencyKeysAreExclusive",
+    "IntentTimeoutsBounded",
   ]) {
     if (!new RegExp(`^${definition} ==`, "m").test(source)) {
       errors.push(`missing TLA+ definition: ${definition}`);
@@ -12149,6 +17261,150 @@ function assuranceEvidenceArtifacts(model, verification, expected, toolVersions)
   }));
 }
 
+function validIsoTimestamp(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value);
+}
+
+function intentExerciseEvidenceEntry(model, reportFile) {
+  const report = readJsonFile(reportFile, "Intent exercise report");
+  const entry = {
+    report: { path: reportFile, digest: fileDigest(reportFile) },
+    status: report.status,
+    executedAt: report.executedAt ?? null,
+    model: report.model ?? null,
+    modelDigest: report.evidence?.document?.modelDigest ?? null,
+    trace: {
+      path: report.evidence?.document?.path ?? null,
+      digest: report.evidence?.document?.digest ?? null,
+    },
+    execution: report.evidence?.execution ?? null,
+    executionPolicy: report.executionPolicy?.status === "skip" ? null : report.executionPolicy ?? null,
+    summary: report.summary ?? null,
+    observations: list(report.traces).map((trace) => ({ id: trace?.id ?? null, observedAt: trace?.observedAt ?? null })),
+  };
+  const errors = verifyIntentExerciseEvidenceEntry(model, entry);
+  if (errors.length > 0) throw new CommandError(`invalid Intent exercise evidence:\n${errors.join("\n")}\n`);
+  return entry;
+}
+
+function intentExerciseEvidenceEntries(model, reportFiles) {
+  const entries = [];
+  const seen = new Set();
+  for (const reportFile of list(reportFiles)) {
+    const entry = intentExerciseEvidenceEntry(model, reportFile);
+    if (seen.has(entry.report.path)) throw new CommandError(`duplicate Intent exercise evidence report: ${entry.report.path}\n`);
+    seen.add(entry.report.path);
+    entries.push(entry);
+  }
+  return entries.sort((left, right) => left.report.path.localeCompare(right.report.path));
+}
+
+function currentIntentEvidenceFileDigest(path, label, errors) {
+  if (typeof path !== "string" || path.length === 0) {
+    errors.push(`missing Intent ${label} path`);
+    return null;
+  }
+  if (!existsSync(resolve(path))) {
+    errors.push(`missing Intent ${label}: ${path}`);
+    return null;
+  }
+  return fileDigest(path);
+}
+
+function verifyIntentExecutionPolicyEvidence(model, policyEvidence) {
+  const errors = [];
+  if (!policyEvidence) return errors;
+  const declared = intentProcesses(intentPattern(model))
+    .filter((process) => process.execution)
+    .slice()
+    .sort(byId);
+  if (policyEvidence.status !== "pass") errors.push("Intent execution policy evidence did not pass");
+  if (policyEvidence.summary?.policies !== declared.length) {
+    errors.push(`stale Intent execution policy count: expected ${declared.length}, got ${policyEvidence.summary?.policies ?? "missing"}`);
+  }
+  const expectedReplays = declared.reduce((count, process) => count + process.execution.maxInFlight + 1, 0);
+  if (policyEvidence.summary?.replays !== expectedReplays) {
+    errors.push(`stale Intent execution policy replay count: expected ${expectedReplays}, got ${policyEvidence.summary?.replays ?? "missing"}`);
+  }
+  const observations = list(policyEvidence.observations);
+  if (observations.length !== declared.length) {
+    errors.push(`stale Intent execution policy observations: expected ${declared.length}, got ${observations.length}`);
+  }
+  const byProcess = new Map(observations.map((observation) => [observation?.process, observation]));
+  for (const process of declared) {
+    const observation = byProcess.get(process.id);
+    if (!observation) {
+      errors.push(`missing Intent execution policy observation: ${process.id}`);
+      continue;
+    }
+    const execution = process.execution;
+    if (observation.status !== "pass") errors.push(`failed Intent execution policy observation: ${process.id}`);
+    if (observation.pressure?.scope !== "client-scheduled") errors.push(`invalid Intent execution policy observation scope: ${process.id}`);
+    if (observation.pressure?.maxInFlight !== execution.maxInFlight) {
+      errors.push(`stale Intent execution maxInFlight: ${process.id}`);
+    }
+    if (observation.pressure?.maxObservedInFlight !== execution.maxInFlight) {
+      errors.push(`incomplete Intent execution client pressure: ${process.id}`);
+    }
+    if (observation.pressure?.replayCount !== execution.maxInFlight + 1) {
+      errors.push(`stale Intent execution replay count: ${process.id}`);
+    }
+    if (observation.timeout?.timeoutSteps !== (execution.timeoutSteps ?? null)) {
+      errors.push(`stale Intent execution timeoutSteps: ${process.id}`);
+    }
+    if (observation.timeout?.timeoutMs !== (execution.timeoutMs ?? null)) {
+      errors.push(`stale Intent execution timeoutMs: ${process.id}`);
+    }
+    if (execution.idempotencyKey) {
+      if (observation.idempotency?.contractField !== execution.idempotencyKey || observation.idempotency?.replayedSameKey !== true) {
+        errors.push(`stale Intent execution idempotency observation: ${process.id}`);
+      }
+    } else if (observation.idempotency !== null) {
+      errors.push(`unexpected Intent execution idempotency observation: ${process.id}`);
+    }
+    if (observation.result?.outputMatchesObserved !== true) errors.push(`failed Intent execution output observation: ${process.id}`);
+    if (observation.result?.effectsMatchObserved === false) errors.push(`failed Intent execution effect observation: ${process.id}`);
+    if (list(observation.invocations).length !== execution.maxInFlight + 1) {
+      errors.push(`incomplete Intent execution invocations: ${process.id}`);
+    }
+  }
+  return errors;
+}
+
+function verifyIntentExerciseEvidenceEntry(model, entry) {
+  const errors = [];
+  if (!entry || typeof entry !== "object") return ["invalid Intent exercise evidence entry"];
+  if (entry.status !== "pass") errors.push(`Intent exercise evidence did not pass: ${entry.report?.path ?? "missing"}`);
+  if (!validIsoTimestamp(entry.executedAt)) errors.push(`invalid Intent exercise evidence executedAt: ${entry.report?.path ?? "missing"}`);
+  if (entry.model?.id !== model.id) errors.push(`stale Intent exercise model id: expected ${model.id}, got ${entry.model?.id ?? "missing"}`);
+  if (entry.model?.version !== model.version) errors.push(`stale Intent exercise model version: expected ${model.version}, got ${entry.model?.version ?? "missing"}`);
+  if (entry.modelDigest !== assuranceDigest(model)) errors.push(`stale Intent exercise model digest: ${entry.report?.path ?? "missing"}`);
+
+  const reportDigest = currentIntentEvidenceFileDigest(entry.report?.path, "exercise report", errors);
+  if (reportDigest && entry.report?.digest !== reportDigest) errors.push(`stale Intent exercise evidence report digest: ${entry.report.path}`);
+  const traceDigest = currentIntentEvidenceFileDigest(entry.trace?.path, "trace evidence", errors);
+  if (traceDigest && entry.trace?.digest !== traceDigest) errors.push(`stale Intent trace evidence digest: ${entry.trace.path}`);
+
+  const execution = entry.execution;
+  if (!["node-permission-child-process", "node-transaction-journal-child-process", "http-fetch", "mixed"].includes(execution?.runner)) errors.push(`invalid Intent exercise runner: ${execution?.runner ?? "missing"}`);
+  if (execution?.invocation !== "per-case") errors.push(`invalid Intent exercise invocation policy: ${execution?.invocation ?? "missing"}`);
+  if (!Number.isInteger(execution?.timeoutMs) || execution.timeoutMs <= 0) errors.push("invalid Intent exercise timeout policy");
+  if (["node-permission-child-process", "node-transaction-journal-child-process", "mixed"].includes(execution?.runner)
+    && (execution?.permissions?.fsWrite !== false || execution?.permissions?.childProcess !== false || execution?.permissions?.worker !== false)) {
+    errors.push("invalid Intent exercise permission policy");
+  }
+  const implementations = list(execution?.implementations);
+  if (implementations.length === 0) errors.push("Intent exercise evidence has no implementation digest");
+  for (const implementation of implementations) {
+    const digest = currentIntentEvidenceFileDigest(implementation?.path, "implementation", errors);
+    if (digest && implementation.digest !== digest) {
+      errors.push(`stale Intent implementation digest: ${implementation.path}`);
+    }
+  }
+  errors.push(...verifyIntentExecutionPolicyEvidence(model, entry.executionPolicy));
+  return errors;
+}
+
 function createAssuranceEvidenceManifest(model, options = {}) {
   const executedAt = options.executedAt ?? new Date().toISOString();
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(executedAt)) {
@@ -12158,6 +17414,7 @@ function createAssuranceEvidenceManifest(model, options = {}) {
   assertVerifyGeneratedReport(verification, { requireFormalTools: options.requireFormalTools });
   const expected = assuranceEvidenceExpected(model, verification);
   const toolVersions = currentAssuranceToolVersions();
+  const intentExercises = intentExerciseEvidenceEntries(model, options.intentReportFiles);
   return {
     schemaVersion: ASSURANCE_EVIDENCE_SCHEMA_VERSION,
     executedAt,
@@ -12165,21 +17422,27 @@ function createAssuranceEvidenceManifest(model, options = {}) {
     sourceMapDigest: expected.sourceMapDigest,
     artifacts: assuranceEvidenceArtifacts(model, verification, expected, toolVersions),
     clauseBindings: expected.clauseBindings,
+    ...(intentExercises.length > 0 ? { intentExercises } : {}),
   };
 }
 
 function assuranceEvidenceVerificationReport(model, manifest) {
   const expected = assuranceEvidenceExpected(model);
   const verification = verifyAssuranceEvidenceManifest(manifest, expected, currentAssuranceToolVersions());
+  const intentExercises = list(manifest?.intentExercises);
+  const intentErrors = intentExercises.flatMap((entry) => verifyIntentExerciseEvidenceEntry(model, entry));
+  const errors = [...verification.errors, ...intentErrors];
+  const summary = {
+    artifacts: list(manifest?.artifacts).length,
+    clauseBindings: list(manifest?.clauseBindings).length,
+  };
+  if (intentExercises.length > 0) summary.intentExercises = intentExercises.length;
   return {
     model: { id: model.id, version: model.version },
     manifest,
-    status: verification.status,
-    summary: {
-      artifacts: list(manifest?.artifacts).length,
-      clauseBindings: list(manifest?.clauseBindings).length,
-    },
-    errors: verification.errors,
+    status: errors.length === 0 ? "pass" : "fail",
+    summary,
+    errors,
     warnings: verification.warnings,
   };
 }
@@ -12306,6 +17569,149 @@ function coverageReport(model) {
   };
 }
 
+function verifyReport(model, options = {}) {
+  const check = checkReport(model);
+  const drift = driftReport(model);
+  const coverage = coverageReport(model);
+  const schemaLock = options.modelFile
+    ? schemaLockReport(options.modelFile, options)
+    : { status: "skip", reason: "no schema lock configured", errors: [] };
+  const reports = [
+    ["check", check],
+    ["drift", drift],
+    ["coverage", coverage],
+    ["schema lock", schemaLock],
+  ];
+  const errors = reports.flatMap(([name, report]) => report.errors.map((error) => `${name}: ${error}`));
+
+  return {
+    model: modelReport(model),
+    status: reportStatus(errors),
+    summary: {
+      passed: reports.filter(([, report]) => report.status === "pass").length,
+      total: reports.filter(([, report]) => report.status !== "skip").length,
+    },
+    check,
+    drift,
+    coverage,
+    schemaLock,
+    errors,
+  };
+}
+
+function diagnosticRuleId(message) {
+  const clause = message.match(/:\s*([A-Za-z0-9_.-]+)\s+(?:when|must|mustNot)\[\d+\]/);
+  if (clause) return clause[1];
+  const reference = message.match(/:\s*([A-Za-z0-9_.-]+)\s*->/);
+  return reference?.[1] ?? null;
+}
+
+function diagnosticCode(phase, message) {
+  if (message.startsWith("invalid expr ast:")) return "invalid-clause-ast";
+  if (message.startsWith("missing implementation path:")) return "implementation-path-missing";
+  if (message.startsWith("missing implementation symbol:")) return "implementation-symbol-missing";
+  if (message.startsWith("missing check target path:")) return "check-target-path-missing";
+  if (message.startsWith("missing check target anchor:")) return "check-target-anchor-missing";
+  if (message.startsWith("approved rule has no automated check target:")) return "approved-rule-missing-automated-check";
+  if (message.startsWith("approved rule is missing required assurance:")) return "approved-rule-missing-assurance";
+  if (message.startsWith("approved rule has uncovered clause:")) return "approved-rule-uncovered-clause";
+  if (message.startsWith("schema lock not found:")) return "schema-lock-missing";
+  if (message.startsWith("schema module digest changed:")) return "schema-module-digest-changed";
+  if (message.startsWith("schema module missing:")) return "schema-module-missing";
+  if (message.startsWith("schema import changed:")) return "schema-import-changed";
+  if (message.startsWith("schema root changed:")) return "schema-root-changed";
+  if (message.startsWith("schema package metadata changed")) return "schema-package-metadata-changed";
+  return `${phase}-verification-failure`;
+}
+
+function diagnosticSuggestion(code, modelFile) {
+  if (code === "invalid-clause-ast") return "correct the Clause.ast operator shape for this rule";
+  if (code === "implementation-path-missing") return "restore the implementation path or update Rule.implementedBy";
+  if (code === "implementation-symbol-missing") return "restore the implementation symbol or update Rule.implementedBy";
+  if (code === "check-target-path-missing") return "restore the test file or update Rule.checks";
+  if (code === "check-target-anchor-missing") return "restore the named test anchor or update Rule.checks";
+  if (code === "approved-rule-missing-automated-check") return "add an automated check target before approving this rule";
+  if (code === "approved-rule-missing-assurance") return "add a check target with the required assurance evidence";
+  if (code === "approved-rule-uncovered-clause") return "add the missing clause selector to CheckTarget.covers";
+  if (code.startsWith("schema-")) return `review the schema change, then run dspec lock --force ${modelFile}`;
+  return "update the model or linked implementation so this verification gate passes";
+}
+
+function diagnosticSource(modelFile, ruleId, phase) {
+  if (phase === "schema-lock") return null;
+  if (!ruleId) return { path: modelFile, line: null };
+  try {
+    const source = readTextFile(modelFile);
+    const match = new RegExp(`\\bid\\s*=\\s*"${escapeRegex(ruleId)}"`).exec(source);
+    return {
+      path: modelFile,
+      line: match ? source.slice(0, match.index).split("\n").length : null,
+    };
+  } catch {
+    return { path: modelFile, line: null };
+  }
+}
+
+function explainReport(model, options) {
+  const verification = verifyReport(model, options);
+  const phases = [
+    ["check", verification.check],
+    ["drift", verification.drift],
+    ["coverage", verification.coverage],
+    ["schema-lock", verification.schemaLock],
+  ];
+  const seen = new Set();
+  const diagnostics = [];
+  for (const [phase, phaseReport] of phases) {
+    for (const message of phaseReport.errors) {
+      if (seen.has(message)) continue;
+      seen.add(message);
+      const ruleId = diagnosticRuleId(message);
+      const code = diagnosticCode(phase, message);
+      diagnostics.push({
+        id: `${phase}:${code}:${ruleId ?? "model"}`,
+        phase,
+        code,
+        severity: "error",
+        ruleId,
+        message,
+        source: diagnosticSource(options.modelFile, ruleId, phase),
+        suggestion: diagnosticSuggestion(code, options.modelFile),
+      });
+    }
+  }
+  return {
+    status: verification.status,
+    model: verification.model,
+    summary: {
+      diagnostics: diagnostics.length,
+      errors: verification.errors.length,
+      gates: verification.summary,
+    },
+    diagnostics,
+    errors: verification.errors,
+  };
+}
+
+function renderExplainMarkdown(report) {
+  const lines = [
+    `# Verification Diagnostics: ${report.model.id}`,
+    "",
+    `- status: \`${report.status}\``,
+    `- diagnostics: \`${report.summary.diagnostics}\``,
+    "",
+    "| Phase | Code | Rule | Source | Message | Suggestion |",
+    "| --- | --- | --- | --- | --- | --- |",
+  ];
+  for (const diagnostic of report.diagnostics) {
+    const source = diagnostic.source
+      ? `${diagnostic.source.path}${diagnostic.source.line === null ? "" : `:${diagnostic.source.line}`}`
+      : "";
+    lines.push(`| ${markdownCell(diagnostic.phase)} | ${markdownCell(diagnostic.code)} | ${markdownCell(diagnostic.ruleId ?? "")} | ${markdownCell(source)} | ${markdownCell(diagnostic.message)} | ${markdownCell(diagnostic.suggestion)} |`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
 function domainCoverageCandidateIds(kind, id) {
   const candidates = [];
   const push = (...values) => {
@@ -12328,6 +17734,25 @@ function domainCoverageCandidateIds(kind, id) {
   if (kind === "runtime.service") push(`service.${id}`, `runtime.service.${id}`);
   if (kind === "runtime.dependency") push(`dependency.${id}`, `runtime.dependency.${id}`);
   if (kind === "runtime.slo") push(`slo.${id}`, `runtime.slo.${id}`);
+  if (kind === "intent.capability") push(id, `capability.${id}`, `intent.capability.${id}`);
+  if (kind === "intent.outcome") push(id, `outcome.${id}`, `intent.outcome.${id}`);
+  if (kind === "intent.process") push(id, `process.${id}`, `intent.process.${id}`);
+  if (kind === "intent.constructionAuthority") push(id, `constructionAuthority.${id}`, `intent.constructionAuthority.${id}`);
+  if (kind === "intent.scenario") push(id, `scenario.${id}`, `intent.scenario.${id}`);
+  if (kind === "intent.inputField") push(id, `input.${id}`, `intent.inputField.${id}`);
+  if (kind === "intent.outputField") push(id, `output.${id}`, `intent.outputField.${id}`);
+  if (kind === "intent.effect") push(id, `effect.${id}`, `intent.effect.${id}`);
+  if (kind === "intent.refinement") push(id, `refinement.${id}`, `intent.refinement.${id}`);
+  if (kind === "intent.executionPolicy") push(`execution.${id}`, `intent.execution.${id}`);
+  if (kind === "domain.enum") push(id, `enum.${id}`, `domain.enum.${id}`);
+  if (kind === "domain.valueObject") push(id, `valueObject.${id}`, `domain.valueObject.${id}`);
+  if (kind === "domain.entity") push(id, `entity.${id}`, `domain.entity.${id}`);
+  if (kind === "domain.aggregate") push(id, `aggregate.${id}`, `domain.aggregate.${id}`);
+  if (kind === "domain.command") push(id, `command.${id}`, `domain.command.${id}`);
+  if (kind === "domain.event") push(id, `event.${id}`, `domain.event.${id}`);
+  if (kind === "domain.invariant") push(id, `invariant.${id}`, `domain.invariant.${id}`);
+  if (kind === "domain.formalization") push(id, `formalization.${id}`, `domain.formalization.${id}`);
+  if (kind === "domain.field") push(id, `field.${id}`, `domain.field.${id}`);
   return candidates.sort();
 }
 
@@ -12374,6 +17799,61 @@ function domainCoverageElements(model) {
     runtimeServices(runtime).forEach((service, index) => elements.push(domainCoverageElement("runtime.service", service.id, `model.patterns.runtime.services[${index}]`)));
     runtimeDependencies(runtime).forEach((dependency, index) => elements.push(domainCoverageElement("runtime.dependency", dependency.id, `model.patterns.runtime.dependencies[${index}]`)));
     runtimeSlos(runtime).forEach((slo, index) => elements.push(domainCoverageElement("runtime.slo", slo.id, `model.patterns.runtime.slos[${index}]`)));
+  }
+
+  const domain = domainPattern(model);
+  if (domain) {
+    list(domain.enums).forEach((entry, index) => elements.push(domainCoverageElement("domain.enum", entry.id, `model.patterns.domain.enums[${index}]`)));
+    list(domain.valueObjects).forEach((entry, index) => {
+      elements.push(domainCoverageElement("domain.valueObject", entry.id, `model.patterns.domain.valueObjects[${index}]`));
+      list(entry.fields).forEach((field, fieldIndex) => elements.push(domainCoverageElement("domain.field", `valueObject/${entry.id}/${field.id}`, `model.patterns.domain.valueObjects[${index}].fields[${fieldIndex}]`)));
+    });
+    list(domain.entities).forEach((entry, index) => {
+      elements.push(domainCoverageElement("domain.entity", entry.id, `model.patterns.domain.entities[${index}]`));
+      list(entry.fields).forEach((field, fieldIndex) => elements.push(domainCoverageElement("domain.field", `entity/${entry.id}/${field.id}`, `model.patterns.domain.entities[${index}].fields[${fieldIndex}]`)));
+    });
+    list(domain.aggregates).forEach((entry, index) => elements.push(domainCoverageElement("domain.aggregate", entry.id, `model.patterns.domain.aggregates[${index}]`)));
+    list(domain.commands).forEach((entry, index) => {
+      elements.push(domainCoverageElement("domain.command", entry.id, `model.patterns.domain.commands[${index}]`));
+      list(entry.fields).forEach((field, fieldIndex) => elements.push(domainCoverageElement("domain.field", `command/${entry.id}/${field.id}`, `model.patterns.domain.commands[${index}].fields[${fieldIndex}]`)));
+    });
+    list(domain.events).forEach((entry, index) => {
+      elements.push(domainCoverageElement("domain.event", entry.id, `model.patterns.domain.events[${index}]`));
+      list(entry.fields).forEach((field, fieldIndex) => elements.push(domainCoverageElement("domain.field", `event/${entry.id}/${field.id}`, `model.patterns.domain.events[${index}].fields[${fieldIndex}]`)));
+    });
+    list(domain.invariants).forEach((entry, index) => elements.push(domainCoverageElement("domain.invariant", entry.id, `model.patterns.domain.invariants[${index}]`)));
+    list(domain.formalizations).forEach((entry, index) => elements.push(domainCoverageElement("domain.formalization", entry.id, `model.patterns.domain.formalizations[${index}]`)));
+  }
+
+  const intent = intentPattern(model);
+  if (intent) {
+    intentCapabilities(intent).forEach((capability, index) => elements.push(domainCoverageElement("intent.capability", capability.id, `model.patterns.intent.capabilities[${index}]`)));
+    intentOutcomes(intent).forEach((outcome, index) => elements.push(domainCoverageElement("intent.outcome", outcome.id, `model.patterns.intent.outcomes[${index}]`)));
+    intentProcesses(intent).forEach((process, index) => elements.push(domainCoverageElement("intent.process", process.id, `model.patterns.intent.processes[${index}]`)));
+    intentProcesses(intent).forEach((process, processIndex) => {
+      list(process.inputContract?.fields).forEach((field, fieldIndex) => {
+        elements.push(domainCoverageElement("intent.inputField", `${process.id}/input/${field.id}`, `model.patterns.intent.processes[${processIndex}].inputContract.fields[${fieldIndex}]`));
+      });
+      intentRefinements(process).forEach((refinement, refinementIndex) => {
+        elements.push(domainCoverageElement("intent.refinement", `${process.id}/${refinement.id}`, `model.patterns.intent.processes[${processIndex}].refinements[${refinementIndex}]`));
+      });
+      if (process.execution) {
+        elements.push(domainCoverageElement("intent.executionPolicy", process.id, `model.patterns.intent.processes[${processIndex}].execution`));
+      }
+    });
+    intentOutcomes(intent).forEach((outcome, outcomeIndex) => {
+      list(outcome.outputContract?.fields).forEach((field, fieldIndex) => {
+        elements.push(domainCoverageElement("intent.outputField", `${outcome.id}/output/${field.id}`, `model.patterns.intent.outcomes[${outcomeIndex}].outputContract.fields[${fieldIndex}]`));
+      });
+      list(outcome.effects).forEach((effect, effectIndex) => {
+        elements.push(domainCoverageElement("intent.effect", `${outcome.id}/effect/${effect.id}`, `model.patterns.intent.outcomes[${outcomeIndex}].effects[${effectIndex}]`));
+      });
+    });
+    constructionAuthorities(intent).forEach((authority, index) => elements.push(domainCoverageElement("intent.constructionAuthority", authority.id, `model.patterns.intent.constructionAuthorities[${index}]`)));
+    intentGoals(intent).forEach((goal, index) => elements.push(domainCoverageElement("intent.goal", goal.id, `model.patterns.intent.goals[${index}]`)));
+    intentClaims(intent).forEach((claim, index) => elements.push(domainCoverageElement("intent.claim", claim.id, `model.patterns.intent.claims[${index}]`)));
+    intentAssuranceTasks(intent).forEach((task, index) => elements.push(domainCoverageElement("intent.assuranceTask", task.id, `model.patterns.intent.assuranceTasks[${index}]`)));
+    intentScenarios(intent).forEach((scenario, index) => elements.push(domainCoverageElement("intent.scenario", scenario.id, `model.patterns.intent.scenarios[${index}]`)));
   }
 
   return elements.sort((left, right) => `${left.kind}:${left.id}`.localeCompare(`${right.kind}:${right.id}`));
@@ -12465,6 +17945,7 @@ function projectionMaterializations(model) {
       locale: artifact.locale,
       path: artifact.path,
       projectionId: projection.id,
+      projectionKind: projection.kind,
     })),
     {
       content: projectionStableJson(
@@ -12474,6 +17955,7 @@ function projectionMaterializations(model) {
       locale: null,
       path: projection.provenancePath,
       projectionId: projection.id,
+      projectionKind: projection.kind,
     },
   ]);
 }
@@ -12828,6 +18310,215 @@ function domainElementDiff(beforeModel, afterModel) {
   return changes;
 }
 
+function intentFieldSemanticSignature(field) {
+  return stableJson({
+    type: field.type,
+    required: field.required !== false,
+    allowedValues: list(field.allowedValues),
+    minimum: field.minimum ?? null,
+    maximum: field.maximum ?? null,
+    pattern: field.pattern ?? null,
+  });
+}
+
+function intentEffectSemanticSignature(effect) {
+  return stableJson({
+    capability: effect.capability,
+    required: effect.required !== false,
+    outputContract: intentContractProjection(effect.outputContract),
+  });
+}
+
+function intentExecutionPolicySignature(execution) {
+  if (!execution) return null;
+  return stableJson({
+    maxInFlight: execution.maxInFlight,
+    idempotencyKey: execution.idempotencyKey ?? null,
+    timeoutSteps: execution.timeoutSteps ?? null,
+    timeoutMs: execution.timeoutMs ?? null,
+  });
+}
+
+function intentContractFieldMap(contract) {
+  return new Map(list(contract?.fields).map((field) => [field.id, field]));
+}
+
+function intentProcessCompatibilityDecision(before, after) {
+  if (!before) {
+    return decision(`intent-process:${after.id}:added`, "narrowing", "new Intent Process requires implementation and trace evidence", {
+      reverification: ["drift", "intent verify"],
+    });
+  }
+  if (!after) {
+    return decision(`intent-process:${before.id}:removed`, "breaking", "Intent Process id was removed", {
+      reverification: ["impact", "intent verify"],
+    });
+  }
+  if (stableJson(before) === stableJson(after)) return null;
+
+  const beforeOutcomes = new Set(list(before.outcomes));
+  const afterOutcomes = new Set(list(after.outcomes));
+  const removedOutcomes = setDifference(beforeOutcomes, afterOutcomes);
+  const addedOutcomes = setDifference(afterOutcomes, beforeOutcomes);
+  if (removedOutcomes.length > 0) {
+    return decision(`intent-process:${after.id}:modified`, "breaking", "Intent Process removed declared outcomes", {
+      removedOutcomes,
+      addedOutcomes,
+      reverification: ["impact", "intent verify"],
+    });
+  }
+
+  const beforeFields = intentContractFieldMap(before.inputContract);
+  const afterFields = intentContractFieldMap(after.inputContract);
+  const addedRequiredFields = [...afterFields.values()]
+    .filter((field) => field.required !== false && !beforeFields.has(field.id))
+    .map((field) => field.id)
+    .sort();
+  const removedRequiredFields = [...beforeFields.values()]
+    .filter((field) => field.required !== false && !afterFields.has(field.id))
+    .map((field) => field.id)
+    .sort();
+  const modifiedFields = [...beforeFields.keys()]
+    .filter((id) => afterFields.has(id) && intentFieldSemanticSignature(beforeFields.get(id)) !== intentFieldSemanticSignature(afterFields.get(id)))
+    .sort();
+  if (addedRequiredFields.length > 0 && removedRequiredFields.length > 0) {
+    return decision(`intent-process:${after.id}:modified`, "unknown", "Intent Process both added and removed required input fields", {
+      addedRequiredFields,
+      removedRequiredFields,
+      reverification: ["intent verify"],
+    });
+  }
+  if (addedRequiredFields.length > 0) {
+    return decision(`intent-process:${after.id}:modified`, "narrowing", "Intent Process gained required input fields", {
+      addedRequiredFields,
+      reverification: ["drift", "intent verify"],
+    });
+  }
+  if (removedRequiredFields.length > 0) {
+    return decision(`intent-process:${after.id}:modified`, "widening", "Intent Process lost required input fields", {
+      removedRequiredFields,
+      reverification: ["intent verify"],
+    });
+  }
+  if (modifiedFields.length > 0) {
+    return decision(`intent-process:${after.id}:modified`, "unknown", "Intent Process changed existing input field constraints", {
+      modifiedFields,
+      reverification: ["intent verify"],
+    });
+  }
+  if (addedOutcomes.length > 0) {
+    return decision(`intent-process:${after.id}:modified`, "widening", "Intent Process gained declared outcomes", {
+      addedOutcomes,
+      reverification: ["intent verify"],
+    });
+  }
+  if (intentExecutionPolicySignature(before.execution) !== intentExecutionPolicySignature(after.execution)) {
+    const beforeExecution = before.execution ?? null;
+    const afterExecution = after.execution ?? null;
+    const classifications = [];
+    if (!beforeExecution && afterExecution) classifications.push("narrowing");
+    if (beforeExecution && !afterExecution) classifications.push("widening");
+    if (beforeExecution && afterExecution) {
+      if (afterExecution.maxInFlight < beforeExecution.maxInFlight) classifications.push("narrowing");
+      if (afterExecution.maxInFlight > beforeExecution.maxInFlight) classifications.push("widening");
+      if (beforeExecution.idempotencyKey !== afterExecution.idempotencyKey) {
+        if (!beforeExecution.idempotencyKey) classifications.push("narrowing");
+        else if (!afterExecution.idempotencyKey) classifications.push("widening");
+        else classifications.push("unknown");
+      }
+      if (beforeExecution.timeoutSteps !== afterExecution.timeoutSteps) {
+        if (beforeExecution.timeoutSteps === null || beforeExecution.timeoutSteps === undefined) classifications.push("narrowing");
+        else if (afterExecution.timeoutSteps === null || afterExecution.timeoutSteps === undefined) classifications.push("widening");
+        else classifications.push(afterExecution.timeoutSteps < beforeExecution.timeoutSteps ? "narrowing" : "widening");
+      }
+      if (beforeExecution.timeoutMs !== afterExecution.timeoutMs) {
+        if (beforeExecution.timeoutMs === null || beforeExecution.timeoutMs === undefined) classifications.push("narrowing");
+        else if (afterExecution.timeoutMs === null || afterExecution.timeoutMs === undefined) classifications.push("widening");
+        else classifications.push(afterExecution.timeoutMs < beforeExecution.timeoutMs ? "narrowing" : "widening");
+      }
+    }
+    const distinct = new Set(classifications);
+    const classification = distinct.size > 1 || distinct.has("unknown") ? "unknown" : classifications[0] ?? "unknown";
+    return decision(
+      `intent-process:${after.id}:modified`,
+      classification,
+      classification === "unknown"
+        ? "Intent Process changed execution policy in both tightening and relaxing directions"
+        : `Intent Process ${classification === "narrowing" ? "tightened" : "relaxed"} execution policy`,
+      {
+        before: beforeExecution,
+        after: afterExecution,
+        reverification: ["verify-generated", "intent verify", "intent exercise"],
+      },
+    );
+  }
+  return decision(`intent-process:${after.id}:modified`, "compatible", "Intent Process support metadata or refinement mapping changed", {
+    reverification: ["drift", "intent verify"],
+  });
+}
+
+function intentCompatibilityDecisions(beforeModel, afterModel) {
+  const beforeProcesses = new Map(intentProcesses(intentPattern(beforeModel)).map((process) => [process.id, process]));
+  const afterProcesses = new Map(intentProcesses(intentPattern(afterModel)).map((process) => [process.id, process]));
+  const ids = [...new Set([...beforeProcesses.keys(), ...afterProcesses.keys()])].sort();
+  const processDecisions = ids
+    .map((id) => intentProcessCompatibilityDecision(beforeProcesses.get(id), afterProcesses.get(id)))
+    .filter((entry) => entry !== null);
+  const beforeOutcomes = new Map(intentOutcomes(intentPattern(beforeModel)).map((outcome) => [outcome.id, outcome]));
+  const afterOutcomes = new Map(intentOutcomes(intentPattern(afterModel)).map((outcome) => [outcome.id, outcome]));
+  const outcomeIds = [...new Set([...beforeOutcomes.keys(), ...afterOutcomes.keys()])].sort();
+  const outcomeDecisions = outcomeIds.flatMap((id) => {
+    const before = beforeOutcomes.get(id);
+    const after = afterOutcomes.get(id);
+    if (!before) return [decision(`intent-outcome:${id}:added`, "widening", "Intent Outcome id was added", { reverification: ["intent verify"] })];
+    if (!after) return [decision(`intent-outcome:${id}:removed`, "breaking", "Intent Outcome id was removed", { reverification: ["impact", "intent verify"] })];
+    if (stableJson(before) === stableJson(after)) return [];
+    const beforeEffects = new Map(list(before.effects).map((effect) => [effect.id, effect]));
+    const afterEffects = new Map(list(after.effects).map((effect) => [effect.id, effect]));
+    const addedRequiredEffects = [...afterEffects.values()]
+      .filter((effect) => effect.required !== false && !beforeEffects.has(effect.id))
+      .map((effect) => effect.id)
+      .sort();
+    const removedRequiredEffects = [...beforeEffects.values()]
+      .filter((effect) => effect.required !== false && !afterEffects.has(effect.id))
+      .map((effect) => effect.id)
+      .sort();
+    const modifiedEffects = [...beforeEffects.keys()]
+      .filter((effectId) => afterEffects.has(effectId) && intentEffectSemanticSignature(beforeEffects.get(effectId)) !== intentEffectSemanticSignature(afterEffects.get(effectId)))
+      .sort();
+    if (addedRequiredEffects.length > 0 && removedRequiredEffects.length > 0) {
+      return [decision(`intent-outcome:${id}:modified`, "unknown", "Intent Outcome both added and removed required effects", { addedRequiredEffects, removedRequiredEffects, reverification: ["intent verify", "intent exercise"] })];
+    }
+    if (addedRequiredEffects.length > 0) {
+      return [decision(`intent-outcome:${id}:modified`, "narrowing", "Intent Outcome gained required effects", { addedRequiredEffects, reverification: ["intent verify", "intent exercise"] })];
+    }
+    if (removedRequiredEffects.length > 0) {
+      return [decision(`intent-outcome:${id}:modified`, "widening", "Intent Outcome lost required effects", { removedRequiredEffects, reverification: ["intent verify"] })];
+    }
+    if (modifiedEffects.length > 0) {
+      return [decision(`intent-outcome:${id}:modified`, "unknown", "Intent Outcome changed effect postconditions", { modifiedEffects, reverification: ["intent verify", "intent exercise"] })];
+    }
+    const beforeFields = intentContractFieldMap(before.outputContract);
+    const afterFields = intentContractFieldMap(after.outputContract);
+    const addedRequiredFields = [...afterFields.values()]
+      .filter((field) => field.required !== false && !beforeFields.has(field.id))
+      .map((field) => field.id)
+      .sort();
+    const removedRequiredFields = [...beforeFields.values()]
+      .filter((field) => field.required !== false && !afterFields.has(field.id))
+      .map((field) => field.id)
+      .sort();
+    if (addedRequiredFields.length > 0) {
+      return [decision(`intent-outcome:${id}:modified`, "narrowing", "Intent Outcome gained required output fields", { addedRequiredFields, reverification: ["intent verify"] })];
+    }
+    if (removedRequiredFields.length > 0) {
+      return [decision(`intent-outcome:${id}:modified`, "widening", "Intent Outcome lost required output fields", { removedRequiredFields, reverification: ["intent verify"] })];
+    }
+    return [decision(`intent-outcome:${id}:modified`, "unknown", "Intent Outcome changed state or output constraints", { reverification: ["intent verify"] })];
+  });
+  return [...processDecisions, ...outcomeDecisions];
+}
+
 function overallSpecCompatibility(decisions) {
   const classes = new Set(decisions.map((entry) => entry.classification));
   if (classes.has("breaking")) return "breaking";
@@ -12865,7 +18556,8 @@ function specCompatibilityReport(beforeModel, afterModel) {
   const decisions = [
     ...changed.terms.map((change) => classifyTermChange(change, beforeModel, afterModel)),
     ...changed.rules.map((change) => classifyRuleChange(change, beforeModel, afterModel)),
-    ...changed.domain.map(classifyDomainElementChange),
+    ...changed.domain.filter((change) => !change.kind.startsWith("intent.")).map(classifyDomainElementChange),
+    ...intentCompatibilityDecisions(beforeModel, afterModel),
   ];
   const summary = { compatible: 0, narrowing: 0, widening: 0, breaking: 0, unknown: 0 };
   for (const entry of decisions) summary[entry.classification] += 1;
@@ -13514,10 +19206,14 @@ function runEvidenceRefresh(args) {
   const options = parseEvidenceRefreshArgs(args);
   const model = loadModel(options.modelFile);
   assertModelCoverage(model);
-  const before = existsSync(resolve(options.manifestFile))
-    ? assuranceDigest(readFileSync(resolve(options.manifestFile), "utf8"))
+  const beforeManifest = existsSync(resolve(options.manifestFile))
+    ? readJsonFile(options.manifestFile, "assurance evidence manifest")
     : null;
-  const manifest = createAssuranceEvidenceManifest(model, options);
+  const before = beforeManifest ? assuranceDigest(stableJson(beforeManifest)) : null;
+  const intentReportFiles = options.intentReportFiles.length > 0
+    ? options.intentReportFiles
+    : list(beforeManifest?.intentExercises).map((entry) => entry?.report?.path).filter(Boolean);
+  const manifest = createAssuranceEvidenceManifest(model, { ...options, intentReportFiles });
   const output = writeAssuranceEvidenceManifest(options.manifestFile, manifest);
   const report = {
     status: "pass",
@@ -13634,6 +19330,69 @@ function emit(target, model, locale) {
   return emitFormalBackend(target, model);
 }
 
+function renderConformanceReport(report) {
+  if (report.status === "fail") {
+    const failures = report.targets
+      .filter((target) => target.counterexample)
+      .map((target) => `${target.id}: ${target.counterexample.caseId}`);
+    return `conformance failed\n${[...report.errors, ...failures].join("\n")}\n`;
+  }
+  return `ok: ${report.model.id} conformance (${report.summary.passed}/${report.summary.targets} targets, ${report.summary.passedCases}/${report.summary.cases} cases)\n`;
+}
+
+function renderConformanceMarkdownReport(report) {
+  const lines = [
+    `# Conformance ${report.model.id}`,
+    "",
+    `- status: \`${report.status}\``,
+    `- targets: \`${report.summary.passed}/${report.summary.targets}\``,
+    `- cases: \`${report.summary.passedCases}/${report.summary.cases}\``,
+    "",
+    "| Target | Rule | Selector | Status | Counterexample |",
+    "| --- | --- | --- | --- | --- |",
+  ];
+  for (const target of report.targets) {
+    lines.push(`| ${target.id} | ${target.ruleId} | ${target.selector} | ${target.status} | ${target.counterexample?.caseId ?? ""} |`);
+  }
+  if (report.errors.length > 0) {
+    lines.push("", "## Errors", "");
+    for (const error of report.errors) lines.push(`- ${error}`);
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function implementationConformanceInvoker(modelFile) {
+  const modules = new Map();
+  return async (target, input) => {
+    const implementation = target.implementation;
+    if (!implementation || !["code", "test"].includes(implementation.kind)) {
+      throw new Error(`conformance implementation must be a code or test reference: ${target.id}`);
+    }
+    const path = resolve(dirname(resolve(modelFile)), implementation.path);
+    let module = modules.get(path);
+    if (!module) {
+      module = await import(pathToFileURL(path).href);
+      modules.set(path, module);
+    }
+    const adapter = module[implementation.symbol];
+    if (typeof adapter !== "function") {
+      throw new Error(`conformance implementation symbol is not a function: ${implementation.path}#${implementation.symbol}`);
+    }
+    return adapter(input);
+  };
+}
+
+function queryAnswerReport(query, answer) {
+  const verification = verifySpecAnswer(query, answer);
+  const errors = [...query.errors, ...verification.errors];
+  return {
+    ...query,
+    status: errors.length === 0 ? "pass" : "fail",
+    answer: verification,
+    errors,
+  };
+}
+
 async function run(argv) {
   const [command, ...args] = argv;
 
@@ -13647,8 +19406,195 @@ async function run(argv) {
     throw new CommandError(`unknown command: ${command}\n${usage()}`);
   }
 
-  if (!["spec-change", "evidence", "generated"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+  if (command === "init" && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+    process.stdout.write(initUsage());
+    return;
+  }
+
+  if (command === "lock" && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+    process.stdout.write(lockUsage());
+    return;
+  }
+
+  if (command === "explain" && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+    process.stdout.write(explainUsage());
+    return;
+  }
+
+  if (!["spec-change", "evidence", "generated", "scaffold", "domain", "intent", "daily-drift", "trace", "translation"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     process.stdout.write(topLevelCommandHelp(commandSpec));
+    return;
+  }
+
+  if (command === "init") {
+    const { outputFile, lockFile, force, json } = parseInitArgs(args);
+    const output = initializeModel({ outputFile, lockFile, force });
+    const report = { status: "pass", model: { id: initializedModelId(outputFile), version: "0.1.0" }, output };
+    if (json) {
+      process.stdout.write(stableJson(report));
+      return;
+    }
+    process.stdout.write(`ok: wrote model ${output.path}\n`);
+    process.stdout.write(`ok: wrote schema lock ${output.lock.path}\n`);
+    process.stdout.write(`next: dspec verify ${output.path}\n`);
+    return;
+  }
+
+  if (command === "lock") {
+    const { file, outputFile, force, json } = parseLockArgs(args);
+    const model = loadModel(file);
+    const selectedLockFile = outputFile ?? defaultSchemaLockPath(file);
+    const lock = writeSchemaLock({ modelFile: file, lockFile: selectedLockFile, force });
+    const report = { status: "pass", model: modelReport(model), lock };
+    if (json) {
+      process.stdout.write(stableJson(report));
+      return;
+    }
+    process.stdout.write(`ok: wrote schema lock ${lock.path} (${lock.files} modules)\n`);
+    return;
+  }
+
+  if (command === "trace") {
+    runTrace(args);
+    return;
+  }
+
+  if (command === "translation") {
+    runTranslation(args);
+    return;
+  }
+
+  if (command === "scaffold") {
+    runScaffoldCommand(args);
+    return;
+  }
+
+  if (command === "daily-drift") {
+    runDailyDrift(args);
+    return;
+  }
+
+  if (command === "domain") {
+    runDomainCommand(args);
+    return;
+  }
+
+  if (command === "explain") {
+    const { file, json, markdown, lockFile, requireLock } = parseExplainArgs(args);
+    const model = loadModel(file);
+    const report = explainReport(model, { modelFile: file, lockFile, requireLock });
+    if (json) {
+      process.stdout.write(stableJson(report));
+      assertReportOk(report);
+      return;
+    }
+    if (markdown) {
+      process.stdout.write(renderExplainMarkdown(report));
+      assertReportOk(report);
+      return;
+    }
+    if (report.status === "pass") {
+      process.stdout.write(`ok: ${model.id} explain (0 diagnostics)\n`);
+      return;
+    }
+    process.stdout.write(`${report.diagnostics.map((diagnostic) => `${diagnostic.code}: ${diagnostic.message}`).join("\n")}\n`);
+    assertReportOk(report);
+    return;
+  }
+
+  if (command === "conformance") {
+    const { file, json, markdown } = parseConformanceArgs(args);
+    const model = loadModel(file);
+    const report = await conformanceReport(model, { invoke: implementationConformanceInvoker(file) });
+    if (json) {
+      process.stdout.write(stableJson(report));
+      if (report.status === "fail") throw new CommandError("conformance failed\n");
+      return;
+    }
+    if (markdown) {
+      const rendered = renderConformanceMarkdownReport(report);
+      if (report.status === "fail") throw new CommandError(rendered);
+      process.stdout.write(rendered);
+      return;
+    }
+    const rendered = renderConformanceReport(report);
+    if (report.status === "fail") throw new CommandError(rendered);
+    process.stdout.write(rendered);
+    return;
+  }
+
+  if (command === "traceability") {
+    const { file, json, markdown, gate, executeFormalTools, requireExecutedFormalTools } = parseTraceabilityArgs(args);
+    const model = loadModel(file);
+    const errors = validate(model);
+    if (errors.length > 0) {
+      throw new CommandError(`${errors.join("\n")}\n`);
+    }
+
+    const report = domainTraceabilityReport(model, await formalizationEvidence(model, {
+      executeFormalTools,
+      requireExecutedFormalTools,
+    }));
+    if (json) {
+      process.stdout.write(stableJson(report));
+    } else if (markdown) {
+      process.stdout.write(renderDomainTraceabilityMarkdown(report, { locale: model.primaryLocale }));
+    } else {
+      process.stdout.write(
+        `ok: ${model.id} traceability (${report.status}; ${report.summary.anomalies} gaps)\n`,
+      );
+    }
+
+    if (report.status === "fail" || (gate && report.status !== "pass")) {
+      throw new CommandError(
+        `traceability ${report.status}: ${report.summary.anomalies} gaps\n`,
+      );
+    }
+    return;
+  }
+
+  if (command === "formal-mutation") {
+    const { file, json, requireFormalTools } = parseFormalMutationArgs(args);
+    const document = evalPklJson(file);
+    if (!document.tetrisAlloy) throw new CommandError(`formal mutation is not supported for this model: ${file}\n`);
+    const report = verifyTetrisAlloyMutationWithAnalyzer(document, {
+      command: process.env.ALLOY6_COMMAND ?? "alloy6",
+    });
+    if (json) {
+      process.stdout.write(stableJson(report));
+    } else if (report.status === "pass") {
+      process.stdout.write(`ok: ${document.tetrisAlloy.id} formal mutations (${report.mutations.length}/${report.mutations.length} detected)\n`);
+    } else if (report.status === "skip") {
+      process.stdout.write(`skipped: ${document.tetrisAlloy.id} formal mutations (${report.reason})\n`);
+    } else {
+      process.stdout.write(`formal mutation failed: ${report.errors.join("; ")}\n`);
+    }
+    if (report.status === "fail" || (requireFormalTools && report.status !== "pass")) {
+      throw new CommandError(`formal mutation ${report.status}: ${report.errors?.join("; ") ?? report.reason ?? "formal tool unavailable"}\n`);
+    }
+    return;
+  }
+
+  if (command === "query") {
+    const options = parseQueryArgs(args);
+    const model = loadModel(options.file);
+    let report = querySpec(model, { kind: options.kind, id: options.id, selector: options.selector }, { locale: options.locale });
+    if (options.answerFile) {
+      report = queryAnswerReport(report, readJsonFile(options.answerFile, "spec query answer"));
+    }
+    if (options.json) {
+      process.stdout.write(stableJson(report));
+      if (report.status === "fail") throw new CommandError("spec query failed\n");
+      return;
+    }
+    if (options.markdown) {
+      const rendered = renderSpecQueryMarkdown(report, report.answer ?? null);
+      if (report.status === "fail") throw new CommandError(rendered);
+      process.stdout.write(rendered);
+      return;
+    }
+    if (report.status === "fail") throw new CommandError(`spec query failed\n${report.errors.join("\n")}\n`);
+    process.stdout.write(`${report.classification}: ${options.kind}:${options.id}${options.selector ? `#${options.selector}` : ""}\n`);
     return;
   }
 
@@ -13663,6 +19609,21 @@ async function run(argv) {
     }
     assertReportOk(report);
     process.stdout.write(`ok: ${model.id} (${list(model.vocabulary).length} terms, ${list(model.rules).length} rules)\n`);
+    return;
+  }
+
+  if (command === "verify") {
+    const { file, json, lockFile, requireLock } = parseVerifyArgs(args);
+    const model = loadModel(file);
+    const report = verifyReport(model, { modelFile: file, lockFile, requireLock });
+    if (json) {
+      process.stdout.write(stableJson(report));
+      assertReportOk(report);
+      return;
+    }
+    assertReportOk(report);
+    const lockStatus = report.schemaLock.status === "skip" ? "schema lock skipped" : `schema lock ${report.schemaLock.status}`;
+    process.stdout.write(`ok: ${model.id} verify (${report.summary.passed}/${report.summary.total} gates, ${lockStatus})\n`);
     return;
   }
 
@@ -13730,6 +19691,11 @@ async function run(argv) {
 
   if (command === "evidence") {
     runEvidenceCommand(args);
+    return;
+  }
+
+  if (command === "intent") {
+    await runIntentCommand(args);
     return;
   }
 
@@ -13848,6 +19814,25 @@ async function run(argv) {
     if (report.status === "fail") {
       throw new CommandError(rendered);
     }
+    process.stdout.write(rendered);
+    return;
+  }
+
+  if (command === "evaluate-external-holdouts") {
+    const { file, json, markdown } = parseExternalHoldoutArgs(args);
+    const report = externalRealAppImportCorpusReport(loadExternalRealAppImportCorpus(file), file);
+    if (json) {
+      process.stdout.write(stableJson(report));
+      assertReportOk(report);
+      return;
+    }
+    if (markdown) {
+      process.stdout.write(renderExternalHoldoutCorpusMarkdown(report));
+      assertReportOk(report);
+      return;
+    }
+    const rendered = renderExternalRealAppImportCorpusMarkdown(report);
+    if (report.status === "fail") throw new CommandError(rendered);
     process.stdout.write(rendered);
     return;
   }
@@ -14253,7 +20238,9 @@ async function run(argv) {
   throw new CommandError(`registered command has no dispatcher: ${command}\n`);
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+const cliModulePath = fileURLToPath(import.meta.url);
+
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(cliModulePath)) {
   try {
     await run(process.argv.slice(2));
   } catch (error) {

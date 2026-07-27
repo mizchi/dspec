@@ -1,0 +1,28 @@
+/// Typed configuration for deterministic daily drift review targets.
+///
+/// An application target must name an AppProfile so the daily packet runs
+/// observed implementation reconciliation rather than only reference checks.
+module dspec.DailyDrift
+
+import "Schema.pkl" as d
+
+typealias TargetKind = "tooling-self" | "application" | "runtime"
+typealias CoreGate = "check" | "drift" | "coverage" | "intent-graph" | "generated" | "verify-generated"
+
+class Target {
+  id: d.Identifier
+  kind: TargetKind
+  modelPath: String(length > 0)
+  coreGates: Listing<CoreGate> = new {}
+  locales: Listing<d.Locale> = new {}
+  appProfile: String(length > 0)? = null
+  intentBindings: String(length > 0)? = null
+  intentTraces: String(length > 0)? = null
+  runtimeEvidence: String(length > 0)? = null
+}
+
+class Manifest {
+  id: d.Identifier
+  targets: Listing<Target> = new {}
+  baseline: String(length > 0)? = null
+}

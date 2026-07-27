@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cf-mbt-app",
+  "main": "src/worker.ts",
+  "observability": { "enabled": true },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "cf-mbt-app", "database_id": "REDACTED" }
+  ],
+  "r2_buckets": [
+    { "binding": "ASSETS", "bucket_name": "cf-mbt-app-assets" }
+  ],
+  "env": {
+    "staging": {
+      "name": "cf-mbt-app-staging",
+      "d1_databases": [
+        { "binding": "DB", "database_name": "cf-mbt-app-staging", "database_id": "REDACTED" }
+      ],
+      "r2_buckets": [
+        { "binding": "ASSETS", "bucket_name": "cf-mbt-app-assets-staging" }
+      ]
+    }
+  }
+}

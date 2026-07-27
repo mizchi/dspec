@@ -1,0 +1,27 @@
+import "../examples/tetris.pkl" as base
+import "../dspec/Schema.pkl" as d
+import "../dspec/TetrisAlloy.pkl" as t
+
+/// Keep the Japanese domain model as the source of rule names and terms. The
+/// Alloy layer below only owns its finite relational abstraction.
+model: d.Model = base.model
+
+tetrisAlloy: t.TetrisAlloy = new {
+  id = "tetris.board-rotation.alloy-v1"
+  terms { "tetris.active-piece"; "tetris.board"; "tetris.cell"; "tetris.tetromino" }
+  board = new t.Board { width = 4; height = 4; initialLockedCells = 1 }
+  tetromino = new t.Tetromino { id = "T"; blockCount = 4 }
+  spawnAvailabilityGrounding = new t.SpawnAvailabilityGrounding {
+    check = "tetris.coordinate-spawn.implementation-input-conforms.holds"
+    implementation = d.codeRef("fixtures/tetris-lifecycle-implementation.mjs", "spawnAvailability")
+  }
+  checks {
+    t.alwaysInBounds("tetris.board.bounds.holds", "TETRIS-BOARD-BOUNDS", 3, "holds")
+    t.alwaysDisjoint("tetris.board.disjoint.holds", "TETRIS-NO-OVERLAP", 3, "holds")
+    t.collisionRotationRejected("tetris.rotation.collision-rejected.holds", "TETRIS-LEGAL-ROTATION", 3, "holds")
+    t.illegalTranslationRejected("tetris.translation.illegal-rejected.holds", "TETRIS-LEGAL-TRANSLATION", 3, "holds")
+    t.clearSpawnStartsGame("tetris.coordinate-spawn.clear-starts-game.holds", "TETRIS-START-GAME", 1, "holds")
+    t.blockedSpawnGameOver("tetris.coordinate-spawn.blocked-game-over.holds", "TETRIS-SPAWN-GAME-OVER", 1, "holds")
+    t.spawnAvailabilityRefinesCoordinates("tetris.coordinate-spawn.availability-refines-coordinates.holds", "TETRIS-START-GAME", 1, "holds")
+  }
+}

@@ -2,7 +2,7 @@ import "../dspec/Schema.pkl" as d
 
 realAppImportEval: d.RealAppImportEvaluation = new {
   id = "mnemo-external-dogfood"
-  appRoot = "fixtures/holdout-mnemo-app"
+  appRoot = "holdout-mnemo-app"
   expectedFacts {
     new d.RealAppImportFact { kind = "workflow"; id = "CI" }
     new d.RealAppImportFact { kind = "infrastructure-source"; id = "mnemo-server/infra/pulumi/index.ts" }

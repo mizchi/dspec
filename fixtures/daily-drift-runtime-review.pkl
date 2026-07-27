@@ -1,0 +1,7 @@
+import "../dspec/Schema.pkl" as d
+
+review: d.SpecChangeReview = new {
+  id = "daily-drift-runtime-review"
+  beforeModelPath = "runtime-model.pkl"
+  afterModelPath = "runtime-model.pkl"
+}

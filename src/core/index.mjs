@@ -5,6 +5,19 @@ export {
 } from "./clause-ast.mjs";
 
 export {
+  CONFORMANCE_REPORT_SCHEMA_VERSION,
+  conformanceReport,
+  validateConformanceModel,
+} from "./conformance.mjs";
+
+export {
+  SPEC_QUERY_SCHEMA_VERSION,
+  querySpec,
+  renderSpecQueryMarkdown,
+  verifySpecAnswer,
+} from "./spec-query.mjs";
+
+export {
   ASSURANCE_EVIDENCE_SCHEMA_VERSION,
   CLAUSE_AST_OPERATORS,
   CLAUSE_BACKEND_OPERATOR_SUPPORT,
@@ -19,6 +32,7 @@ export {
 
 export {
   RealAppCoreError,
+  diffRealAppImportFacts,
   evaluateRealAppImport,
   importInfrastructureDocuments,
   infrastructureBindingId,
@@ -31,7 +45,137 @@ export {
 } from "./real-app.mjs";
 
 export {
+  externalHoldoutCorpusReport,
+  externalHoldoutMutationReport,
+  normalizeRealAppImportFacts,
+  realAppImportFactListsEqual,
+  renderExternalHoldoutCorpusMarkdown,
+} from "./external-holdouts.mjs";
+
+export {
+  executeIntentRefinements,
+  exerciseIntentExecutionPolicies,
+  intentScenarioCorpusReport,
+  intentTraceCoverage,
+  intentTraceMutationReport,
+  intentTraceSchema,
+  verifyIntentTraces,
+} from "./intent.mjs";
+
+export {
+  PROTOCOL_TEST_PLAN_SCHEMA_VERSION,
+  protocolTestPlan,
+  validateProtocolTests,
+} from "./protocol-tests.mjs";
+
+export {
+  DOMAIN_CODEGEN_IR_SCHEMA_VERSION,
+  DOMAIN_RELATIONSHIP_GRAPH_SCHEMA_VERSION,
+  domainCodegenIr,
+  domainRelationshipGraph,
+  renderDomainRelationshipMarkdown,
+  renderDomainRelationshipMermaid,
+  renderDomainTypescript,
+  validateDomainModel,
+} from "./domain.mjs";
+
+export {
+  DOMAIN_TRACEABILITY_SCHEMA_VERSION,
+  domainTraceabilityReport,
+  renderDomainTraceabilityMarkdown,
+} from "./traceability.mjs";
+
+export {
+  LEAN_SEMANTIC_CORE_SCHEMA_VERSION,
+  boundedReachabilityReport,
+  encodeLeanBooleanFormulaTseitin,
+  evaluateLeanIntExpression,
+  evaluateLeanIntFormula,
+  evaluateLeanTemporalChecks,
+  evaluateLeanTemporalFormula,
+  evaluateLeanBooleanFormula,
+  evaluateLeanInvariant,
+  executeLeanTransitionSystem,
+  initialLeanState,
+  leanSemanticCoreSourceMap,
+  normalizeLeanBooleanFormulaToCnf,
+  renderLeanTransitionSystem,
+  renderLeanSmtLibCheck,
+  solveLeanSatChecks,
+  solveLeanSatChecksDpll,
+  solveLeanSatChecksTseitin,
+  solveLeanSmtChecks,
+  validateLeanSemanticCore,
+  validateLeanSatChecks,
+  validateLeanSmtChecks,
+  validateLeanTemporalChecks,
+  validateLeanTransitionSystem,
+  verifyLeanSemanticCore,
+  verifyGeneratedLeanTransitionConformance,
+  verifyLeanSmtChecksZ3,
+} from "./lean-semantic-core.mjs";
+
+export {
+  BEHAVIOR_MODEL_SCHEMA_VERSION,
+  compileBehaviorModel,
+  validateBehaviorModel,
+  verifyBehaviorImplementation,
+  verifyBehaviorModel,
+} from "./behavior.mjs";
+
+export {
+  ALLOY_BEHAVIOR_MODEL_SCHEMA_VERSION,
+  compileAlloyBehaviorModel,
+  validateAlloyBehaviorModel,
+  verifyAlloyBehaviorModel,
+  verifyAlloyBehaviorScopeMatrix,
+  verifyAlloyBehaviorWithAnalyzer,
+} from "./alloy-behavior.mjs";
+
+export {
+  TETRIS_ALLOY_MODEL_SCHEMA_VERSION,
+  compileTetrisAlloyModel,
+  compileTetrisAlloyMutation,
+  validateTetrisAlloyModel,
+  verifyTetrisAlloyImplementation,
+  verifyTetrisAlloyMutationWithAnalyzer,
+  verifyTetrisAlloyModel,
+  verifyTetrisAlloyWithAnalyzer,
+} from "./tetris-alloy.mjs";
+
+export {
+  TETRIS_LINE_CLEAR_ALLOY_MODEL_SCHEMA_VERSION,
+  compileTetrisLineClearAlloyModel,
+  validateTetrisLineClearAlloyModel,
+  verifyTetrisLineClearAlloyModel,
+  verifyTetrisLineClearAlloyWithAnalyzer,
+} from "./tetris-line-clear-alloy.mjs";
+
+export {
+  FORMAL_LINKS_SCHEMA_VERSION,
+  validateFormalLinks,
+  verifyFormalLinks,
+  verifyFormalLinksWithTools,
+} from "./formal-links.mjs";
+
+export {
+  TRACE_LOCK_SCHEMA_VERSION,
+  createTraceLock,
+  traceCheck,
+  traceSnapshot,
+} from "./trace-lock.mjs";
+
+export {
+  TRANSLATION_LOCK_SCHEMA_VERSION,
+  createTranslationLock,
+  translationCheck,
+  translationSnapshot,
+} from "./translation-lock.mjs";
+
+export {
   MARKDOWN_PROJECTION_EMITTER,
+  PROJECTION_EMITTERS,
+  PROJECTION_PLANNER_EMITTER,
   PROJECTION_PROVENANCE_SCHEMA_VERSION,
   createProjectionSnapshot,
   isSafeProjectionPath,

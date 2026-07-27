@@ -4,7 +4,7 @@
   },
   "errors": [],
   "evaluation": {
-    "appRoot": "fixtures/holdout-iac-app",
+    "appRoot": "holdout-iac-app",
     "id": "terraform-kubernetes-holdout"
   },
   "matched": [

@@ -38,7 +38,7 @@ jobs:
           path: |
             ~/.pkl/cache
             ~/.cache/pkfire-mbt
-          key: ${{ runner.os }}-dspec-pkf-${{ hashFiles('Taskfile.pkl', 'pnpm-lock.yaml', 'dspec/**/*.pkl', 'src/**/*.mjs', 'test/**/*.mjs', 'fixtures/**/*') }}
+          key: ${{ runner.os }}-dspec-pkf-${{ hashFiles('PklProject', 'Taskfile.pkl', 'pnpm-lock.yaml', 'tsconfig.json', 'tsconfig.build.json', 'dspec/**/*.pkl', 'pkl-tests/**/*.pkl', 'src/**/*.mjs', 'src/**/*.mts', 'test/**/*.mjs', 'test/**/*.ts', 'fixtures/**/*') }}
           restore-keys: |
             ${{ runner.os }}-dspec-pkf-
 

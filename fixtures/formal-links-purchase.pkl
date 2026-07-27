@@ -1,0 +1,52 @@
+import "../dspec/Schema.pkl" as d
+import "../dspec/FormalLinks.pkl" as f
+
+/// Natural-language rules stay authoritative. The direct Lean files below are
+/// explicit, checkable formal evidence attached to this one rule.
+model: d.Model = new {
+  id = "commerce-purchase-formal-links"
+  name = d.text("購入の直接形式リンク", "Purchase direct formal links")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales { "ja"; "en" }
+  vocabulary {
+    d.term("commerce.purchase", "action", "購入", "Purchase")
+    d.term("inventory.available-stock", "quantity", "利用可能在庫", "Available stock")
+  }
+  rules {
+    new d.Rule {
+      id = "PURCHASE-CAPACITY"
+      kind = "invariant"
+      text = d.text("購入で在庫は初期在庫を超えない", "Purchases never exceed initial stock")
+      terms { "commerce.purchase"; "inventory.available-stock" }
+      must {
+        d.clause("available(after) <= available(initial)", "在庫は初期在庫以下", "Stock remains within initial capacity")
+      }
+      reviewStatus = "approved"
+    }
+  }
+}
+
+formalLinks: f.FormalLinks = new {
+  artifacts {
+    f.authored(
+      "purchase.capacity.authored-lean",
+      "lean",
+      "fixtures/formal-link/PurchaseCapacityAuthored.lean",
+      new Listing {
+        f.leanProof("purchase.capacity.authored-proof", "PURCHASE-CAPACITY", "purchase_never_increases")
+      },
+    )
+    f.extension(
+      "purchase.capacity.generated-lean-extension",
+      "lean",
+      "fixtures/formal-link/PurchaseCapacityExtension.lean",
+      new Listing {
+        f.generated("fixtures/behavior/CommercePurchaseGenerated.lean", "CommercePurchaseGenerated")
+      },
+      new Listing {
+        f.leanProof("purchase.capacity.generated-proof", "PURCHASE-CAPACITY", "purchase_never_increases")
+      },
+    )
+  }
+}

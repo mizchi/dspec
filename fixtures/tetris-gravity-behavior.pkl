@@ -1,0 +1,126 @@
+import "../dspec/Schema.pkl" as d
+import "../dspec/Behavior.pkl" as b
+
+/// This is a deliberately reduced Tetris transition model. `drop-distance`
+/// abstracts legal downward translations; it does not model tetromino shape,
+/// row clearing, rotation kicks, or random piece generation.
+model: d.Model = new {
+  id = "tetris-gravity-behavior"
+  name = d.text("テトリス重力・固定の有界モデル", "Bounded Tetris gravity and lock model")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales { "ja"; "en" }
+  vocabulary {
+    d.term("tetris.active-piece", "state", "操作中のピース", "Active piece")
+    d.term("tetris.gravity", "action", "重力落下", "Gravity step")
+    d.term("tetris.lock", "event", "ピース固定", "Piece lock")
+  }
+  rules {
+    new d.Rule {
+      id = "TETRIS-GRAVITY-LOCKS"
+      kind = "obligation"
+      text = d.text("重力で下降できないピースは固定される", "A piece that cannot descend under gravity is locked")
+      terms { "tetris.gravity"; "tetris.active-piece"; "tetris.lock" }
+      must { d.clause("cannot descend implies lock active piece", "下降不能なら操作中ピースを固定する", "Failure to descend locks the active piece") }
+      reviewStatus = "draft"
+    }
+  }
+}
+
+behavior: b.Behavior = new {
+  id = "tetris.gravity-lock.behavior-v1"
+  terms { "tetris.active-piece"; "tetris.gravity"; "tetris.lock" }
+  states {
+    b.state("drop-distance", 2)
+    b.state("piece-present", 1)
+    b.state("locked-piece-count", 0)
+  }
+  actions {
+    new b.Action {
+      id = "gravity"
+      requires = b.allOf(new Listing {
+        b.equals(b.current("piece-present"), b.number(1))
+        b.atMost(b.number(1), b.current("drop-distance"))
+      })
+      ensures {
+        b.set("drop-distance", b.minus(b.current("drop-distance"), b.number(1)))
+      }
+    }
+    new b.Action {
+      id = "lock"
+      requires = b.allOf(new Listing {
+        b.equals(b.current("piece-present"), b.number(1))
+        b.equals(b.current("drop-distance"), b.number(0))
+      })
+      ensures {
+        b.set("locked-piece-count", b.plus(b.current("locked-piece-count"), b.number(1)))
+        b.set("piece-present", b.number(0))
+      }
+    }
+  }
+  invariants {
+    new b.Invariant {
+      id = "tetris.drop-distance-never-increases"
+      rule = "TETRIS-GRAVITY-LOCKS"
+      constraint = b.atMost(b.current("drop-distance"), b.initial("drop-distance"))
+    }
+    new b.Invariant {
+      id = "tetris.lock-count-never-decreases"
+      rule = "TETRIS-GRAVITY-LOCKS"
+      constraint = b.atMost(b.initial("locked-piece-count"), b.current("locked-piece-count"))
+    }
+    new b.Invariant {
+      id = "tetris.at-most-one-active-piece"
+      rule = "TETRIS-GRAVITY-LOCKS"
+      constraint = b.atMost(b.current("piece-present"), b.number(1))
+    }
+  }
+  reachability {
+    new b.ReachabilityCheck {
+      id = "tetris.lock.reachable"
+      rule = "TETRIS-GRAVITY-LOCKS"
+      maxSteps = 3
+      expectation = "reachable"
+      target = b.equals(b.current("locked-piece-count"), b.number(1))
+    }
+  }
+  temporal {
+    new b.TemporalCheck {
+      id = "tetris.gravity-path-eventually-locks"
+      rule = "TETRIS-GRAVITY-LOCKS"
+      scope = "path"
+      path {
+        new b.ActionStep { action = "gravity" }
+        new b.ActionStep { action = "gravity" }
+        new b.ActionStep { action = "lock" }
+      }
+      fairness {
+        new b.FairSchedulingAssumption {
+          action = "gravity"
+          reason = "操作中ピースが存在する間、ゲームループは重力 tick を供給する。"
+        }
+        new b.FairSchedulingAssumption {
+          action = "lock"
+          reason = "下降が拒否された後、モデルの lock 遷移を実行する。"
+        }
+      }
+      formula = b.eventually(b.satisfies(b.equals(b.current("locked-piece-count"), b.number(1))))
+      expectation = "holds"
+    }
+    new b.TemporalCheck {
+      id = "tetris.at-most-one-active-piece-always"
+      rule = "TETRIS-GRAVITY-LOCKS"
+      scope = "allPaths"
+      maxSteps = 3
+      formula = b.always(b.satisfies(b.atMost(b.current("piece-present"), b.number(1))))
+      expectation = "holds"
+    }
+  }
+  grounding = new b.Grounding {
+    maxSteps = 3
+    actions {
+      new b.ActionGrounding { action = "gravity"; implementation = d.codeRef("fixtures/tetris-gravity-implementation.mjs", "gravity") }
+      new b.ActionGrounding { action = "lock"; implementation = d.codeRef("fixtures/tetris-gravity-implementation.mjs", "lock") }
+    }
+  }
+}

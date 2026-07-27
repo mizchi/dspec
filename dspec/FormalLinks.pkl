@@ -1,0 +1,107 @@
+/// Registry for direct Lean and Alloy artifacts that are attached to domain rules.
+///
+/// `generated` remains the default authoring route: a closed dspec DSL lowers
+/// to Lean or Alloy and can be regenerated exactly. This module covers the
+/// deliberate escape hatches:
+///
+/// - `authored`: a directly maintained formal model or proof;
+/// - `extension`: direct source that imports/opens a generated artifact and
+///   adds a theorem or Alloy command.
+///
+/// The registry validates the linkage, source fingerprints, and tool result.
+/// It does not claim that an arbitrary theorem's mathematics automatically
+/// entails the Japanese/English rule text; the `rule` field is an explicit
+/// reviewable assertion of that grounding.
+module dspec.FormalLinks
+
+typealias Identifier = String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+typealias FormalBackend = "lean" | "alloy"
+typealias AuthoringMode = "authored" | "extension"
+typealias ClaimExpectation = "proved" | "holds" | "violated"
+
+/// A generated artifact used by a direct extension. `importName` is the exact
+/// Lean module name or Alloy `open` target used by the source file.
+class GeneratedDependency {
+  path: String(length > 0)
+  importName: String(length > 0)
+}
+
+function generated(dependencyPath: String, moduleName: String): GeneratedDependency = new {
+  path = dependencyPath
+  importName = moduleName
+}
+
+/// A direct formal claim attached to a natural-language rule. Lean claims name
+/// a theorem/lemma and use `proved`; Alloy claims name a `check` command and
+/// record the expected bounded analyzer result.
+class Claim {
+  id: Identifier
+  rule: Identifier
+  anchor: Identifier
+  expectation: ClaimExpectation
+}
+
+function leanProof(claimId: Identifier, ruleId: Identifier, theoremName: Identifier): Claim = new {
+  id = claimId
+  rule = ruleId
+  anchor = theoremName
+  expectation = "proved"
+}
+
+function alloyCheck(
+  claimId: Identifier,
+  ruleId: Identifier,
+  commandName: Identifier,
+  expected: "holds" | "violated",
+): Claim = new {
+  id = claimId
+  rule = ruleId
+  anchor = commandName
+  expectation = expected
+}
+
+/// One directly maintained Lean or Alloy source file.
+///
+/// An `extension` must list every generated artifact it imports/opens. An
+/// `authored` artifact must list none, making a second source model explicit
+/// rather than accidentally hiding behind generated vocabulary.
+class Artifact {
+  id: Identifier
+  backend: FormalBackend
+  mode: AuthoringMode
+  source: String(length > 0)
+  generated: Listing<GeneratedDependency> = new {}
+  claims: Listing<Claim> = new {}
+}
+
+function authored(
+  artifactId: Identifier,
+  artifactBackend: FormalBackend,
+  sourcePath: String,
+  artifactClaims: Listing<Claim>,
+): Artifact = new {
+  id = artifactId
+  backend = artifactBackend
+  mode = "authored"
+  source = sourcePath
+  claims = artifactClaims
+}
+
+function extension(
+  artifactId: Identifier,
+  artifactBackend: FormalBackend,
+  sourcePath: String,
+  generatedDependencies: Listing<GeneratedDependency>,
+  artifactClaims: Listing<Claim>,
+): Artifact = new {
+  id = artifactId
+  backend = artifactBackend
+  mode = "extension"
+  source = sourcePath
+  generated = generatedDependencies
+  claims = artifactClaims
+}
+
+class FormalLinks {
+  artifacts: Listing<Artifact> = new {}
+}

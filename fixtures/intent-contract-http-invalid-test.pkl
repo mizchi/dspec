@@ -1,0 +1,17 @@
+import "intent-contract-http.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      tests = new {
+        (base.model.patterns.intent.tests[0]) {
+          input = new {
+            ["amountCents"] = "500"
+            ["locale"] = "ja"
+          }
+        }
+      }
+    }
+  }
+}

@@ -396,6 +396,28 @@ export function realAppImportFacts(app) {
   return facts.sort((left, right) => `${left.kind}:${left.id}`.localeCompare(`${right.kind}:${right.id}`));
 }
 
+export function diffRealAppImportFacts(beforeFacts, afterFacts) {
+  const factKey = (fact) => `${fact.kind}:${fact.id}`;
+  const normalized = (facts) => {
+    const records = new Map();
+    for (const fact of list(facts)) records.set(factKey(fact), { kind: fact.kind, id: fact.id });
+    return records;
+  };
+  const before = normalized(beforeFacts);
+  const after = normalized(afterFacts);
+  const order = (left, right) => factKey(left).localeCompare(factKey(right));
+  return {
+    added: [...after.entries()]
+      .filter(([key]) => !before.has(key))
+      .map(([, fact]) => fact)
+      .sort(order),
+    removed: [...before.entries()]
+      .filter(([key]) => !after.has(key))
+      .map(([, fact]) => fact)
+      .sort(order),
+  };
+}
+
 export function evaluateRealAppImport(evaluation, app) {
   const expected = list(evaluation.expectedFacts).slice().sort((left, right) => `${left.kind}:${left.id}`.localeCompare(`${right.kind}:${right.id}`));
   const observed = realAppImportFacts(app);

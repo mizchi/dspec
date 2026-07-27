@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "bytes": 1498339,
+      "digest": "sha256:85d4b3a782f053aff0abbfb8ad819b2e25d45c7f009035ff65fbce861f11bb49",
+      "locale": null,
+      "path": "generated/source-map.json"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/source-map",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-22T20:02:15.210Z",
+  "model": {
+    "digest": "sha256:9a959232e50b6618bce39454438edac9225424a0a1c2d040342cfe218b71c434",
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "emitter": {
+      "name": "dspec/source-map",
+      "version": "1.0"
+    },
+    "freshness": "exact",
+    "id": "self-source-map",
+    "kind": "source-map",
+    "matrix": "single",
+    "output": "generated/source-map.json",
+    "provenance": "generated/source-map.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

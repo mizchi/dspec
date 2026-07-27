@@ -9,14 +9,29 @@ The following surfaces are public in v0.1:
 
 - the `dspec` executable and command-local `--help` contracts;
 - `dspec/Schema.pkl`, including stable IDs and typed Pkl records;
+- the Pkl package
+  `package://github.com/mizchi/dspec/releases/download/pkl/dspec@<version>` and its
+  dependency-notation facade `@dspec/dspec/Schema.pkl`;
 - Clause.ast semantics `1.0` and the `@mizchi/dspec/clause-ast` reference API;
 - the filesystem-free `@mizchi/dspec/real-app` normalization API;
+- the filesystem-free `@mizchi/dspec/external-holdouts` aggregation API,
+  compiled from its checked TypeScript source;
+- `fixtures/checker-conformance-suite.json` and the JSON reports it names as
+  the v0.1 checker compatibility oracle;
 - JSON reports and generated artifacts that carry an explicit contract or
   semantics version.
 
 The real-app source adapters, formal backend completeness, and agent provider
 adapters remain experimental. Their normalized facts and process contracts are
 tested, but adding a new observed fact or backend check may change a report.
+
+The `Core -> Claims -> Checks` Pkl module chain is an internal implementation
+detail. Consumers import only `dspec/Schema.pkl`; compatible type and field
+meaning changes are governed by the public facade.
+
+The Pkl package version is read from `package.json`, so npm and Pkl releases
+share one SemVer value. The package's API tests compile the public facade before
+its ZIP, metadata, and SHA-256 files are attached to the GitHub release.
 
 ## Compatibility policy
 

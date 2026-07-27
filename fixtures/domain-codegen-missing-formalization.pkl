@@ -1,0 +1,17 @@
+import "domain-codegen.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    domain = (base.model.patterns.domain) {
+      formalizations = new {
+        (base.model.patterns.domain.formalizations[0]) {
+          target = new d.ImplementationRef {
+            kind = "model"
+            path = "fixtures/no-such-domain-formalization.pkl"
+          }
+        }
+      }
+    }
+  }
+}

@@ -19,11 +19,15 @@
   },
   "generatedAt": "2026-07-15T00:00:00.000Z",
   "model": {
-    "digest": "sha256:fcaa104884c84a09e54da547b2bf911b1e58a347b4436d153a8e5ad9c9e9500c",
+    "digest": "sha256:1594524f55fc9c81413627348379226112fe2fb89a22671c4174c98827f42f92",
     "id": "projection-holdout-monorepo",
     "version": "0.1.0"
   },
   "projection": {
+    "emitter": {
+      "name": "dspec/markdown",
+      "version": "1.0"
+    },
     "freshness": "exact",
     "id": "monorepo-app-docs",
     "kind": "markdown",

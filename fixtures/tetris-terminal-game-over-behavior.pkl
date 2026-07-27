@@ -1,0 +1,56 @@
+import "../examples/tetris.pkl" as base
+import "../dspec/Schema.pkl" as d
+import "../dspec/Behavior.pkl" as b
+
+/// This model begins after game over. Each gameplay action has the precondition
+/// `game-status = 0`, so every declared action is rejected from this state.
+model: d.Model = base.model
+
+behavior: b.Behavior = new {
+  id = "tetris.terminal-game-over.behavior-v1"
+  terms { "tetris.active-piece"; "tetris.game-over"; "tetris.gravity"; "tetris.lock" }
+  states {
+    b.state("game-status", 1)
+  }
+  actions {
+    new b.Action { id = "translate"; requires = b.equals(b.current("game-status"), b.number(0)); ensures { b.set("game-status", b.number(0)) } }
+    new b.Action { id = "rotate"; requires = b.equals(b.current("game-status"), b.number(0)); ensures { b.set("game-status", b.number(0)) } }
+    new b.Action { id = "gravity"; requires = b.equals(b.current("game-status"), b.number(0)); ensures { b.set("game-status", b.number(0)) } }
+    new b.Action { id = "lock"; requires = b.equals(b.current("game-status"), b.number(0)); ensures { b.set("game-status", b.number(0)) } }
+  }
+  invariants {
+    new b.Invariant {
+      id = "game-over-is-terminal"
+      rule = "TETRIS-TERMINAL-GAME-OVER"
+      constraint = b.equals(b.current("game-status"), b.number(1))
+    }
+  }
+  reachability {
+    new b.ReachabilityCheck {
+      id = "tetris.game-over.playing.unreachable"
+      rule = "TETRIS-TERMINAL-GAME-OVER"
+      maxSteps = 1
+      expectation = "unreachable"
+      target = b.equals(b.current("game-status"), b.number(0))
+    }
+  }
+  temporal {
+    new b.TemporalCheck {
+      id = "tetris.game-over.always-terminal"
+      rule = "TETRIS-TERMINAL-GAME-OVER"
+      scope = "allPaths"
+      maxSteps = 1
+      formula = b.always(b.satisfies(b.equals(b.current("game-status"), b.number(1))))
+      expectation = "holds"
+    }
+  }
+  grounding = new b.Grounding {
+    maxSteps = 1
+    actions {
+      new b.ActionGrounding { action = "translate"; implementation = d.codeRef("fixtures/tetris-lifecycle-implementation.mjs", "translate") }
+      new b.ActionGrounding { action = "rotate"; implementation = d.codeRef("fixtures/tetris-lifecycle-implementation.mjs", "rotate") }
+      new b.ActionGrounding { action = "gravity"; implementation = d.codeRef("fixtures/tetris-lifecycle-implementation.mjs", "gravity") }
+      new b.ActionGrounding { action = "lock"; implementation = d.codeRef("fixtures/tetris-lifecycle-implementation.mjs", "lock") }
+    }
+  }
+}

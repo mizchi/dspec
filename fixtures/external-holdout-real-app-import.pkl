@@ -1,0 +1,77 @@
+import "../dspec/Schema.pkl" as d
+
+externalHoldoutImportCorpus: d.ExternalRealAppImportCorpus = new {
+  id = "external-real-app-import-v1"
+  holdouts {
+    new d.ExternalRealAppImportHoldout {
+      id = "mnemo"
+      evaluationPath = "import-real-app-eval-mnemo.pkl"
+      sourceRepository = "https://github.com/mizchi/mnemo"
+      sourceRevision = "5cbf27107339dbbf92546065f3df5b6dec9dddce"
+      capturedOn = "2026-07-14"
+      estimatedAuthoringMinutes = 50
+      exclusions {
+        new d.ExternalRealAppImportExclusion {
+          id = "pulumi-conditional-state"
+          kind = "unsupported"
+          rationale = "Pulumi conditionals are declarations, not executed stack state."
+        }
+        new d.ExternalRealAppImportExclusion {
+          id = "cloudflare-binding-reachability"
+          kind = "unsupported"
+          rationale = "A declared Cloudflare binding does not establish deployed reachability."
+        }
+      }
+    }
+    new d.ExternalRealAppImportHoldout {
+      id = "terraform-kubernetes"
+      evaluationPath = "import-real-app-eval-iac.pkl"
+      sourceRepository = "fixture://terraform-kubernetes-common-subset"
+      sourceRevision = "terraform-plan-1.2/kubernetes-v1"
+      capturedOn = "2026-07-14"
+      estimatedAuthoringMinutes = 20
+      exclusions {
+        new d.ExternalRealAppImportExclusion {
+          id = "terraform-apply-state"
+          kind = "unsupported"
+          rationale = "Terraform planned_values are not evidence that an apply succeeded."
+        }
+      }
+    }
+    new d.ExternalRealAppImportHoldout {
+      id = "cloudflare-starterkit"
+      evaluationPath = "import-real-app-eval-cloudflare-starterkit.pkl"
+      sourceRepository = "https://github.com/mizchi/cloudflare-starterkit-mbt"
+      sourceRevision = "44f2a826f35fc0a5ae39bb59e4f38fd97c91c83d"
+      capturedOn = "2026-07-16"
+      estimatedAuthoringMinutes = 25
+      exclusions {
+        new d.ExternalRealAppImportExclusion {
+          id = "pulumi-stack-environment"
+          kind = "unsupported"
+          rationale = "The source has a runtime-selected Pulumi environment that this static adapter does not execute."
+        }
+      }
+    }
+  }
+  mutations {
+    new d.ExternalRealAppImportMutation {
+      id = "mnemo-add-staging-environment"
+      sourceRepository = "https://github.com/mizchi/mnemo"
+      sourceBeforeRevision = "972b3bf9e5d9d4b9d1ab3368b290871ad66d74fa"
+      sourceAfterRevision = "93408840daca0011ba57a698eafc5b6709fe871d"
+      beforeAppRoot = "holdout-mnemo-pre-staging"
+      afterAppRoot = "holdout-mnemo-staging"
+      expectedAddedFacts {
+        new d.RealAppImportFact { kind = "infrastructure-environment"; id = "staging" }
+        new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/ai" }
+        new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/db" }
+        new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/db-shard-00" }
+        new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/db-shard-01" }
+        new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/mnemo-staging" }
+        new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/skill-assets" }
+        new d.RealAppImportFact { kind = "infrastructure-resource"; id = "staging/skill-index" }
+      }
+    }
+  }
+}

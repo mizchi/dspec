@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "1.0",
+  "model": {
+    "id": "intent-contract-fixture",
+    "version": "0.1.0"
+  },
+  "bindings": [
+    {
+      "kind": "http-route",
+      "target": "POST /requests/approve"
+    },
+    {
+      "kind": "otel-attribute",
+      "target": "dspec.intent.process",
+      "value": "request.approve"
+    }
+  ]
+}

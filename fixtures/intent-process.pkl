@@ -1,0 +1,137 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "intent-process-fixture"
+  name = text("Intent process fixture", "Intent process fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales {
+    "ja"
+    "en"
+  }
+
+  vocabulary {
+    new d.Term {
+      id = "request.pending"
+      kind = "state"
+      text = text("申請待ち", "Request pending")
+    }
+    new d.Term {
+      id = "request.approved"
+      kind = "state"
+      text = text("申請承認済み", "Request approved")
+    }
+    new d.Term {
+      id = "request.not-authorized"
+      kind = "state"
+      text = text("申請権限なし", "Request not authorized")
+    }
+  }
+
+  patterns = new d.PatternCatalog {
+    intent = new d.IntentModel {
+      capabilities {
+        new d.Capability {
+          id = "clock.now"
+          kind = "clock"
+          text = text("現在時刻を読む", "Read the current time")
+        }
+        new d.Capability {
+          id = "employee.manager-of"
+          kind = "read"
+          text = text("上長を照会する", "Look up an employee manager")
+        }
+        new d.Capability {
+          id = "mail.send"
+          kind = "write"
+          text = text("承認通知を送る", "Send an approval notification")
+        }
+      }
+      outcomes {
+        new d.IntentOutcome {
+          id = "request.approved"
+          state = "request.approved"
+          text = text("承認された", "Approved")
+        }
+        new d.IntentOutcome {
+          id = "request.not-authorized"
+          state = "request.not-authorized"
+          text = text("権限がない", "Not authorized")
+        }
+      }
+      processes {
+        new d.Process {
+          id = "request.approve"
+          input = "request.pending"
+          outcomes {
+            "request.approved"
+            "request.not-authorized"
+          }
+          requires {
+            "clock.now"
+            "employee.manager-of"
+          }
+          effects {
+            "mail.send"
+          }
+          constructs {
+            "request.approved"
+            "request.not-authorized"
+          }
+          transitions {
+            new d.ProcessTransition {
+              from = "request.pending"
+              to = "request.approved"
+            }
+            new d.ProcessTransition {
+              from = "request.pending"
+              to = "request.not-authorized"
+            }
+          }
+          implementedBy {
+            new d.ImplementationRef {
+              kind = "code"
+              path = "src/cli.mjs"
+              symbol = "validateIntentModel"
+            }
+          }
+          text = text("申請を承認または拒否する", "Approve or reject a request")
+        }
+      }
+      constructionAuthorities {
+        new d.ConstructionAuthority {
+          id = "request.approve-constructs-approved"
+          process = "request.approve"
+          outcome = "request.approved"
+        }
+        new d.ConstructionAuthority {
+          id = "request.approve-constructs-not-authorized"
+          process = "request.approve"
+          outcome = "request.not-authorized"
+        }
+      }
+      scenarios {
+        new d.IntentScenario {
+          id = "request-approval"
+          initialState = "request.pending"
+          steps {
+            new d.IntentScenarioStep {
+              process = "request.approve"
+              outcome = "request.approved"
+            }
+          }
+          expectedState = "request.approved"
+          text = text("承認される申請", "An approved request")
+        }
+      }
+    }
+  }
+}

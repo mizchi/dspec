@@ -1,0 +1,814 @@
+/// Claim and domain declarations built on the shared dspec contracts.
+open module dspec.Claims
+extends "Core.pkl"
+
+class DomainPackHelper {
+  id: Identifier
+  symbol: Identifier
+  returns: DomainPackHelperReturn
+  emitsTypedAst: Boolean = false
+  predicates: Listing<Identifier> = new {}
+}
+
+class DomainPack {
+  id: Identifier
+  path: String(length > 0)
+  helpers: Listing<DomainPackHelper> = new {}
+}
+
+class I18nGlossaryEntry {
+  term: Identifier
+  labels: Mapping<Locale, String(length > 0)> = new {}
+}
+
+class I18nContract {
+  requiredLocales: Listing<Locale> = new {}
+  glossary: Listing<I18nGlossaryEntry> = new {}
+}
+
+
+/// A spec atom: permission, invariant, transition, obligation, etc.
+class Rule {
+  id: Identifier
+  kind: SpecKind
+  text: LocalizedText
+  terms: Listing<Identifier> = new {}
+  `when`: Listing<Clause> = new {}
+  must: Listing<Clause> = new {}
+  mustNot: Listing<Clause> = new {}
+  exceptions: Listing<Identifier> = new {}
+  priority: Int(this >= 0) = 100
+  reviewStatus: ReviewStatus = "draft"
+  coverage: RuleCoverageMode = "rule"
+  requiredAssurances: Listing<CheckAssuranceKind> = new { "reference" }
+  deprecated: Boolean = false
+  checks: Listing<CheckTarget> = new {}
+  implementedBy: Listing<ImplementationRef> = new {}
+  rationale: String? = null
+}
+
+class Decision {
+  id: Identifier
+  date: IsoDate
+  summary: LocalizedText
+  author: String? = null
+  supersedes: Listing<Identifier> = new {}
+  rationale: String? = null
+}
+
+class DbColumn {
+  id: Identifier
+  type: DbColumnType
+  nullable: Boolean = false
+  unique: Boolean = false
+  references: Identifier? = null
+}
+
+class DbTable {
+  id: Identifier
+  text: LocalizedText? = null
+  columns: Listing<DbColumn> = new {}
+  primaryKey: Listing<Identifier> = new {}
+  tenantColumn: Identifier? = null
+}
+
+class DbInvariant {
+  id: Identifier
+  text: LocalizedText
+  expr: Expr
+  tables: Listing<Identifier> = new {}
+}
+
+class DbTransaction {
+  id: Identifier
+  text: LocalizedText
+  reads: Listing<Identifier> = new {}
+  writes: Listing<Identifier> = new {}
+  preserves: Listing<Identifier> = new {}
+  idempotencyKey: Identifier? = null
+}
+
+class DbMapping {
+  id: Identifier
+  text: LocalizedText? = null
+  sourceExpr: Expr
+  targetExpr: Expr
+  invariants: Listing<Identifier> = new {}
+}
+
+class DbMigration {
+  id: Identifier
+  text: LocalizedText
+  fromTables: Listing<Identifier> = new {}
+  toTables: Listing<Identifier> = new {}
+  preserves: Listing<Identifier> = new {}
+  mappings: Listing<DbMapping> = new {}
+}
+
+class DbModel {
+  tables: Listing<DbTable> = new {}
+  invariants: Listing<DbInvariant> = new {}
+  transactions: Listing<DbTransaction> = new {}
+  migrations: Listing<DbMigration> = new {}
+}
+
+class CloudZone {
+  id: Identifier
+  exposure: CloudZoneExposure
+  text: LocalizedText? = null
+}
+
+class CloudNode {
+  id: Identifier
+  kind: CloudNodeKind
+  zone: Identifier
+  text: LocalizedText? = null
+  tenantScoped: Boolean = false
+}
+
+class CloudFlow {
+  id: Identifier
+  text: LocalizedText? = null
+  from: Identifier
+  to: Identifier
+  action: Identifier
+  tenantPropagated: Boolean = false
+  idempotencyKey: Identifier? = null
+}
+
+class CloudPolicy {
+  id: Identifier
+  principal: Identifier
+  resource: Identifier
+  actions: Listing<Identifier> = new {}
+}
+
+class CloudModel {
+  zones: Listing<CloudZone> = new {}
+  nodes: Listing<CloudNode> = new {}
+  flows: Listing<CloudFlow> = new {}
+  policies: Listing<CloudPolicy> = new {}
+}
+
+class DataPolicy {
+  id: Identifier
+  classification: DataClassification
+  maxRetentionDays: Int? = null
+}
+
+class DataSet {
+  id: Identifier
+  classification: DataClassification
+  residency: Identifier? = null
+  retentionDays: Int? = null
+  text: LocalizedText? = null
+}
+
+class DataStore {
+  id: Identifier
+  region: Identifier
+  encrypted: Boolean = false
+  deletionSupported: Boolean = false
+  text: LocalizedText? = null
+}
+
+class DataPlacement {
+  id: Identifier
+  dataset: Identifier
+  store: Identifier
+}
+
+class DataFlow {
+  id: Identifier
+  dataset: Identifier
+  from: Identifier
+  to: Identifier
+  purpose: Identifier
+  legalBasis: Identifier? = null
+}
+
+class DataModel {
+  policies: Listing<DataPolicy> = new {}
+  datasets: Listing<DataSet> = new {}
+  stores: Listing<DataStore> = new {}
+  placements: Listing<DataPlacement> = new {}
+  flows: Listing<DataFlow> = new {}
+}
+
+class ReleaseService {
+  id: Identifier
+  critical: Boolean = false
+  text: LocalizedText? = null
+}
+
+class ReleaseEnvironment {
+  id: Identifier
+  production: Boolean = false
+  text: LocalizedText? = null
+}
+
+class ReleaseGate {
+  id: Identifier
+  kind: ReleaseGateKind
+  text: LocalizedText? = null
+}
+
+class ReleaseRollback {
+  id: Identifier
+  service: Identifier
+  tested: Boolean = false
+  text: LocalizedText? = null
+}
+
+class ReleaseMigration {
+  id: Identifier
+  service: Identifier
+  backwardsCompatible: Boolean = false
+  text: LocalizedText? = null
+}
+
+class ReleaseStep {
+  id: Identifier
+  service: Identifier
+  environment: Identifier
+  strategy: ReleaseStrategy
+  trafficPercent: Int = 0
+  gates: Listing<Identifier> = new {}
+  rollback: Identifier? = null
+  migration: Identifier? = null
+  text: LocalizedText? = null
+}
+
+class ReleaseModel {
+  services: Listing<ReleaseService> = new {}
+  environments: Listing<ReleaseEnvironment> = new {}
+  gates: Listing<ReleaseGate> = new {}
+  rollbacks: Listing<ReleaseRollback> = new {}
+  migrations: Listing<ReleaseMigration> = new {}
+  steps: Listing<ReleaseStep> = new {}
+}
+
+class RuntimeService {
+  id: Identifier
+  critical: Boolean = false
+  text: LocalizedText? = null
+}
+
+class RuntimeDependency {
+  id: Identifier
+  service: Identifier
+  target: Identifier
+  kind: RuntimeDependencyKind
+  timeoutMs: Int? = null
+  retryable: Boolean = false
+  idempotent: Boolean = false
+  text: LocalizedText? = null
+}
+
+class RuntimeSignal {
+  id: Identifier
+  service: Identifier
+  kind: RuntimeSignalKind
+  indicator: Identifier
+  text: LocalizedText? = null
+}
+
+class RuntimeRunbook {
+  id: Identifier
+  service: Identifier
+  tested: Boolean = false
+  text: LocalizedText? = null
+}
+
+class RuntimeAlert {
+  id: Identifier
+  service: Identifier
+  signal: Identifier
+  severity: RuntimeAlertSeverity
+  runbook: Identifier? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeSlo {
+  id: Identifier
+  service: Identifier
+  indicator: Identifier
+  targetPercent: Int
+  window: Identifier? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeTelemetryWindow {
+  id: Identifier
+  service: Identifier
+  signal: Identifier
+  slo: Identifier? = null
+  observedPercent: Int? = null
+  observedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeAlertPolicy {
+  id: Identifier
+  alert: Identifier
+  enabled: Boolean = true
+  observedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeRunbookExecution {
+  id: Identifier
+  runbook: Identifier
+  status: RuntimeRunbookExecutionStatus
+  executedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeDependencyTrace {
+  id: Identifier
+  dependency: Identifier
+  observedLatencyMs: Int? = null
+  timedOut: Boolean = false
+  idempotencyKeyObserved: Boolean = false
+  observedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+/// An implementation-side OTel observation for an Intent execution policy.
+class RuntimeIntentExecution {
+  id: Identifier
+  process: Identifier
+  refinement: Identifier
+  observedLatencyMs: Int? = null
+  maxInFlightObserved: Int? = null
+  timedOut: Boolean = false
+  idempotencyKeyObserved: Boolean = false
+  duplicateSuppressed: Boolean = false
+  observedAt: IsoDate? = null
+  source: String? = null
+  text: LocalizedText? = null
+}
+
+class RuntimeModel {
+  services: Listing<RuntimeService> = new {}
+  dependencies: Listing<RuntimeDependency> = new {}
+  signals: Listing<RuntimeSignal> = new {}
+  runbooks: Listing<RuntimeRunbook> = new {}
+  alerts: Listing<RuntimeAlert> = new {}
+  slos: Listing<RuntimeSlo> = new {}
+  telemetry: Listing<RuntimeTelemetryWindow> = new {}
+  alertPolicies: Listing<RuntimeAlertPolicy> = new {}
+  runbookExecutions: Listing<RuntimeRunbookExecution> = new {}
+  dependencyTraces: Listing<RuntimeDependencyTrace> = new {}
+  intentExecutions: Listing<RuntimeIntentExecution> = new {}
+}
+
+/// One field of a domain value, entity, command, or event. Fields stay at the
+/// domain boundary: generated language adapters choose their own persistence,
+/// validation-library, and serialization concerns.
+class DomainField {
+  id: Identifier
+  type: DomainFieldType
+  target: Identifier? = null
+  required: Boolean = true
+  collection: Boolean = false
+  text: LocalizedText? = null
+}
+
+/// A closed enumeration owned by the domain model rather than a target
+/// programming language.
+class DomainEnum {
+  id: Identifier
+  values: Listing<Identifier> = new {}
+  text: LocalizedText? = null
+}
+
+/// An immutable descriptive value. Its equality and construction rules remain
+/// explicit Rules/Invariants; generated code intentionally contains no guessed
+/// validation logic.
+class DomainValueObject {
+  id: Identifier
+  fields: Listing<DomainField> = new {}
+  text: LocalizedText? = null
+}
+
+/// An identity-bearing domain object. `identity` names one declared field.
+class DomainEntity {
+  id: Identifier
+  identity: Identifier
+  fields: Listing<DomainField> = new {}
+  text: LocalizedText? = null
+}
+
+/// A transactional consistency boundary. The root and all members name
+/// `DomainEntity` declarations.
+class DomainAggregate {
+  id: Identifier
+  root: Identifier
+  members: Listing<Identifier> = new {}
+  text: LocalizedText? = null
+}
+
+/// A request to make a domain decision. It names its Aggregate but does not
+/// prescribe an application framework, transport, or handler implementation.
+class DomainCommand {
+  id: Identifier
+  aggregate: Identifier
+  fields: Listing<DomainField> = new {}
+  text: LocalizedText? = null
+}
+
+/// A fact emitted by a successful domain decision.
+class DomainEvent {
+  id: Identifier
+  aggregate: Identifier
+  fields: Listing<DomainField> = new {}
+  text: LocalizedText? = null
+}
+
+/// Connects an Aggregate-level invariant to the normative Rule that states it.
+class DomainInvariant {
+  id: Identifier
+  aggregate: Identifier? = null
+  rule: Identifier
+  text: LocalizedText? = null
+}
+
+/// Declares which deliberately authored formal artifact checks a Rule. This is
+/// a traceable choice of formalization, not an assertion that generated code is
+/// semantically equivalent to the domain model.
+///
+/// `action` is the formal model's action identifier. `command` and `events`
+/// connect that action to the ubiquitous language without prescribing a
+/// framework handler or claiming a complete implementation refinement.
+class DomainFormalizationAction {
+  action: Identifier
+  command: Identifier? = null
+  events: Listing<Identifier> = new {}
+}
+
+class DomainFormalization {
+  id: Identifier
+  rule: Identifier
+  kind: DomainFormalizationKind
+  assurance: CheckAssuranceKind
+  target: ImplementationRef
+  assumptions: Listing<String(length > 0)> = new {}
+  actionMappings: Listing<DomainFormalizationAction> = new {}
+  /// Stable assertion identifiers expected from the target's checker report.
+  /// They make stale or incomplete evidence mechanically visible.
+  checks: Listing<Identifier> = new {}
+  text: LocalizedText? = null
+}
+
+/// Names the semantic role of an explicit link from an abstract
+/// formalization to a more concrete one. The link itself does not assert a
+/// complete proof of refinement: its stable `checks` name the bounded
+/// evidence that must be present in the concrete target.
+typealias DomainRefinementKind = "input-abstraction" | "transition-refinement"
+
+/// Connects two declared formalizations without hiding the abstraction step
+/// inside a prose assumption. `sourceCondition` and `targetCondition` are
+/// reviewable semantic labels; `checks` are the executable evidence anchors.
+class DomainFormalizationRefinement {
+  id: Identifier
+  kind: DomainRefinementKind
+  sourceFormalization: Identifier
+  targetFormalization: Identifier
+  sourceCondition: String(length > 0)
+  targetCondition: String(length > 0)
+  assumptions: Listing<String(length > 0)> = new {}
+  checks: Listing<Identifier> = new {}
+  text: LocalizedText? = null
+}
+
+/// A DDD-oriented authoring surface. The code-generation IR preserves these
+/// declarations independently of target languages; TypeScript is the first
+/// built-in scaffold renderer.
+class DomainModel {
+  enums: Listing<DomainEnum> = new {}
+  valueObjects: Listing<DomainValueObject> = new {}
+  entities: Listing<DomainEntity> = new {}
+  aggregates: Listing<DomainAggregate> = new {}
+  commands: Listing<DomainCommand> = new {}
+  events: Listing<DomainEvent> = new {}
+  invariants: Listing<DomainInvariant> = new {}
+  formalizations: Listing<DomainFormalization> = new {}
+  refinements: Listing<DomainFormalizationRefinement> = new {}
+}
+
+/// One typed value accepted or produced by an Intent process.
+///
+/// Scalar constraints are intentionally finite and executable. Cross-field or
+/// quantified constraints belong in IntentDataContract.clauses as Clause.ast
+/// obligations so the existing backend matrix can represent their semantics.
+class IntentField {
+  id: Identifier
+  type: IntentValueType
+  required: Boolean = true
+  allowedValues: Listing<String(length > 0)> = new {}
+  minimum: Int? = null
+  maximum: Int? = null
+  pattern: String? = null
+  text: LocalizedText? = null
+}
+
+/// A named typed payload plus symbolic relational constraints.
+class IntentDataContract {
+  fields: Listing<IntentField> = new {}
+  clauses: Listing<Clause> = new {}
+}
+
+/// A field correspondence between the canonical Intent contract and an
+/// implementation-facing payload such as a handler argument or event field.
+class IntentFieldBinding {
+  contractField: Identifier
+  implementationField: Identifier
+}
+
+/// The output correspondence for one Process outcome.
+class IntentOutcomeBinding {
+  outcome: Identifier
+  fields: Listing<IntentFieldBinding> = new {}
+  effectBindings: Listing<IntentEffectBinding> = new {}
+}
+
+/// The payload correspondence for one observable Outcome effect.
+class IntentEffectBinding {
+  effect: Identifier
+  fields: Listing<IntentFieldBinding> = new {}
+}
+
+/// The stable HTTP surface of an Intent refinement. Deployment-specific hosts
+/// are injected by the exercise runner rather than stored in the spec.
+class IntentHttpEndpoint {
+  method: IntentHttpMethod
+  path: String(matches(Regex(#"^/.*$"#)))
+  expectedStatus: Int(this >= 100 && this <= 599) = 200
+}
+
+/// The stable gRPC method surface of an Intent refinement. dspec keeps the
+/// wire client outside the model; a language-specific runner receives this
+/// method name and returns a protocol-neutral response record.
+class IntentGrpcEndpoint {
+  method: String(matches(Regex(#"^/[^/]+/[^/]+$"#)))
+  expectedCode: IntentGrpcCode = "OK"
+}
+
+/// One expected effect payload in a finite generated protocol test.
+/// Values stay strings in the Pkl source and are decoded using the matching
+/// IntentDataContract field type before a transport adapter is invoked.
+class IntentProtocolTestEffect {
+  effect: Identifier
+  output: Mapping<Identifier, String> = new {}
+}
+
+/// A finite, reviewed protocol test case. It is the language-independent
+/// source for generated request/response vectors, not executable test code.
+class IntentProtocolTest {
+  id: Identifier
+  process: Identifier
+  refinement: Identifier
+  outcome: Identifier
+  input: Mapping<Identifier, String> = new {}
+  output: Mapping<Identifier, String> = new {}
+  effects: Listing<IntentProtocolTestEffect> = new {}
+  expectedStatus: Int(this >= 100 && this <= 599)? = null
+  expectedGrpcCode: IntentGrpcCode? = null
+  text: LocalizedText? = null
+}
+
+/// A DB transaction contract exercised through the Intent transaction journal.
+///
+/// `dbTransaction` names a transaction declared in `patterns.db`. The journal
+/// adapter checks its finite read/write/effect observations; the configured
+/// isolation level remains a deployment/runtime obligation.
+class IntentTransactionEndpoint {
+  dbTransaction: Identifier
+  isolation: IntentTransactionIsolation = "serializable"
+}
+
+/// A concrete implementation boundary for an Intent Process.
+///
+/// A refinement provides an explicit schema-level correspondence. It is not a
+/// universal proof of behavioral equivalence; observed traces and conformance
+/// evidence establish the available evidence for that correspondence.
+class IntentRefinement {
+  id: Identifier
+  kind: IntentRefinementKind
+  implementation: ImplementationRef
+  inputBindings: Listing<IntentFieldBinding> = new {}
+  outcomeBindings: Listing<IntentOutcomeBinding> = new {}
+  http: IntentHttpEndpoint? = null
+  grpc: IntentGrpcEndpoint? = null
+  transaction: IntentTransactionEndpoint? = null
+  text: LocalizedText? = null
+}
+
+/// A dependency or externally observable effect declared by an Intent process.
+///
+/// A capability is a stable declaration, not an implementation API. Processes
+/// may only require or effect capabilities catalogued by their model.
+class Capability {
+  id: Identifier
+  kind: IntentCapabilityKind
+  text: LocalizedText
+}
+
+/// An observable postcondition required or optionally produced by an Outcome.
+///
+/// Effect payloads use their own typed contract. Refinement-specific field
+/// bindings keep this domain shape separate from provider/event payloads.
+class IntentEffect {
+  id: Identifier
+  capability: Identifier
+  outputContract: IntentDataContract? = null
+  required: Boolean = true
+  text: LocalizedText? = null
+}
+
+/// A named domain result produced by a process.
+///
+/// `state` ties the result to the existing vocabulary rather than introducing
+/// a second untyped state namespace.
+class IntentOutcome {
+  id: Identifier
+  state: Identifier
+  outputContract: IntentDataContract? = null
+  effects: Listing<IntentEffect> = new {}
+  text: LocalizedText
+}
+
+/// A state edge declared by a process.
+class ProcessTransition {
+  from: Identifier
+  to: Identifier
+}
+
+/// A finite execution policy for an Intent Process.
+///
+/// This is a model-checking contract, not a deployment capacity setting.
+/// `timeoutSteps` advances only in the generated abstract scheduler; it is not
+/// a wall-clock deadline. `timeoutMs` is an optional wall-clock deadline for
+/// execution adapters. `idempotencyKey` names a required string or identifier
+/// input field used to reject duplicate abstract executions.
+class IntentExecutionPolicy {
+  maxInFlight: Int(this >= 1) = 1
+  idempotencyKey: Identifier? = null
+  timeoutSteps: Int(this >= 1)? = null
+  timeoutMs: Int(this >= 1)? = null
+}
+
+/// A bounded human-level operation.
+///
+/// This describes inputs, domain results, dependencies, observable effects,
+/// and allowed constructions. It intentionally does not contain executable
+/// implementation logic.
+class Process {
+  id: Identifier
+  input: Identifier
+  inputContract: IntentDataContract? = null
+  outcomes: Listing<Identifier> = new {}
+  requires: Listing<Identifier> = new {}
+  effects: Listing<Identifier> = new {}
+  constructs: Listing<Identifier> = new {}
+  transitions: Listing<ProcessTransition> = new {}
+  implementedBy: Listing<ImplementationRef> = new {}
+  refinements: Listing<IntentRefinement> = new {}
+  execution: IntentExecutionPolicy? = null
+  text: LocalizedText
+}
+
+/// The explicit authority to construct one IntentOutcome through one Process.
+class ConstructionAuthority {
+  id: Identifier
+  process: Identifier
+  outcome: Identifier
+  text: LocalizedText? = null
+}
+
+/// An explicit access decision for a process and an actor or role.
+/// Higher priority policies take precedence; `overrides` records the lower
+/// priority policy IDs that this policy intentionally makes exceptional.
+class IntentAccessPolicy {
+  id: Identifier
+  process: Identifier
+  subject: Identifier
+  decision: IntentAccessDecision
+  priority: Int(this >= 0) = 100
+  overrides: Listing<Identifier> = new {}
+  text: LocalizedText? = null
+}
+
+/// A human-readable desired state. Goals group the bounded Intent processes and
+/// the claims that establish their success, while keeping explicit non-goals.
+class IntentGoal {
+  id: Identifier
+  priority: Int(this >= 0) = 100
+  intents: Listing<Identifier> = new {}
+  claims: Listing<Identifier> = new {}
+  nonGoals: Listing<LocalizedText> = new {}
+  text: LocalizedText
+}
+
+/// A reviewable, implementation-facing proposition inside one IntentGoal.
+/// The Claim is the unit linked to assurance tasks and semantic bindings; it is
+/// smaller than a Goal and may cover multiple declared Intent processes.
+class IntentClaim {
+  id: Identifier
+  kind: IntentClaimKind
+  processes: Listing<Identifier> = new {}
+  requiredImplementationBinding: Boolean = true
+  text: LocalizedText
+}
+
+/// A selected verification or evidence method for one or more Intent claims.
+/// `formal-model` records the bounded or proved artifact and its assumptions;
+/// it does not claim generic semantic equivalence with arbitrary code.
+class IntentAssuranceTask {
+  id: Identifier
+  claims: Listing<Identifier> = new {}
+  kind: IntentAssuranceTaskKind
+  backend: Backend
+  assurance: CheckAssuranceKind
+  target: ImplementationRef
+  assumptions: Listing<String(length > 0)> = new {}
+  text: LocalizedText
+}
+
+/// A semantic implementation boundary that must agree with an observed adapter
+/// manifest. `target` and optional `value` are adapter-neutral identifiers.
+class IntentSemanticBinding {
+  id: Identifier
+  claims: Listing<Identifier> = new {}
+  process: Identifier
+  refinement: Identifier? = null
+  kind: IntentSemanticBindingKind
+  target: String(length > 0)
+  value: String? = null
+  required: Boolean = true
+  text: LocalizedText? = null
+}
+
+/// One observed or expected process result in an executable trace.
+class IntentScenarioStep {
+  process: Identifier
+  outcome: Identifier
+}
+
+/// A finite trace over declared Process and IntentOutcome values.
+class IntentScenario {
+  id: Identifier
+  kind: IntentScenarioKind = "success"
+  required: Boolean = true
+  initialState: Identifier
+  steps: Listing<IntentScenarioStep> = new {}
+  expectedState: Identifier
+  text: LocalizedText
+}
+
+/// A typed Intent catalog inspired by closed domain construction paths.
+class IntentModel {
+  capabilities: Listing<Capability> = new {}
+  outcomes: Listing<IntentOutcome> = new {}
+  processes: Listing<Process> = new {}
+  constructionAuthorities: Listing<ConstructionAuthority> = new {}
+  accessPolicies: Listing<IntentAccessPolicy> = new {}
+  goals: Listing<IntentGoal> = new {}
+  claims: Listing<IntentClaim> = new {}
+  assuranceTasks: Listing<IntentAssuranceTask> = new {}
+  semanticBindings: Listing<IntentSemanticBinding> = new {}
+  scenarios: Listing<IntentScenario> = new {}
+  tests: Listing<IntentProtocolTest> = new {}
+}
+
+class PatternCatalog {
+  db: DbModel? = null
+  cloud: CloudModel? = null
+  data: DataModel? = null
+  release: ReleaseModel? = null
+  runtime: RuntimeModel? = null
+  domain: DomainModel? = null
+  intent: IntentModel? = null
+}
+
+/// The master intent model.
+class Model {
+  id: Identifier
+  name: LocalizedText
+  version: Version
+  clauseAstSemanticsVersion: ClauseAstSemanticsVersion = "1.0"
+  primaryLocale: Locale
+  locales: Listing<Locale>
+  vocabulary: Listing<Term> = new {}
+  domainPacks: Listing<DomainPack> = new {}
+  i18n: I18nContract = new {}
+  rules: Listing<Rule> = new {}
+  conformance: ConformanceCatalog = new {}
+  decisions: Listing<Decision> = new {}
+  patterns: PatternCatalog = new {}
+}

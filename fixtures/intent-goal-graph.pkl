@@ -1,0 +1,87 @@
+import "intent-contract-http.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      goals {
+        new d.IntentGoal {
+          id = "request-approval-safety"
+          intents {
+            "request.approve"
+          }
+          claims {
+            "request.approve-manager-only"
+          }
+          nonGoals {
+            text("承認限度額の算定は扱わない", "Does not determine approval limits")
+          }
+          text = text("上長による安全な申請承認", "Safe request approval by a manager")
+        }
+      }
+      claims {
+        new d.IntentClaim {
+          id = "request.approve-manager-only"
+          kind = "security"
+          processes {
+            "request.approve"
+          }
+          text = text("上長だけが申請を承認できる", "Only a manager can approve a request")
+        }
+      }
+      assuranceTasks {
+        new d.IntentAssuranceTask {
+          id = "request.approve-authority-property"
+          claims {
+            "request.approve-manager-only"
+          }
+          kind = "property-test"
+          backend = "node"
+          assurance = "executed"
+          target = new d.ImplementationRef {
+            kind = "test"
+            path = "test/cli.test.mjs"
+          }
+          text = text("権限決定を property test で検査する", "Check authority resolution with a property test")
+        }
+        new d.IntentAssuranceTask {
+          id = "request.approve-authority-alloy"
+          claims {
+            "request.approve-manager-only"
+          }
+          kind = "formal-model"
+          backend = "alloy"
+          assurance = "bounded"
+          target = new d.ImplementationRef {
+            kind = "model"
+            path = "fixtures/intent-goal-graph.pkl"
+          }
+          assumptions {
+            "The authority model is bounded to the declared process and outcomes."
+          }
+          text = text("構築経路を有限 Alloy モデルで検査する", "Check construction paths with a bounded Alloy model")
+        }
+      }
+      semanticBindings {
+        new d.IntentSemanticBinding {
+          id = "request.approve-http-route"
+          claims {
+            "request.approve-manager-only"
+          }
+          process = "request.approve"
+          refinement = "request.approve-handler"
+          kind = "http-route"
+          target = "POST /requests/approve"
+        }
+      }
+    }
+  }
+}

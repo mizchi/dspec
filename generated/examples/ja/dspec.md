@@ -6,15 +6,39 @@
 
 ## Review Summary
 
-- approvedRules: `69`
-- automatedCheckTargets: `326`
-- implementationRefs: `667`
-- projections: `1`
-- domainElements: `0`
+- approvedRules: `79`
+- automatedCheckTargets: `356`
+- implementationRefs: `739`
+- projections: `8`
+- domainElements: `21`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=326, executed=4, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=356, executed=5, mutation-tested=1, bounded=0, proved=0`
 
 ## Projections
+
+### self-alloy
+
+- kind: `alloy`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/dspec-self.als`
+- freshness: `exact`
+
+### self-generated-manifest
+
+- kind: `generated-manifest`
+- source: `self`
+- matrix: `single`
+- output: `generated/manifest.json`
+- freshness: `exact`
+
+### self-lean
+
+- kind: `lean`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/DSpecSelf.lean`
+- freshness: `exact`
 
 ### self-markdown
 
@@ -22,6 +46,38 @@
 - source: `self`
 - matrix: `locales`
 - output: `generated/examples/{locale}/dspec.md`
+- freshness: `exact`
+
+### self-quickcheck
+
+- kind: `quickcheck`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/dspec-self.mjs`
+- freshness: `exact`
+
+### self-source-map
+
+- kind: `source-map`
+- source: `self`
+- matrix: `single`
+- output: `generated/source-map.json`
+- freshness: `exact`
+
+### self-tla
+
+- kind: `tla`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/DSpecSelf.tla`
+- freshness: `exact`
+
+### self-tla-cfg
+
+- kind: `tla-cfg`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/DSpecSelf.cfg`
 - freshness: `exact`
 
 ## Vocabulary
@@ -42,6 +98,10 @@
 - `artifact.compat_report` (entity): spec compatibility report
 - `artifact.counterexample_normalizer` (action): 反例正規化
 - `artifact.coverage_oracle` (action): 仕様カバレッジ oracle
+- `artifact.daily_drift_baseline` (entity): 日次 drift 承認 baseline
+- `artifact.daily_drift_manifest` (entity): 日次 drift target manifest
+- `artifact.daily_drift_packet` (entity): 日次 drift packet
+- `artifact.daily_drift_workflow` (action): 日次 drift review workflow
 - `artifact.data_governance_pattern` (entity): Data governance pattern
 - `artifact.db_model_pattern` (entity): DB model pattern
 - `artifact.db_schema_importer` (action): DB schema importer
@@ -50,6 +110,8 @@
 - `artifact.domain_preset_pack` (entity): domain preset pack
 - `artifact.drift_detector` (action): 実装ドリフト検出
 - `artifact.drift_guard_evaluation` (action): false-positive and false-negative drift guard evaluation
+- `artifact.drift_review_evaluation` (entity): drift review 評価セット
+- `artifact.drift_review_skill` (entity): drift review skill
 - `artifact.evidence_quality_summary` (entity): evidence quality and freshness summary
 - `artifact.failure_suggestion` (entity): 失敗時の次アクション
 - `artifact.formal_backend` (entity): 形式手法 backend 形式
@@ -61,6 +123,7 @@
 - `artifact.generator` (action): 決定的生成器
 - `artifact.i18n_contract` (entity): i18n semantic contract
 - `artifact.impact_report` (entity): spec diff impact report
+- `artifact.implementation_conformance` (action): implementation conformance checker
 - `artifact.json_report` (entity): JSON report
 - `artifact.markdown` (entity): Markdown 仕様文書
 - `artifact.nix_dev_shell` (entity): Nix devShell
@@ -90,7 +153,9 @@
 - `artifact.source_map` (entity): 生成 source map
 - `artifact.spec_change_review` (entity): spec change review
 - `artifact.spec_change_review_scaffold` (action): spec change review scaffold
+- `artifact.spec_query` (action): deterministic specification query
 - `artifact.spec_reading_eval` (entity): spec reading evaluation set
+- `artifact.specification_relationship_document` (entity): 仕様関係ドキュメント
 - `artifact.sql_query_oracle` (action): SQL query oracle
 - `backend.pkl` (entity): Pkl evaluator
 - `backend.pkl_mbt` (entity): mizchi/pkl-mbt
@@ -100,6 +165,7 @@
 - `concept.cloud_node` (entity): Cloud node
 - `concept.cloud_policy` (relation): Cloud policy
 - `concept.cloud_zone` (entity): Cloud network zone
+- `concept.construction_authority` (relation): 構築権限
 - `concept.data_flow` (relation): Data flow
 - `concept.data_placement` (relation): Data placement
 - `concept.data_policy` (relation): Data governance policy
@@ -109,8 +175,24 @@
 - `concept.db_mapping` (relation): DB migration mapping
 - `concept.db_migration` (action): DB migration
 - `concept.db_transaction` (action): DB transaction
+- `concept.domain_aggregate` (entity): DDD 集約
+- `concept.domain_codegen_ir` (entity): ドメイン codegen IR
+- `concept.domain_formalization` (relation): ドメイン形式化対応
+- `concept.domain_model` (entity): DDD ドメインモデル
 - `concept.expr_ast` (value): Clause.ast expression AST
 - `concept.inferon` (entity): inferon 的な仕様 claim
+- `concept.intent_assurance_task` (entity): Intent assurance task
+- `concept.intent_capability` (entity): Intent capability
+- `concept.intent_claim` (entity): Intent claim
+- `concept.intent_field` (value): Intent contract field
+- `concept.intent_goal` (entity): Intent goal
+- `concept.intent_grpc_endpoint` (relation): Intent gRPC endpoint
+- `concept.intent_outcome` (entity): Intent outcome
+- `concept.intent_process` (action): Intent process
+- `concept.intent_protocol_test` (entity): Intent protocol test
+- `concept.intent_refinement` (relation): Intent refinement
+- `concept.intent_scenario` (entity): Intent scenario
+- `concept.intent_semantic_binding` (relation): Intent semantic binding
 - `concept.localized_text` (value): 多言語テキスト
 - `concept.release_environment` (state): Release environment
 - `concept.release_gate` (relation): Release gate
@@ -131,10 +213,13 @@
 - `concept.runtime_signal` (relation): Runtime signal
 - `concept.runtime_slo` (relation): Runtime SLO
 - `concept.runtime_telemetry` (relation): Runtime telemetry
+- `concept.specification_relationship_graph` (relation): 仕様関係グラフ
 - `concept.stable_id` (value): 安定 ID
 - `concept.support` (relation): support 関係
 - `concept.term` (entity): 語彙 term
 - `concept.verification_target` (relation): 検証ターゲット
+- `state.intent-model-accepted` (state): Intent model accepted
+- `state.intent-model-authored` (state): Intent model authored
 
 ## Rules
 
@@ -342,7 +427,7 @@ app profile は real app dogfood の検証 gate を型付き Pkl 設定として
 
 #### Review
 
-- source: model.rules[22]
+- source: model.rules[25]
 - coverage: rule
 - automatedChecks: 41
 - implementationRefs: 112
@@ -452,6 +537,57 @@ schema はよく使う spec 要素の authoring shorthand を提供する
 - implementationRefs: 5
 - selector: DSPEC-AUTHORING-SHORTHAND.must[0]
 
+### DSPEC-BACKEND-PROJECTION-OWNERSHIP
+
+checked-in backend 生成物は kind 固有の single projection と provenance で所有される
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.assurance_evidence_manifest`
+- term: `artifact.formal_backend`
+- term: `artifact.generated_manifest`
+- term: `artifact.generator`
+- term: `artifact.projection`
+- term: `artifact.quickcheck`
+- term: `artifact.source_map`
+- must: `projection.kind in {quickcheck, lean, alloy, tla, tla-cfg, source-map, generated-manifest} -> projection.matrix == single`
+- must: `generatedCheck(projection) detects missing + stale + unexpected owned artifacts without writing`
+- must: `impact(before, after).projectionArtifacts includes projectionKind + path + action for all materialized projections`
+- must: `assuranceEvidenceManifest is execution evidence and is created or verified outside static projection generation`
+- check: node test/cli.test.mjs#generates, checks, and repairs every deterministic backend projection kind [reference]
+- check: node test/projection-core.test.mjs#materializes localized and singleton backend projections with kind-specific emitters [reference]
+- check: node test/projection-core.test.mjs#rejects incompatible projection matrices and output extensions [reference]
+- check: node test/cli.test.mjs#keeps generated source map artifact in sync [reference]
+- check: node test/cli.test.mjs#keeps generated manifest artifact in sync [reference]
+- implementation: code src/core/projection.mjs#PROJECTION_EMITTERS
+- implementation: code src/core/projection.mjs#createProjectionSnapshot
+- implementation: code src/core/projection.mjs#validateProjectionContracts
+- implementation: code src/cli.mjs#projectionSnapshot
+- implementation: code src/cli.mjs#generatedProjectionReport
+- implementation: code src/cli.mjs#projectionImpactReport
+- implementation: code src/cli.mjs#createAssuranceEvidenceManifest
+- implementation: code dspec/Schema.pkl#Projection
+- implementation: doc generated/backends/dspec-self.mjs
+- implementation: doc generated/backends/DSpecSelf.lean
+- implementation: doc generated/backends/dspec-self.als
+- implementation: doc generated/backends/DSpecSelf.tla
+- implementation: doc generated/backends/DSpecSelf.cfg
+- implementation: doc generated/source-map.json
+- implementation: doc generated/manifest.json
+
+#### Review
+
+- source: model.rules[66]
+- coverage: rule
+- automatedChecks: 5
+- implementationRefs: 15
+- selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[0]
+- selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[1]
+- selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[2]
+- selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[3]
+
 ### DSPEC-BACKEND-REPORT-COMPAT-FIXTURES
 
 backend verification と反例正規化 report の互換 fixture は安定 projection と同期される
@@ -479,7 +615,7 @@ backend verification と反例正規化 report の互換 fixture は安定 proje
 
 #### Review
 
-- source: model.rules[53]
+- source: model.rules[56]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 8
@@ -639,7 +775,7 @@ check/drift/coverage/domain-coverage/reconcile/reverse/app-profile は機械可�
 
 #### Review
 
-- source: model.rules[51]
+- source: model.rules[54]
 - coverage: rule
 - automatedChecks: 8
 - implementationRefs: 12
@@ -728,7 +864,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 
 #### Review
 
-- source: model.rules[36]
+- source: model.rules[39]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -761,7 +897,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 
 #### Review
 
-- source: model.rules[61]
+- source: model.rules[64]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 5
@@ -835,6 +971,66 @@ clause-level coverage を要求する rule は各 clause を支える CheckTarge
 - covers: node test/cli.test.mjs#rejects clause-level coverage gaps -> must[0]
 - covers: node test/cli.test.mjs#rejects invalid clause coverage selectors -> must[1]
 
+### DSPEC-DAILY-DRIFT-REVIEW
+
+日次 batch は Intent・形式・実装の決定的 drift packet を作り、LLM は read-only review と候補提案だけを行う
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.daily_drift_baseline`
+- term: `artifact.daily_drift_manifest`
+- term: `artifact.daily_drift_packet`
+- term: `artifact.daily_drift_workflow`
+- term: `artifact.drift_review_evaluation`
+- term: `artifact.drift_review_skill`
+- term: `artifact.formal_backend`
+- term: `artifact.implementation_conformance`
+- term: `artifact.quickcheck`
+- must: `dailyDriftPacket.targets == manifest.targets; applicationTarget -> observed(appProfile|intentBindings|intentExercise); runtimeTarget -> observed(runtimeEvidence)`
+- must: `dailyLlmReview == readOnly(packet) -> candidate(change|query); candidate != authoritativeChange`
+- must: `dailyDriftPacket.reviewProjection == render(target.locales)`
+- must: `dailyDriftBaseline == explicitApproval(targetModel + intentGraph + specChangeReview); targetChange -> review`
+- must: `dailyLlmReview.evaluation == seeded(intentFormal + implementation + i18n + noDrift)`
+- must: `dailyDriftWorkflow.schedule == cron && packetArtifact == retained && llmJob == packetOnly`
+- must: `dailyDrift.elements == {goal.daily-drift-review, claim.daily-drift-review, assurance.daily-drift-review-property}`
+- check: node test/daily-drift-packet.test.mjs#exposes daily packet collection and approved baselines through dspec [reference]
+- check: node test/daily-drift-packet.test.mjs#requires an explicit approval to establish and then enforce a target baseline [reference]
+- check: node test/daily-drift-packet.test.mjs#writes typed target reports and declared implementation observations [reference]
+- check: node test/daily-drift-packet.test.mjs#retains every report when a target's deterministic drift checks fail [reference]
+- check: node test/daily-drift-packet.test.mjs#runs an application target's implementation observation gate [reference]
+- check: node test/daily-drift-packet.test.mjs#runs declared runtime evidence as a target observation gate [reference]
+- check: node test/daily-drift-packet.test.mjs#keeps the daily LLM drift review read-only and artifact-only [reference]
+- check: node test/daily-drift-review-eval.test.mjs#scores required drift findings, evidence paths, and no-drift restraint [reference]
+- implementation: code src/cli.mjs#runDailyDrift
+- implementation: code scripts/generate-daily-drift-packet.mjs#main
+- implementation: code scripts/generate-daily-drift-packet.mjs#evaluateSpecChangeReviews
+- implementation: code scripts/generate-daily-drift-packet.mjs#reviewPrompt
+- implementation: code scripts/evaluate-daily-drift-review.mjs#main
+- implementation: code scripts/evaluate-daily-drift-review.mjs#scoreCase
+- implementation: model dspec/DailyDrift.pkl
+- implementation: model examples/daily-drift-targets.pkl
+- implementation: model examples/daily-drift-baseline.json
+- implementation: model fixtures/daily-drift-review-eval-suite.json
+- implementation: runtime .github/workflows/daily-drift-review.yml
+- implementation: runtime skills/dspec-intent-formal-implementation-drift/SKILL.md
+- rationale: 定期巡回の入力を型付き target、承認 baseline、決定的な証跡 packet に限定すると、LLM の評価は再現可能な事実と候補の分類に集中できる。AppProfile 等の観測を宣言しない tooling-self target は任意実装の意味論的等価性を保証せず、自動是正もしない。
+
+#### Review
+
+- source: model.rules[20]
+- coverage: rule
+- automatedChecks: 8
+- implementationRefs: 12
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[0]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[1]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[2]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[3]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[4]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[5]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[6]
+
 ### DSPEC-DATA-GOVERNANCE-PATTERN
 
 Data governance は typed pattern として記述され、暗号化・削除対応・越境根拠・保持期限を backend に投影する
@@ -871,7 +1067,7 @@ Data governance は typed pattern として記述され、暗号化・削除対�
 
 #### Review
 
-- source: model.rules[37]
+- source: model.rules[40]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -906,7 +1102,7 @@ DB migration の preserve 宣言は mapping witness で cover される
 
 #### Review
 
-- source: model.rules[34]
+- source: model.rules[37]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 5
@@ -940,7 +1136,7 @@ DB migration mapping は preserve scope と from/to table に接地している
 
 #### Review
 
-- source: model.rules[35]
+- source: model.rules[38]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -973,7 +1169,7 @@ DB migration は typed pattern として記述され、preserve 宣言を backen
 
 #### Review
 
-- source: model.rules[33]
+- source: model.rules[36]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -1003,7 +1199,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 
 #### Review
 
-- source: model.rules[30]
+- source: model.rules[33]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 5
@@ -1028,7 +1224,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 
 #### Review
 
-- source: model.rules[31]
+- source: model.rules[34]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1073,7 +1269,7 @@ README/docs/Taskfile の CLI 例は公開 CLI surface に接地する
 
 #### Review
 
-- source: model.rules[67]
+- source: model.rules[73]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 15
@@ -1098,6 +1294,7 @@ dogfood task は self spec、Runtime observation loop、実アプリ model の�
 - term: `artifact.dogfood_task`
 - term: `artifact.domain_coverage_oracle`
 - term: `artifact.drift_detector`
+- term: `artifact.implementation_conformance`
 - term: `artifact.profile_scaffold_diff`
 - term: `artifact.real_app_importer`
 - term: `artifact.real_app_model`
@@ -1107,6 +1304,7 @@ dogfood task は self spec、Runtime observation loop、実アプリ model の�
 - term: `artifact.runtime_evidence_verifier`
 - term: `artifact.spec_change_review`
 - term: `artifact.spec_change_review_scaffold`
+- term: `artifact.spec_query`
 - term: `artifact.spec_reading_eval`
 - must: `dogfoodTaskRunsSelfEvaluation(task)`
 - check: node test/cli.test.mjs#declares a dogfood task for self-spec evaluation [reference]
@@ -1114,7 +1312,7 @@ dogfood task は self spec、Runtime observation loop、実アプリ model の�
 
 #### Review
 
-- source: model.rules[63]
+- source: model.rules[67]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1148,12 +1346,53 @@ domain pattern の各要素は approved rule の安定 ID に接地する
 
 #### Review
 
-- source: model.rules[18]
+- source: model.rules[21]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 7
 - selector: DSPEC-DOMAIN-COVERAGE-ORACLE.must[0]
 - selector: DSPEC-DOMAIN-COVERAGE-ORACLE.must[1]
+
+### DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN
+
+DDD ドメインモデルは不変条件を規範 Rule と形式化 artifact に明示接続し、言語非依存 IR と仕様関係ドキュメントを生成する
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.specification_relationship_document`
+- term: `concept.domain_aggregate`
+- term: `concept.domain_codegen_ir`
+- term: `concept.domain_formalization`
+- term: `concept.domain_model`
+- term: `concept.specification_relationship_graph`
+- must: `domain.invariant.rule linkedTo domain.formalization.target`
+- must: `domain.codegenIR preserves entities valueObjects aggregates commands events fields`
+- must: `domain.relationshipGraph links declarations rules checks implementations formalizations`
+- check: node test/domain-core.test.mjs#compiles Entity, Value Object, Aggregate, Command, Event, and Invariant declarations into a language-neutral IR [reference]
+- check: node test/domain-core.test.mjs#projects DDD declarations, rules, evidence, and formalizations into one relationship graph [reference]
+- check: node test/domain-cli.test.mjs#generates a TypeScript domain scaffold at a caller-selected path [reference]
+- check: node test/domain-cli.test.mjs#tracks formalization artifact paths in the normal drift gate [reference]
+- check: node test/domain-cli.test.mjs#renders the specification relationship document from domain declarations [reference]
+- implementation: code dspec/schema/Claims.pkl#DomainModel
+- implementation: code dspec/schema/Claims.pkl#DomainFormalization
+- implementation: code src/core/domain.mjs#domainCodegenIr
+- implementation: code src/core/domain.mjs#domainRelationshipGraph
+- implementation: code src/core/domain.mjs#renderDomainRelationshipMarkdown
+- implementation: code src/core/domain.mjs#renderDomainTypescript
+- implementation: code src/cli.mjs#runDomainCommand
+- rationale: 生成するのは型・port・雛形と宣言済みの関係までとし、業務判断、永続化、または成果物との意味的等価性を推測しない。任意言語の renderer は Pkl を再解釈せず versioned IR を入力にする。
+
+#### Review
+
+- source: model.rules[78]
+- coverage: rule
+- automatedChecks: 5
+- implementationRefs: 7
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[0]
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[1]
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[2]
 
 ### DSPEC-DOMAIN-PRESET-PACK
 
@@ -1276,7 +1515,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[25]
+- source: model.rules[28]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1299,7 +1538,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[23]
+- source: model.rules[26]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1322,7 +1561,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[24]
+- source: model.rules[27]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1348,7 +1587,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[29]
+- source: model.rules[32]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 3
@@ -1369,7 +1608,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 #### Review
 
-- source: model.rules[69]
+- source: model.rules[75]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1404,13 +1643,46 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[28]
+- source: model.rules[31]
 - coverage: rule
 - automatedChecks: 7
 - implementationRefs: 5
 - selector: DSPEC-EXPR-TYPED-AST.must[0]
 - selector: DSPEC-EXPR-TYPED-AST.must[1]
 - selector: DSPEC-EXPR-TYPED-AST.must[2]
+
+### DSPEC-FORMAL-SOURCE-OF-TRUTH
+
+規範的な仕様は形式モデルに置き、自然言語・テスト oracle・実装適合はそこから導出する
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.formal_backend`
+- term: `artifact.implementation_conformance`
+- term: `artifact.markdown`
+- term: `artifact.quickcheck`
+- term: `concept.expr_ast`
+- term: `concept.localized_text`
+- term: `concept.localized_text`
+- must: `normativeMeaning == formalModel; localizedText == projection(formalModel)`
+- must: `formalModel -> derive(markdown + quickcheck + formalBackend); implementation -> passes(declaredOracle)`
+- must: `llm(changeRequest|question) -> candidate(formalModelEdit|structuredQuery) -> validate + review + evidence`
+- must: `formalSource.elements == {goal.formal-source-of-truth, claim.formal-source-of-truth, assurance.formal-source-of-truth-property, assurance.formal-source-of-truth-lean, binding.formal-source-of-truth}`
+- check: node test/cli.test.mjs#keeps product positioning and assurance boundaries explicit [reference]
+- rationale: Pkl は現在の型付き IR であり、Lean の意味論的証明は対応 fragment に限定される。形式 first は宣言で完了せず、対応範囲ごとの formal artifact と実装 oracle を段階的に増やす。
+
+#### Review
+
+- source: model.rules[19]
+- coverage: rule
+- automatedChecks: 1
+- implementationRefs: 0
+- selector: DSPEC-FORMAL-SOURCE-OF-TRUTH.must[0]
+- selector: DSPEC-FORMAL-SOURCE-OF-TRUTH.must[1]
+- selector: DSPEC-FORMAL-SOURCE-OF-TRUTH.must[2]
+- selector: DSPEC-FORMAL-SOURCE-OF-TRUTH.must[3]
 
 ### DSPEC-GENERATED-ALLOY-SYNTAX
 
@@ -1433,7 +1705,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[49]
+- source: model.rules[52]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1466,7 +1738,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[60]
+- source: model.rules[63]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 5
@@ -1491,7 +1763,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[54]
+- source: model.rules[57]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1515,7 +1787,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[47]
+- source: model.rules[50]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1539,7 +1811,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[46]
+- source: model.rules[49]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1570,7 +1842,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 
 #### Review
 
-- source: model.rules[48]
+- source: model.rules[51]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 5
@@ -1604,7 +1876,7 @@ render は指定 locale の自然言語表示を生成する
 
 ### DSPEC-I18N-SEMANTIC-DRIFT
 
-i18n contract は必須 locale と glossary の意味ドリフトを検出する
+i18n contract とレビュー済み translation lock は必須 locale、glossary、原文・訳文の変更を検出する
 
 - kind: invariant
 - status: approved
@@ -1615,13 +1887,17 @@ i18n contract は必須 locale と glossary の意味ドリフトを検出する
 - term: `concept.term`
 - must: `localizedText.labels.cover(requiredLocales)`
 - must: `i18n.glossary.labels == vocabulary.term.text.labels`
+- must: `translationLock.sourceHash == localizedText.primaryLocale.currentHash`
 - check: node test/cli.test.mjs#accepts i18n contract coverage [reference]
 - check: node test/cli.test.mjs#rejects missing required localized labels [reference]
 - check: node test/cli.test.mjs#rejects i18n glossary label drift [reference]
+- check: node test/translation-lock-core.test.mjs#reports source, translation, and glossary changes independently [reference]
 - implementation: code dspec/Schema.pkl#I18nContract
 - implementation: code dspec/Schema.pkl#I18nGlossaryEntry
 - implementation: code src/cli.mjs#validateI18nContract
 - implementation: code src/cli.mjs#walkLocalizedTexts
+- implementation: code src/core/translation-lock.mjs#translationCheck
+- implementation: code src/cli.mjs#runTranslation
 - implementation: model fixtures/i18n-contract.pkl
 - implementation: model fixtures/i18n-contract-missing-label.pkl
 - implementation: model fixtures/i18n-contract-glossary-mismatch.pkl
@@ -1630,10 +1906,153 @@ i18n contract は必須 locale と glossary の意味ドリフトを検出する
 
 - source: model.rules[6]
 - coverage: rule
-- automatedChecks: 3
-- implementationRefs: 7
+- automatedChecks: 4
+- implementationRefs: 9
 - selector: DSPEC-I18N-SEMANTIC-DRIFT.must[0]
 - selector: DSPEC-I18N-SEMANTIC-DRIFT.must[1]
+- selector: DSPEC-I18N-SEMANTIC-DRIFT.must[2]
+
+### DSPEC-IMPLEMENTATION-CONFORMANCE
+
+implementation conformance は有限の型付き入力で Clause.ast の参照意味論と実装 adapter の結果を照合する
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.checker`
+- term: `artifact.counterexample_normalizer`
+- term: `artifact.implementation_conformance`
+- term: `concept.expr_ast`
+- must: `conformanceMatchesReference(target, input)`
+- must: `conformance.failure.shrinksTo(declaredFailingCase)`
+- must: `conformance.pass -> executedEvidence && conformance.pass != arbitraryImplementationProof`
+- check: node test/cli.test.mjs#runs typed implementation conformance against Clause.ast reference semantics [reference]
+- check: node test/cli.test.mjs#reports the smallest declared conformance counterexample [reference]
+- implementation: code dspec/Schema.pkl#ConformanceCatalog
+- implementation: code dspec/Schema.pkl#ConformanceTarget
+- implementation: code dspec/Schema.pkl#ConformanceCase
+- implementation: code dspec/Schema.pkl#ConformanceAtom
+- implementation: code src/core/conformance.mjs#conformanceReport
+- implementation: code src/core/conformance.mjs#validateConformanceModel
+- implementation: code src/cli.mjs#implementationConformanceInvoker
+- implementation: code src/cli.mjs#parseConformanceArgs
+- implementation: model fixtures/conformance-webapp.pkl
+- implementation: model fixtures/conformance-webapp-broken.pkl
+- implementation: model fixtures/conformance-webapp.mjs
+- implementation: model fixtures/conformance-webapp-broken.mjs
+- implementation: model docs/dogfooding-2026-07-15-conformance-query.md
+
+#### Review
+
+- source: model.rules[69]
+- coverage: rule
+- automatedChecks: 2
+- implementationRefs: 13
+- selector: DSPEC-IMPLEMENTATION-CONFORMANCE.must[0]
+- selector: DSPEC-IMPLEMENTATION-CONFORMANCE.must[1]
+- selector: DSPEC-IMPLEMENTATION-CONFORMANCE.must[2]
+
+### DSPEC-INTENT-CLOSED-CONSTRUCTION
+
+Intent process は宣言済み Capability と ConstructionAuthority を通る Outcome だけを構築する
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `concept.construction_authority`
+- term: `concept.intent_capability`
+- term: `concept.intent_field`
+- term: `concept.intent_outcome`
+- term: `concept.intent_process`
+- term: `concept.intent_refinement`
+- term: `concept.intent_scenario`
+- must: `intent.process.outcomes == intent.process.constructs subsetOf constructionAuthority`
+- must: `intent.scenario.trace follows process.input and process.transition`
+- must: `intent.elements == {capability.pkl.typecheck, capability.dspec.validate, outcome.intent-model-accepted, outcome.intent-model-accepted/output/validationReport, intent.validate-model, intent.validate-model/input/modelId, intent.validate-model/input/modelVersion, intent.validate-model/intent.validate-model-cli, intent.validate-model-accepts, intent-model-acceptance}`
+- check: node test/cli.test.mjs#emits Intent processes into human and executable projections [reference]
+- implementation: code dspec/Schema.pkl#IntentModel
+- implementation: code dspec/Schema.pkl#Process
+- implementation: code dspec/Schema.pkl#ConstructionAuthority
+- implementation: code src/cli.mjs#validateIntentModel
+- implementation: code src/cli.mjs#intentProjection
+- rationale: Souther の closed construction path を、実装言語ではなく型付き Intent として取り込む。
+
+#### Review
+
+- source: model.rules[76]
+- coverage: rule
+- automatedChecks: 1
+- implementationRefs: 5
+- selector: DSPEC-INTENT-CLOSED-CONSTRUCTION.must[0]
+- selector: DSPEC-INTENT-CLOSED-CONSTRUCTION.must[1]
+- selector: DSPEC-INTENT-CLOSED-CONSTRUCTION.must[2]
+
+### DSPEC-INTENT-GOAL-GRAPH
+
+Intent の Goal は Claim、保証タスク、実装 semantic binding まで追跡できる
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `concept.intent_assurance_task`
+- term: `concept.intent_claim`
+- term: `concept.intent_goal`
+- term: `concept.intent_semantic_binding`
+- must: `intent.goal.claims -> intent.claim.processes + assuranceTask + semanticBinding`
+- must: `intent.goalGraph.elements == {goal.intent-model-validation, claim.intent-model-validation, assurance.intent-model-validation-property, assurance.intent-model-validation-alloy, binding.intent-model-validation}`
+- check: node test/cli.test.mjs#organizes natural-language Intent goals into claims, assurance tasks, and implementation bindings [reference]
+- implementation: code dspec/schema/Claims.pkl#IntentGoal
+- implementation: code dspec/schema/Claims.pkl#IntentClaim
+- implementation: code dspec/schema/Claims.pkl#IntentAssuranceTask
+- implementation: code dspec/schema/Claims.pkl#IntentSemanticBinding
+- implementation: code src/cli.mjs#validateIntentModel
+- implementation: code src/cli.mjs#intentGraphReport
+- rationale: 自然言語の目的を独立した正しさの根拠にせず、Claim ごとの決定的な検証・実装接続へ分解して drift を検出する。
+
+#### Review
+
+- source: model.rules[80]
+- coverage: rule
+- automatedChecks: 1
+- implementationRefs: 6
+- selector: DSPEC-INTENT-GOAL-GRAPH.must[0]
+- selector: DSPEC-INTENT-GOAL-GRAPH.must[1]
+
+### DSPEC-INTENT-PROTOCOL-TEST-ORACLE
+
+レビュー済み Intent protocol test は transport 非依存の oracle を生成し、HTTP または gRPC 実装に対して有限ケースを検証する
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `concept.intent_field`
+- term: `concept.intent_grpc_endpoint`
+- term: `concept.intent_process`
+- term: `concept.intent_protocol_test`
+- term: `concept.intent_refinement`
+- must: `intent.protocolTest.canonicalFields decodedAndBoundTo refinement.implementationFields`
+- must: `intent.protocolTest.generatedTrace executedWith selectedTransport expectedStatusOrGrpcCode`
+- check: node test/protocol-tests-core.test.mjs#generates language-independent HTTP and gRPC test vectors from Intent contract cases [reference]
+- check: node test/protocol-tests-cli.test.mjs#intent test executes a generated HTTP protocol test [reference]
+- check: node test/protocol-tests-cli.test.mjs#intent test executes a generated gRPC protocol test through the runner contract [reference]
+- implementation: code dspec/schema/Claims.pkl#IntentProtocolTest
+- implementation: code dspec/schema/Claims.pkl#IntentGrpcEndpoint
+- implementation: code src/core/protocol-tests.mjs#protocolTestPlan
+- implementation: code src/cli.mjs#runIntentCommand
+- rationale: DSL は単一言語の生成テストではなく、型付き domain case を transport adapter に渡す可搬な oracle にする。有限ケースの成功は任意入力の実装等価性を証明しない。
+
+#### Review
+
+- source: model.rules[77]
+- coverage: rule
+- automatedChecks: 3
+- implementationRefs: 4
+- selector: DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[0]
+- selector: DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[1]
 
 ### DSPEC-JSON-REPORT-COMPAT-FIXTURES
 
@@ -1716,7 +2135,7 @@ JSON report の互換 fixture は CLI 出力と同期される
 
 #### Review
 
-- source: model.rules[52]
+- source: model.rules[55]
 - coverage: rule
 - automatedChecks: 31
 - implementationRefs: 33
@@ -1866,7 +2285,7 @@ Lean は等価性 fragment の Clause を満足関係と clause 定理として�
 
 #### Review
 
-- source: model.rules[62]
+- source: model.rules[65]
 - coverage: rule
 - automatedChecks: 25
 - implementationRefs: 31
@@ -1900,7 +2319,7 @@ Lean は等価性 fragment の Clause を満足関係と clause 定理として�
 
 #### Review
 
-- source: model.rules[70]
+- source: model.rules[79]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0
@@ -1927,7 +2346,7 @@ CI は portable fast gate と Nix formal gate を並列実行する
 
 #### Review
 
-- source: model.rules[66]
+- source: model.rules[72]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1959,7 +2378,7 @@ Nix devShell は dspec 実行基盤と形式 backend ツールを提供する
 
 #### Review
 
-- source: model.rules[26]
+- source: model.rules[29]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 4
@@ -1996,13 +2415,48 @@ v0.1 package は公開 API、互換性、OIDC release 手順を明示する
 
 #### Review
 
-- source: model.rules[27]
+- source: model.rules[30]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 9
 - selector: DSPEC-PACKAGE-RELEASE.must[0]
 - selector: DSPEC-PACKAGE-RELEASE.must[1]
 - selector: DSPEC-PACKAGE-RELEASE.must[2]
+
+### DSPEC-PRODUCT-POSITIONING
+
+dspec は双方向ドリフト検出を中心とする仕様・保証ツールキットであり、汎用定理証明器ではない
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference, executed
+- term: `artifact.assurance_evidence_manifest`
+- term: `artifact.domain_coverage_oracle`
+- term: `artifact.formal_backend`
+- term: `artifact.real_app_importer`
+- term: `artifact.reconciliation_oracle`
+- term: `artifact.reverse_coverage_oracle`
+- term: `concept.clause_backend_support`
+- must: `primaryValue == reconcile(authoredModel, observedFacts) + reverseCoverage + domainCoverage`
+- must: `executableSpecification == deterministic(check + projection + reconciliation + evidence)`
+- must: `proved(selector) -> semanticBackendSupport(selector) && scope(selector) == selectedClause`
+- must: `importerPass != deploymentOrProductionReachabilityProof`
+- must: `importerCoverage == declaredAdapters`
+- check: node test/cli.test.mjs#keeps product positioning and assurance boundaries explicit [reference, executed]
+- assuranceEvidence: executed -> Taskfile.pkl#test
+
+#### Review
+
+- source: model.rules[18]
+- coverage: rule
+- automatedChecks: 1
+- implementationRefs: 0
+- selector: DSPEC-PRODUCT-POSITIONING.must[0]
+- selector: DSPEC-PRODUCT-POSITIONING.must[1]
+- selector: DSPEC-PRODUCT-POSITIONING.must[2]
+- selector: DSPEC-PRODUCT-POSITIONING.must[3]
+- selector: DSPEC-PRODUCT-POSITIONING.must[4]
 
 ### DSPEC-REAL-APP-DOGFOOD
 
@@ -2079,7 +2533,7 @@ v0.1 package は公開 API、互換性、OIDC release 手順を明示する
 
 #### Review
 
-- source: model.rules[65]
+- source: model.rules[71]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 34
@@ -2159,7 +2613,7 @@ real app importer は実装 artifact から観測済み app facts を決定的�
 
 #### Review
 
-- source: model.rules[19]
+- source: model.rules[22]
 - coverage: rule
 - automatedChecks: 12
 - implementationRefs: 26
@@ -2201,7 +2655,7 @@ real app reconciliation は手書き model と観測済み app facts の drift �
 
 #### Review
 
-- source: model.rules[20]
+- source: model.rules[23]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 9
@@ -2239,7 +2693,7 @@ reverse coverage は観測済み app facts が手書き model に吸われてい
 
 #### Review
 
-- source: model.rules[21]
+- source: model.rules[24]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 8
@@ -2284,7 +2738,7 @@ Release safety は typed pattern として記述され、health gate・rollback�
 
 #### Review
 
-- source: model.rules[38]
+- source: model.rules[41]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -2316,7 +2770,7 @@ Runtime collector fixture は Runtime safety spec から collect/verify 可能�
 
 #### Review
 
-- source: model.rules[45]
+- source: model.rules[48]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 3
@@ -2350,7 +2804,7 @@ Runtime collector manifest は Runtime safety spec から deterministic に生�
 
 #### Review
 
-- source: model.rules[43]
+- source: model.rules[46]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 4
@@ -2390,7 +2844,7 @@ Runtime evidence collector は provider API payload を manifest から読み、
 
 #### Review
 
-- source: model.rules[42]
+- source: model.rules[45]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -2427,7 +2881,7 @@ Runtime evidence importer は provider 別 JSON を deterministic な Runtime ev
 
 #### Review
 
-- source: model.rules[41]
+- source: model.rules[44]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 4
@@ -2477,7 +2931,7 @@ Runtime evidence は typed pattern として記述され、SLO telemetry・alert
 
 #### Review
 
-- source: model.rules[40]
+- source: model.rules[43]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 12
@@ -2524,7 +2978,7 @@ Runtime evidence verifier は collector manifest の expects と収集済み evi
 
 #### Review
 
-- source: model.rules[44]
+- source: model.rules[47]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 9
@@ -2570,7 +3024,7 @@ Runtime safety は typed pattern として記述され、SLO page alert・tested
 
 #### Review
 
-- source: model.rules[39]
+- source: model.rules[42]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -2620,7 +3074,7 @@ dspec の意味論は truth ではなく support/inferability として拡張す
 
 #### Review
 
-- source: model.rules[68]
+- source: model.rules[74]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0
@@ -2647,7 +3101,7 @@ dspec の意味論は truth ではなく support/inferability として拡張す
 
 #### Review
 
-- source: model.rules[55]
+- source: model.rules[58]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -2710,7 +3164,7 @@ spec change review は仕様変更時の check、impact、互換性分類、cove
 
 #### Review
 
-- source: model.rules[58]
+- source: model.rules[61]
 - coverage: rule
 - automatedChecks: 11
 - implementationRefs: 24
@@ -2783,7 +3237,7 @@ spec change review scaffold は before/after model からレビュー用 Pkl ド
 
 #### Review
 
-- source: model.rules[59]
+- source: model.rules[62]
 - coverage: rule
 - automatedChecks: 14
 - implementationRefs: 20
@@ -2841,7 +3295,7 @@ spec compatibility classifier は before/after spec を compatible/breaking/narr
 
 #### Review
 
-- source: model.rules[57]
+- source: model.rules[60]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 18
@@ -2883,13 +3337,49 @@ spec diff impact report は変更された term/rule/projection から生成 sel
 
 #### Review
 
-- source: model.rules[56]
+- source: model.rules[59]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 10
 - selector: DSPEC-SPEC-DIFF-IMPACT.must[0]
 - selector: DSPEC-SPEC-DIFF-IMPACT.must[1]
 - selector: DSPEC-SPEC-DIFF-IMPACT.must[2]
+
+### DSPEC-SPEC-QUERY
+
+spec query は locale を保った決定的なモデル問い合わせと evidence 検証を提供する
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.i18n_contract`
+- term: `artifact.renderer`
+- term: `artifact.spec_query`
+- term: `artifact.spec_reading_eval`
+- must: `query(rule|term|evidence|impact|clause, id).returns(localizedResult + resolvedEvidence)`
+- must: `query(clause.mustNot).classification == contradicted && query(missing).classification == not-supported`
+- must: `query.answer.classificationAndEvidence.mustMatch(deterministicQueryResult)`
+- check: node test/cli.test.mjs#queries localized claims and verifies an evidence-grounded answer [reference]
+- check: node test/cli.test.mjs#keeps unsupported query evidence from being accepted as an answer [reference]
+- implementation: code src/core/spec-query.mjs#querySpec
+- implementation: code src/core/spec-query.mjs#verifySpecAnswer
+- implementation: code src/core/spec-query.mjs#renderSpecQueryMarkdown
+- implementation: code src/cli.mjs#parseQueryArgs
+- implementation: code src/cli.mjs#queryAnswerReport
+- implementation: model fixtures/conformance-webapp.pkl
+- implementation: model fixtures/spec-query-answer-valid.json
+- implementation: model docs/semantic-model.md
+
+#### Review
+
+- source: model.rules[70]
+- coverage: rule
+- automatedChecks: 2
+- implementationRefs: 8
+- selector: DSPEC-SPEC-QUERY.must[0]
+- selector: DSPEC-SPEC-QUERY.must[1]
+- selector: DSPEC-SPEC-QUERY.must[2]
 
 ### DSPEC-SPEC-READING-EVAL
 
@@ -2998,7 +3488,7 @@ spec reading eval は仕様から読み取れる主張の正誤を gold set と�
 
 #### Review
 
-- source: model.rules[64]
+- source: model.rules[68]
 - coverage: rule
 - automatedChecks: 24
 - implementationRefs: 49
@@ -3042,7 +3532,7 @@ SQL query catalog は DB model と照合され、schema/tenant/FK drift を検�
 
 #### Review
 
-- source: model.rules[32]
+- source: model.rules[35]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -3113,11 +3603,192 @@ verify-generated は backend ごとの検証結果を JSON artifact として出
 
 #### Review
 
-- source: model.rules[50]
+- source: model.rules[53]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
 - selector: DSPEC-VERIFY-GENERATED-JSON.must[0]
+
+## Intent Model
+
+### Capability capability.dspec.validate
+
+Intent catalog を検証する
+
+- kind: `read`
+
+### Capability capability.pkl.typecheck
+
+Pkl schema を型検証する
+
+- kind: `external`
+
+### Outcome outcome.intent-model-accepted
+
+Intent model が受理された
+
+- state: `state.intent-model-accepted`
+- output field: `validationReport` (identifier, required, pattern ^[a-z][a-z0-9-]*$)
+- output constraint: validationReportHasNoErrors(validationReport)
+
+### Process intent.validate-model
+
+Intent model を検証して受理する
+
+- input: `state.intent-model-authored`
+- input field: `modelId` (identifier, required)
+- input field: `modelVersion` (string, required, pattern ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9_.-]+)?$)
+- input constraint: intentModelHasVersion(modelId, modelVersion)
+- outcome: `outcome.intent-model-accepted`
+- requires: `capability.dspec.validate`
+- requires: `capability.pkl.typecheck`
+- constructs: `outcome.intent-model-accepted`
+- transition: `state.intent-model-authored` -> `state.intent-model-accepted`
+- refinement: `intent.validate-model-cli` (function)
+  - implementation: code src/cli.mjs#validateIntentModel
+  - input binding: `modelId` -> `model.id`
+  - input binding: `modelVersion` -> `model.version`
+  - output binding outcome.intent-model-accepted: `validationReport` -> `validation.report`
+
+### Construction Authority intent.validate-model-accepts
+
+- process: `intent.validate-model`
+- outcome: `outcome.intent-model-accepted`
+
+### Goal goal.daily-drift-review
+
+日次 batch で Intent・形式・実装 drift を検出して review する
+
+- priority: `20`
+- intent: `intent.validate-model`
+- claim: `claim.daily-drift-review`
+- non-goal: LLM は Pkl を自動編集せず、PR・Issue・仕様の正本を自動更新しない
+
+### Goal goal.formal-source-of-truth
+
+形式モデルを仕様の正本とし、文書・oracle・実装適合をそこから導出する
+
+- priority: `0`
+- intent: `intent.validate-model`
+- claim: `claim.formal-source-of-truth`
+- non-goal: 自然言語だけで仕様を規範化しない。対応範囲外の任意プログラムを Lean で証明済みとも主張しない
+
+### Goal goal.intent-model-validation
+
+型付き Intent model を一貫して受理する
+
+- priority: `100`
+- intent: `intent.validate-model`
+- claim: `claim.intent-model-validation`
+- non-goal: 任意の実装が Intent model と意味論的に等価であることは証明しない
+
+### Claim claim.daily-drift-review
+
+日次の決定的 packet は target ごとの Intent・形式・宣言済み実装観測の差異を収集し、LLM review は提案のみを出力する
+
+- kind: `temporal`
+- process: `intent.validate-model`
+- implementation binding required: `false`
+
+### Claim claim.formal-source-of-truth
+
+規範的意味は型付き形式モデルにあり、自然言語は生成された review 表現、実装は生成 oracle または明示した証跡を通過する
+
+- kind: `behavior`
+- process: `intent.validate-model`
+- implementation binding required: `true`
+
+### Claim claim.intent-model-validation
+
+妥当な Intent model は Goal graph の接続を含めて検証できる
+
+- kind: `safety`
+- process: `intent.validate-model`
+- implementation binding required: `true`
+
+### Assurance Task assurance.daily-drift-review-property
+
+型付き target、実装観測、baseline、失敗時の証跡保持、read-only LLM review、評価セットの境界を Node test で検証する
+
+- kind: `property-test`
+- backend: `node`
+- assurance: `executed`
+- claim: `claim.daily-drift-review`
+- target: test test/daily-drift-packet.test.mjs
+
+### Assurance Task assurance.formal-source-of-truth-lean
+
+Lean は自己モデルの有限 support coverage invariant を証明し、意味論的主張は対応 fragment に限定する
+
+- kind: `formal-model`
+- backend: `lean`
+- assurance: `proved`
+- claim: `claim.formal-source-of-truth`
+- target: proof generated/backends/DSpecSelf.lean
+- assumption: Proof-level semantics are limited to declared Lean-supported Clause fragments
+
+### Assurance Task assurance.formal-source-of-truth-property
+
+formal-first の文書境界と自己 Goal graph を Node test で検証する
+
+- kind: `property-test`
+- backend: `node`
+- assurance: `executed`
+- claim: `claim.formal-source-of-truth`
+- target: test test/cli.test.mjs
+
+### Assurance Task assurance.intent-model-validation-alloy
+
+生成 Alloy model の有限インスタンスで Intent 構造を検査する
+
+- kind: `formal-model`
+- backend: `alloy`
+- assurance: `bounded`
+- claim: `claim.intent-model-validation`
+- target: model examples/dspec.pkl
+- assumption: Alloy checks bounded instances of generated relations
+
+### Assurance Task assurance.intent-model-validation-property
+
+Goal graph の正負 fixture を Node property で検証する
+
+- kind: `property-test`
+- backend: `node`
+- assurance: `executed`
+- claim: `claim.intent-model-validation`
+- target: test test/cli.test.mjs
+
+### Semantic Binding binding.formal-source-of-truth
+
+実装観測は形式モデルを仕様の権威として記録する
+
+- process: `intent.validate-model`
+- claim: `claim.formal-source-of-truth`
+- kind: `otel-attribute`
+- target: `dspec.spec.authority`
+- value: `formal-model`
+- required: `true`
+
+### Semantic Binding binding.intent-model-validation
+
+実装観測は検証 Process ID を記録する
+
+- process: `intent.validate-model`
+- claim: `claim.intent-model-validation`
+- kind: `otel-attribute`
+- target: `dspec.intent.process`
+- value: `intent.validate-model`
+- required: `true`
+
+### Scenario intent-model-acceptance
+
+型付き Intent model の受理
+
+- kind: `success`
+- required: `true`
+- initialState: `state.intent-model-authored`
+- step[0]: `intent.validate-model` -> `outcome.intent-model-accepted`
+- expectedState: `state.intent-model-accepted`
 
 ## Decisions
 
@@ -3132,3 +3803,9 @@ verify-generated は backend ごとの検証結果を JSON artifact として出
 - date: 2026-07-07
 - summary: Clause.expr は typed AST 化まで opaque string とする
 - rationale: This avoids inventing a half-finished expression language before the stable model, i18n, and drift-detection boundaries are validated.
+
+### ADR-SELF-0003
+
+- date: 2026-07-16
+- summary: dspec を汎用証明器ではなく、仕様・保証・双方向ドリフト検出ツールキットとして位置付ける
+- rationale: The authoritative model, adapter observations, reverse coverage, and claim-scoped evidence are valuable independently of universal program proof, so product documentation and the self-model must state that boundary explicitly.

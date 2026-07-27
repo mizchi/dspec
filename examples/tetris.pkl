@@ -1,0 +1,426 @@
+import "../dspec/Schema.pkl" as d
+
+projections: Listing<d.Projection> = new {
+  new d.Projection {
+    id = "tetris-rules-markdown"
+    kind = "markdown"
+    matrix = "locales"
+    output = "docs/generated/tetris/{locale}/rules.md"
+    provenance = "docs/generated/tetris/provenance.json"
+    freshness = "exact"
+  }
+}
+
+/// A baseline, single-player falling-block game. This model intentionally
+/// separates the complete game vocabulary from the smaller bounded gravity
+/// model linked by `gravity-lock-behavior`.
+model: d.Model = new {
+  id = "tetris-baseline"
+  name = d.text("テトリス基本ルール", "Baseline Tetris rules")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales { "ja"; "en" }
+  vocabulary {
+    d.term("tetris.board", "entity", "盤面", "Board")
+    d.term("tetris.cell", "value", "セル", "Cell")
+    d.term("tetris.tetromino", "entity", "テトリミノ", "Tetromino")
+    d.term("tetris.active-piece", "state", "操作中のピース", "Active piece")
+    d.term("tetris.gravity", "action", "重力落下", "Gravity step")
+    d.term("tetris.lock", "event", "ピース固定", "Piece lock")
+    d.term("tetris.line-clear", "event", "ライン消去", "Line clear")
+    d.term("tetris.game-over", "state", "ゲームオーバー", "Game over")
+  }
+  rules {
+    new d.Rule {
+      id = "TETRIS-BOARD-BOUNDS"
+      kind = "invariant"
+      text = d.text("固定済みセルと操作中ピースの各セルは、幅 10・高さ 20 の盤面内にある", "Every locked cell and active-piece cell lies within the 10 by 20 board")
+      terms { "tetris.board"; "tetris.cell"; "tetris.active-piece" }
+      must {
+        d.clause("0 <= cell.x < 10 and 0 <= cell.y < 20", "すべてのセル座標は盤面境界内", "Every cell coordinate is within board bounds")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-NO-OVERLAP"
+      kind = "invariant"
+      text = d.text("操作中ピースのセルは固定済みセルと重ならず、同じセルを二重に占有しない", "Active-piece cells neither overlap locked cells nor duplicate one another")
+      terms { "tetris.board"; "tetris.cell"; "tetris.active-piece" }
+      must {
+        d.clause("activeCells disjoint lockedCells and activeCells unique", "操作中セルと固定済みセルは互いに素で一意", "Active and locked cells are disjoint and unique")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-LEGAL-TRANSLATION"
+      kind = "transition"
+      text = d.text("移動後のピースが盤面外または固定済みセルと衝突するなら、その移動は拒否され状態を変えない", "A translation that leaves the board or collides with a locked cell is rejected without changing state")
+      terms { "tetris.active-piece"; "tetris.board" }
+      must {
+        d.clause("invalid translate implies state unchanged", "不正な移動は状態を変えず拒否される", "An invalid translation is rejected with unchanged state")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-LEGAL-ROTATION"
+      kind = "transition"
+      text = d.text("回転後のピースが盤面外または固定済みセルと衝突するなら、その回転は拒否され状態を変えない", "A rotation that leaves the board or collides with a locked cell is rejected without changing state")
+      terms { "tetris.active-piece"; "tetris.board" }
+      must {
+        d.clause("invalid rotate implies state unchanged", "不正な回転は状態を変えず拒否される", "An invalid rotation is rejected with unchanged state")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-GRAVITY-LOCKS"
+      kind = "obligation"
+      text = d.text("重力で下降できないピースは固定される", "A piece that cannot descend under gravity is locked")
+      terms { "tetris.gravity"; "tetris.active-piece"; "tetris.lock" }
+      must {
+        d.clause("cannot descend implies lock active piece", "下降不能なら操作中ピースを固定する", "Failure to descend locks the active piece")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-CLEAR-FULL-ROWS"
+      kind = "transition"
+      text = d.text("ピース固定後、すべての列が埋まった行を消去し、その上の固定済みセルを同じ行数だけ下げる", "After a piece locks, each completely filled row is cleared and locked cells above it fall by that many rows")
+      terms { "tetris.board"; "tetris.lock"; "tetris.line-clear" }
+      must {
+        d.clause("lock clears every full row and compacts cells above", "固定後は満行をすべて消去し上部セルを詰める", "Lock clears every full row and compacts cells above")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-START-GAME"
+      kind = "transition"
+      text = d.text("出現位置が空いているなら、ゲーム開始時に操作中のピースを 1 つ出現させる", "When the spawn location is clear, starting a game creates exactly one active piece")
+      terms { "tetris.tetromino"; "tetris.board"; "tetris.active-piece" }
+      must {
+        d.clause("clear initial spawn implies one active piece", "空の出現位置での開始は操作中ピースを 1 つ持つ", "A clear initial spawn creates one active piece")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-SPAWN-GAME-OVER"
+      kind = "transition"
+      text = d.text("新しいピースの出現位置が固定済みセルと重なるなら、ゲームはゲームオーバーになる", "The game enters game over when a new piece cannot spawn without overlapping a locked cell")
+      terms { "tetris.tetromino"; "tetris.board"; "tetris.game-over" }
+      must {
+        d.clause("spawn collision implies game over", "出現時の衝突はゲームオーバー", "A spawn collision causes game over")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-TERMINAL-GAME-OVER"
+      kind = "invariant"
+      text = d.text("ゲームオーバー後には移動、回転、重力落下、固定を受理しない", "After game over, movement, rotation, gravity, and locking are not accepted")
+      terms { "tetris.game-over"; "tetris.active-piece" }
+      mustNot {
+        d.clause("gameOver accepts active-piece transition", "ゲームオーバー状態でピース操作を受理する", "A game-over state accepts an active-piece transition")
+      }
+      reviewStatus = "draft"
+    }
+    new d.Rule {
+      id = "TETRIS-ADVANCED-RULES-OUT-OF-SCOPE"
+      kind = "non_goal"
+      text = d.text("SRS、ホールド、T-spin、得点は今回の仕様範囲外", "SRS, hold, T-spin, and scoring are outside this specification")
+      terms { "tetris.tetromino" }
+      reviewStatus = "draft"
+    }
+  }
+  patterns = new d.PatternCatalog {
+    domain = new d.DomainModel {
+      enums {
+        new d.DomainEnum { id = "tetromino-kind"; values { "I"; "O"; "T"; "S"; "Z"; "J"; "L" } }
+        new d.DomainEnum { id = "game-status"; values { "playing"; "game-over" } }
+      }
+      valueObjects {
+        new d.DomainValueObject {
+          id = "board-coordinate"
+          fields {
+            new d.DomainField { id = "x"; type = "integer" }
+            new d.DomainField { id = "y"; type = "integer" }
+          }
+        }
+        new d.DomainValueObject {
+          id = "board"
+          fields {
+            new d.DomainField { id = "width"; type = "integer" }
+            new d.DomainField { id = "height"; type = "integer" }
+            new d.DomainField { id = "lockedCellCount"; type = "integer" }
+          }
+        }
+        new d.DomainValueObject {
+          id = "active-piece"
+          fields {
+            new d.DomainField { id = "kind"; type = "enum"; target = "tetromino-kind" }
+            new d.DomainField { id = "origin"; type = "value-object"; target = "board-coordinate" }
+            new d.DomainField { id = "orientation"; type = "integer" }
+          }
+        }
+        new d.DomainValueObject {
+          id = "translation"
+          fields {
+            new d.DomainField { id = "deltaX"; type = "integer" }
+            new d.DomainField { id = "deltaY"; type = "integer" }
+          }
+        }
+      }
+      entities {
+        new d.DomainEntity {
+          id = "tetris-game"
+          identity = "gameId"
+          fields {
+            new d.DomainField { id = "gameId"; type = "uuid" }
+            new d.DomainField { id = "status"; type = "enum"; target = "game-status" }
+            new d.DomainField { id = "board"; type = "value-object"; target = "board" }
+            new d.DomainField { id = "activePiece"; type = "value-object"; target = "active-piece"; required = false }
+            new d.DomainField { id = "lockedPieceCount"; type = "integer" }
+            new d.DomainField { id = "clearedLineCount"; type = "integer" }
+          }
+        }
+      }
+      aggregates {
+        new d.DomainAggregate { id = "tetris-game"; root = "tetris-game"; members { "tetris-game" } }
+      }
+      commands {
+        new d.DomainCommand { id = "start-game"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" } } }
+        new d.DomainCommand { id = "translate-active-piece"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" }; new d.DomainField { id = "translation"; type = "value-object"; target = "translation" } } }
+        new d.DomainCommand { id = "rotate-active-piece"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" } } }
+        new d.DomainCommand { id = "tick-gravity"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" } } }
+        new d.DomainCommand { id = "hard-drop-active-piece"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" } } }
+      }
+      events {
+        new d.DomainEvent { id = "game-started"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" } } }
+        new d.DomainEvent { id = "active-piece-translated"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" }; new d.DomainField { id = "translation"; type = "value-object"; target = "translation" } } }
+        new d.DomainEvent { id = "active-piece-rotated"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" } } }
+        new d.DomainEvent { id = "piece-locked"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" } } }
+        new d.DomainEvent { id = "lines-cleared"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" }; new d.DomainField { id = "lineCount"; type = "integer" } } }
+        new d.DomainEvent { id = "game-over"; aggregate = "tetris-game"; fields { new d.DomainField { id = "gameId"; type = "uuid" } } }
+      }
+      invariants {
+        new d.DomainInvariant { id = "board-bounds"; aggregate = "tetris-game"; rule = "TETRIS-BOARD-BOUNDS" }
+        new d.DomainInvariant { id = "no-overlap"; aggregate = "tetris-game"; rule = "TETRIS-NO-OVERLAP" }
+        new d.DomainInvariant { id = "gravity-locks-piece"; aggregate = "tetris-game"; rule = "TETRIS-GRAVITY-LOCKS" }
+        new d.DomainInvariant { id = "terminal-game-over"; aggregate = "tetris-game"; rule = "TETRIS-TERMINAL-GAME-OVER" }
+      }
+      formalizations {
+        new d.DomainFormalization {
+          id = "gravity-lock-behavior"
+          rule = "TETRIS-GRAVITY-LOCKS"
+          kind = "behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-gravity-behavior.pkl" }
+          assumptions {
+            "This bounded model abstracts the board to remaining drop distance."
+            "The model represents locking as an explicit transition immediately after a failed downward move; it does not yet encode an automatic gravity scheduler."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction {
+              action = "gravity"
+              command = "tick-gravity"
+              events { "active-piece-translated" }
+            }
+            new d.DomainFormalizationAction {
+              action = "lock"
+              events { "piece-locked" }
+            }
+          }
+          checks {
+            "tetris.lock.reachable"
+            "tetris.gravity-path-eventually-locks"
+            "tetris.at-most-one-active-piece-always"
+          }
+        }
+        new d.DomainFormalization {
+          id = "board-bounds-alloy"
+          rule = "TETRIS-BOARD-BOUNDS"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-alloy.pkl" }
+          assumptions {
+            "The relational board is a finite 4 by 4 scope selected for counterexample search, not the production 10 by 20 board."
+            "Cells have explicit row and column coordinates; SRS kicks remain outside this model."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction {
+              action = "rotate"
+              command = "rotate-active-piece"
+              events { "active-piece-rotated" }
+            }
+          }
+          checks { "tetris.board.bounds.holds" }
+        }
+        new d.DomainFormalization {
+          id = "no-overlap-alloy"
+          rule = "TETRIS-NO-OVERLAP"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-alloy.pkl" }
+          assumptions {
+            "The relational model represents active and locked occupancy as sets, so duplicate cell identity is impossible by construction."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "rotate"; command = "rotate-active-piece"; events { "active-piece-rotated" } }
+          }
+          checks { "tetris.board.disjoint.holds" }
+        }
+        new d.DomainFormalization {
+          id = "rotation-rejection-alloy"
+          rule = "TETRIS-LEGAL-ROTATION"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-alloy.pkl" }
+          assumptions {
+            "The model checks clockwise geometric rotation of a T tetromino around its pivot; SRS kick offsets remain outside this model."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "rejectRotation"; command = "rotate-active-piece"; events { "active-piece-rotated" } }
+          }
+          checks { "tetris.rotation.collision-rejected.holds" }
+        }
+        new d.DomainFormalization {
+          id = "translation-rejection-alloy"
+          rule = "TETRIS-LEGAL-TRANSLATION"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-alloy.pkl" }
+          assumptions {
+            "The bounded board checks one-cell movement to the left; the other translation directions are symmetric but are not yet enumerated."
+            "The T tetromino is represented by four explicit coordinates around a pivot."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "rejectTranslateLeft"; command = "translate-active-piece"; events { "active-piece-translated" } }
+          }
+          checks { "tetris.translation.illegal-rejected.holds" }
+        }
+        new d.DomainFormalization {
+          id = "coordinate-start-spawn-alloy"
+          rule = "TETRIS-START-GAME"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-alloy.pkl" }
+          assumptions {
+            "The coordinate model fixes a north-facing T tetromino spawn footprint at (0,2), (1,2), (2,2), and (1,3) on a 4 by 4 board."
+            "It enumerates all 16 positions of exactly one locked cell; production board size and random tetromino selection remain outside this scope."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "startGameAtSpawn"; command = "start-game"; events { "game-started" } }
+          }
+          checks {
+            "tetris.coordinate-spawn.clear-starts-game.holds"
+            "tetris.coordinate-spawn.availability-refines-coordinates.holds"
+            "tetris.coordinate-spawn.implementation-input-conforms.holds"
+          }
+        }
+        new d.DomainFormalization {
+          id = "coordinate-blocked-spawn-alloy"
+          rule = "TETRIS-SPAWN-GAME-OVER"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-alloy.pkl" }
+          assumptions {
+            "The coordinate model uses the same finite T spawn footprint as coordinate-start-spawn-alloy."
+            "A blocked spawn is modeled as an automatic post-gameplay transition, not as a rejected start-game command."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "blockedSpawnGameOver"; events { "game-over" } }
+          }
+          checks { "tetris.coordinate-spawn.blocked-game-over.holds" }
+        }
+        new d.DomainFormalization {
+          id = "start-game-behavior"
+          rule = "TETRIS-START-GAME"
+          kind = "behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-start-game-behavior.pkl" }
+          assumptions {
+            "The model abstracts a clear spawn footprint as the input spawn-open = 1; tetromino choice and coordinates are not selected yet."
+            "game-exists = 0 denotes the pre-command state, while game-status = 0 denotes the playing status after a successful start."
+            "The coordinate-level counterpart is checked by coordinate-start-spawn-alloy."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "startGame"; command = "start-game"; events { "game-started" } }
+          }
+          checks {
+            "tetris.start-game.started.reachable"
+            "tetris.start-game.eventually-started"
+          }
+        }
+        new d.DomainFormalization {
+          id = "spawn-game-over-behavior"
+          rule = "TETRIS-SPAWN-GAME-OVER"
+          kind = "behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-spawn-game-over-behavior.pkl" }
+          assumptions {
+            "The behavior action spawnBlocked represents a later spawn-footprint collision after gameplay; it is an automatic transition rather than the start-game command."
+            "The footprint calculation is not yet connected to the coordinate board model."
+            "The coordinate-level counterpart is checked by coordinate-blocked-spawn-alloy."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "spawnBlocked"; events { "game-over" } }
+          }
+          checks {
+            "tetris.spawn-collision.game-over.reachable"
+            "tetris.spawn-collision.eventually-game-over"
+          }
+        }
+        new d.DomainFormalization {
+          id = "terminal-game-over-behavior"
+          rule = "TETRIS-TERMINAL-GAME-OVER"
+          kind = "behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-terminal-game-over-behavior.pkl" }
+          assumptions {
+            "This bounded model starts from game over and verifies that its four declared gameplay actions are rejected."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "translate"; command = "translate-active-piece" }
+            new d.DomainFormalizationAction { action = "rotate"; command = "rotate-active-piece" }
+            new d.DomainFormalizationAction { action = "gravity"; command = "tick-gravity" }
+            new d.DomainFormalizationAction { action = "lock"; command = "hard-drop-active-piece"; events { "piece-locked" } }
+          }
+          checks {
+            "tetris.game-over.playing.unreachable"
+            "tetris.game-over.always-terminal"
+          }
+        }
+        new d.DomainFormalization {
+          id = "line-clear-alloy"
+          rule = "TETRIS-CLEAR-FULL-ROWS"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef { kind = "model"; path = "fixtures/tetris-line-clear-alloy.pkl" }
+          assumptions {
+            "The model enumerates every locked-cell subset of a 4 by 4 board; it does not model score calculation or simultaneous spawn behavior."
+            "Row 0 is the bottom; cells above cleared rows fall by the number of cleared rows below them."
+          }
+          actionMappings {
+            new d.DomainFormalizationAction { action = "clearFullRows"; events { "lines-cleared" } }
+          }
+          checks { "tetris.full-row.clear-and-compact.holds" }
+        }
+      }
+      refinements {
+        new d.DomainFormalizationRefinement {
+          id = "spawn-open-from-coordinates"
+          kind = "input-abstraction"
+          sourceFormalization = "start-game-behavior"
+          targetFormalization = "coordinate-start-spawn-alloy"
+          sourceCondition = "spawn-open = 1"
+          targetCondition = "no (SpawnScenario.spawn & SpawnScenario.locked)"
+          assumptions {
+            "The correspondence is checked for one locked cell and the fixed north-facing T spawn footprint on the finite 4 by 4 board."
+            "It identifies the abstract input only; random tetromino selection and production board size remain outside this refinement."
+          }
+          checks {
+            "tetris.coordinate-spawn.availability-refines-coordinates.holds"
+            "tetris.coordinate-spawn.implementation-input-conforms.holds"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+import "../dspec/DailyDrift.pkl" as daily
+
+manifest: daily.Manifest = new {
+  id = "daily-drift-self"
+  targets {
+    new daily.Target {
+      id = "dspec-self"
+      kind = "tooling-self"
+      modelPath = "examples/dspec.pkl"
+      coreGates {
+        "check"
+        "drift"
+        "coverage"
+        "intent-graph"
+        "generated"
+        "verify-generated"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+    }
+  }
+}

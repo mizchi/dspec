@@ -1,0 +1,12 @@
+{
+  "name": "mnemo",
+  "triggers": { "crons": ["*/30 * * * *"] },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "mnemo-platform", "database_id": "REDACTED" },
+    { "binding": "DB_SHARD_00", "database_name": "mnemo-platform-shard-00", "database_id": "REDACTED" },
+    { "binding": "DB_SHARD_01", "database_name": "mnemo-platform-shard-01", "database_id": "REDACTED" }
+  ],
+  "vectorize": [{ "binding": "SKILL_INDEX", "index_name": "mnemo-skills" }],
+  "r2_buckets": [{ "binding": "SKILL_ASSETS", "bucket_name": "mnemo-skill-assets" }],
+  "ai": { "binding": "AI" }
+}

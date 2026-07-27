@@ -1,0 +1,28 @@
+import "../dspec/Schema.pkl" as d
+import "../dspec/schema/Core.pkl" as core
+import "../dspec/schema/Claims.pkl" as claims
+import "../dspec/schema/Checks.pkl" as checks
+
+coreText: core.LocalizedText = new {
+  default = "core contract"
+}
+
+claim: claims.Rule = new {
+  id = "schema-layer-rule"
+  kind = "invariant"
+  text = coreText
+}
+
+evaluation: checks.RealAppImportEvaluation = new {
+  id = "schema-layer-import"
+  appRoot = "fixtures/sample-webapp-2026"
+}
+
+publicModel: d.Model = new {
+  id = "schema-layer-model"
+  name = coreText
+  version = "0.1.0"
+  primaryLocale = "en"
+  locales { "en" }
+  rules { claim }
+}

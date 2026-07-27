@@ -545,21 +545,24 @@
         "kind": "markdown",
         "locale": "en",
         "path": "generated/impact/en/impact.md",
-        "projectionId": "impact-markdown"
+        "projectionId": "impact-markdown",
+        "projectionKind": "markdown"
       },
       {
         "action": "regenerate",
         "kind": "provenance",
         "locale": null,
         "path": "generated/impact/impact.provenance.json",
-        "projectionId": "impact-markdown"
+        "projectionId": "impact-markdown",
+        "projectionKind": "markdown"
       },
       {
         "action": "regenerate",
         "kind": "markdown",
         "locale": "ja",
         "path": "generated/impact/ja/impact.md",
-        "projectionId": "impact-markdown"
+        "projectionId": "impact-markdown",
+        "projectionKind": "markdown"
       }
     ],
     "regenerateArgv": [

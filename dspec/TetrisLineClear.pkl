@@ -1,0 +1,38 @@
+/// A bounded Alloy 6 frontend for the locked-cell part of Tetris. It models
+/// clearing every full row and compacting the cells above it; piece geometry,
+/// spawning, and scoring are intentionally outside this slice.
+module dspec.TetrisLineClear
+
+import "./Schema.pkl" as d
+
+typealias Identifier = String(matches(Regex(#"^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$"#)))
+typealias CheckKind = "clearAndCompact"
+typealias Expectation = "holds" | "violated"
+
+class Board {
+  width: Int(this >= 2)
+  height: Int(this >= 2)
+}
+
+class Check {
+  id: Identifier
+  rule: Identifier
+  kind: CheckKind
+  expectation: Expectation
+  maxSteps: Int(this >= 1)
+}
+
+function clearAndCompact(checkId: Identifier, ruleId: Identifier, maximumSteps: Int(this >= 1), expected: Expectation): Check = new {
+  id = checkId
+  rule = ruleId
+  kind = "clearAndCompact"
+  expectation = expected
+  maxSteps = maximumSteps
+}
+
+class TetrisLineClearAlloy {
+  id: Identifier
+  terms: Listing<Identifier> = new {}
+  board: Board
+  checks: Listing<Check> = new {}
+}

@@ -28,7 +28,7 @@
       "matrix": "locales",
       "output": "generated/projection/{locale}/projection-model.md",
       "provenance": {
-        "digest": "sha256:6dd10b91a372fb9c8f615e125ceb86d01c12cbb729865390c9235bb667c8d3a3",
+        "digest": "sha256:cf93c2e63c2b9d1b70a7551df53902d8baf516bd1ca758139f41524817baa472",
         "generatedAt": "2026-07-15T00:00:00.000Z",
         "path": "generated/projection/projection-model.provenance.json",
         "schemaVersion": "1.0",

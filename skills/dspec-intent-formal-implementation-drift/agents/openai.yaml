@@ -1,0 +1,4 @@
+interface:
+  display_name: "DSpec Daily Drift Review"
+  short_description: "Review intent, formal, and implementation drift packets."
+  default_prompt: "Review the latest dspec daily drift packet without modifying the repository."

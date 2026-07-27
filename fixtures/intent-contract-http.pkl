@@ -1,0 +1,42 @@
+import "intent-contract.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      processes = new {
+        (base.model.patterns.intent.processes[0]) {
+          refinements = new {
+            (base.model.patterns.intent.processes[0].refinements[0]) {
+              kind = "http-route"
+              http = new d.IntentHttpEndpoint {
+                method = "POST"
+                path = "/requests/approve"
+                expectedStatus = 200
+              }
+            }
+          }
+        }
+      }
+      tests = new {
+        new d.IntentProtocolTest {
+          id = "approve-http-success"
+          process = "request.approve"
+          refinement = "request.approve-handler"
+          outcome = "request.approved"
+          input {
+            ["requestId"] = "request-001"
+            ["amountCents"] = "500"
+            ["locale"] = "ja"
+            ["notify"] = "true"
+          }
+          output {
+            ["approvalId"] = "approval-request-001"
+            ["notified"] = "true"
+          }
+          expectedStatus = 200
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "bytes": 64073,
+      "digest": "sha256:00f5fe2537c2a68dbb2df86c11f9a635d7d2140e20bbdd925dfd67df5c2f55e0",
+      "locale": null,
+      "path": "generated/backends/DSpecSelf.lean"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/lean",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-22T20:02:15.210Z",
+  "model": {
+    "digest": "sha256:9a959232e50b6618bce39454438edac9225424a0a1c2d040342cfe218b71c434",
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "emitter": {
+      "name": "dspec/lean",
+      "version": "1.0"
+    },
+    "freshness": "exact",
+    "id": "self-lean",
+    "kind": "lean",
+    "matrix": "single",
+    "output": "generated/backends/DSpecSelf.lean",
+    "provenance": "generated/backends/dspec-self.lean.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

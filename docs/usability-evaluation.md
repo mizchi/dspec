@@ -23,9 +23,11 @@ It works today as:
 - a current RBAC example that uses the RBAC preset pack while preserving
   project-specific review text and check targets
 - a localized source for human-readable spec output
-- first-class generated artifact projections whose locale matrix, output path,
-  exact freshness, and provenance path are declared next to the model in the
-  same typed source entrypoint
+- first-class generated artifact projections whose locale or single-artifact
+  matrix, output path, exact freshness, and provenance path are declared next
+  to the model in the same typed source entrypoint; checked-in QuickCheck,
+  Lean, Alloy, TLA+, source-map, and generated-manifest artifacts use the same
+  ownership path as localized Markdown
 - a second Projection dogfood entrypoint over the real-app sample model, with
   checked-in Japanese and English review artifacts
 - a read-only Projection plan with structured argv, deterministic digests, and
@@ -135,6 +137,10 @@ It works today as:
   passes check, drift, and domain coverage
 - a real-app importer that extracts observed Hono route, Zod schema,
   GitHub Actions, flaker, and VRT facts from that checkout
+- a separately typed external-import corpus that aggregates mnemo,
+  Terraform/Kubernetes, and Cloudflare Worker starter-kit holdouts; it keeps
+  observed facts, authored gold facts, source revisions, exclusions, and a
+  replayed source change in one deterministic JSON/Markdown evaluation
 - a real-app reconciliation oracle that compares those observed facts with the
   hand-authored model and reports missing expected gates or pattern facts
 - reverse coverage for real-app observed facts, so implementation facts that
@@ -152,6 +158,10 @@ It is not yet enough as:
   matrix reports semantic support only for that Lean equality fragment
 - a proof-producing source generator for application implementation proofs;
   the Lean theorem currently proves the Clause proposition under `ClauseEnv`
+- a universal implementation-refinement checker; `conformance` now compares a
+  named adapter with Clause.ast reference semantics over explicit finite Pkl
+  cases, but it is executable evidence rather than a proof over arbitrary
+  production executions
 - a deep TLC/Alloy model-checking workflow with meaningful bounded scopes and
   counterexample interpretation beyond the current smoke checks
 - structured trace valuation for TLA+/Alloy beyond generated-selector witness
@@ -165,8 +175,9 @@ It is not yet enough as:
 - full automatic extraction of the real-app model from source code; the current
   importer extracts a useful observed-facts subset, but the authoritative
   sample app model is still authored by hand
-- translation-quality validation beyond required-label presence and glossary
-  equality; human review or external localization QA is still needed for nuance
+- translation-quality validation beyond required-label presence, glossary
+  equality, and reviewed source-to-target freshness; human review or external
+  localization QA is still needed for nuance
 - compliance-grade data governance over real catalogs, warehouse lineage,
   consent records, deletion job evidence, retention job evidence, or production
   access logs beyond the current metadata declaration checks
@@ -444,17 +455,22 @@ these remaining gates:
 10. Extend backend counterexample normalization from generated-selector
     witnesses into concrete trace values, domain wording, and review questions.
 
-## Recommended Next Shape
+## Checker Boundary
 
-Keep Pkl as the authoring language, but split the schema into three layers:
+Pkl remains the authoring language. The schema is now split behind the stable
+`dspec/Schema.pkl` facade:
 
-- `schema/core.pkl`: stable ids, i18n text, lifecycle, references
-- `schema/claims.pkl`: rules, clauses, decisions, exceptions
-- `schema/checks.pkl`: backend-specific check and implementation references
+- `dspec/schema/Core.pkl`: stable ids, i18n text, lifecycle, and references
+- `dspec/schema/Claims.pkl`: rules, clauses, decisions, and domain patterns
+- `dspec/schema/Checks.pkl`: app profiles, importer corpora, and evaluation
+  records
 
-Then move the checker behind reusable report and fixture contracts. The current
-Node CLI can remain the first implementation, while `mizchi/pkl-mbt` can
-replace the checker later without changing the Pkl authoring surface.
+`src/adapters/pkl.mjs` owns the Pkl-to-JSON process boundary. Pure semantic
+calculations live under `src/core/`, including the TypeScript source and
+compiled Node module for external holdout aggregation. The current Node CLI is
+the first command dispatcher; `fixtures/checker-conformance-suite.json` lets a
+`mizchi/pkl-mbt` checker compare the same typed Pkl inputs and report fixtures
+without changing the authoring surface.
 `check --json`, `drift --json`, `coverage --json`, `impact --json`,
 `spec-change compat --json`, `spec-change scaffold`,
 `spec-change review --json`,

@@ -1,0 +1,14 @@
+import "domain-codegen.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    domain = (base.model.patterns.domain) {
+      aggregates = new {
+        (base.model.patterns.domain.aggregates[0]) {
+          members = new {}
+        }
+      }
+    }
+  }
+}

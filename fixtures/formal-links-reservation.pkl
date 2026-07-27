@@ -1,0 +1,43 @@
+import "../dspec/Schema.pkl" as d
+import "../dspec/FormalLinks.pkl" as f
+
+model: d.Model = new {
+  id = "commerce-reservation-formal-links"
+  name = d.text("予約の直接 Alloy リンク", "Reservation direct Alloy links")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales { "ja"; "en" }
+  vocabulary {
+    d.term("commerce.customer", "actor", "顧客", "Customer")
+    d.term("catalog.product", "entity", "商品", "Product")
+    d.term("commerce.reservation", "relation", "予約", "Reservation")
+  }
+  rules {
+    new d.Rule {
+      id = "RESERVATION-OWNER-CAPACITY"
+      kind = "invariant"
+      text = d.text("顧客は同時に一つだけ予約できる", "A customer has at most one active reservation")
+      terms { "commerce.customer"; "catalog.product"; "commerce.reservation" }
+      must {
+        d.clause("owner has at most one product", "顧客の同時予約は一つ", "A customer owns at most one product")
+      }
+      reviewStatus = "approved"
+    }
+  }
+}
+
+formalLinks: f.FormalLinks = new {
+  artifacts {
+    f.extension(
+      "reservation.owner-capacity.generated-alloy-extension",
+      "alloy",
+      "fixtures/alloy-behavior/ReservationExtension.als",
+      new Listing {
+        f.generated("fixtures/alloy-behavior/CommerceReservationGenerated.als", "CommerceReservationGenerated")
+      },
+      new Listing {
+        f.alloyCheck("reservation.owner-capacity.extension-check", "RESERVATION-OWNER-CAPACITY", "ExtensionOwnerCapacity", "violated")
+      },
+    )
+  }
+}

@@ -1,0 +1,42 @@
+import "intent-contract.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  id = "intent-contract-invalid-field-fixture"
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      processes = new {
+        new d.Process {
+          id = "request.approve"
+          input = "request.pending"
+          inputContract = new d.IntentDataContract {
+            fields {
+              new d.IntentField {
+                id = "amountCents"
+                type = "integer"
+                minimum = 100
+                maximum = 1
+              }
+            }
+          }
+          outcomes {
+            "request.approved"
+            "request.not-authorized"
+          }
+          requires {
+            "employee.manager-of"
+          }
+          constructs {
+            "request.approved"
+            "request.not-authorized"
+          }
+          transitions {
+            new d.ProcessTransition { from = "request.pending"; to = "request.approved" }
+            new d.ProcessTransition { from = "request.pending"; to = "request.not-authorized" }
+          }
+          text = base.model.patterns.intent.processes[0].text
+        }
+      }
+    }
+  }
+}

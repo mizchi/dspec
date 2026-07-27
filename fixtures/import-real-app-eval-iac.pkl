@@ -2,7 +2,7 @@ import "../dspec/Schema.pkl" as d
 
 realAppImportEval: d.RealAppImportEvaluation = new {
   id = "terraform-kubernetes-holdout"
-  appRoot = "fixtures/holdout-iac-app"
+  appRoot = "holdout-iac-app"
   expectedFacts {
     new d.RealAppImportFact { kind = "infrastructure-source"; id = "infra/k8s/payments.yaml" }
     new d.RealAppImportFact { kind = "infrastructure-source"; id = "infra/terraform-plan.json" }

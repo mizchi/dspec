@@ -6,15 +6,39 @@
 
 ## Review Summary
 
-- approvedRules: `69`
-- automatedCheckTargets: `326`
-- implementationRefs: `667`
-- projections: `1`
-- domainElements: `0`
+- approvedRules: `79`
+- automatedCheckTargets: `356`
+- implementationRefs: `739`
+- projections: `8`
+- domainElements: `21`
 - runtimeEvidenceRecords: `0`
-- assuranceTargets: `reference=326, executed=4, mutation-tested=1, bounded=0, proved=0`
+- assuranceTargets: `reference=356, executed=5, mutation-tested=1, bounded=0, proved=0`
 
 ## Projections
+
+### self-alloy
+
+- kind: `alloy`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/dspec-self.als`
+- freshness: `exact`
+
+### self-generated-manifest
+
+- kind: `generated-manifest`
+- source: `self`
+- matrix: `single`
+- output: `generated/manifest.json`
+- freshness: `exact`
+
+### self-lean
+
+- kind: `lean`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/DSpecSelf.lean`
+- freshness: `exact`
 
 ### self-markdown
 
@@ -22,6 +46,38 @@
 - source: `self`
 - matrix: `locales`
 - output: `generated/examples/{locale}/dspec.md`
+- freshness: `exact`
+
+### self-quickcheck
+
+- kind: `quickcheck`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/dspec-self.mjs`
+- freshness: `exact`
+
+### self-source-map
+
+- kind: `source-map`
+- source: `self`
+- matrix: `single`
+- output: `generated/source-map.json`
+- freshness: `exact`
+
+### self-tla
+
+- kind: `tla`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/DSpecSelf.tla`
+- freshness: `exact`
+
+### self-tla-cfg
+
+- kind: `tla-cfg`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/DSpecSelf.cfg`
 - freshness: `exact`
 
 ## Vocabulary
@@ -42,6 +98,10 @@
 - `artifact.compat_report` (entity): spec compatibility report
 - `artifact.counterexample_normalizer` (action): counterexample normalization
 - `artifact.coverage_oracle` (action): spec coverage oracle
+- `artifact.daily_drift_baseline` (entity): Daily drift approved baseline
+- `artifact.daily_drift_manifest` (entity): Daily drift target manifest
+- `artifact.daily_drift_packet` (entity): Daily drift packet
+- `artifact.daily_drift_workflow` (action): Daily drift review workflow
 - `artifact.data_governance_pattern` (entity): Data governance pattern
 - `artifact.db_model_pattern` (entity): DB model pattern
 - `artifact.db_schema_importer` (action): DB schema importer
@@ -50,6 +110,8 @@
 - `artifact.domain_preset_pack` (entity): domain preset pack
 - `artifact.drift_detector` (action): implementation drift detection
 - `artifact.drift_guard_evaluation` (action): false-positive and false-negative drift guard evaluation
+- `artifact.drift_review_evaluation` (entity): Drift review evaluation suite
+- `artifact.drift_review_skill` (entity): Drift review skill
 - `artifact.evidence_quality_summary` (entity): evidence quality and freshness summary
 - `artifact.failure_suggestion` (entity): failure suggestion
 - `artifact.formal_backend` (entity): formal-method backend format
@@ -61,6 +123,7 @@
 - `artifact.generator` (action): deterministic generator
 - `artifact.i18n_contract` (entity): i18n semantic contract
 - `artifact.impact_report` (entity): spec diff impact report
+- `artifact.implementation_conformance` (action): implementation conformance checker
 - `artifact.json_report` (entity): JSON report
 - `artifact.markdown` (entity): Markdown specification document
 - `artifact.nix_dev_shell` (entity): Nix devShell
@@ -90,7 +153,9 @@
 - `artifact.source_map` (entity): generated source map
 - `artifact.spec_change_review` (entity): spec change review
 - `artifact.spec_change_review_scaffold` (action): spec change review scaffold
+- `artifact.spec_query` (action): deterministic specification query
 - `artifact.spec_reading_eval` (entity): spec reading evaluation set
+- `artifact.specification_relationship_document` (entity): specification relationship document
 - `artifact.sql_query_oracle` (action): SQL query oracle
 - `backend.pkl` (entity): Pkl evaluator
 - `backend.pkl_mbt` (entity): mizchi/pkl-mbt
@@ -100,6 +165,7 @@
 - `concept.cloud_node` (entity): Cloud node
 - `concept.cloud_policy` (relation): Cloud policy
 - `concept.cloud_zone` (entity): Cloud network zone
+- `concept.construction_authority` (relation): construction authority
 - `concept.data_flow` (relation): Data flow
 - `concept.data_placement` (relation): Data placement
 - `concept.data_policy` (relation): Data governance policy
@@ -109,8 +175,24 @@
 - `concept.db_mapping` (relation): DB migration mapping
 - `concept.db_migration` (action): DB migration
 - `concept.db_transaction` (action): DB transaction
+- `concept.domain_aggregate` (entity): DDD aggregate
+- `concept.domain_codegen_ir` (entity): domain code-generation IR
+- `concept.domain_formalization` (relation): domain formalization link
+- `concept.domain_model` (entity): DDD domain model
 - `concept.expr_ast` (value): Clause.ast expression AST
 - `concept.inferon` (entity): inferon-like spec claim
+- `concept.intent_assurance_task` (entity): Intent assurance task
+- `concept.intent_capability` (entity): Intent capability
+- `concept.intent_claim` (entity): Intent claim
+- `concept.intent_field` (value): Intent contract field
+- `concept.intent_goal` (entity): Intent goal
+- `concept.intent_grpc_endpoint` (relation): Intent gRPC endpoint
+- `concept.intent_outcome` (entity): Intent outcome
+- `concept.intent_process` (action): Intent process
+- `concept.intent_protocol_test` (entity): Intent protocol test
+- `concept.intent_refinement` (relation): Intent refinement
+- `concept.intent_scenario` (entity): Intent scenario
+- `concept.intent_semantic_binding` (relation): Intent semantic binding
 - `concept.localized_text` (value): localized text
 - `concept.release_environment` (state): Release environment
 - `concept.release_gate` (relation): Release gate
@@ -131,10 +213,13 @@
 - `concept.runtime_signal` (relation): Runtime signal
 - `concept.runtime_slo` (relation): Runtime SLO
 - `concept.runtime_telemetry` (relation): Runtime telemetry
+- `concept.specification_relationship_graph` (relation): specification relationship graph
 - `concept.stable_id` (value): stable id
 - `concept.support` (relation): support relation
 - `concept.term` (entity): vocabulary term
 - `concept.verification_target` (relation): verification target
+- `state.intent-model-accepted` (state): Intent model accepted
+- `state.intent-model-authored` (state): Intent model authored
 
 ## Rules
 
@@ -342,7 +427,7 @@ App profiles bundle real-app dogfood verification gates as typed Pkl configurati
 
 #### Review
 
-- source: model.rules[22]
+- source: model.rules[25]
 - coverage: rule
 - automatedChecks: 41
 - implementationRefs: 112
@@ -452,6 +537,57 @@ The schema provides authoring shorthand for common spec elements
 - implementationRefs: 5
 - selector: DSPEC-AUTHORING-SHORTHAND.must[0]
 
+### DSPEC-BACKEND-PROJECTION-OWNERSHIP
+
+Checked-in backend artifacts are owned by kind-specific single projections and provenance
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.assurance_evidence_manifest`
+- term: `artifact.formal_backend`
+- term: `artifact.generated_manifest`
+- term: `artifact.generator`
+- term: `artifact.projection`
+- term: `artifact.quickcheck`
+- term: `artifact.source_map`
+- must: `projection.kind in {quickcheck, lean, alloy, tla, tla-cfg, source-map, generated-manifest} -> projection.matrix == single`
+- must: `generatedCheck(projection) detects missing + stale + unexpected owned artifacts without writing`
+- must: `impact(before, after).projectionArtifacts includes projectionKind + path + action for all materialized projections`
+- must: `assuranceEvidenceManifest is execution evidence and is created or verified outside static projection generation`
+- check: node test/cli.test.mjs#generates, checks, and repairs every deterministic backend projection kind [reference]
+- check: node test/projection-core.test.mjs#materializes localized and singleton backend projections with kind-specific emitters [reference]
+- check: node test/projection-core.test.mjs#rejects incompatible projection matrices and output extensions [reference]
+- check: node test/cli.test.mjs#keeps generated source map artifact in sync [reference]
+- check: node test/cli.test.mjs#keeps generated manifest artifact in sync [reference]
+- implementation: code src/core/projection.mjs#PROJECTION_EMITTERS
+- implementation: code src/core/projection.mjs#createProjectionSnapshot
+- implementation: code src/core/projection.mjs#validateProjectionContracts
+- implementation: code src/cli.mjs#projectionSnapshot
+- implementation: code src/cli.mjs#generatedProjectionReport
+- implementation: code src/cli.mjs#projectionImpactReport
+- implementation: code src/cli.mjs#createAssuranceEvidenceManifest
+- implementation: code dspec/Schema.pkl#Projection
+- implementation: doc generated/backends/dspec-self.mjs
+- implementation: doc generated/backends/DSpecSelf.lean
+- implementation: doc generated/backends/dspec-self.als
+- implementation: doc generated/backends/DSpecSelf.tla
+- implementation: doc generated/backends/DSpecSelf.cfg
+- implementation: doc generated/source-map.json
+- implementation: doc generated/manifest.json
+
+#### Review
+
+- source: model.rules[66]
+- coverage: rule
+- automatedChecks: 5
+- implementationRefs: 15
+- selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[0]
+- selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[1]
+- selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[2]
+- selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[3]
+
 ### DSPEC-BACKEND-REPORT-COMPAT-FIXTURES
 
 Backend verification and counterexample normalization report fixtures stay synchronized with stable projections
@@ -479,7 +615,7 @@ Backend verification and counterexample normalization report fixtures stay synch
 
 #### Review
 
-- source: model.rules[53]
+- source: model.rules[56]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 8
@@ -639,7 +775,7 @@ check, drift, coverage, domain-coverage, reconcile, reverse, and app-profile gat
 
 #### Review
 
-- source: model.rules[51]
+- source: model.rules[54]
 - coverage: rule
 - automatedChecks: 8
 - implementationRefs: 12
@@ -728,7 +864,7 @@ Cloud topology is authored as a typed pattern and projects boundary, policy, ten
 
 #### Review
 
-- source: model.rules[36]
+- source: model.rules[39]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -761,7 +897,7 @@ Generated backend failures are normalized back to source spec elements through s
 
 #### Review
 
-- source: model.rules[61]
+- source: model.rules[64]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 5
@@ -835,6 +971,66 @@ Rules requiring clause-level coverage have CheckTarget.covers entries for every 
 - covers: node test/cli.test.mjs#rejects clause-level coverage gaps -> must[0]
 - covers: node test/cli.test.mjs#rejects invalid clause coverage selectors -> must[1]
 
+### DSPEC-DAILY-DRIFT-REVIEW
+
+The daily batch builds a deterministic Intent/formal/implementation drift packet, while the LLM performs read-only review and candidate proposals only
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.daily_drift_baseline`
+- term: `artifact.daily_drift_manifest`
+- term: `artifact.daily_drift_packet`
+- term: `artifact.daily_drift_workflow`
+- term: `artifact.drift_review_evaluation`
+- term: `artifact.drift_review_skill`
+- term: `artifact.formal_backend`
+- term: `artifact.implementation_conformance`
+- term: `artifact.quickcheck`
+- must: `dailyDriftPacket.targets == manifest.targets; applicationTarget -> observed(appProfile|intentBindings|intentExercise); runtimeTarget -> observed(runtimeEvidence)`
+- must: `dailyLlmReview == readOnly(packet) -> candidate(change|query); candidate != authoritativeChange`
+- must: `dailyDriftPacket.reviewProjection == render(target.locales)`
+- must: `dailyDriftBaseline == explicitApproval(targetModel + intentGraph + specChangeReview); targetChange -> review`
+- must: `dailyLlmReview.evaluation == seeded(intentFormal + implementation + i18n + noDrift)`
+- must: `dailyDriftWorkflow.schedule == cron && packetArtifact == retained && llmJob == packetOnly`
+- must: `dailyDrift.elements == {goal.daily-drift-review, claim.daily-drift-review, assurance.daily-drift-review-property}`
+- check: node test/daily-drift-packet.test.mjs#exposes daily packet collection and approved baselines through dspec [reference]
+- check: node test/daily-drift-packet.test.mjs#requires an explicit approval to establish and then enforce a target baseline [reference]
+- check: node test/daily-drift-packet.test.mjs#writes typed target reports and declared implementation observations [reference]
+- check: node test/daily-drift-packet.test.mjs#retains every report when a target's deterministic drift checks fail [reference]
+- check: node test/daily-drift-packet.test.mjs#runs an application target's implementation observation gate [reference]
+- check: node test/daily-drift-packet.test.mjs#runs declared runtime evidence as a target observation gate [reference]
+- check: node test/daily-drift-packet.test.mjs#keeps the daily LLM drift review read-only and artifact-only [reference]
+- check: node test/daily-drift-review-eval.test.mjs#scores required drift findings, evidence paths, and no-drift restraint [reference]
+- implementation: code src/cli.mjs#runDailyDrift
+- implementation: code scripts/generate-daily-drift-packet.mjs#main
+- implementation: code scripts/generate-daily-drift-packet.mjs#evaluateSpecChangeReviews
+- implementation: code scripts/generate-daily-drift-packet.mjs#reviewPrompt
+- implementation: code scripts/evaluate-daily-drift-review.mjs#main
+- implementation: code scripts/evaluate-daily-drift-review.mjs#scoreCase
+- implementation: model dspec/DailyDrift.pkl
+- implementation: model examples/daily-drift-targets.pkl
+- implementation: model examples/daily-drift-baseline.json
+- implementation: model fixtures/daily-drift-review-eval-suite.json
+- implementation: runtime .github/workflows/daily-drift-review.yml
+- implementation: runtime skills/dspec-intent-formal-implementation-drift/SKILL.md
+- rationale: 定期巡回の入力を型付き target、承認 baseline、決定的な証跡 packet に限定すると、LLM の評価は再現可能な事実と候補の分類に集中できる。AppProfile 等の観測を宣言しない tooling-self target は任意実装の意味論的等価性を保証せず、自動是正もしない。
+
+#### Review
+
+- source: model.rules[20]
+- coverage: rule
+- automatedChecks: 8
+- implementationRefs: 12
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[0]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[1]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[2]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[3]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[4]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[5]
+- selector: DSPEC-DAILY-DRIFT-REVIEW.must[6]
+
 ### DSPEC-DATA-GOVERNANCE-PATTERN
 
 Data governance is authored as a typed pattern and projects encryption, deletion support, transfer-basis, and retention checks to backends
@@ -871,7 +1067,7 @@ Data governance is authored as a typed pattern and projects encryption, deletion
 
 #### Review
 
-- source: model.rules[37]
+- source: model.rules[40]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -906,7 +1102,7 @@ DB migration preservation declarations are covered by mapping witnesses
 
 #### Review
 
-- source: model.rules[34]
+- source: model.rules[37]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 5
@@ -940,7 +1136,7 @@ DB migration mappings are grounded in the preserve scope and source/target table
 
 #### Review
 
-- source: model.rules[35]
+- source: model.rules[38]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -973,7 +1169,7 @@ DB migrations are authored as a typed pattern and project preservation declarati
 
 #### Review
 
-- source: model.rules[33]
+- source: model.rules[36]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -1003,7 +1199,7 @@ DB schemas, transactions, and invariants are authored as a typed pattern and pro
 
 #### Review
 
-- source: model.rules[30]
+- source: model.rules[33]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 5
@@ -1028,7 +1224,7 @@ Existing SQL schemas are imported deterministically as typed DB model seeds
 
 #### Review
 
-- source: model.rules[31]
+- source: model.rules[34]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1073,7 +1269,7 @@ CLI examples in README/docs/Taskfile are grounded in the public CLI surface
 
 #### Review
 
-- source: model.rules[67]
+- source: model.rules[73]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 15
@@ -1098,6 +1294,7 @@ The dogfood task reruns self-spec, Runtime observation loop, and real app model 
 - term: `artifact.dogfood_task`
 - term: `artifact.domain_coverage_oracle`
 - term: `artifact.drift_detector`
+- term: `artifact.implementation_conformance`
 - term: `artifact.profile_scaffold_diff`
 - term: `artifact.real_app_importer`
 - term: `artifact.real_app_model`
@@ -1107,6 +1304,7 @@ The dogfood task reruns self-spec, Runtime observation loop, and real app model 
 - term: `artifact.runtime_evidence_verifier`
 - term: `artifact.spec_change_review`
 - term: `artifact.spec_change_review_scaffold`
+- term: `artifact.spec_query`
 - term: `artifact.spec_reading_eval`
 - must: `dogfoodTaskRunsSelfEvaluation(task)`
 - check: node test/cli.test.mjs#declares a dogfood task for self-spec evaluation [reference]
@@ -1114,7 +1312,7 @@ The dogfood task reruns self-spec, Runtime observation loop, and real app model 
 
 #### Review
 
-- source: model.rules[63]
+- source: model.rules[67]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1148,12 +1346,53 @@ Domain pattern elements are grounded in approved rules through stable ids
 
 #### Review
 
-- source: model.rules[18]
+- source: model.rules[21]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 7
 - selector: DSPEC-DOMAIN-COVERAGE-ORACLE.must[0]
 - selector: DSPEC-DOMAIN-COVERAGE-ORACLE.must[1]
+
+### DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN
+
+The DDD domain model explicitly links invariants to normative Rules and formal artifacts, then generates implementation scaffolds and a specification relationship document from language-neutral projections
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.specification_relationship_document`
+- term: `concept.domain_aggregate`
+- term: `concept.domain_codegen_ir`
+- term: `concept.domain_formalization`
+- term: `concept.domain_model`
+- term: `concept.specification_relationship_graph`
+- must: `domain.invariant.rule linkedTo domain.formalization.target`
+- must: `domain.codegenIR preserves entities valueObjects aggregates commands events fields`
+- must: `domain.relationshipGraph links declarations rules checks implementations formalizations`
+- check: node test/domain-core.test.mjs#compiles Entity, Value Object, Aggregate, Command, Event, and Invariant declarations into a language-neutral IR [reference]
+- check: node test/domain-core.test.mjs#projects DDD declarations, rules, evidence, and formalizations into one relationship graph [reference]
+- check: node test/domain-cli.test.mjs#generates a TypeScript domain scaffold at a caller-selected path [reference]
+- check: node test/domain-cli.test.mjs#tracks formalization artifact paths in the normal drift gate [reference]
+- check: node test/domain-cli.test.mjs#renders the specification relationship document from domain declarations [reference]
+- implementation: code dspec/schema/Claims.pkl#DomainModel
+- implementation: code dspec/schema/Claims.pkl#DomainFormalization
+- implementation: code src/core/domain.mjs#domainCodegenIr
+- implementation: code src/core/domain.mjs#domainRelationshipGraph
+- implementation: code src/core/domain.mjs#renderDomainRelationshipMarkdown
+- implementation: code src/core/domain.mjs#renderDomainTypescript
+- implementation: code src/cli.mjs#runDomainCommand
+- rationale: 生成するのは型・port・雛形と宣言済みの関係までとし、業務判断、永続化、または成果物との意味的等価性を推測しない。任意言語の renderer は Pkl を再解釈せず versioned IR を入力にする。
+
+#### Review
+
+- source: model.rules[78]
+- coverage: rule
+- automatedChecks: 5
+- implementationRefs: 7
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[0]
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[1]
+- selector: DSPEC-DOMAIN-MODEL-FORMALIZATION-AND-CODEGEN.must[2]
 
 ### DSPEC-DOMAIN-PRESET-PACK
 
@@ -1276,7 +1515,7 @@ Formal-method backend skeletons are generated deterministically from the spec mo
 
 #### Review
 
-- source: model.rules[25]
+- source: model.rules[28]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1299,7 +1538,7 @@ A human-readable Markdown document is generated deterministically from the spec 
 
 #### Review
 
-- source: model.rules[23]
+- source: model.rules[26]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1322,7 +1561,7 @@ A QuickCheck-style format with generators and shrinkers is generated determinist
 
 #### Review
 
-- source: model.rules[24]
+- source: model.rules[27]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1348,7 +1587,7 @@ Generators deterministically preserve Clause.ast in QuickCheck, TLA+, and Lean p
 
 #### Review
 
-- source: model.rules[29]
+- source: model.rules[32]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 3
@@ -1369,7 +1608,7 @@ Clause.expr is currently treated as an opaque string, not a typed AST
 
 #### Review
 
-- source: model.rules[69]
+- source: model.rules[75]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 1
@@ -1404,13 +1643,46 @@ Clause.ast is validated as a typed expression AST with per-operator semantics
 
 #### Review
 
-- source: model.rules[28]
+- source: model.rules[31]
 - coverage: rule
 - automatedChecks: 7
 - implementationRefs: 5
 - selector: DSPEC-EXPR-TYPED-AST.must[0]
 - selector: DSPEC-EXPR-TYPED-AST.must[1]
 - selector: DSPEC-EXPR-TYPED-AST.must[2]
+
+### DSPEC-FORMAL-SOURCE-OF-TRUTH
+
+Normative specifications live in a formal model, from which natural language, test oracles, and implementation conformance derive
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.formal_backend`
+- term: `artifact.implementation_conformance`
+- term: `artifact.markdown`
+- term: `artifact.quickcheck`
+- term: `concept.expr_ast`
+- term: `concept.localized_text`
+- term: `concept.localized_text`
+- must: `normativeMeaning == formalModel; localizedText == projection(formalModel)`
+- must: `formalModel -> derive(markdown + quickcheck + formalBackend); implementation -> passes(declaredOracle)`
+- must: `llm(changeRequest|question) -> candidate(formalModelEdit|structuredQuery) -> validate + review + evidence`
+- must: `formalSource.elements == {goal.formal-source-of-truth, claim.formal-source-of-truth, assurance.formal-source-of-truth-property, assurance.formal-source-of-truth-lean, binding.formal-source-of-truth}`
+- check: node test/cli.test.mjs#keeps product positioning and assurance boundaries explicit [reference]
+- rationale: Pkl は現在の型付き IR であり、Lean の意味論的証明は対応 fragment に限定される。形式 first は宣言で完了せず、対応範囲ごとの formal artifact と実装 oracle を段階的に増やす。
+
+#### Review
+
+- source: model.rules[19]
+- coverage: rule
+- automatedChecks: 1
+- implementationRefs: 0
+- selector: DSPEC-FORMAL-SOURCE-OF-TRUTH.must[0]
+- selector: DSPEC-FORMAL-SOURCE-OF-TRUTH.must[1]
+- selector: DSPEC-FORMAL-SOURCE-OF-TRUTH.must[2]
+- selector: DSPEC-FORMAL-SOURCE-OF-TRUTH.must[3]
 
 ### DSPEC-GENERATED-ALLOY-SYNTAX
 
@@ -1433,7 +1705,7 @@ Generated Alloy specifications have their syntax shape checked and are executed 
 
 #### Review
 
-- source: model.rules[49]
+- source: model.rules[52]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -1466,7 +1738,7 @@ The generated artifact manifest carries freshness hashes for primary generator o
 
 #### Review
 
-- source: model.rules[60]
+- source: model.rules[63]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 5
@@ -1491,7 +1763,7 @@ Generated backend checks fail for approved rules without support
 
 #### Review
 
-- source: model.rules[54]
+- source: model.rules[57]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1515,7 +1787,7 @@ Generated Lean specifications are compiled as a CI gate
 
 #### Review
 
-- source: model.rules[47]
+- source: model.rules[50]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1539,7 +1811,7 @@ Generated QuickCheck-style JS is executed as a CI gate
 
 #### Review
 
-- source: model.rules[46]
+- source: model.rules[49]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1570,7 +1842,7 @@ Generated TLA+ specifications have their syntax shape checked and are checked by
 
 #### Review
 
-- source: model.rules[48]
+- source: model.rules[51]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 5
@@ -1604,7 +1876,7 @@ render produces natural-language output for the requested locale
 
 ### DSPEC-I18N-SEMANTIC-DRIFT
 
-The i18n contract detects semantic drift across required locales and glossary labels
+The i18n contract and reviewed translation lock detect required-locale, glossary, source, and translation changes
 
 - kind: invariant
 - status: approved
@@ -1615,13 +1887,17 @@ The i18n contract detects semantic drift across required locales and glossary la
 - term: `concept.term`
 - must: `localizedText.labels.cover(requiredLocales)`
 - must: `i18n.glossary.labels == vocabulary.term.text.labels`
+- must: `translationLock.sourceHash == localizedText.primaryLocale.currentHash`
 - check: node test/cli.test.mjs#accepts i18n contract coverage [reference]
 - check: node test/cli.test.mjs#rejects missing required localized labels [reference]
 - check: node test/cli.test.mjs#rejects i18n glossary label drift [reference]
+- check: node test/translation-lock-core.test.mjs#reports source, translation, and glossary changes independently [reference]
 - implementation: code dspec/Schema.pkl#I18nContract
 - implementation: code dspec/Schema.pkl#I18nGlossaryEntry
 - implementation: code src/cli.mjs#validateI18nContract
 - implementation: code src/cli.mjs#walkLocalizedTexts
+- implementation: code src/core/translation-lock.mjs#translationCheck
+- implementation: code src/cli.mjs#runTranslation
 - implementation: model fixtures/i18n-contract.pkl
 - implementation: model fixtures/i18n-contract-missing-label.pkl
 - implementation: model fixtures/i18n-contract-glossary-mismatch.pkl
@@ -1630,10 +1906,153 @@ The i18n contract detects semantic drift across required locales and glossary la
 
 - source: model.rules[6]
 - coverage: rule
-- automatedChecks: 3
-- implementationRefs: 7
+- automatedChecks: 4
+- implementationRefs: 9
 - selector: DSPEC-I18N-SEMANTIC-DRIFT.must[0]
 - selector: DSPEC-I18N-SEMANTIC-DRIFT.must[1]
+- selector: DSPEC-I18N-SEMANTIC-DRIFT.must[2]
+
+### DSPEC-IMPLEMENTATION-CONFORMANCE
+
+Implementation conformance compares Clause.ast reference semantics and an implementation adapter over finite typed inputs
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.checker`
+- term: `artifact.counterexample_normalizer`
+- term: `artifact.implementation_conformance`
+- term: `concept.expr_ast`
+- must: `conformanceMatchesReference(target, input)`
+- must: `conformance.failure.shrinksTo(declaredFailingCase)`
+- must: `conformance.pass -> executedEvidence && conformance.pass != arbitraryImplementationProof`
+- check: node test/cli.test.mjs#runs typed implementation conformance against Clause.ast reference semantics [reference]
+- check: node test/cli.test.mjs#reports the smallest declared conformance counterexample [reference]
+- implementation: code dspec/Schema.pkl#ConformanceCatalog
+- implementation: code dspec/Schema.pkl#ConformanceTarget
+- implementation: code dspec/Schema.pkl#ConformanceCase
+- implementation: code dspec/Schema.pkl#ConformanceAtom
+- implementation: code src/core/conformance.mjs#conformanceReport
+- implementation: code src/core/conformance.mjs#validateConformanceModel
+- implementation: code src/cli.mjs#implementationConformanceInvoker
+- implementation: code src/cli.mjs#parseConformanceArgs
+- implementation: model fixtures/conformance-webapp.pkl
+- implementation: model fixtures/conformance-webapp-broken.pkl
+- implementation: model fixtures/conformance-webapp.mjs
+- implementation: model fixtures/conformance-webapp-broken.mjs
+- implementation: model docs/dogfooding-2026-07-15-conformance-query.md
+
+#### Review
+
+- source: model.rules[69]
+- coverage: rule
+- automatedChecks: 2
+- implementationRefs: 13
+- selector: DSPEC-IMPLEMENTATION-CONFORMANCE.must[0]
+- selector: DSPEC-IMPLEMENTATION-CONFORMANCE.must[1]
+- selector: DSPEC-IMPLEMENTATION-CONFORMANCE.must[2]
+
+### DSPEC-INTENT-CLOSED-CONSTRUCTION
+
+Intent processes construct outcomes only through declared capabilities and construction authorities
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `concept.construction_authority`
+- term: `concept.intent_capability`
+- term: `concept.intent_field`
+- term: `concept.intent_outcome`
+- term: `concept.intent_process`
+- term: `concept.intent_refinement`
+- term: `concept.intent_scenario`
+- must: `intent.process.outcomes == intent.process.constructs subsetOf constructionAuthority`
+- must: `intent.scenario.trace follows process.input and process.transition`
+- must: `intent.elements == {capability.pkl.typecheck, capability.dspec.validate, outcome.intent-model-accepted, outcome.intent-model-accepted/output/validationReport, intent.validate-model, intent.validate-model/input/modelId, intent.validate-model/input/modelVersion, intent.validate-model/intent.validate-model-cli, intent.validate-model-accepts, intent-model-acceptance}`
+- check: node test/cli.test.mjs#emits Intent processes into human and executable projections [reference]
+- implementation: code dspec/Schema.pkl#IntentModel
+- implementation: code dspec/Schema.pkl#Process
+- implementation: code dspec/Schema.pkl#ConstructionAuthority
+- implementation: code src/cli.mjs#validateIntentModel
+- implementation: code src/cli.mjs#intentProjection
+- rationale: Souther の closed construction path を、実装言語ではなく型付き Intent として取り込む。
+
+#### Review
+
+- source: model.rules[76]
+- coverage: rule
+- automatedChecks: 1
+- implementationRefs: 5
+- selector: DSPEC-INTENT-CLOSED-CONSTRUCTION.must[0]
+- selector: DSPEC-INTENT-CLOSED-CONSTRUCTION.must[1]
+- selector: DSPEC-INTENT-CLOSED-CONSTRUCTION.must[2]
+
+### DSPEC-INTENT-GOAL-GRAPH
+
+An Intent Goal is traceable through Claims, assurance tasks, and implementation semantic bindings
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `concept.intent_assurance_task`
+- term: `concept.intent_claim`
+- term: `concept.intent_goal`
+- term: `concept.intent_semantic_binding`
+- must: `intent.goal.claims -> intent.claim.processes + assuranceTask + semanticBinding`
+- must: `intent.goalGraph.elements == {goal.intent-model-validation, claim.intent-model-validation, assurance.intent-model-validation-property, assurance.intent-model-validation-alloy, binding.intent-model-validation}`
+- check: node test/cli.test.mjs#organizes natural-language Intent goals into claims, assurance tasks, and implementation bindings [reference]
+- implementation: code dspec/schema/Claims.pkl#IntentGoal
+- implementation: code dspec/schema/Claims.pkl#IntentClaim
+- implementation: code dspec/schema/Claims.pkl#IntentAssuranceTask
+- implementation: code dspec/schema/Claims.pkl#IntentSemanticBinding
+- implementation: code src/cli.mjs#validateIntentModel
+- implementation: code src/cli.mjs#intentGraphReport
+- rationale: 自然言語の目的を独立した正しさの根拠にせず、Claim ごとの決定的な検証・実装接続へ分解して drift を検出する。
+
+#### Review
+
+- source: model.rules[80]
+- coverage: rule
+- automatedChecks: 1
+- implementationRefs: 6
+- selector: DSPEC-INTENT-GOAL-GRAPH.must[0]
+- selector: DSPEC-INTENT-GOAL-GRAPH.must[1]
+
+### DSPEC-INTENT-PROTOCOL-TEST-ORACLE
+
+Reviewed Intent protocol tests generate transport-neutral oracles and verify finite cases against HTTP or gRPC implementations
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `concept.intent_field`
+- term: `concept.intent_grpc_endpoint`
+- term: `concept.intent_process`
+- term: `concept.intent_protocol_test`
+- term: `concept.intent_refinement`
+- must: `intent.protocolTest.canonicalFields decodedAndBoundTo refinement.implementationFields`
+- must: `intent.protocolTest.generatedTrace executedWith selectedTransport expectedStatusOrGrpcCode`
+- check: node test/protocol-tests-core.test.mjs#generates language-independent HTTP and gRPC test vectors from Intent contract cases [reference]
+- check: node test/protocol-tests-cli.test.mjs#intent test executes a generated HTTP protocol test [reference]
+- check: node test/protocol-tests-cli.test.mjs#intent test executes a generated gRPC protocol test through the runner contract [reference]
+- implementation: code dspec/schema/Claims.pkl#IntentProtocolTest
+- implementation: code dspec/schema/Claims.pkl#IntentGrpcEndpoint
+- implementation: code src/core/protocol-tests.mjs#protocolTestPlan
+- implementation: code src/cli.mjs#runIntentCommand
+- rationale: DSL は単一言語の生成テストではなく、型付き domain case を transport adapter に渡す可搬な oracle にする。有限ケースの成功は任意入力の実装等価性を証明しない。
+
+#### Review
+
+- source: model.rules[77]
+- coverage: rule
+- automatedChecks: 3
+- implementationRefs: 4
+- selector: DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[0]
+- selector: DSPEC-INTENT-PROTOCOL-TEST-ORACLE.must[1]
 
 ### DSPEC-JSON-REPORT-COMPAT-FIXTURES
 
@@ -1716,7 +2135,7 @@ JSON report compatibility fixtures stay synchronized with CLI output
 
 #### Review
 
-- source: model.rules[52]
+- source: model.rules[55]
 - coverage: rule
 - automatedChecks: 31
 - implementationRefs: 33
@@ -1866,7 +2285,7 @@ The Markdown review artifact for each locale is deterministically regenerated fr
 
 #### Review
 
-- source: model.rules[62]
+- source: model.rules[65]
 - coverage: rule
 - automatedChecks: 25
 - implementationRefs: 31
@@ -1900,7 +2319,7 @@ A future pkl-mbt implementation replaces the checker boundary while preserving s
 
 #### Review
 
-- source: model.rules[70]
+- source: model.rules[79]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0
@@ -1927,7 +2346,7 @@ CI runs portable fast and Nix formal gates in parallel
 
 #### Review
 
-- source: model.rules[66]
+- source: model.rules[72]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
@@ -1959,7 +2378,7 @@ The Nix devShell provides dspec runtime and formal backend tools
 
 #### Review
 
-- source: model.rules[26]
+- source: model.rules[29]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 4
@@ -1996,13 +2415,48 @@ The v0.1 package declares its public API, compatibility policy, and OIDC release
 
 #### Review
 
-- source: model.rules[27]
+- source: model.rules[30]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 9
 - selector: DSPEC-PACKAGE-RELEASE.must[0]
 - selector: DSPEC-PACKAGE-RELEASE.must[1]
 - selector: DSPEC-PACKAGE-RELEASE.must[2]
+
+### DSPEC-PRODUCT-POSITIONING
+
+dspec is a system specification and assurance toolkit centered on bidirectional drift detection, not a general theorem prover
+
+- kind: invariant
+- status: approved
+- priority: 100
+- requiredAssurances: reference, executed
+- term: `artifact.assurance_evidence_manifest`
+- term: `artifact.domain_coverage_oracle`
+- term: `artifact.formal_backend`
+- term: `artifact.real_app_importer`
+- term: `artifact.reconciliation_oracle`
+- term: `artifact.reverse_coverage_oracle`
+- term: `concept.clause_backend_support`
+- must: `primaryValue == reconcile(authoredModel, observedFacts) + reverseCoverage + domainCoverage`
+- must: `executableSpecification == deterministic(check + projection + reconciliation + evidence)`
+- must: `proved(selector) -> semanticBackendSupport(selector) && scope(selector) == selectedClause`
+- must: `importerPass != deploymentOrProductionReachabilityProof`
+- must: `importerCoverage == declaredAdapters`
+- check: node test/cli.test.mjs#keeps product positioning and assurance boundaries explicit [reference, executed]
+- assuranceEvidence: executed -> Taskfile.pkl#test
+
+#### Review
+
+- source: model.rules[18]
+- coverage: rule
+- automatedChecks: 1
+- implementationRefs: 0
+- selector: DSPEC-PRODUCT-POSITIONING.must[0]
+- selector: DSPEC-PRODUCT-POSITIONING.must[1]
+- selector: DSPEC-PRODUCT-POSITIONING.must[2]
+- selector: DSPEC-PRODUCT-POSITIONING.must[3]
+- selector: DSPEC-PRODUCT-POSITIONING.must[4]
 
 ### DSPEC-REAL-APP-DOGFOOD
 
@@ -2079,7 +2533,7 @@ The real app model passes check, drift, domain, reconcile, reverse, and profile 
 
 #### Review
 
-- source: model.rules[65]
+- source: model.rules[71]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 34
@@ -2159,7 +2613,7 @@ The real app importer deterministically extracts observed app facts from impleme
 
 #### Review
 
-- source: model.rules[19]
+- source: model.rules[22]
 - coverage: rule
 - automatedChecks: 12
 - implementationRefs: 26
@@ -2201,7 +2655,7 @@ Real app reconciliation detects drift between the authored model and observed ap
 
 #### Review
 
-- source: model.rules[20]
+- source: model.rules[23]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 9
@@ -2239,7 +2693,7 @@ Reverse coverage checks that observed app facts are represented in the authored 
 
 #### Review
 
-- source: model.rules[21]
+- source: model.rules[24]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 8
@@ -2284,7 +2738,7 @@ Release safety is authored as a typed pattern and projects health-gate, rollback
 
 #### Review
 
-- source: model.rules[38]
+- source: model.rules[41]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -2316,7 +2770,7 @@ Runtime collector fixtures are generated from Runtime safety specs as collectabl
 
 #### Review
 
-- source: model.rules[45]
+- source: model.rules[48]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 3
@@ -2350,7 +2804,7 @@ Runtime collector manifests are deterministically generated from Runtime safety 
 
 #### Review
 
-- source: model.rules[43]
+- source: model.rules[46]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 4
@@ -2390,7 +2844,7 @@ The runtime evidence collector reads provider API payloads from a manifest and a
 
 #### Review
 
-- source: model.rules[42]
+- source: model.rules[45]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 6
@@ -2427,7 +2881,7 @@ The runtime evidence importer normalizes provider-scoped JSON into deterministic
 
 #### Review
 
-- source: model.rules[41]
+- source: model.rules[44]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 4
@@ -2477,7 +2931,7 @@ Runtime evidence is authored as a typed pattern and projects SLO telemetry, aler
 
 #### Review
 
-- source: model.rules[40]
+- source: model.rules[43]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 12
@@ -2524,7 +2978,7 @@ The runtime evidence verifier detects drift between collector manifest expectati
 
 #### Review
 
-- source: model.rules[44]
+- source: model.rules[47]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 9
@@ -2570,7 +3024,7 @@ Runtime safety is authored as a typed pattern and projects SLO page-alert, teste
 
 #### Review
 
-- source: model.rules[39]
+- source: model.rules[42]
 - coverage: rule
 - automatedChecks: 5
 - implementationRefs: 9
@@ -2620,7 +3074,7 @@ dspec semantics is extended as support/inferability rather than truth
 
 #### Review
 
-- source: model.rules[68]
+- source: model.rules[74]
 - coverage: rule
 - automatedChecks: 0
 - implementationRefs: 0
@@ -2647,7 +3101,7 @@ Generated artifacts have a source map back to source spec elements
 
 #### Review
 
-- source: model.rules[55]
+- source: model.rules[58]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -2710,7 +3164,7 @@ Spec change review verifies check, impact, compatibility classification, and cov
 
 #### Review
 
-- source: model.rules[58]
+- source: model.rules[61]
 - coverage: rule
 - automatedChecks: 11
 - implementationRefs: 24
@@ -2783,7 +3237,7 @@ Spec change review scaffold deterministically generates a review Pkl draft from 
 
 #### Review
 
-- source: model.rules[59]
+- source: model.rules[62]
 - coverage: rule
 - automatedChecks: 14
 - implementationRefs: 20
@@ -2841,7 +3295,7 @@ The spec compatibility classifier classifies before/after specs as compatible, b
 
 #### Review
 
-- source: model.rules[57]
+- source: model.rules[60]
 - coverage: rule
 - automatedChecks: 4
 - implementationRefs: 18
@@ -2883,13 +3337,49 @@ Spec diff impact reports map changed terms, rules, and projections to affected g
 
 #### Review
 
-- source: model.rules[56]
+- source: model.rules[59]
 - coverage: rule
 - automatedChecks: 3
 - implementationRefs: 10
 - selector: DSPEC-SPEC-DIFF-IMPACT.must[0]
 - selector: DSPEC-SPEC-DIFF-IMPACT.must[1]
 - selector: DSPEC-SPEC-DIFF-IMPACT.must[2]
+
+### DSPEC-SPEC-QUERY
+
+Spec query provides locale-preserving deterministic model lookup and evidence verification
+
+- kind: obligation
+- status: approved
+- priority: 100
+- requiredAssurances: reference
+- term: `artifact.i18n_contract`
+- term: `artifact.renderer`
+- term: `artifact.spec_query`
+- term: `artifact.spec_reading_eval`
+- must: `query(rule|term|evidence|impact|clause, id).returns(localizedResult + resolvedEvidence)`
+- must: `query(clause.mustNot).classification == contradicted && query(missing).classification == not-supported`
+- must: `query.answer.classificationAndEvidence.mustMatch(deterministicQueryResult)`
+- check: node test/cli.test.mjs#queries localized claims and verifies an evidence-grounded answer [reference]
+- check: node test/cli.test.mjs#keeps unsupported query evidence from being accepted as an answer [reference]
+- implementation: code src/core/spec-query.mjs#querySpec
+- implementation: code src/core/spec-query.mjs#verifySpecAnswer
+- implementation: code src/core/spec-query.mjs#renderSpecQueryMarkdown
+- implementation: code src/cli.mjs#parseQueryArgs
+- implementation: code src/cli.mjs#queryAnswerReport
+- implementation: model fixtures/conformance-webapp.pkl
+- implementation: model fixtures/spec-query-answer-valid.json
+- implementation: model docs/semantic-model.md
+
+#### Review
+
+- source: model.rules[70]
+- coverage: rule
+- automatedChecks: 2
+- implementationRefs: 8
+- selector: DSPEC-SPEC-QUERY.must[0]
+- selector: DSPEC-SPEC-QUERY.must[1]
+- selector: DSPEC-SPEC-QUERY.must[2]
 
 ### DSPEC-SPEC-READING-EVAL
 
@@ -2998,7 +3488,7 @@ Spec reading eval scores whether claims are readable from the spec as a gold set
 
 #### Review
 
-- source: model.rules[64]
+- source: model.rules[68]
 - coverage: rule
 - automatedChecks: 24
 - implementationRefs: 49
@@ -3042,7 +3532,7 @@ SQL query catalogs are checked against the DB model to detect schema, tenant, an
 
 #### Review
 
-- source: model.rules[32]
+- source: model.rules[35]
 - coverage: rule
 - automatedChecks: 2
 - implementationRefs: 3
@@ -3113,11 +3603,192 @@ verify-generated can emit per-backend verification results as a JSON artifact
 
 #### Review
 
-- source: model.rules[50]
+- source: model.rules[53]
 - coverage: rule
 - automatedChecks: 1
 - implementationRefs: 2
 - selector: DSPEC-VERIFY-GENERATED-JSON.must[0]
+
+## Intent Model
+
+### Capability capability.dspec.validate
+
+Validate the Intent catalog
+
+- kind: `read`
+
+### Capability capability.pkl.typecheck
+
+Type-check the Pkl schema
+
+- kind: `external`
+
+### Outcome outcome.intent-model-accepted
+
+The Intent model is accepted
+
+- state: `state.intent-model-accepted`
+- output field: `validationReport` (identifier, required, pattern ^[a-z][a-z0-9-]*$)
+- output constraint: validationReportHasNoErrors(validationReport)
+
+### Process intent.validate-model
+
+Validate and accept an Intent model
+
+- input: `state.intent-model-authored`
+- input field: `modelId` (identifier, required)
+- input field: `modelVersion` (string, required, pattern ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9_.-]+)?$)
+- input constraint: intentModelHasVersion(modelId, modelVersion)
+- outcome: `outcome.intent-model-accepted`
+- requires: `capability.dspec.validate`
+- requires: `capability.pkl.typecheck`
+- constructs: `outcome.intent-model-accepted`
+- transition: `state.intent-model-authored` -> `state.intent-model-accepted`
+- refinement: `intent.validate-model-cli` (function)
+  - implementation: code src/cli.mjs#validateIntentModel
+  - input binding: `modelId` -> `model.id`
+  - input binding: `modelVersion` -> `model.version`
+  - output binding outcome.intent-model-accepted: `validationReport` -> `validation.report`
+
+### Construction Authority intent.validate-model-accepts
+
+- process: `intent.validate-model`
+- outcome: `outcome.intent-model-accepted`
+
+### Goal goal.daily-drift-review
+
+Detect and review Intent, formal, and implementation drift in a daily batch
+
+- priority: `20`
+- intent: `intent.validate-model`
+- claim: `claim.daily-drift-review`
+- non-goal: The LLM does not automatically edit Pkl, create PRs or issues, or update specification truth
+
+### Goal goal.formal-source-of-truth
+
+Use the formal model as the specification master and derive documents, oracles, and implementation conformance from it
+
+- priority: `0`
+- intent: `intent.validate-model`
+- claim: `claim.formal-source-of-truth`
+- non-goal: Does not make natural language alone normative or claim arbitrary programs are Lean-proved outside declared support
+
+### Goal goal.intent-model-validation
+
+Consistently accept typed Intent models
+
+- priority: `100`
+- intent: `intent.validate-model`
+- claim: `claim.intent-model-validation`
+- non-goal: Does not prove semantic equivalence between arbitrary implementations and the Intent model
+
+### Claim claim.daily-drift-review
+
+A daily deterministic packet collects per-target Intent, formal, and declared implementation-observation differences, while LLM review outputs proposals only
+
+- kind: `temporal`
+- process: `intent.validate-model`
+- implementation binding required: `false`
+
+### Claim claim.formal-source-of-truth
+
+Normative meaning is in the typed formal model; natural language is generated review text, and implementations pass generated or declared evidence-backed oracles
+
+- kind: `behavior`
+- process: `intent.validate-model`
+- implementation binding required: `true`
+
+### Claim claim.intent-model-validation
+
+A valid Intent model is checked including its Goal graph links
+
+- kind: `safety`
+- process: `intent.validate-model`
+- implementation binding required: `true`
+
+### Assurance Task assurance.daily-drift-review-property
+
+Check typed targets, implementation observations, baselines, retained failure evidence, the read-only LLM boundary, and the evaluation suite with Node tests
+
+- kind: `property-test`
+- backend: `node`
+- assurance: `executed`
+- claim: `claim.daily-drift-review`
+- target: test test/daily-drift-packet.test.mjs
+
+### Assurance Task assurance.formal-source-of-truth-lean
+
+Lean proves the self-model finite support-coverage invariant while semantic claims remain limited to supported fragments
+
+- kind: `formal-model`
+- backend: `lean`
+- assurance: `proved`
+- claim: `claim.formal-source-of-truth`
+- target: proof generated/backends/DSpecSelf.lean
+- assumption: Proof-level semantics are limited to declared Lean-supported Clause fragments
+
+### Assurance Task assurance.formal-source-of-truth-property
+
+Check the formal-first documentation boundary and self Goal graph with a Node test
+
+- kind: `property-test`
+- backend: `node`
+- assurance: `executed`
+- claim: `claim.formal-source-of-truth`
+- target: test test/cli.test.mjs
+
+### Assurance Task assurance.intent-model-validation-alloy
+
+Check Intent structure in bounded instances of the generated Alloy model
+
+- kind: `formal-model`
+- backend: `alloy`
+- assurance: `bounded`
+- claim: `claim.intent-model-validation`
+- target: model examples/dspec.pkl
+- assumption: Alloy checks bounded instances of generated relations
+
+### Assurance Task assurance.intent-model-validation-property
+
+Check positive and negative Goal graph fixtures with a Node property
+
+- kind: `property-test`
+- backend: `node`
+- assurance: `executed`
+- claim: `claim.intent-model-validation`
+- target: test test/cli.test.mjs
+
+### Semantic Binding binding.formal-source-of-truth
+
+Implementation observations record the formal model as specification authority
+
+- process: `intent.validate-model`
+- claim: `claim.formal-source-of-truth`
+- kind: `otel-attribute`
+- target: `dspec.spec.authority`
+- value: `formal-model`
+- required: `true`
+
+### Semantic Binding binding.intent-model-validation
+
+Implementation observations record the validation Process ID
+
+- process: `intent.validate-model`
+- claim: `claim.intent-model-validation`
+- kind: `otel-attribute`
+- target: `dspec.intent.process`
+- value: `intent.validate-model`
+- required: `true`
+
+### Scenario intent-model-acceptance
+
+Acceptance of a typed Intent model
+
+- kind: `success`
+- required: `true`
+- initialState: `state.intent-model-authored`
+- step[0]: `intent.validate-model` -> `outcome.intent-model-accepted`
+- expectedState: `state.intent-model-accepted`
 
 ## Decisions
 
@@ -3132,3 +3803,9 @@ verify-generated can emit per-backend verification results as a JSON artifact
 - date: 2026-07-07
 - summary: Keep Clause.expr as an opaque string until typed AST work
 - rationale: This avoids inventing a half-finished expression language before the stable model, i18n, and drift-detection boundaries are validated.
+
+### ADR-SELF-0003
+
+- date: 2026-07-16
+- summary: Position dspec as a specification, assurance, and bidirectional drift-detection toolkit rather than a general prover
+- rationale: The authoritative model, adapter observations, reverse coverage, and claim-scoped evidence are valuable independently of universal program proof, so product documentation and the self-model must state that boundary explicitly.

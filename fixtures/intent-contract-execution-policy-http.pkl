@@ -1,0 +1,23 @@
+import "intent-contract-execution-policy.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      processes = new {
+        (base.model.patterns.intent.processes[0]) {
+          refinements = new {
+            (base.model.patterns.intent.processes[0].refinements[0]) {
+              kind = "http-route"
+              http = new d.IntentHttpEndpoint {
+                method = "POST"
+                path = "/requests/approve"
+                expectedStatus = 200
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

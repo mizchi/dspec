@@ -17,13 +17,17 @@
     "name": "dspec/markdown",
     "version": "1.0"
   },
-  "generatedAt": "2026-07-15T00:00:00.000Z",
+  "generatedAt": "2026-07-16T08:56:45.350Z",
   "model": {
-    "digest": "sha256:61ca80a851331610b6d68f3a5e77268a4f3350ec17cc593e9e56b01794e501cd",
+    "digest": "sha256:4468350bee001e568686396d4a4aea3f053fc54ce3f374c6315399316180e717",
     "id": "sample-webapp-2026",
     "version": "0.1.0"
   },
   "projection": {
+    "emitter": {
+      "name": "dspec/markdown",
+      "version": "1.0"
+    },
     "freshness": "exact",
     "id": "sample-webapp-markdown",
     "kind": "markdown",

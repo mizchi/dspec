@@ -1,0 +1,20 @@
+import "../dspec/DailyDrift.pkl" as daily
+
+manifest: daily.Manifest = new {
+  id = "daily-drift-underobserved-webapp"
+  targets {
+    new daily.Target {
+      id = "underobserved-webapp"
+      kind = "application"
+      modelPath = "examples/sample-webapp-2026.pkl"
+      coreGates {
+        "check"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+      appProfile = "fixtures/sample-webapp-profile-underdeclared-categories.pkl"
+    }
+  }
+}

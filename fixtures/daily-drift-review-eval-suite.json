@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "id": "daily-drift-review-core",
+  "cases": [
+    {
+      "id": "intent-formal-contradiction",
+      "expectedFindings": [
+        {
+          "id": "intent-formal-contradiction",
+          "classification": "intent-to-formal",
+          "evidence": ["targets/orders/reports/intent-graph.json"]
+        }
+      ]
+    },
+    {
+      "id": "implementation-observation-missing",
+      "expectedFindings": [
+        {
+          "id": "implementation-observation-missing",
+          "classification": "formal-to-implementation",
+          "evidence": ["targets/orders/reports/app-profile.json"]
+        }
+      ]
+    },
+    {
+      "id": "localized-meaning-conflict",
+      "expectedFindings": [
+        {
+          "id": "localized-meaning-conflict",
+          "classification": "intent-to-formal",
+          "evidence": ["targets/orders/reports/intent-graph.json", "targets/orders/review/render-ja.md"]
+        }
+      ]
+    },
+    {
+      "id": "no-drift",
+      "expectedFindings": []
+    }
+  ]
+}

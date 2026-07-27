@@ -1,0 +1,109 @@
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = new {
+  id = "commerce-domain-fixture"
+  name = text("商取引ドメイン fixture", "Commerce domain fixture")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales { "ja"; "en" }
+  rules {
+    new d.Rule {
+      id = "ORDER-TOTAL-NON-NEGATIVE"
+      kind = "invariant"
+      text = text("注文合計は負にならない", "An order total is never negative")
+      reviewStatus = "draft"
+    }
+  }
+  patterns = new d.PatternCatalog {
+    domain = new d.DomainModel {
+      enums {
+        new d.DomainEnum {
+          id = "order-status"
+          values { "draft"; "confirmed" }
+        }
+      }
+      valueObjects {
+        new d.DomainValueObject {
+          id = "money"
+          fields {
+            new d.DomainField { id = "amount"; type = "decimal" }
+            new d.DomainField { id = "currency"; type = "string" }
+          }
+        }
+      }
+      entities {
+        new d.DomainEntity {
+          id = "purchase-order"
+          identity = "orderId"
+          fields {
+            new d.DomainField { id = "orderId"; type = "uuid" }
+            new d.DomainField { id = "status"; type = "enum"; target = "order-status" }
+            new d.DomainField { id = "total"; type = "value-object"; target = "money" }
+          }
+        }
+      }
+      aggregates {
+        new d.DomainAggregate {
+          id = "purchase-order"
+          root = "purchase-order"
+          members { "purchase-order" }
+        }
+      }
+      commands {
+        new d.DomainCommand {
+          id = "create-purchase-order"
+          aggregate = "purchase-order"
+          fields {
+            new d.DomainField { id = "orderId"; type = "uuid" }
+            new d.DomainField { id = "total"; type = "value-object"; target = "money" }
+          }
+        }
+      }
+      events {
+        new d.DomainEvent {
+          id = "purchase-order-created"
+          aggregate = "purchase-order"
+          fields {
+            new d.DomainField { id = "orderId"; type = "uuid" }
+          }
+        }
+      }
+      invariants {
+        new d.DomainInvariant {
+          id = "order-total-non-negative"
+          aggregate = "purchase-order"
+          rule = "ORDER-TOTAL-NON-NEGATIVE"
+        }
+      }
+      formalizations {
+        new d.DomainFormalization {
+          id = "order-total-alloy"
+          rule = "ORDER-TOTAL-NON-NEGATIVE"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = new d.ImplementationRef {
+            kind = "model"
+            path = "fixtures/alloy-behavior-reservation.pkl"
+          }
+          assumptions { "The bounded model abstracts an order to its reservation relation." }
+          actionMappings {
+            new d.DomainFormalizationAction {
+              action = "create"
+              command = "create-purchase-order"
+              events { "purchase-order-created" }
+            }
+          }
+          checks { "order-total-alloy.holds" }
+        }
+      }
+    }
+  }
+}

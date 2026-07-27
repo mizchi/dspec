@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "bytes": 1351,
+      "digest": "sha256:0fd2e6b6b40f435f2367e04a76794e516cf39ed7a11316ffec034d748272f7ba",
+      "locale": null,
+      "path": "generated/backends/DSpecSelf.cfg"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/tla-cfg",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-22T20:02:15.210Z",
+  "model": {
+    "digest": "sha256:9a959232e50b6618bce39454438edac9225424a0a1c2d040342cfe218b71c434",
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "emitter": {
+      "name": "dspec/tla-cfg",
+      "version": "1.0"
+    },
+    "freshness": "exact",
+    "id": "self-tla-cfg",
+    "kind": "tla-cfg",
+    "matrix": "single",
+    "output": "generated/backends/DSpecSelf.cfg",
+    "provenance": "generated/backends/dspec-self.tla-cfg.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

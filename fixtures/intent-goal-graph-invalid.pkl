@@ -1,0 +1,39 @@
+import "intent-goal-graph.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      goals {
+        new d.IntentGoal {
+          id = "request-unverified-goal"
+          intents {
+            "request.approve"
+          }
+          claims {
+            "request.approve-unverified"
+          }
+          text = text("未検証の申請要件", "Unverified request requirement")
+        }
+      }
+      claims {
+        new d.IntentClaim {
+          id = "request.approve-unverified"
+          kind = "behavior"
+          processes {
+            "request.approve"
+          }
+          text = text("申請を記録する", "Records a request")
+        }
+      }
+    }
+  }
+}

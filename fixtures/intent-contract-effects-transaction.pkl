@@ -1,0 +1,107 @@
+import "intent-contract.pkl" as base
+import "../dspec/Schema.pkl" as d
+
+local function text(ja: String, en: String): d.LocalizedText = new {
+  default = ja
+  labels {
+    ["ja"] = ja
+    ["en"] = en
+  }
+}
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    db = new d.DbModel {
+      tables {
+        new d.DbTable {
+          id = "requests"
+          primaryKey { "id" }
+          columns {
+            new d.DbColumn { id = "id"; type = "id" }
+            new d.DbColumn { id = "status"; type = "string" }
+          }
+        }
+      }
+      transactions {
+        new d.DbTransaction {
+          id = "approve-request"
+          text = text("申請を承認する", "Approve a request")
+          reads { "requests" }
+          writes { "requests" }
+        }
+      }
+    }
+    intent = (base.model.patterns.intent) {
+      capabilities = new {
+        (base.model.patterns.intent.capabilities[0])
+        new d.Capability {
+          id = "notification.send"
+          kind = "write"
+          text = text("承認通知を送る", "Send approval notification")
+        }
+      }
+      outcomes = new {
+        (base.model.patterns.intent.outcomes[0]) {
+          effects {
+            new d.IntentEffect {
+              id = "request.approved.notification"
+              capability = "notification.send"
+              outputContract = new d.IntentDataContract {
+                fields {
+                  new d.IntentField {
+                    id = "approvalId"
+                    type = "identifier"
+                  }
+                }
+              }
+              text = text("承認通知が送信される", "Approval notification is sent")
+            }
+          }
+        }
+        (base.model.patterns.intent.outcomes[1])
+      }
+      processes = new {
+        (base.model.patterns.intent.processes[0]) {
+          effects { "notification.send" }
+          refinements = new {
+            (base.model.patterns.intent.processes[0].refinements[0]) {
+              kind = "transaction"
+              transaction = new d.IntentTransactionEndpoint {
+                dbTransaction = "approve-request"
+                isolation = "serializable"
+              }
+              outcomeBindings = new {
+                new d.IntentOutcomeBinding {
+                  outcome = "request.approved"
+                  fields {
+                    new d.IntentFieldBinding { contractField = "approvalId"; implementationField = "approval_id" }
+                    new d.IntentFieldBinding { contractField = "notified"; implementationField = "notified" }
+                  }
+                  effectBindings {
+                    new d.IntentEffectBinding {
+                      effect = "request.approved.notification"
+                      fields {
+                        new d.IntentFieldBinding { contractField = "approvalId"; implementationField = "approval_id" }
+                      }
+                    }
+                  }
+                }
+                new d.IntentOutcomeBinding {
+                  outcome = "request.not-authorized"
+                  fields {
+                    new d.IntentFieldBinding { contractField = "reason"; implementationField = "reason" }
+                  }
+                }
+              }
+              implementation = new d.ImplementationRef {
+                kind = "test"
+                path = "fixtures/intent-transaction-implementation.mjs"
+                symbol = "approveRequestTransaction"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

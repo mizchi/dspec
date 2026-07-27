@@ -1,0 +1,20 @@
+import "../dspec/DailyDrift.pkl" as daily
+
+manifest: daily.Manifest = new {
+  id = "daily-drift-missing-model"
+  targets {
+    new daily.Target {
+      id = "missing-model"
+      kind = "tooling-self"
+      modelPath = "fixtures/no-such-daily-drift-model.pkl"
+      coreGates {
+        "check"
+        "drift"
+      }
+      locales {
+        "en"
+        "ja"
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+import "../dspec/Schema.pkl" as d
+import "intent-contract.pkl" as base
+
+model: d.Model = (base.model) {
+  patterns = new d.PatternCatalog {
+    intent = (base.model.patterns.intent) {
+      accessPolicies = new {
+        new d.IntentAccessPolicy {
+          id = "request.approve-manager-allow-a"
+          process = "request.approve"
+          subject = "role.manager"
+          decision = "allow"
+          priority = 100
+        }
+        new d.IntentAccessPolicy {
+          id = "request.approve-manager-deny-b"
+          process = "request.approve"
+          subject = "role.manager"
+          decision = "deny"
+          priority = 100
+        }
+      }
+    }
+  }
+}

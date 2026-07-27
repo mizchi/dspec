@@ -1,0 +1,77 @@
+import "../examples/tetris.pkl" as base
+import "../dspec/Schema.pkl" as d
+import "../dspec/Behavior.pkl" as b
+
+/// This slice models the successful branch of the first spawn. It deliberately
+/// abstracts the selected tetromino and its coordinates: `spawnOpen = 1`
+/// means that the chosen spawn footprint does not intersect locked cells.
+model: d.Model = base.model
+
+behavior: b.Behavior = new {
+  id = "tetris.start-game.behavior-v1"
+  terms { "tetris.active-piece"; "tetris.board"; "tetris.tetromino" }
+  states {
+    b.state("game-exists", 0)
+    b.state("game-status", 0)
+    b.state("active-piece-count", 0)
+  }
+  actions {
+    new b.Action {
+      id = "startGame"
+      inputs { b.natInput("spawn-open", new Listing { 0; 1 }) }
+      requires = b.allOf(new Listing {
+        b.equals(b.current("game-exists"), b.number(0))
+        b.equals(b.input("spawn-open"), b.number(1))
+      })
+      ensures {
+        b.set("game-exists", b.number(1))
+        b.set("game-status", b.number(0))
+        b.set("active-piece-count", b.number(1))
+      }
+    }
+  }
+  invariants {
+    new b.Invariant {
+      id = "an-active-piece-requires-an-existing-game"
+      rule = "TETRIS-START-GAME"
+      constraint = b.ifThen(
+        b.equals(b.current("game-exists"), b.number(0)),
+        b.equals(b.current("active-piece-count"), b.number(0)),
+      )
+    }
+    new b.Invariant {
+      id = "start-creates-at-most-one-active-piece"
+      rule = "TETRIS-START-GAME"
+      constraint = b.atMost(b.current("active-piece-count"), b.number(1))
+    }
+  }
+  reachability {
+    new b.ReachabilityCheck {
+      id = "tetris.start-game.started.reachable"
+      rule = "TETRIS-START-GAME"
+      maxSteps = 1
+      expectation = "reachable"
+      target = b.allOf(new Listing {
+        b.equals(b.current("game-exists"), b.number(1))
+        b.equals(b.current("game-status"), b.number(0))
+        b.equals(b.current("active-piece-count"), b.number(1))
+      })
+    }
+  }
+  temporal {
+    new b.TemporalCheck {
+      id = "tetris.start-game.eventually-started"
+      rule = "TETRIS-START-GAME"
+      scope = "path"
+      path { new b.ActionStep { action = "startGame"; input = new { ["spawn-open"] = 1 } } }
+      formula = b.eventually(b.satisfies(b.equals(b.current("active-piece-count"), b.number(1))))
+      expectation = "holds"
+    }
+  }
+  grounding = new b.Grounding {
+    maxSteps = 1
+    actions {
+      new b.ActionGrounding { action = "startGame"; implementation = d.codeRef("fixtures/tetris-lifecycle-implementation.mjs", "startGame") }
+    }
+  }
+}

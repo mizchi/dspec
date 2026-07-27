@@ -1,0 +1,92 @@
+import "../dspec/Schema.pkl" as d
+import "../dspec/Behavior.pkl" as b
+
+/// The domain wording remains the specification master for readers.
+model: d.Model = new {
+  id = "commerce-purchase-behavior"
+  name = d.text("購入の振る舞い仕様", "Purchase behavior specification")
+  version = "0.1.0"
+  primaryLocale = "ja"
+  locales { "ja"; "en" }
+  vocabulary {
+    d.term("commerce.purchase", "action", "購入", "Purchase")
+    d.term("inventory.available-stock", "quantity", "利用可能在庫", "Available stock")
+  }
+  rules {
+    new d.Rule {
+      id = "PURCHASE-CAPACITY"
+      kind = "invariant"
+      text = d.text("購入で在庫は初期在庫を超えない", "Purchases never exceed initial stock")
+      terms { "commerce.purchase"; "inventory.available-stock" }
+      must {
+        d.clause("available(after) <= available(initial)", "在庫は初期在庫以下", "Stock remains within initial capacity")
+      }
+      reviewStatus = "approved"
+    }
+  }
+}
+
+/// This is the behavior DSL. It does not mention Lean values, constructors,
+/// tactics, or expression-node kinds.
+behavior: b.Behavior = new {
+  id = "commerce.purchase.behavior-v1"
+  terms { "commerce.purchase"; "inventory.available-stock" }
+  states {
+    b.state("available", 10)
+  }
+  actions {
+    new b.Action {
+      id = "purchase"
+      inputs {
+        b.natInput("quantity", new Listing { 0; 10 })
+      }
+      requires = b.atMost(b.input("quantity"), b.current("available"))
+      ensures {
+        b.set("available", b.minus(b.current("available"), b.input("quantity")))
+      }
+    }
+  }
+  invariants {
+    new b.Invariant {
+      id = "purchase.capacity"
+      rule = "PURCHASE-CAPACITY"
+      constraint = b.atMost(b.current("available"), b.initial("available"))
+    }
+  }
+  reachability {
+    new b.ReachabilityCheck {
+      id = "purchase.empty.reachable"
+      rule = "PURCHASE-CAPACITY"
+      maxSteps = 1
+      expectation = "reachable"
+      target = b.equals(b.current("available"), b.number(0))
+    }
+  }
+  temporal {
+    new b.TemporalCheck {
+      id = "purchase.capacity-always.holds"
+      rule = "PURCHASE-CAPACITY"
+      scope = "allPaths"
+      maxSteps = 2
+      formula = b.always(b.satisfies(b.atMost(b.current("available"), b.initial("available"))))
+      expectation = "holds"
+    }
+    new b.TemporalCheck {
+      id = "purchase.eventually-empty.violated"
+      rule = "PURCHASE-CAPACITY"
+      scope = "allPaths"
+      maxSteps = 2
+      formula = b.eventually(b.satisfies(b.equals(b.current("available"), b.number(0))))
+      expectation = "violated"
+    }
+  }
+  grounding = new b.Grounding {
+    maxSteps = 2
+    actions {
+      new b.ActionGrounding {
+        action = "purchase"
+        implementation = d.codeRef("fixtures/behavior-purchase-implementation.mjs", "purchase")
+      }
+    }
+  }
+}

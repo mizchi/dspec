@@ -1,0 +1,15 @@
+import "../dspec/Schema.pkl" as d
+
+review: d.SpecChangeReview = new {
+  id = "daily-drift-webapp-review"
+  beforeModelPath = "../examples/sample-webapp-2026.pkl"
+  afterModelPath = "../examples/sample-webapp-2026.pkl"
+  requiredSteps {
+    "check-before"
+    "check-after"
+    "impact"
+    "compatibility"
+    "breaking-policy"
+    "evidence-ref"
+  }
+}

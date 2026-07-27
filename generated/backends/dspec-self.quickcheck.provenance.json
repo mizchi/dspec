@@ -1,0 +1,34 @@
+{
+  "artifacts": [
+    {
+      "bytes": 222883,
+      "digest": "sha256:928fea139f9c675a025b782fea8d3239a7d35e160563b18fc9e575aa07464b8f",
+      "locale": null,
+      "path": "generated/backends/dspec-self.mjs"
+    }
+  ],
+  "emitter": {
+    "name": "dspec/quickcheck",
+    "version": "1.0"
+  },
+  "generatedAt": "2026-07-22T20:02:15.210Z",
+  "model": {
+    "digest": "sha256:9a959232e50b6618bce39454438edac9225424a0a1c2d040342cfe218b71c434",
+    "id": "dspec-self",
+    "version": "0.1.0"
+  },
+  "projection": {
+    "emitter": {
+      "name": "dspec/quickcheck",
+      "version": "1.0"
+    },
+    "freshness": "exact",
+    "id": "self-quickcheck",
+    "kind": "quickcheck",
+    "matrix": "single",
+    "output": "generated/backends/dspec-self.mjs",
+    "provenance": "generated/backends/dspec-self.quickcheck.provenance.json",
+    "source": "self"
+  },
+  "schemaVersion": "1.0"
+}

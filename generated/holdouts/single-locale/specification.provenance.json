@@ -13,11 +13,15 @@
   },
   "generatedAt": "2026-07-15T00:00:00.000Z",
   "model": {
-    "digest": "sha256:1562f3e491daa498ac974d3e738a695d6059dbb4ea9f720413003092abee01df",
+    "digest": "sha256:12359425f9760bc19c6e74f11dcdab581849a894142937a2e933b15d698c8bc7",
     "id": "projection-holdout-single-locale",
     "version": "0.1.0"
   },
   "projection": {
+    "emitter": {
+      "name": "dspec/markdown",
+      "version": "1.0"
+    },
     "freshness": "exact",
     "id": "single-locale-review",
     "kind": "markdown",

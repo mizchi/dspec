@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import {
+  diffRealAppImportFacts,
   evaluateRealAppImport,
   importInfrastructureDocuments,
   realAppImportFacts,
@@ -60,6 +61,30 @@ test("compares normalized app facts with a typed gold set", () => {
   assert.equal(report.status, "pass");
   assert.equal(report.summary.precision, 1);
   assert.equal(report.summary.recall, 1);
+});
+
+test("diffs imported facts deterministically for recorded infrastructure changes", () => {
+  const delta = diffRealAppImportFacts(
+    [
+      { kind: "infrastructure-resource", id: "production/db" },
+      { kind: "infrastructure-environment", id: "production" },
+    ],
+    [
+      { kind: "infrastructure-resource", id: "production/db" },
+      { kind: "infrastructure-resource", id: "staging/db" },
+      { kind: "infrastructure-environment", id: "staging" },
+    ],
+  );
+
+  assert.deepEqual(delta, {
+    added: [
+      { kind: "infrastructure-environment", id: "staging" },
+      { kind: "infrastructure-resource", id: "staging/db" },
+    ],
+    removed: [
+      { kind: "infrastructure-environment", id: "production" },
+    ],
+  });
 });
 
 test("projects infrastructure facts conservatively", () => {
