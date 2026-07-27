@@ -695,6 +695,7 @@ test("fails semantic-core verification when a SAT expectation has a Boolean witn
   assert.equal(report.tseitin.status, "fail");
   assert.deepEqual(report.errors, [
     "SAT check failed: purchase.capacity.requested-out-of-stock.unsat",
+    ...(!hasLean ? [`Lean executable not found: ${leanCommand}`] : []),
   ]);
 });
 
@@ -709,6 +710,7 @@ test("fails semantic-core verification when a bounded reachability claim has a w
   assert.equal(report.boundedReachability.status, "fail");
   assert.deepEqual(report.errors, [
     "bounded reachability check failed: purchase.stock-empty.reachable",
+    ...(!hasLean ? [`Lean executable not found: ${leanCommand}`] : []),
   ]);
 });
 

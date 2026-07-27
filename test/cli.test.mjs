@@ -2811,7 +2811,7 @@ profile: d.AppProfile = new {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: dspec-self/);
-    assert.match(result.stdout, /130 terms, 79 rules/);
+    assert.match(result.stdout, /138 terms, 81 rules/);
   });
 
   it("emits check JSON reports", () => {
@@ -2821,10 +2821,10 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.summary.terms, 130);
+    assert.equal(report.summary.terms, 138);
     assert.equal(report.summary.projections, 8);
-    assert.equal(report.summary.rules, 79);
-    assert.deepEqual(report.assurance.rules, { satisfied: 77, total: 77 });
+    assert.equal(report.summary.rules, 81);
+    assert.deepEqual(report.assurance.rules, { satisfied: 79, total: 79 });
     assert.equal(report.assurance.targets.byKind.executed, 5);
     assert.equal(report.assurance.targets.byKind["mutation-tested"], 1);
     assert.equal(report.assurance.targets.byKind.bounded, 0);
@@ -5257,7 +5257,11 @@ profile: d.AppProfile = new {
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: intent-process-fixture generated quickcheck/);
-    assert.match(result.stdout, /ok: intent-process-fixture generated lean/);
+    if (hasLean) {
+      assert.match(result.stdout, /ok: intent-process-fixture generated lean/);
+    } else {
+      assert.doesNotMatch(result.stdout, /generated lean/);
+    }
   });
 
   it("runs generated QuickCheck output", () => {
@@ -5835,8 +5839,8 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 1104);
-    assert.deepEqual(report.assurance.rules, { satisfied: 77, total: 77 });
+    assert.equal(report.references, 1126);
+    assert.deepEqual(report.assurance.rules, { satisfied: 79, total: 79 });
     assert.deepEqual(report.errors, []);
   });
 
@@ -5855,7 +5859,7 @@ profile: d.AppProfile = new {
     const result = run(["coverage", "examples/dspec.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: dspec-self coverage \(77\/77 approved rules\)/);
+    assert.match(result.stdout, /ok: dspec-self coverage \(79\/79 approved rules\)/);
   });
 
   it("reports domain model element coverage", () => {
@@ -5909,10 +5913,10 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.covered, 77);
-    assert.equal(report.total, 77);
+    assert.equal(report.covered, 79);
+    assert.equal(report.total, 79);
     assert.deepEqual(report.assurance.requirements, {
-      reference: 77,
+      reference: 79,
       executed: 5,
       "mutation-tested": 1,
       bounded: 0,

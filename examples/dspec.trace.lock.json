@@ -1254,17 +1254,17 @@
           "key": "node:test/cli.test.mjs#checks app profiles as a dogfood bundle"
         },
         {
-          "contentHash": "sha256:483476367ff472faf19e44d7c248eea6d592da33bffd75b3d9198f77328410a0",
+          "contentHash": "sha256:f8ebca6359fe1315099353ef4a09d87467e2d83db568bc025742e867b143fcb3",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#emits check JSON reports"
         },
         {
-          "contentHash": "sha256:42011a4f3cfa249a50284d906bcc8edb7e7033e6a94179e1fa61933eed3c8a9c",
+          "contentHash": "sha256:3f0fb4012c2b0ffae64e52ef584bdca53a5dafb23ee1d2f333d039825340874c",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#emits coverage JSON reports"
         },
         {
-          "contentHash": "sha256:5af7eb19f3ac5c765054e939b66713f37aab73e4c737a997875314f196a67429",
+          "contentHash": "sha256:d017623fde9b9b1ad4bb0f04b23d39986a01bdae97d4936790f416f9bcdb24b4",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#emits drift JSON reports"
         },
@@ -1524,7 +1524,7 @@
           "key": "node:test/cli.test.mjs#rejects approved rules without load-bearing checks in coverage"
         },
         {
-          "contentHash": "sha256:c93d3a0c5a4dbba03bddb168a1feaa1480f3d99c4d9fec2d093c5d67cfea2e34",
+          "contentHash": "sha256:bc28810ceeea6cdda3dea67715104af5359850c0e83bb6b0042c314dc57672c5",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#reports coverage for dspec's self model"
         }
@@ -2700,7 +2700,7 @@
           "key": "node:test/cli.test.mjs#runs generated Alloy through analyzer when available"
         },
         {
-          "contentHash": "sha256:58b9c701ba1562a2fc63107694c608ddcc6460d81f52e9e9b1ea0c74b05d34c8",
+          "contentHash": "sha256:7c30788de597130769f7546e26fa87e732768ac1a1daf588f8bf7b670349ffe2",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#validates generated Alloy syntax"
         }
