@@ -59,4 +59,40 @@ model: d.Model = new {
       }
     }
   }
+
+  patterns = new {
+    domain = new d.DomainModel {
+      formalizations {
+        new d.DomainFormalization {
+          id = "impact-allow-behavior"
+          rule = "IMPACT-ALLOW"
+          kind = "behavior"
+          assurance = "bounded"
+          target = d.modelRef("fixtures/behavior-purchase.pkl")
+          checks { "purchase.capacity-always.holds" }
+        }
+        new d.DomainFormalization {
+          id = "impact-allow-alloy"
+          rule = "IMPACT-ALLOW"
+          kind = "alloy-behavior"
+          assurance = "bounded"
+          target = d.modelRef("fixtures/tetris-alloy.pkl")
+          checks { "impact.allow.refines.holds" }
+        }
+      }
+      refinements {
+        new d.DomainFormalizationRefinement {
+          id = "impact-allow-refinement"
+          kind = "input-abstraction"
+          sourceFormalization = "impact-allow-behavior"
+          targetFormalization = "impact-allow-alloy"
+          sourceCondition = "the abstract allow input is present"
+          targetCondition = "the bounded relation admits the allow action"
+          stateRelation = "the abstract allow input denotes the concrete allow action"
+          preserves { "IMPACT-ALLOW" }
+          checks { "impact.allow.refines.holds" }
+        }
+      }
+    }
+  }
 }

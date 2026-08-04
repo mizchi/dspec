@@ -114,7 +114,7 @@ local test: Task = new {
 
 local typecheck: Task = new {
   name = "typecheck"
-  description = "Type-check the TypeScript core boundary"
+  description = "Type-check TypeScript semantic and CLI command boundaries"
   cmd = "pnpm run typecheck"
   inputs = new {
     "package.json"
@@ -125,7 +125,7 @@ local typecheck: Task = new {
 
 local build: Task = new {
   name = "build"
-  description = "Compile TypeScript core sources to executable Node modules"
+  description = "Compile TypeScript semantic and CLI command sources to executable Node modules"
   cmd = "pnpm run build"
   inputs = new {
     "package.json"

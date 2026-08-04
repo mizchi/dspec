@@ -91,6 +91,8 @@ new d.DomainFormalizationRefinement {
   targetFormalization = "coordinate-start-spawn-alloy"
   sourceCondition = "spawn-open = 1"
   targetCondition = "no (SpawnScenario.spawn & SpawnScenario.locked)"
+  stateRelation = "spawn-open is 1 exactly when the fixed spawn footprint has no locked coordinate"
+  preserves { "TETRIS-START-GAME" }
   checks { "tetris.coordinate-spawn.availability-refines-coordinates.holds" }
 }
 ```
@@ -98,7 +100,8 @@ new d.DomainFormalizationRefinement {
 The checker rejects an unknown endpoint, a self-link, an empty check list, or
 a check not declared by the concrete formalization. Traceability then requires
 passing evidence for both endpoints and for every named check. The condition
-strings remain reviewable labels; the bounded assertion named by `checks` is
+strings and `stateRelation` remain reviewable labels; `preserves` names the
+Rules that must survive the boundary. The bounded assertion named by `checks` is
 the machine-checkable evidence. A passing bounded check still establishes only
 the selected scope, not a complete refinement proof or application-code
 conformance. A concrete model may also contribute a finite implementation

@@ -276,6 +276,15 @@ export function validateDomainModel(model) {
     }
     if (!refinement.sourceCondition) errors.push(`domain refinement source condition is missing: ${refinement.id}`);
     if (!refinement.targetCondition) errors.push(`domain refinement target condition is missing: ${refinement.id}`);
+    if (refinement.kind === "transition-refinement" && !refinement.stateRelation) {
+      errors.push(`domain transition refinement state relation is missing: ${refinement.id}`);
+    }
+    const preservedRules = new Set();
+    for (const rule of list(refinement.preserves)) {
+      if (preservedRules.has(rule)) errors.push(`duplicate domain refinement preserved rule: ${refinement.id} -> ${rule}`);
+      preservedRules.add(rule);
+      if (!ruleIds.has(rule)) errors.push(`unknown domain refinement preserved rule: ${refinement.id} -> ${rule}`);
+    }
     const checkIds = new Set();
     const targetChecks = new Set(list(target?.checks));
     if (list(refinement.checks).length === 0) errors.push(`domain refinement has no checks: ${refinement.id}`);
@@ -416,6 +425,8 @@ export function domainCodegenIr(model) {
     targetFormalization: entry.targetFormalization,
     sourceCondition: entry.sourceCondition,
     targetCondition: entry.targetCondition,
+    stateRelation: entry.stateRelation ?? null,
+    preserves: list(entry.preserves).slice().sort(),
     assumptions: list(entry.assumptions).slice().sort(),
     checks: list(entry.checks).slice().sort(),
   }));
@@ -571,6 +582,13 @@ export function domainRelationshipGraph(model) {
       if (collection === "refinements") {
         addEdge(declarationId, "abstracts-formalization", domainTargetNode("formalization", declaration.sourceFormalization));
         addEdge(declarationId, "refines-to-formalization", domainTargetNode("formalization", declaration.targetFormalization));
+        if (declaration.stateRelation) {
+          const relationId = addNode(`formal-relation/${declaration.id}`, "state-relation", declaration.stateRelation);
+          addEdge(declarationId, "states-relation", relationId);
+        }
+        for (const rule of list(declaration.preserves).slice().sort()) {
+          addEdge(declarationId, "preserves-rule", ruleNode(rule));
+        }
         for (const check of list(declaration.checks).slice().sort()) {
           const checkId = addNode(`formal-check/${declaration.targetFormalization}/${check}`, "formal-check", `formal check ${declaration.targetFormalization}.${check}`);
           addEdge(declarationId, "asserts-check", checkId);

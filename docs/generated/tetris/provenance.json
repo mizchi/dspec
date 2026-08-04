@@ -1,14 +1,14 @@
 {
   "artifacts": [
     {
-      "bytes": 43102,
-      "digest": "sha256:662688a1fe71b8666b8ab7adc863c66b9e7ec54095587ca90224dd5f648a3cfd",
+      "bytes": 43473,
+      "digest": "sha256:16b30339bdc97eee28ddb062e13ba3d3d4b738cea8c5a8dd58d4c8ace5ae21d7",
       "locale": "en",
       "path": "docs/generated/tetris/en/rules.md"
     },
     {
-      "bytes": 43363,
-      "digest": "sha256:41124e69053f16d39c6c034e161dbe6f00ed191a8b9e14fcf0aad9e5614f63b8",
+      "bytes": 43734,
+      "digest": "sha256:a12874c1c2953866cd95461f870675cd7a252ac0265f398e4f59a07099bbfb8c",
       "locale": "ja",
       "path": "docs/generated/tetris/ja/rules.md"
     }
@@ -17,9 +17,9 @@
     "name": "dspec/markdown",
     "version": "1.0"
   },
-  "generatedAt": "2026-07-25T19:03:33.997Z",
+  "generatedAt": "2026-07-27T07:34:04.631Z",
   "model": {
-    "digest": "sha256:4e0efde99b417983efc1e2042c26f2fb0526541d984cd661296d913ebfdcd40f",
+    "digest": "sha256:e983523de4f875aa29b44b32d39bb92fd3d48b5d959b7f0a1c76f066c84a0ce4",
     "id": "tetris-baseline",
     "version": "0.1.0"
   },

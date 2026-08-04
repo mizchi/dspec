@@ -411,6 +411,8 @@ model: d.Model = new {
           targetFormalization = "coordinate-start-spawn-alloy"
           sourceCondition = "spawn-open = 1"
           targetCondition = "no (SpawnScenario.spawn & SpawnScenario.locked)"
+          stateRelation = "spawn-open is 1 exactly when the fixed spawn footprint has no locked coordinate"
+          preserves { "TETRIS-START-GAME" }
           assumptions {
             "The correspondence is checked for one locked cell and the fixed north-facing T spawn footprint on the finite 4 by 4 board."
             "It identifies the abstract input only; random tetromino selection and production board size remain outside this refinement."

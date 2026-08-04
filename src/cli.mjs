@@ -41,17 +41,79 @@ import {
   validateProtocolTests,
 } from "./core/protocol-tests.mjs";
 import {
-  domainCodegenIr,
   domainRelationshipGraph,
-  renderDomainRelationshipMarkdown,
   renderDomainRelationshipMermaid,
-  renderDomainTypescript,
   validateDomainModel,
 } from "./core/domain.mjs";
+import {
+  topLevelCommand as registryTopLevelCommand,
+  topLevelCommandHelp as registryTopLevelCommandHelp,
+  topLevelCommandRegistry as registryTopLevelCommandRegistry,
+  usage as registryUsage,
+} from "./commands/registry.mjs";
+import { runDomainCommand as runDomainCommandModule } from "./commands/domain.mjs";
+import { runDailyDriftCommand } from "./commands/daily-drift.mjs";
+import { appProfileObservedFixtureStep as appProfileObservedFixtureStepModule } from "./commands/app-profile-observed-fixture.mjs";
+import {
+  parseAppProfileArgs as parseAppProfileArgsModule,
+  parseAppProfileSuiteArgs as parseAppProfileSuiteArgsModule,
+  parseEvaluateAppProfileArgs as parseEvaluateAppProfileArgsModule,
+  parseScaffoldAppProfileArgs as parseScaffoldAppProfileArgsModule,
+} from "./commands/app-profile-options.mjs";
+import {
+  renderScaffoldAppProfileDiffReport as renderScaffoldAppProfileDiffReportModule,
+  scaffoldAppProfile as scaffoldAppProfileModule,
+  scaffoldAppProfileApplyReport as scaffoldAppProfileApplyReportModule,
+  scaffoldAppProfileDiffReport as scaffoldAppProfileDiffReportModule,
+  scaffoldAppProfileDocument as scaffoldAppProfileDocumentModule,
+} from "./commands/app-profile-scaffold.mjs";
+import {
+  renderAppChangeReplayMarkdownReport as renderAppChangeReplayMarkdownReportModule,
+  renderAppChangeReplayReport as renderAppChangeReplayReportModule,
+  renderAppProfileEvaluationMarkdownReport as renderAppProfileEvaluationMarkdownReportModule,
+  renderAppProfileEvaluationReport as renderAppProfileEvaluationReportModule,
+  renderAppProfileMarkdownReport as renderAppProfileMarkdownReportModule,
+  renderAppProfileMutationScoreMarkdownReport as renderAppProfileMutationScoreMarkdownReportModule,
+  renderAppProfileMutationScoreReport as renderAppProfileMutationScoreReportModule,
+  renderAppProfileReport as renderAppProfileReportModule,
+  renderAppProfileScenarioCoverageMarkdownReport as renderAppProfileScenarioCoverageMarkdownReportModule,
+} from "./commands/app-profile-render.mjs";
+import {
+  renderIntentCoverageMarkdown as renderIntentCoverageMarkdownModule,
+  renderIntentMutationMarkdown as renderIntentMutationMarkdownModule,
+  renderIntentScenarioCorpusMarkdown as renderIntentScenarioCorpusMarkdownModule,
+  renderIntentTraceMarkdown as renderIntentTraceMarkdownModule,
+} from "./commands/intent-render.mjs";
+import {
+  persistIntentReport,
+  writeIntentAnalysisReport as writeIntentAnalysisReportModule,
+  writeIntentCommandReport as writeIntentCommandReportModule,
+} from "./commands/intent-output.mjs";
+import {
+  DEFAULT_APP_PROFILE_GATES,
+  appProfileCommandReport as appProfileCommandReportModule,
+  appProfileGateSet as appProfileGateSetModule,
+  appProfileImportStep as appProfileImportStepModule,
+  appProfileReport as appProfileReportModule,
+  appProfileSuiteReport as appProfileSuiteReportModule,
+  appProfilesCommandReport as appProfilesCommandReportModule,
+  appProfilesReport as appProfilesReportModule,
+  appProfileStep as appProfileStepModule,
+} from "./core/app-profile-report.mjs";
+import { CommandError } from "./commands/error.mjs";
+import {
+  intentUsage as intentUsageModule,
+  parseIntentAccessArgs as parseIntentAccessArgsModule,
+  parseIntentBindingArgs as parseIntentBindingArgsModule,
+  parseIntentGraphArgs as parseIntentGraphArgsModule,
+  parseIntentProtocolTestArgs as parseIntentProtocolTestArgsModule,
+  parseIntentTraceArgs as parseIntentTraceArgsModule,
+} from "./commands/intent-options.mjs";
 import {
   domainTraceabilityReport,
   renderDomainTraceabilityMarkdown,
 } from "./core/traceability.mjs";
+import { normalizeCounterexample } from "./core/counterexample.mjs";
 import {
   verifyBehaviorImplementation,
   verifyBehaviorModel,
@@ -100,85 +162,23 @@ import {
 import { applyProjectionTransaction, recoverProjectionLock } from "./projection-filesystem.mjs";
 import { PklAdapterError, evaluatePklJson } from "./adapters/pkl.mjs";
 
-const TOP_LEVEL_COMMANDS = [
-  { name: "init", usage: "dspec init [--json] [--force] [--output <model.pkl>] [--lock <lock.json>] [model.pkl]" },
-  { name: "verify", usage: "dspec verify [--json] [--lock <lock.json>] [--require-lock] <model.pkl>" },
-  { name: "lock", usage: "dspec lock [--json] [--force] [--output <lock.json>] <model.pkl>" },
-  { name: "trace", usage: "dspec trace <reconcile|check> ..." },
-  { name: "translation", usage: "dspec translation <reconcile|check> ..." },
-  { name: "scaffold", usage: "dspec scaffold rule [--json] [--force] [--output <rule.pkl>] [--kind <kind>] [--term <id>] [--implementation <path#symbol>] [--test <path#anchor>] <model.pkl> <rule-id>" },
-  { name: "explain", usage: "dspec explain [--json|--markdown] [--lock <lock.json>] [--require-lock] <model.pkl>" },
-  { name: "check", usage: "dspec check [--json] <model.pkl>" },
-  { name: "drift", usage: "dspec drift [--json] <model.pkl>" },
-  { name: "coverage", usage: "dspec coverage [--json] <model.pkl>" },
-  { name: "conformance", usage: "dspec conformance [--json|--markdown] <model.pkl>" },
-  { name: "query", usage: "dspec query [--json|--markdown] [--locale <locale>] [--answer <answer.json>] <model.pkl> <rule|term|evidence|impact|clause> <id> [selector]" },
-  { name: "domain-coverage", usage: "dspec domain-coverage [--json] <model.pkl>" },
-  { name: "traceability", usage: "dspec traceability [--json|--markdown] [--gate] [--execute-formal-tools|--require-executed-formal-tools] <model.pkl>" },
-  { name: "formal-mutation", usage: "dspec formal-mutation [--json] [--require-formal-tools] <alloy-model.pkl>" },
-  { name: "impact", usage: "dspec impact [--json] <before.pkl> <after.pkl>" },
-  { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
-  { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
-  { name: "domain", usage: "dspec domain <ir|generate|relationships> ..." },
-  { name: "intent", usage: "dspec intent <verify|exercise|generate-tests|test|schema> ..." },
-  { name: "daily-drift", usage: "dspec daily-drift <collect|approve> ..." },
-  { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
-  { name: "generated", usage: "dspec generated <check|unlock> ..." },
-  {
-    name: "emit",
-    usage:
-      "dspec emit <markdown|json|quickcheck|alloy|tla|tla-cfg|lean|source-map|generated-manifest|runtime-collector|runtime-collector-fixture> [--locale <locale>] <model.pkl>",
-  },
-  { name: "verify-generated", usage: "dspec verify-generated [--json] [--require-formal-tools] <model.pkl>" },
-  { name: "devshell-smoke", usage: "dspec devshell-smoke [--json] [--strict] [--require-store-path]" },
-  { name: "normalize-counterexamples", usage: "dspec normalize-counterexamples [--json] [--locale <locale>] <model.pkl>" },
-  { name: "import-db-schema", usage: "dspec import-db-schema [--json] <schema.sql>" },
-  { name: "check-sql-queries", usage: "dspec check-sql-queries [--json] <model.pkl> <queries.sql>" },
-  { name: "import-real-app", usage: "dspec import-real-app [--json|--pkl] <app-root>" },
-  { name: "evaluate-real-app-import", usage: "dspec evaluate-real-app-import [--json] <evaluation.pkl>" },
-  { name: "evaluate-external-holdouts", usage: "dspec evaluate-external-holdouts [--json|--markdown] <corpus.pkl>" },
-  { name: "reconcile-real-app", usage: "dspec reconcile-real-app [--json] <model.pkl> <observed.json>" },
-  { name: "reverse-coverage", usage: "dspec reverse-coverage [--json] <model.pkl> <observed.json>" },
-  { name: "check-app-profile", usage: "dspec check-app-profile [--json|--markdown] [--fix [--dry-run]] <profile.pkl...>" },
-  { name: "check-app-profile-suite", usage: "dspec check-app-profile-suite [--json|--markdown] [--fix [--dry-run]] <suite.pkl>" },
-  {
-    name: "scaffold-app-profile",
-    usage:
-      "dspec scaffold-app-profile [--json] [--diff <profile.pkl>|--apply <profile.pkl> [--dry-run]] [--observed-facts <path>] [--gate <gate>] <model.pkl> <app-root>",
-  },
-  { name: "evaluate-app-profile", usage: "dspec evaluate-app-profile [--json|--markdown] <profile.pkl>" },
-  { name: "evaluate-app-profile-suite", usage: "dspec evaluate-app-profile-suite [--json|--markdown] <suite.pkl>" },
-  { name: "coverage-app-profile-scenarios", usage: "dspec coverage-app-profile-scenarios [--json|--markdown] <profile.pkl>" },
-  { name: "score-app-profile-mutations", usage: "dspec score-app-profile-mutations [--json|--markdown] <profile.pkl>" },
-  { name: "replay-app-profile-changes", usage: "dspec replay-app-profile-changes [--json|--markdown] <corpus.pkl>" },
-  { name: "coverage-spec-reading-eval-suite", usage: "dspec coverage-spec-reading-eval-suite [--json|--markdown] <suite.pkl>" },
-  { name: "metamorphic-spec-reading-eval", usage: "dspec metamorphic-spec-reading-eval [--json|--markdown] [--locale <locale>] <eval.pkl>" },
-  {
-    name: "spec-reading-eval",
-    usage:
-      "dspec spec-reading-eval [--json|--markdown|--prompt] [--locale <locale>] [--score <answers.json>|--runner <runner.pkl>] [--write-run <report.json>] [--refresh-digests [--apply]] <eval.pkl>",
-  },
-  { name: "spec-reading-eval-suite", usage: "dspec spec-reading-eval-suite [--json|--markdown] <suite.pkl>" },
-  { name: "import-runtime-evidence", usage: "dspec import-runtime-evidence [--json] <evidence.json>" },
-  { name: "collect-runtime-evidence", usage: "dspec collect-runtime-evidence [--pkl] <collector.json>" },
-  { name: "verify-runtime-evidence", usage: "dspec verify-runtime-evidence [--json] <collector.json>" },
-  { name: "render", usage: "dspec render [--locale <locale>] <model.pkl>" },
-];
-
+// Compatibility anchors for rules that trace the public CLI contract to this
+// executable. The registry itself is deliberately independent of the process
+// entrypoint so command metadata can be tested without spawning the CLI.
 function topLevelCommandRegistry() {
-  return TOP_LEVEL_COMMANDS.map(({ name, usage }) => ({ name, usage }));
+  return registryTopLevelCommandRegistry();
 }
 
 function topLevelCommand(name) {
-  return TOP_LEVEL_COMMANDS.find((command) => command.name === name);
+  return registryTopLevelCommand(name);
 }
 
 function usage() {
-  return `usage:\n${TOP_LEVEL_COMMANDS.map((command) => `  ${command.usage}`).join("\n")}\n`;
+  return registryUsage();
 }
 
 function topLevelCommandHelp(command) {
-  return `usage:\n  ${command.usage}\n`;
+  return registryTopLevelCommandHelp(command);
 }
 
 function specChangeUsage() {
@@ -293,22 +293,6 @@ Run the verification gates and normalize failures into source-linked diagnostics
 `;
 }
 
-function domainUsage() {
-  return `usage:
-  dspec domain ir [--json] <model.pkl>
-  dspec domain generate --language typescript [--json] [--output <file.ts>] <model.pkl>
-  dspec domain relationships [--json|--markdown|--mermaid] [--output <file>] <model.pkl>
-
-Compile Entity, Value Object, Aggregate, Command, Domain Event, Invariant, and
-Formalization declarations to a language-neutral IR. The built-in TypeScript
-renderer emits domain-layer types, ports, event payloads, and deliberately
-incomplete constructor stubs. Other language generators consume the IR rather
-than reinterpreting the Pkl domain model. relationships renders the declared
-links among DDD declarations, normative Rules, checks, implementation evidence,
-and formalization artifacts as JSON, Markdown, or Mermaid.
-`;
-}
-
 function traceabilityUsage() {
   return `usage:
   dspec traceability [--json|--markdown] [--gate] [--execute-formal-tools|--require-executed-formal-tools] <model.pkl>
@@ -334,116 +318,18 @@ supported model is dspec.TetrisAlloy.
 `;
 }
 
-function parseDomainArgs(args, subcommand) {
-  let json = false;
-  let markdown = false;
-  let mermaid = false;
-  let language = null;
-  let outputFile = null;
-  const positional = [];
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    if (arg === "--mermaid") {
-      mermaid = true;
-      continue;
-    }
-    if (arg === "--language") {
-      language = args[index + 1] ?? null;
-      index += 1;
-      if (!language || language.startsWith("-")) throw new CommandError(`domain generate requires a language\n${domainUsage()}`);
-      continue;
-    }
-    if (arg === "--output") {
-      outputFile = args[index + 1] ?? null;
-      index += 1;
-      if (!outputFile || outputFile.startsWith("-")) throw new CommandError(`domain generate requires an output path\n${domainUsage()}`);
-      continue;
-    }
-    if (arg.startsWith("-")) throw new CommandError(`unknown domain ${subcommand} option: ${arg}\n${domainUsage()}`);
-    positional.push(arg);
-  }
-  if (positional.length !== 1) throw new CommandError(domainUsage());
-  if (Number(json) + Number(markdown) + Number(mermaid) > 1) throw new CommandError(`domain ${subcommand} accepts one output format\n${domainUsage()}`);
-  if (subcommand === "ir" && (language || outputFile || markdown || mermaid)) throw new CommandError(`domain ir does not accept --language, --output, --markdown, or --mermaid\n${domainUsage()}`);
-  if (subcommand === "generate" && language !== "typescript") {
-    throw new CommandError(`unsupported built-in domain language: ${language ?? "missing"}; use domain ir for an external renderer\n${domainUsage()}`);
-  }
-  if (subcommand === "generate" && (markdown || mermaid)) throw new CommandError(`domain generate does not accept --markdown or --mermaid\n${domainUsage()}`);
-  if (subcommand === "relationships" && language) throw new CommandError(`domain relationships does not accept --language\n${domainUsage()}`);
-  return { json, markdown, mermaid, language, outputFile, modelFile: positional[0] };
-}
-
-function writeDomainGeneratedSource(path, source) {
-  mkdirSync(dirname(resolve(path)), { recursive: true });
-  writeFileSync(path, source);
-  return { path, bytes: Buffer.byteLength(source, "utf8"), digest: assuranceDigest(source) };
-}
-
 function runDomainCommand(args) {
-  const [subcommand, ...rest] = args;
-  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
-    process.stdout.write(domainUsage());
-    return;
-  }
-  if (!["ir", "generate", "relationships"].includes(subcommand)) throw new CommandError(`unknown domain subcommand: ${subcommand}\n${domainUsage()}`);
-  const options = parseDomainArgs(rest, subcommand);
-  const model = loadModel(options.modelFile);
-  if (subcommand === "relationships") {
-    const graph = domainRelationshipGraph(model);
-    const errors = [...new Set([...validate(model), ...graph.errors])].sort();
-    const report = { ...graph, status: errors.length === 0 ? "pass" : "fail", errors };
-    const source = options.json
-      ? stableJson(report)
-      : options.mermaid
-        ? renderDomainRelationshipMermaid(report)
-        : renderDomainRelationshipMarkdown(report);
-    const output = options.outputFile ? writeDomainGeneratedSource(options.outputFile, source) : null;
-    if (options.json && output) process.stdout.write(stableJson({ ...report, output }));
-    else if (output) process.stdout.write(`ok: ${model.id} generated domain relationship document ${output.path}\n`);
-    else process.stdout.write(source);
-    if (report.status === "fail") throw new CommandError("domain relationship generation failed\n");
-    return;
-  }
-  const ir = domainCodegenIr(model);
-  const errors = [...new Set([...validate(model), ...ir.errors])].sort();
-  const report = {
-    ...ir,
-    status: errors.length === 0 ? "pass" : "fail",
-    errors,
-  };
-  if (subcommand === "ir") {
-    process.stdout.write(stableJson(report));
-    if (report.status === "fail") throw new CommandError("domain IR generation failed\n");
-    return;
-  }
-  if (report.status === "fail") {
-    if (options.json) process.stdout.write(stableJson(report));
-    throw new CommandError("domain code generation failed\n");
-  }
-  const source = renderDomainTypescript(model);
-  const generated = {
-    ...report,
-    language: options.language,
-    sourceDigest: assuranceDigest(source),
-    ...(options.outputFile ? { output: writeDomainGeneratedSource(options.outputFile, source) } : {}),
-  };
-  if (options.json) {
-    process.stdout.write(stableJson(generated));
-    return;
-  }
-  if (!options.outputFile) {
-    process.stdout.write(source);
-    return;
-  }
-  process.stdout.write(`ok: ${model.id} generated ${options.language} domain scaffold ${generated.output.path}\n`);
+  return runDomainCommandModule(args, {
+    fail(message) {
+      throw new CommandError(message);
+    },
+    loadModel,
+    stableJson,
+    validate,
+    write(value) {
+      process.stdout.write(value);
+    },
+  });
 }
 
 function specChangeCompatUsage() {
@@ -458,368 +344,22 @@ Options:
 `;
 }
 
-function intentUsage() {
-  return `usage:
-  dspec intent verify [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
-  dspec intent exercise [--json|--markdown] [--policy] [--timeout-ms <positive-int>] [--http-base-url <url>] [--output <report.json>] <model.pkl> <traces.json>
-  dspec intent generate-tests [--json] [--output <plan.json>] <model.pkl>
-  dspec intent test [--json|--markdown] [--timeout-ms <positive-int>] [--http-base-url <url>] [--grpc-runner <script-or-executable>] [--output <report.json>] <model.pkl>
-  dspec intent access [--json] <model.pkl> <process-id> <actor-or-role-id>
-  dspec intent bindings [--json|--markdown] <model.pkl> <observed-bindings.json>
-    dspec intent graph [--json|--markdown] [--locale <locale>] <model.pkl>
-  dspec intent corpus [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
-  dspec intent coverage [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
-  dspec intent mutation [--json|--markdown] [--output <report.json>] <model.pkl> <traces.json>
-  dspec intent schema <model.pkl>
-
-Validate bounded implementation observations against typed Intent Process
-contracts and explicit refinement mappings, execute refinements, measure
-scenario corpus coverage, observation coverage, generate nearby negative trace
-cases, emit the trace document shape, or generate and execute reviewed finite
-protocol test vectors. generate-tests is transport-neutral. test invokes HTTP
-directly and invokes gRPC through the supplied JSON runner. The --policy
-option replays observed inputs, including duplicate idempotency keys, to a
-configured test or staging implementation.
-`;
-}
-
-function dailyDriftUsage() {
-  return `usage:
-  dspec daily-drift collect [--generated-at <iso>] [--require-formal-tools] [--fail-on-drift] [--baseline <approved-baseline.json>] [--output <directory>] <daily-drift-targets.pkl>
-  dspec daily-drift approve --approved-by <identity> --approval-id <id> --spec-change-review <target-id>=<review.pkl> [--spec-change-review <target-id>=<review.pkl> ...] [--generated-at <iso>] [--require-formal-tools] [--baseline <approved-baseline.json>] [--output <directory>] <daily-drift-targets.pkl>
-
-Collect an artifact-only daily Intent-to-formal-to-implementation drift packet,
-or write a replacement baseline after deterministic collection succeeds.
-`;
-}
-
-const DAILY_DRIFT_PACKET_SCRIPT = fileURLToPath(
-  new URL("../scripts/generate-daily-drift-packet.mjs", import.meta.url),
-);
-
 function runDailyDrift(args) {
-  const [operation, ...forwarded] = args;
-  if (!operation || operation === "--help" || operation === "-h" || operation === "help") {
-    process.stdout.write(dailyDriftUsage());
-    return;
-  }
-  if (!new Set(["collect", "approve"]).has(operation)) {
-    throw new CommandError(`unknown daily-drift operation: ${operation}\n${dailyDriftUsage()}`);
-  }
-
-  const childArgs = operation === "approve" ? ["--write-baseline", ...forwarded] : forwarded;
-  const result = spawnSync(process.execPath, [DAILY_DRIFT_PACKET_SCRIPT, ...childArgs], {
-    cwd: process.cwd(),
-    encoding: "utf8",
+  return runDailyDriftCommand(args, {
+    write(value) {
+      process.stdout.write(value);
+    },
+    writeError(value) {
+      process.stderr.write(value);
+    },
+    setExitCode(status) {
+      process.exitCode = status;
+    },
   });
-  if (result.error) throw new CommandError(result.error.message);
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  if (typeof result.status === "number" && result.status !== 0) process.exitCode = result.status;
 }
 
-const DEFAULT_INTENT_EXERCISE_TIMEOUT_MS = 5000;
 const INTENT_FUNCTION_RUNNER = fileURLToPath(new URL("./adapters/intent-function-runner.mjs", import.meta.url));
 const INTENT_TRANSACTION_RUNNER = fileURLToPath(new URL("./adapters/intent-transaction-runner.mjs", import.meta.url));
-
-function parseIntentTraceArgs(args, subcommand) {
-  let json = false;
-  let markdown = false;
-  let outputFile = null;
-  let timeoutMs = DEFAULT_INTENT_EXERCISE_TIMEOUT_MS;
-  let httpBaseUrl = null;
-  let policy = false;
-  const positional = [];
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    if (arg === "--output") {
-      outputFile = args[index + 1] ?? null;
-      index += 1;
-      if (!outputFile) throw new CommandError(`missing value for --output\n${intentUsage()}`);
-      continue;
-    }
-    if (arg === "--timeout-ms") {
-      const value = args[index + 1] ?? null;
-      index += 1;
-      if (subcommand !== "exercise" || !value || !/^[1-9][0-9]*$/.test(value)) {
-        throw new CommandError(`--timeout-ms requires a positive integer for intent exercise\n${intentUsage()}`);
-      }
-      timeoutMs = Number(value);
-      continue;
-    }
-    if (arg === "--policy") {
-      if (subcommand !== "exercise") throw new CommandError(`--policy is available only for intent exercise\n${intentUsage()}`);
-      policy = true;
-      continue;
-    }
-    if (arg === "--http-base-url") {
-      const value = args[index + 1] ?? null;
-      index += 1;
-      if (subcommand !== "exercise" || !value) {
-        throw new CommandError(`--http-base-url requires a URL for intent exercise\n${intentUsage()}`);
-      }
-      try {
-        const url = new URL(value);
-        if (!['http:', 'https:'].includes(url.protocol)) throw new Error("unsupported protocol");
-      } catch {
-        throw new CommandError(`--http-base-url requires an http or https URL\n${intentUsage()}`);
-      }
-      httpBaseUrl = value;
-      continue;
-    }
-    if (arg.startsWith("-")) throw new CommandError(`unknown intent ${subcommand} option: ${arg}\n${intentUsage()}`);
-    positional.push(arg);
-  }
-  if (json && markdown) throw new CommandError(`intent ${subcommand} accepts only one output format\n${intentUsage()}`);
-  if (positional.length !== 2) throw new CommandError(intentUsage());
-  return { json, markdown, outputFile, timeoutMs, httpBaseUrl, policy, modelFile: positional[0], traceFile: positional[1] };
-}
-
-function parseIntentProtocolTestArgs(args, subcommand) {
-  let json = false;
-  let markdown = false;
-  let outputFile = null;
-  let timeoutMs = DEFAULT_INTENT_EXERCISE_TIMEOUT_MS;
-  let httpBaseUrl = null;
-  let grpcRunner = null;
-  const positional = [];
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    if (arg === "--output") {
-      outputFile = args[index + 1] ?? null;
-      index += 1;
-      if (!outputFile) throw new CommandError(`missing value for --output\n${intentUsage()}`);
-      continue;
-    }
-    if (arg === "--timeout-ms") {
-      const value = args[index + 1] ?? null;
-      index += 1;
-      if (subcommand !== "test" || !value || !/^[1-9][0-9]*$/.test(value)) {
-        throw new CommandError(`--timeout-ms requires a positive integer for intent test\n${intentUsage()}`);
-      }
-      timeoutMs = Number(value);
-      continue;
-    }
-    if (arg === "--http-base-url") {
-      const value = args[index + 1] ?? null;
-      index += 1;
-      if (subcommand !== "test" || !value) {
-        throw new CommandError(`--http-base-url requires a URL for intent test\n${intentUsage()}`);
-      }
-      try {
-        const url = new URL(value);
-        if (!["http:", "https:"].includes(url.protocol)) throw new Error("unsupported protocol");
-      } catch {
-        throw new CommandError(`--http-base-url requires an http or https URL\n${intentUsage()}`);
-      }
-      httpBaseUrl = value;
-      continue;
-    }
-    if (arg === "--grpc-runner") {
-      grpcRunner = args[index + 1] ?? null;
-      index += 1;
-      if (subcommand !== "test" || !grpcRunner || grpcRunner.startsWith("-")) {
-        throw new CommandError(`--grpc-runner requires a script or executable for intent test\n${intentUsage()}`);
-      }
-      continue;
-    }
-    if (arg.startsWith("-")) throw new CommandError(`unknown intent ${subcommand} option: ${arg}\n${intentUsage()}`);
-    positional.push(arg);
-  }
-  if (json && markdown) throw new CommandError(`intent ${subcommand} accepts only one output format\n${intentUsage()}`);
-  if (subcommand === "generate-tests" && markdown) throw new CommandError(`intent generate-tests supports JSON only\n${intentUsage()}`);
-  if (positional.length !== 1) throw new CommandError(intentUsage());
-  return { json, markdown, outputFile, timeoutMs, httpBaseUrl, grpcRunner, modelFile: positional[0] };
-}
-
-function parseIntentAccessArgs(args) {
-  let json = false;
-  const positional = [];
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg.startsWith("-")) throw new CommandError(`unknown intent access option: ${arg}\n${intentUsage()}`);
-    positional.push(arg);
-  }
-  if (positional.length !== 3) throw new CommandError(intentUsage());
-  return { json, modelFile: positional[0], process: positional[1], subject: positional[2] };
-}
-
-function parseIntentBindingArgs(args) {
-  let json = false;
-  let markdown = false;
-  const positional = [];
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    if (arg.startsWith("-")) throw new CommandError(`unknown intent bindings option: ${arg}\n${intentUsage()}`);
-    positional.push(arg);
-  }
-  if (json && markdown) throw new CommandError(`intent bindings accepts only one output format\n${intentUsage()}`);
-  if (positional.length !== 2) throw new CommandError(intentUsage());
-  return { json, markdown, modelFile: positional[0], observedFile: positional[1] };
-}
-
-function parseIntentGraphArgs(args) {
-  let json = false;
-  let markdown = false;
-  let locale = null;
-  const positional = [];
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    if (arg === "--locale") {
-      locale = args[index + 1];
-      index += 1;
-      if (!locale || locale.startsWith("-")) throw new CommandError(`intent graph requires a locale value\n${intentUsage()}`);
-      continue;
-    }
-    if (arg.startsWith("-")) throw new CommandError(`unknown intent graph option: ${arg}\n${intentUsage()}`);
-    positional.push(arg);
-  }
-  if (json && markdown) throw new CommandError(`intent graph accepts only one output format\n${intentUsage()}`);
-  if (positional.length !== 1) throw new CommandError(intentUsage());
-  return { json, markdown, locale, modelFile: positional[0] };
-}
-
-function renderIntentTraceMarkdown(report) {
-  const lines = [
-    `# Intent Trace Verification ${report.model.id}`,
-    "",
-    `- status: \`${report.status}\``,
-    `- model: \`${report.model.id}@${report.model.version}\``,
-    `- traces: \`${report.summary.traces}\``,
-    `- steps: \`${report.summary.steps}\``,
-    `- refinements: \`${report.summary.refinements}\``,
-    `- contracts: \`${report.summary.contracts}\``,
-    "",
-    "## Evidence",
-    "",
-    "| Check | Scope | Status | Errors |",
-    "| --- | --- | --- | --- |",
-  ];
-  if (typeof report.summary.executedRefinements === "number") {
-    lines.splice(7, 0, `- executed refinements: \`${report.summary.executedRefinements}\``);
-  }
-  for (const check of report.evidence.checks) {
-    lines.push(`| ${check.id} | ${check.scope} | ${check.status} | ${check.errors.length} |`);
-  }
-  lines.push("", "## Traces", "", "| Trace | Source | Steps | Status |", "| --- | --- | --- | --- |");
-  for (const trace of report.traces) {
-    lines.push(`| ${trace.id ?? ""} | ${trace.source ?? ""} | ${trace.steps} | ${trace.status} |`);
-  }
-  if (Array.isArray(report.executions)) {
-    lines.push("", "## Executions", "", "| Trace | Step | Process | Refinement | Status |", "| --- | --- | --- | --- | --- |");
-    for (const execution of report.executions) {
-      lines.push(`| ${execution.traceId} | ${execution.step} | ${execution.process} | ${execution.refinement} | ${execution.status} |`);
-    }
-  }
-  if (report.executionPolicy) {
-    lines.push("", "## Execution Policy Observation", "");
-    if (report.executionPolicy.reason) lines.push(`- reason: ${report.executionPolicy.reason}`);
-    lines.push("| Process | Refinement | Replays | Client max in-flight | Status |", "| --- | --- | --- | --- | --- |");
-    for (const observation of report.executionPolicy.observations) {
-      lines.push(`| ${observation.process} | ${observation.refinement} | ${observation.pressure.replayCount} | ${observation.pressure.maxObservedInFlight} | ${observation.status} |`);
-    }
-    lines.push("", "Client-side pressure and equal observed responses do not prove an implementation's internal queue, distributed idempotency store, or database isolation.");
-  }
-  if (report.errors.length > 0) {
-    lines.push("", "## Errors", "");
-    for (const error of report.errors) lines.push(`- ${error}`);
-  }
-  lines.push("", "## Assumptions", "");
-  for (const assumption of report.evidence.assumptions) lines.push(`- ${assumption}`);
-  return `${lines.join("\n")}\n`;
-}
-
-function renderIntentCoverageMarkdown(report) {
-  const lines = [
-    `# Intent Trace Coverage ${report.model.id}`,
-    "",
-    `- status: \`${report.status}\``,
-    `- model: \`${report.model.id}@${report.model.version}\``,
-    `- coverage: \`${report.summary.coverage}\``,
-    `- covered: \`${report.summary.covered}/${report.summary.targets}\``,
-    "",
-    "| Kind | Targets | Covered | Uncovered |",
-    "| --- | --- | --- | --- |",
-  ];
-  for (const entry of report.summary.byKind) {
-    lines.push(`| ${entry.kind} | ${entry.targets} | ${entry.covered} | ${entry.uncovered} |`);
-  }
-  lines.push("", "## Targets", "", "| Kind | Target | Observations |", "| --- | --- | --- |");
-  for (const target of report.targets) {
-    const observations = target.observations.map((observation) => `${observation.traceId}#${observation.step}`).join(", ");
-    lines.push(`| ${target.kind} | ${target.id} | ${observations || "uncovered"} |`);
-  }
-  if (report.errors.length > 0) {
-    lines.push("", "## Errors", "");
-    for (const error of report.errors) lines.push(`- ${error}`);
-  }
-  return `${lines.join("\n")}\n`;
-}
-
-function renderIntentScenarioCorpusMarkdown(report) {
-  const lines = [
-    `# Intent Scenario Corpus ${report.model.id}`,
-    "",
-    `- status: \`${report.status}\``,
-    `- model: \`${report.model.id}@${report.model.version}\``,
-    `- coverage: \`${report.summary.coverage}\``,
-    `- covered: \`${report.summary.covered}/${report.summary.required}\` required scenarios`,
-    "",
-    "## Observations",
-    "",
-    "| Scenario | Trace | Status |",
-    "| --- | --- | --- |",
-  ];
-  for (const observation of report.observations) {
-    lines.push(`| ${observation.scenario ?? "unassigned"} | ${observation.trace} | ${observation.status} |`);
-  }
-  if (report.suggestions.length > 0) {
-    lines.push("", "## Suggested Cases", "", "| Scenario | Initial State | Steps | Expected State | Reason |", "| --- | --- | --- | --- | --- |");
-    for (const suggestion of report.suggestions) {
-      const steps = suggestion.steps.map((step) => `${step.process} -> ${step.outcome}`).join("; ");
-      lines.push(`| ${suggestion.scenario} | ${suggestion.initialState} | ${steps} | ${suggestion.expectedState} | ${suggestion.reason} |`);
-    }
-  }
-  if (report.errors.length > 0) {
-    lines.push("", "## Errors", "");
-    for (const error of report.errors) lines.push(`- ${error}`);
-  }
-  return `${lines.join("\n")}\n`;
-}
 
 function intentAccessPolicyDecision(model, processId, subjectId) {
   const policies = intentAccessPolicies(intentPattern(model))
@@ -1107,49 +647,14 @@ function appendIntentGoalGraphMarkdown(lines, intent, locale) {
   }
 }
 
-function renderIntentMutationMarkdown(report) {
-  const lines = [
-    `# Intent Trace Mutation Score ${report.model.id}`,
-    "",
-    `- status: \`${report.status}\``,
-    `- score: \`${report.score}\``,
-    `- detected: \`${report.detected}/${report.generated}\``,
-    "",
-    "| Mutation | Kind | Trace | Step | Actual | Status | Shrinks | Errors |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- |",
-  ];
-  for (const mutation of report.mutations) {
-    lines.push(`| ${mutation.id} | ${mutation.kind} | ${mutation.traceId} | ${mutation.step} | ${mutation.actual} | ${mutation.status} | ${JSON.stringify(stableObject(mutation.shrinks))} | ${list(mutation.errors).join("<br>")} |`);
-  }
-  if (report.errors.length > 0) {
-    lines.push("", "## Errors", "");
-    for (const error of report.errors) lines.push(`- ${error}`);
-  }
-  return `${lines.join("\n")}\n`;
-}
-
-function writeIntentTraceReport(path, report) {
-  const content = stableJson(report);
-  mkdirSync(dirname(resolve(path)), { recursive: true });
-  writeFileSync(path, content);
-  return { path, bytes: Buffer.byteLength(content, "utf8"), digest: assuranceDigest(content) };
-}
-
-function writeIntentAnalysisReport(report, options, render, successMessage) {
-  if (options.outputFile) report.output = writeIntentTraceReport(options.outputFile, report);
-  if (options.json) {
-    process.stdout.write(stableJson(report));
-    if (report.status === "fail") throw new CommandError("intent trace analysis failed\n");
-    return;
-  }
-  const markdown = render(report);
-  if (options.markdown) {
-    process.stdout.write(markdown);
-    if (report.status === "fail") throw new CommandError("intent trace analysis failed\n");
-    return;
-  }
-  if (report.status === "fail") throw new CommandError(markdown);
-  process.stdout.write(successMessage);
+function intentOutputContext() {
+  return {
+    stableJson,
+    digest: assuranceDigest,
+    write(value) {
+      process.stdout.write(value);
+    },
+  };
 }
 
 function intentTraceVerificationReport(model, traceDocument) {
@@ -1502,36 +1007,19 @@ function intentRefinementInvoker(modelFile, { timeoutMs, httpBaseUrl, grpcRunner
   };
 }
 
-function writeIntentCommandReport(report, options, successMessage) {
-  if (options.outputFile) report.output = writeIntentTraceReport(options.outputFile, report);
-  if (options.json) {
-    process.stdout.write(stableJson(report));
-    if (report.status === "fail") throw new CommandError("intent trace verification failed\n");
-    return;
-  }
-  const markdown = renderIntentTraceMarkdown(report);
-  if (options.markdown) {
-    process.stdout.write(markdown);
-    if (report.status === "fail") throw new CommandError("intent trace verification failed\n");
-    return;
-  }
-  if (report.status === "fail") throw new CommandError(`${markdown}`);
-  process.stdout.write(successMessage);
-}
-
 async function runIntentCommand(args) {
   const [subcommand, ...rest] = args;
   if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
-    process.stdout.write(intentUsage());
+    process.stdout.write(intentUsageModule());
     return;
   }
   if (subcommand === "schema") {
-    if (rest.length !== 1 || rest[0].startsWith("-")) throw new CommandError(intentUsage());
+    if (rest.length !== 1 || rest[0].startsWith("-")) throw new CommandError(intentUsageModule());
     process.stdout.write(stableJson(intentTraceSchema(loadModel(rest[0]))));
     return;
   }
   if (subcommand === "generate-tests") {
-    const options = parseIntentProtocolTestArgs(rest, subcommand);
+    const options = parseIntentProtocolTestArgsModule(rest, subcommand);
     const model = loadModel(options.modelFile);
     const plan = protocolTestPlan(model);
     const modelErrors = validate(model);
@@ -1541,14 +1029,14 @@ async function runIntentCommand(args) {
       status: errors.length === 0 ? "pass" : "fail",
       errors,
     };
-    if (options.outputFile) report.output = writeIntentTraceReport(options.outputFile, report);
+    if (options.outputFile) report.output = persistIntentReport(options.outputFile, report, intentOutputContext());
     if (options.json) process.stdout.write(stableJson(report));
     else process.stdout.write(`ok: ${model.id} protocol test plan (${plan.summary.cases} cases)\n`);
     if (report.status === "fail") throw new CommandError("intent protocol test generation failed\n");
     return;
   }
   if (subcommand === "test") {
-    const options = parseIntentProtocolTestArgs(rest, subcommand);
+    const options = parseIntentProtocolTestArgsModule(rest, subcommand);
     const model = loadModel(options.modelFile);
     const plan = protocolTestPlan(model);
     const traceReport = generatedProtocolTraceReport(model, plan);
@@ -1602,11 +1090,11 @@ async function runIntentCommand(args) {
       },
       errors,
     };
-    writeIntentCommandReport(report, options, `ok: ${model.id} generated protocol tests (${exercise.summary.executedRefinements}/${plan.summary.cases} cases)\n`);
+    writeIntentCommandReportModule(report, options, renderIntentTraceMarkdownModule, `ok: ${model.id} generated protocol tests (${exercise.summary.executedRefinements}/${plan.summary.cases} cases)\n`, intentOutputContext());
     return;
   }
   if (subcommand === "access") {
-    const options = parseIntentAccessArgs(rest);
+    const options = parseIntentAccessArgsModule(rest);
     const model = loadModel(options.modelFile);
     const errors = validate(model);
     const intentProcess = intentProcesses(intentPattern(model)).find((candidate) => candidate.id === options.process);
@@ -1633,7 +1121,7 @@ async function runIntentCommand(args) {
     return;
   }
   if (subcommand === "bindings") {
-    const options = parseIntentBindingArgs(rest);
+    const options = parseIntentBindingArgsModule(rest);
     const model = loadModel(options.modelFile);
     const report = intentSemanticBindingReport(model, readJsonFile(options.observedFile, "semantic binding observation document"));
     if (options.json) process.stdout.write(stableJson(report));
@@ -1643,7 +1131,7 @@ async function runIntentCommand(args) {
     return;
   }
   if (subcommand === "graph") {
-    const options = parseIntentGraphArgs(rest);
+    const options = parseIntentGraphArgsModule(rest);
     const model = loadModel(options.modelFile);
     const report = intentGraphReport(model);
     const locale = options.locale ?? model.primaryLocale;
@@ -1655,13 +1143,13 @@ async function runIntentCommand(args) {
     if (report.status === "fail") throw new CommandError("intent goal graph validation failed\n");
     return;
   }
-  if (!["verify", "exercise", "corpus", "coverage", "mutation"].includes(subcommand)) throw new CommandError(`unknown intent subcommand: ${subcommand}\n${intentUsage()}`);
-  const options = parseIntentTraceArgs(rest, subcommand);
+  if (!["verify", "exercise", "corpus", "coverage", "mutation"].includes(subcommand)) throw new CommandError(`unknown intent subcommand: ${subcommand}\n${intentUsageModule()}`);
+  const options = parseIntentTraceArgsModule(rest, subcommand);
   const model = loadModel(options.modelFile);
   const traceDocument = readJsonFile(options.traceFile, "intent trace document");
   const traceReport = attachIntentTraceDocumentEvidence(intentTraceVerificationReport(model, traceDocument), model, options.traceFile);
   if (subcommand === "verify") {
-    writeIntentCommandReport(traceReport, options, `ok: ${model.id} intent traces (${traceReport.summary.traces} traces, ${traceReport.summary.steps} steps)\n`);
+    writeIntentCommandReportModule(traceReport, options, renderIntentTraceMarkdownModule, `ok: ${model.id} intent traces (${traceReport.summary.traces} traces, ${traceReport.summary.steps} steps)\n`, intentOutputContext());
     return;
   }
   const verificationOptions = {
@@ -1671,19 +1159,19 @@ async function runIntentCommand(args) {
   if (subcommand === "corpus") {
     const report = intentScenarioCorpusReport(model, traceDocument, verificationOptions);
     report.document = traceReport.evidence.document;
-    writeIntentAnalysisReport(report, options, renderIntentScenarioCorpusMarkdown, `ok: ${model.id} intent scenario corpus (${report.summary.covered}/${report.summary.required} required scenarios)\n`);
+    writeIntentAnalysisReportModule(report, options, renderIntentScenarioCorpusMarkdownModule, `ok: ${model.id} intent scenario corpus (${report.summary.covered}/${report.summary.required} required scenarios)\n`, intentOutputContext());
     return;
   }
   if (subcommand === "coverage") {
     const report = intentTraceCoverage(model, traceDocument, verificationOptions);
     report.document = traceReport.evidence.document;
-    writeIntentAnalysisReport(report, options, renderIntentCoverageMarkdown, `ok: ${model.id} intent trace coverage (${report.summary.covered}/${report.summary.targets} targets)\n`);
+    writeIntentAnalysisReportModule(report, options, renderIntentCoverageMarkdownModule, `ok: ${model.id} intent trace coverage (${report.summary.covered}/${report.summary.targets} targets)\n`, intentOutputContext());
     return;
   }
   if (subcommand === "mutation") {
     const report = intentTraceMutationReport(model, traceDocument, verificationOptions);
     report.document = traceReport.evidence.document;
-    writeIntentAnalysisReport(report, options, renderIntentMutationMarkdown, `ok: ${model.id} intent trace mutations (${report.detected}/${report.generated} detected)\n`);
+    writeIntentAnalysisReportModule(report, options, renderIntentMutationMarkdownModule, `ok: ${model.id} intent trace mutations (${report.detected}/${report.generated} detected)\n`, intentOutputContext());
     return;
   }
   const runner = intentRefinementInvoker(options.modelFile, options);
@@ -1738,7 +1226,7 @@ async function runIntentCommand(args) {
     },
     errors,
   };
-  writeIntentCommandReport(report, options, `ok: ${model.id} intent refinement exercise (${exercise.summary.executedRefinements} cases)\n`);
+  writeIntentCommandReportModule(report, options, renderIntentTraceMarkdownModule, `ok: ${model.id} intent refinement exercise (${exercise.summary.executedRefinements} cases)\n`, intentOutputContext());
 }
 
 function specChangeReviewUsage() {
@@ -1774,13 +1262,6 @@ For breaking changes, the draft declares the default breaking evidence policy
 and leaves evidence empty so spec-change review can force migration,
 deprecation, rollout, and owner-approval evidence before approval.
 `;
-}
-
-class CommandError extends Error {
-  constructor(message, status = 1) {
-    super(message);
-    this.status = status;
-  }
 }
 
 function evalPklJson(file) {
@@ -4226,34 +3707,45 @@ function parseFormalMutationArgs(args) {
   return { file, json, requireFormalTools };
 }
 
+function traceabilityCounterexample(formalization, kind, check, witness) {
+  if (!witness) return null;
+  return normalizeCounterexample({
+    ...witness,
+    source: { kind, check, rule: formalization.rule, formalization: formalization.id },
+  });
+}
+
 function behaviorTraceabilityEvidence(formalization, document, reference, grounding) {
   const boundedChecks = list(reference.boundedReachability?.checks).map((check) => ({
     id: check.id,
     status: check.status,
     assurance: check.assurance,
-    counterexample: check.status === "fail" && check.witness
-      ? { path: check.witness.path, trace: [check.witness.state], violation: { index: check.witness.depth, state: check.witness.state } }
+    counterexample: check.status === "fail"
+      ? traceabilityCounterexample(formalization, "behavior-bounded", check.id, check.witness)
       : null,
   }));
   const temporalChecks = list(reference.temporal?.checks).map((check) => ({
     id: check.id,
     status: check.status,
     assurance: check.assurance,
-    counterexample: check.witness ?? (check.violation
-      ? { path: [], trace: list(check.trace), violation: check.violation }
-      : null),
+    counterexample: traceabilityCounterexample(
+      formalization,
+      "temporal",
+      check.id,
+      check.witness ?? (check.violation ? { path: [], trace: list(check.trace), violation: check.violation } : null),
+    ),
   }));
   return {
     formalization: formalization.id,
     status: reference.status === "pass" && grounding.status === "pass" ? "pass" : "fail",
     actions: list(document.behavior?.actions).map((action) => action.id),
     checks: [...boundedChecks, ...temporalChecks],
-    counterexamples: grounding.counterexample ? [{
-      check: "implementation-grounding",
-      path: grounding.counterexample.path,
-      trace: [grounding.counterexample.state, grounding.counterexample.actual?.state].filter(Boolean),
-      violation: { index: grounding.counterexample.depth, state: grounding.counterexample.actual?.state ?? grounding.counterexample.state },
-    }] : [],
+    counterexamples: [traceabilityCounterexample(
+      formalization,
+      "implementation",
+      "implementation-grounding",
+      grounding.counterexample,
+    )].filter(Boolean),
     errors: [...list(reference.errors), ...list(grounding.errors)],
   };
 }
@@ -4307,7 +3799,9 @@ function alloyTraceabilityEvidence(formalization, reference, analyzer, {
       id: check.id,
       status: check.status,
       assurance: check.assurance,
-      counterexample: check.status === "fail" ? check.counterexample ?? check.witness ?? null : null,
+      counterexample: check.status === "fail"
+        ? traceabilityCounterexample(formalization, "alloy", check.id, check.counterexample ?? check.witness)
+        : null,
     })),
     counterexamples: [],
     errors,
@@ -4324,7 +3818,7 @@ function alloyBehaviorTraceabilityEvidence(formalization, document, reference, a
   };
 }
 
-function normalizedTetrisGroundingCounterexample(counterexample) {
+function normalizedTetrisGroundingCounterexample(counterexample, formalization) {
   if (!counterexample) return null;
   const state = {
     board: `${counterexample.board.width}x${counterexample.board.height}`,
@@ -4332,7 +3826,12 @@ function normalizedTetrisGroundingCounterexample(counterexample) {
     "expected spawn-open": counterexample.expected?.spawnOpen ?? null,
     "actual spawn-open": counterexample.actual?.spawnOpen ?? null,
   };
-  return { trace: [state], violation: { index: 0, state } };
+  return traceabilityCounterexample(formalization, "implementation", counterexample.check ?? "implementation-grounding", {
+    state,
+    expected: counterexample.expected ?? null,
+    actual: counterexample.actual ?? null,
+    violation: { index: 0, state },
+  });
 }
 
 function tetrisAlloyTraceabilityEvidence(formalization, reference, analyzer, grounding, options) {
@@ -4345,7 +3844,7 @@ function tetrisAlloyTraceabilityEvidence(formalization, reference, analyzer, gro
     id: grounding.check,
     status: grounding.status,
     assurance: grounding.assurance,
-    counterexample: grounding.status === "fail" ? normalizedTetrisGroundingCounterexample(grounding.counterexample) : null,
+    counterexample: grounding.status === "fail" ? normalizedTetrisGroundingCounterexample(grounding.counterexample, formalization) : null,
   };
   return {
     ...evidence,
@@ -5249,142 +4748,19 @@ function parseReconcileRealAppArgs(args) {
 }
 
 function parseAppProfileArgs(args) {
-  let dryRun = false;
-  let fix = false;
-  let json = false;
-  let markdown = false;
-  const files = [];
-
-  for (const arg of args) {
-    if (arg === "--dry-run") {
-      dryRun = true;
-      continue;
-    }
-    if (arg === "--fix") {
-      fix = true;
-      continue;
-    }
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    files.push(arg);
-  }
-
-  if (files.length === 0 || (json && markdown)) {
-    throw new CommandError(usage());
-  }
-  if (dryRun && !fix) {
-    throw new CommandError("--dry-run requires --fix\n");
-  }
-  return { files, fix, dryRun, json, markdown };
+  return parseAppProfileArgsModule(args, usage());
 }
 
 function parseAppProfileSuiteArgs(args) {
-  const parsed = parseAppProfileArgs(args);
-  if (parsed.files.length !== 1) {
-    throw new CommandError(usage());
-  }
-  return {
-    file: parsed.files[0],
-    fix: parsed.fix,
-    dryRun: parsed.dryRun,
-    json: parsed.json,
-    markdown: parsed.markdown,
-  };
+  return parseAppProfileSuiteArgsModule(args, usage());
 }
 
 function parseScaffoldAppProfileArgs(args) {
-  let applyFile = null;
-  let diffFile = null;
-  let dryRun = false;
-  let json = false;
-  let observedFacts = null;
-  const gates = [];
-  const files = [];
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--dry-run") {
-      dryRun = true;
-      continue;
-    }
-    if (arg === "--diff") {
-      diffFile = args[index + 1];
-      index += 1;
-      if (!diffFile) throw new CommandError("--diff requires a profile path\n");
-      continue;
-    }
-    if (arg === "--apply") {
-      applyFile = args[index + 1];
-      index += 1;
-      if (!applyFile) throw new CommandError("--apply requires a profile path\n");
-      continue;
-    }
-    if (arg === "--observed-facts") {
-      observedFacts = args[index + 1];
-      index += 1;
-      if (!observedFacts) throw new CommandError("--observed-facts requires a path\n");
-      continue;
-    }
-    if (arg === "--gate") {
-      const gate = args[index + 1];
-      index += 1;
-      if (!gate) throw new CommandError("--gate requires a gate name\n");
-      gates.push(gate);
-      continue;
-    }
-    files.push(arg);
-  }
-
-  if (files.length !== 2) {
-    throw new CommandError(usage());
-  }
-  if (diffFile && applyFile) {
-    throw new CommandError("--diff and --apply are mutually exclusive\n");
-  }
-  if (dryRun && !applyFile) {
-    throw new CommandError("--dry-run requires --apply for scaffold-app-profile\n");
-  }
-  if (json && !diffFile && !applyFile) {
-    throw new CommandError("--json requires --diff or --apply for scaffold-app-profile\n");
-  }
-  return { modelFile: files[0], appRoot: files[1], observedFacts, gates, applyFile, diffFile, dryRun, json };
+  return parseScaffoldAppProfileArgsModule(args, usage());
 }
 
 function parseEvaluateAppProfileArgs(args) {
-  let json = false;
-  let markdown = false;
-  let file = null;
-
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    if (!file) {
-      file = arg;
-      continue;
-    }
-    throw new CommandError(`unexpected argument: ${arg}`);
-  }
-
-  if (!file || (json && markdown)) {
-    throw new CommandError(usage());
-  }
-  return { file, json, markdown };
+  return parseEvaluateAppProfileArgsModule(args, usage());
 }
 
 function parseEvaluateAppProfileSuiteArgs(args) {
@@ -6358,244 +5734,85 @@ function renderReverseCoverageReport(report) {
   return `${[...report.errors, ...renderReportSuggestions(report.suggestions)].join("\n")}\n`;
 }
 
-const DEFAULT_APP_PROFILE_GATES = [
-  "check",
-  "drift",
-  "domain-coverage",
-  "import-real-app",
-  "observed-fixture",
-  "reconcile-real-app",
-  "reverse-coverage",
-];
-
 function appProfileGateSet(profile) {
-  const gates = list(profile.gates);
-  return new Set(gates.length > 0 ? gates : DEFAULT_APP_PROFILE_GATES);
+  return appProfileGateSetModule(profile);
 }
 
 function appProfileStep(id, report, extra = {}) {
-  const suggestions = list(report.suggestions);
-  return {
-    id,
-    status: report.status,
-    errors: list(report.errors),
-    ...(suggestions.length > 0 ? { suggestions } : {}),
-    ...extra,
-  };
+  return appProfileStepModule(id, report, extra);
 }
 
 function appProfileImportStep(app) {
-  return {
-    id: "import-real-app",
-    status: "pass",
-    errors: [],
-    observed: { id: app.id },
-    facts: {
-      routes: list(app.routes).length,
-      schemas: list(app.contracts?.schemas).length,
-      workflows: list(app.workflows).length,
-    },
-  };
+  return appProfileImportStepModule(app);
 }
 
 function appProfileObservedFixtureStep(profile, importedDocument, { dryRun = false, fix = false } = {}) {
-  if (!profile.observedFacts) {
-    return {
-      id: "observed-fixture",
-      status: "fail",
-      errors: ["app profile missing observedFacts"],
-    };
-  }
+  return appProfileObservedFixtureStepModule(profile, importedDocument, { dryRun, fix }, {
+    stableJson,
+    exists: existsSync,
+    resolve,
+    read: (path) => readFileSync(path, "utf8"),
+    write: writeFileSync,
+  });
+}
 
-  const actual = stableJson(importedDocument);
-  const exists = existsSync(resolve(profile.observedFacts));
-  const expected = exists ? readTextFile(profile.observedFacts) : "";
-  const pass = expected === actual;
-  const fixed = !pass && fix && !dryRun;
-  const wouldFix = !pass && fix && dryRun;
-  if (fixed) {
-    writeFileSync(resolve(profile.observedFacts), actual);
-  }
+function appProfileReportContext() {
   return {
-    id: "observed-fixture",
-    status: pass || fixed ? "pass" : "fail",
-    errors: pass || fixed ? [] : [`observed facts fixture is stale: ${profile.observedFacts}`],
-    ...(fixed ? { fixed: true } : {}),
-    ...(wouldFix ? { wouldFix: true } : {}),
-    path: profile.observedFacts,
+    loadModel,
+    importRealApp,
+    checkReport,
+    driftReport,
+    domainCoverageReport,
+    reconcileRealAppReport,
+    reverseCoverageReport,
+    observedFixtureStep: appProfileObservedFixtureStep,
+    loadAppProfile,
+    reportStatus,
+    sortedUnique,
   };
 }
 
-function appProfileReport(profile, { dryRun = false, fix = false } = {}) {
-  const gates = appProfileGateSet(profile);
-  const model = loadModel(profile.modelPath);
-  const app = importRealApp(profile.appRoot);
-  const observedDocument = { app };
-  const checks = [];
-
-  if (gates.has("check")) {
-    const report = checkReport(model);
-    checks.push(appProfileStep("check", report, { summary: report.summary }));
-  }
-  if (gates.has("drift")) {
-    const report = driftReport(model);
-    checks.push(appProfileStep("drift", report, { references: report.references }));
-  }
-  if (gates.has("domain-coverage")) {
-    const report = domainCoverageReport(model);
-    checks.push(appProfileStep("domain-coverage", report, { covered: report.covered, total: report.total }));
-  }
-  if (gates.has("import-real-app")) {
-    checks.push(appProfileImportStep(app));
-  }
-  if (gates.has("observed-fixture")) {
-    checks.push(appProfileObservedFixtureStep(profile, observedDocument, { dryRun, fix }));
-  }
-  if (gates.has("reconcile-real-app")) {
-    const report = reconcileRealAppReport(model, observedDocument);
-    checks.push(appProfileStep("reconcile-real-app", report, { covered: report.covered, total: report.total }));
-  }
-  if (gates.has("reverse-coverage")) {
-    const report = reverseCoverageReport(model, observedDocument);
-    checks.push(appProfileStep("reverse-coverage", report, { covered: report.covered, total: report.total }));
-  }
-
-  const errors = checks.flatMap((check) => check.errors.map((error) => `${check.id}: ${error}`));
-  const fixed = checks.filter((check) => check.fixed && check.path).map((check) => check.path);
-  const wouldFix = checks.filter((check) => check.wouldFix && check.path).map((check) => check.path);
-  return {
-    profile: {
-      id: profile.id,
-      modelPath: profile.modelPath,
-      appRoot: profile.appRoot,
-      observedFacts: profile.observedFacts ?? null,
-    },
-    status: reportStatus(errors),
-    passed: checks.filter((check) => check.status === "pass").length,
-    total: checks.length,
-    ...(fixed.length > 0 ? { fixed } : {}),
-    ...(wouldFix.length > 0 ? { wouldFix } : {}),
-    checks,
-    errors,
-  };
+function appProfileReport(profile, options = {}) {
+  return appProfileReportModule(profile, options, appProfileReportContext());
 }
 
 function appProfilesReport(reports) {
-  const errors = reports.flatMap((report) => report.errors.map((error) => `${report.profile.id}: ${error}`));
-  const fixed = sortedUnique(reports.flatMap((report) => list(report.fixed)));
-  const wouldFix = sortedUnique(reports.flatMap((report) => list(report.wouldFix)));
-  return {
-    status: reportStatus(errors),
-    passed: reports.filter((report) => report.status === "pass").length,
-    total: reports.length,
-    ...(fixed.length > 0 ? { fixed } : {}),
-    ...(wouldFix.length > 0 ? { wouldFix } : {}),
-    profiles: reports,
-    errors,
-  };
+  return appProfilesReportModule(reports, appProfileReportContext());
 }
 
 function appProfilesCommandReport(files, options = {}) {
-  return appProfilesReport(files.map((file) => appProfileReport(loadAppProfile(file), options)));
+  return appProfilesCommandReportModule(files, options, appProfileReportContext());
 }
 
 function appProfileCommandReport(files, options = {}) {
-  const reports = files.map((file) => appProfileReport(loadAppProfile(file), options));
-  return reports.length === 1 ? reports[0] : appProfilesReport(reports);
+  return appProfileCommandReportModule(files, options, appProfileReportContext());
 }
 
 function appProfileSuiteReport(suite, options = {}) {
-  return {
-    suite: {
-      id: suite.id,
-      profiles: list(suite.profiles),
-    },
-    ...appProfilesCommandReport(list(suite.profiles), options),
-  };
+  return appProfileSuiteReportModule(suite, options, appProfileReportContext());
 }
 
 function markdownCell(value) {
   return String(value ?? "").replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
 }
 
-function renderAppProfileChecksMarkdown(checks) {
-  const lines = [
-    "| Gate | Status | Errors |",
-    "| --- | --- | --- |",
-  ];
-  for (const check of checks) {
-    lines.push(`| ${markdownCell(check.id)} | ${markdownCell(check.status)} | ${markdownCell(list(check.errors).join("<br>"))} |`);
-  }
-  return lines;
-}
-
-function renderSingleAppProfileMarkdown(report, level = 1) {
-  const prefix = "#".repeat(level);
-  const lines = [
-    `${prefix} App Profile ${report.profile.id}`,
-    "",
-    `- modelPath: \`${report.profile.modelPath}\``,
-    `- appRoot: \`${report.profile.appRoot}\``,
-    `- status: \`${report.status}\``,
-    "",
-    ...renderAppProfileChecksMarkdown(report.checks),
-  ];
-  if (list(report.wouldFix).length > 0) {
-    lines.push("", `${"#".repeat(level + 1)} Would Fix`, "", ...list(report.wouldFix).map((path) => `- \`${path}\``));
-  }
-  if (list(report.fixed).length > 0) {
-    lines.push("", `${"#".repeat(level + 1)} Fixed`, "", ...list(report.fixed).map((path) => `- \`${path}\``));
-  }
-  return lines;
-}
-
 function renderAppProfileMarkdownReport(report) {
-  if (!Array.isArray(report.profiles)) {
-    return `${renderSingleAppProfileMarkdown(report).join("\n")}\n`;
-  }
-  const lines = [
-    "# App Profiles",
-    "",
-    `- status: \`${report.status}\``,
-    `- passed: \`${report.passed}/${report.total}\``,
-    "",
-    "| Profile | Status | Checks | Errors |",
-    "| --- | --- | --- | --- |",
-  ];
-  for (const entry of report.profiles) {
-    lines.push(`| ${markdownCell(entry.profile.id)} | ${markdownCell(entry.status)} | ${markdownCell(`${entry.passed}/${entry.total}`)} | ${markdownCell(list(entry.errors).join("<br>"))} |`);
-  }
-  for (const entry of report.profiles) {
-    lines.push("", ...renderSingleAppProfileMarkdown(entry, 2));
-  }
-  return `${lines.join("\n")}\n`;
+  return renderAppProfileMarkdownReportModule(report);
 }
 
 function renderAppProfileReport(report) {
-  if (Array.isArray(report.profiles)) {
-    if (report.status === "pass") {
-      return `ok: app profiles (${report.passed}/${report.total} profiles)\n`;
-    }
-    const wouldFix = list(report.wouldFix).map((path) => `would fix: ${path}`);
-    return `${[...report.errors, ...wouldFix].join("\n")}\n`;
-  }
-  if (report.status === "pass") {
-    return `ok: ${report.profile.id} app profile (${report.passed}/${report.total} checks)\n`;
-  }
-  const wouldFix = list(report.wouldFix).map((path) => `would fix: ${path}`);
-  return `${[...report.errors, ...wouldFix].join("\n")}\n`;
+  return renderAppProfileReportModule(report);
 }
 
 function scaffoldAppProfileDocument({ modelFile, appRoot, observedFacts = null, gates = [] } = {}) {
-  const id = appRootId(appRoot);
-  const selectedGates = gates.length > 0 ? gates : DEFAULT_APP_PROFILE_GATES;
-  const fixturePath = observedFacts ?? `fixtures/reports/import-real-app-${id}.json`;
+  return scaffoldAppProfileDocumentModule({ modelFile, appRoot, observedFacts, gates }, appProfileScaffoldContext());
+}
+
+function appProfileScaffoldContext() {
   return {
-    id,
-    modelPath: modelFile,
-    appRoot,
-    observedFacts: fixturePath,
-    gates: selectedGates,
+    appRootId,
+    resolve,
+    write: writeFileSync,
   };
 }
 
@@ -7093,101 +6310,26 @@ function runScaffoldCommand(args) {
 }
 
 function scaffoldAppProfile(args = {}) {
-  const profile = scaffoldAppProfileDocument(args);
-  const schemaImportPath = args.schemaImportPath ?? "./dspec/Schema.pkl";
-  const lines = [
-    `import ${pklString(schemaImportPath)} as d`,
-    "",
-    "profile: d.AppProfile = new {",
-    `  id = ${pklString(profile.id)}`,
-    `  modelPath = ${pklString(profile.modelPath)}`,
-    `  appRoot = ${pklString(profile.appRoot)}`,
-    `  observedFacts = ${pklString(profile.observedFacts)}`,
-    "  gates {",
-  ];
-  for (const gate of profile.gates) {
-    lines.push(`    ${pklString(gate)}`);
-  }
-  lines.push("  }", "}");
-  return `${lines.join("\n")}\n`;
-}
-
-function normalizeAppProfileForScaffoldDiff(profile) {
-  const gates = list(profile.gates);
-  return {
-    id: profile.id,
-    modelPath: profile.modelPath,
-    appRoot: profile.appRoot,
-    observedFacts: profile.observedFacts ?? null,
-    gates: sortedUnique(gates.length > 0 ? gates : DEFAULT_APP_PROFILE_GATES),
-  };
-}
-
-function normalizeScaffoldedAppProfileForDiff(profile) {
-  return {
-    id: profile.id,
-    modelPath: profile.modelPath,
-    appRoot: profile.appRoot,
-    observedFacts: profile.observedFacts ?? null,
-    gates: sortedUnique(list(profile.gates)),
-  };
-}
-
-function sameJsonValue(left, right) {
-  return JSON.stringify(stableObject(left)) === JSON.stringify(stableObject(right));
+  return scaffoldAppProfileModule(args, appProfileScaffoldContext());
 }
 
 function scaffoldAppProfileDiffReport(currentProfile, scaffoldedProfile) {
-  const current = normalizeAppProfileForScaffoldDiff(currentProfile);
-  const scaffolded = normalizeScaffoldedAppProfileForDiff(scaffoldedProfile);
-  const changes = ["id", "modelPath", "appRoot", "observedFacts", "gates"].flatMap((field) =>
-    sameJsonValue(current[field], scaffolded[field])
-      ? []
-      : [{ field, current: current[field], scaffolded: scaffolded[field] }]
-  );
-  const errors = changes.map((change) => `scaffold profile drift: ${change.field}`);
-  return {
-    profile: {
-      id: current.id,
-      modelPath: current.modelPath,
-      appRoot: current.appRoot,
-      observedFacts: current.observedFacts,
-    },
-    status: reportStatus(errors),
-    changes,
-    errors,
-  };
+  return scaffoldAppProfileDiffReportModule(currentProfile, scaffoldedProfile);
 }
 
 function scaffoldAppProfileApplyReport(applyFile, currentProfile, scaffoldedProfile, rendered, { dryRun = false } = {}) {
-  const diff = scaffoldAppProfileDiffReport(currentProfile, scaffoldedProfile);
-  const hasChanges = diff.changes.length > 0;
-  const applied = hasChanges && !dryRun;
-  if (applied) {
-    writeFileSync(resolve(applyFile), rendered);
-  }
-  const errors = hasChanges && dryRun ? diff.errors : [];
-  return {
-    ...diff,
-    status: reportStatus(errors),
-    errors,
-    path: applyFile,
-    applied,
-    wouldApply: hasChanges && dryRun,
-  };
+  return scaffoldAppProfileApplyReportModule(
+    applyFile,
+    currentProfile,
+    scaffoldedProfile,
+    rendered,
+    { dryRun },
+    appProfileScaffoldContext(),
+  );
 }
 
 function renderScaffoldAppProfileDiffReport(report) {
-  if (report.wouldApply) {
-    return `${[...report.errors, `would apply: ${report.path}`].join("\n")}\n`;
-  }
-  if (report.applied) {
-    return `ok: ${report.profile.id} scaffold app profile applied: ${report.path}\n`;
-  }
-  if (report.status === "pass") {
-    return `ok: ${report.profile.id} scaffold app profile diff\n`;
-  }
-  return `${report.errors.join("\n")}\n`;
+  return renderScaffoldAppProfileDiffReportModule(report);
 }
 
 function cloneJson(value) {
@@ -8122,30 +7264,11 @@ function appChangeReplayCorpusReport(corpus) {
 }
 
 function renderAppChangeReplayMarkdownReport(report) {
-  const lines = [
-    `# App Change Replay Corpus ${report.corpus.id}`,
-    "",
-    `- status: \`${report.status}\``,
-    `- passed: \`${report.passed}/${report.total}\``,
-    "",
-    "| Case | Expected | Actual | Status | Changes | Errors |",
-    "| --- | --- | --- | --- | --- | --- |",
-  ];
-  for (const entry of report.cases) {
-    const changes = entry.changes
-      .filter((change) => change.suggestionKind !== "ignored")
-      .map((change) => `${change.change} ${change.kind} ${change.id} -> ${change.suggestionKind}`)
-      .join("<br>");
-    lines.push(`| ${markdownCell(entry.id)} | ${markdownCell(entry.expected)} | ${markdownCell(entry.actual)} | ${markdownCell(entry.status)} | ${markdownCell(changes)} | ${markdownCell(entry.errors.join("<br>"))} |`);
-  }
-  return `${lines.join("\n")}\n`;
+  return renderAppChangeReplayMarkdownReportModule(report);
 }
 
 function renderAppChangeReplayReport(report) {
-  if (report.status === "pass") {
-    return `ok: ${report.corpus.id} app change replay (${report.passed}/${report.total} cases)\n`;
-  }
-  return `${report.errors.join("\n")}\n`;
+  return renderAppChangeReplayReportModule(report);
 }
 
 function specReadingExpectationKey(expected) {
@@ -9099,110 +8222,24 @@ function renderSpecReadingEvalReport(report) {
   return `${report.errors.join("\n")}\n`;
 }
 
-function renderAppProfileEvaluationMarkdownScenarios(scenarios) {
-  const lines = [
-    "| Scenario | Kind | Guard | Expected | Actual | Status | Suggestion Kind | Mutation | Errors |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
-  ];
-  for (const scenario of scenarios) {
-    const mutation = scenario.mutation ? JSON.stringify(stableObject(scenario.mutation)) : "";
-    lines.push(`| ${markdownCell(scenario.id)} | ${markdownCell(scenario.kind)} | ${markdownCell(scenario.guard)} | ${markdownCell(scenario.expected)} | ${markdownCell(scenario.actual)} | ${markdownCell(scenario.status)} | ${markdownCell(scenario.detectedSuggestionKind ?? "")} | ${markdownCell(mutation)} | ${markdownCell(list(scenario.errors).join("<br>"))} |`);
-  }
-  return lines;
-}
-
-function renderSingleAppProfileEvaluationMarkdown(report, level = 1) {
-  const prefix = "#".repeat(level);
-  return [
-    `${prefix} App Profile Evaluation ${report.profile.id}`,
-    "",
-    `- modelPath: \`${report.profile.modelPath}\``,
-    `- appRoot: \`${report.profile.appRoot}\``,
-    `- status: \`${report.status}\``,
-    `- passed: \`${report.passed}/${report.total}\``,
-    "",
-    ...renderAppProfileEvaluationMarkdownScenarios(report.scenarios),
-  ];
-}
-
 function renderAppProfileEvaluationMarkdownReport(report) {
-  if (!Array.isArray(report.evaluations)) {
-    return `${renderSingleAppProfileEvaluationMarkdown(report).join("\n")}\n`;
-  }
-  const lines = [
-    `# App Profile Suite Evaluation ${report.suite.id}`,
-    "",
-    `- status: \`${report.status}\``,
-    `- passed: \`${report.passed}/${report.total}\``,
-    "",
-    "| Profile | Status | Scenarios | Errors |",
-    "| --- | --- | --- | --- |",
-  ];
-  for (const entry of report.evaluations) {
-    lines.push(`| ${markdownCell(entry.profile.id)} | ${markdownCell(entry.status)} | ${markdownCell(`${entry.passed}/${entry.total}`)} | ${markdownCell(list(entry.errors).join("<br>"))} |`);
-  }
-  for (const entry of report.evaluations) {
-    lines.push("", ...renderSingleAppProfileEvaluationMarkdown(entry, 2));
-  }
-  return `${lines.join("\n")}\n`;
+  return renderAppProfileEvaluationMarkdownReportModule(report);
 }
 
 function renderAppProfileScenarioCoverageMarkdownReport(report) {
-  const lines = [
-    `# App Profile Scenario Coverage ${report.profile.id}`,
-    "",
-    `- status: \`${report.status}\``,
-    `- covered: \`${report.covered}/${report.total}\``,
-    `- inferredCategories: \`${list(report.inferredCategories).join(", ") || "none"}\``,
-    `- requiredCategories: \`${list(report.requiredCategories).join(", ") || "none"}\``,
-    "",
-    "| Scope | Gate | Category | Guard | Suggestion Kind | Status | Scenarios |",
-    "| --- | --- | --- | --- | --- | --- | --- |",
-  ];
-  for (const requirement of report.requirements) {
-    lines.push(`| ${markdownCell(requirement.scope)} | ${markdownCell(requirement.gate ?? "")} | ${markdownCell(requirement.category ?? "")} | ${markdownCell(requirement.guard)} | ${markdownCell(requirement.suggestionKind ?? "")} | ${markdownCell(requirement.status)} | ${markdownCell(list(requirement.scenarios).join(", "))} |`);
-  }
-  return `${lines.join("\n")}\n`;
+  return renderAppProfileScenarioCoverageMarkdownReportModule(report);
 }
 
 function renderAppProfileMutationScoreMarkdownReport(report) {
-  const lines = [
-    `# App Profile Mutation Score ${report.profile.id}`,
-    "",
-    `- status: \`${report.status}\``,
-    `- score: \`${report.score}\``,
-    `- detected: \`${report.detected}/${report.generated}\``,
-    `- categories: \`${list(report.categories).join(", ") || "none"}\``,
-    "",
-    "| Mutation | Category | Suggestion Kind | Actual | Status | Payload | Shrinks | Errors |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- |",
-  ];
-  for (const mutation of report.mutations) {
-    const payload = mutation.mutation ? JSON.stringify(stableObject(mutation.mutation)) : "";
-    const shrinks = JSON.stringify(stableObject(mutation.shrinks));
-    lines.push(`| ${markdownCell(mutation.id)} | ${markdownCell(mutation.category)} | ${markdownCell(mutation.suggestionKind)} | ${markdownCell(mutation.actual)} | ${markdownCell(mutation.status)} | ${markdownCell(payload)} | ${markdownCell(shrinks)} | ${markdownCell(list(mutation.errors).join("<br>"))} |`);
-  }
-  return `${lines.join("\n")}\n`;
+  return renderAppProfileMutationScoreMarkdownReportModule(report);
 }
 
 function renderAppProfileEvaluationReport(report) {
-  if (Array.isArray(report.evaluations)) {
-    if (report.status === "pass") {
-      return `ok: ${report.suite.id} app profile suite evaluation (${report.passed}/${report.total} profiles)\n`;
-    }
-    return `${report.errors.join("\n")}\n`;
-  }
-  if (report.status === "pass") {
-    return `ok: ${report.profile.id} app profile evaluation (${report.passed}/${report.total} scenarios)\n`;
-  }
-  return `${report.errors.join("\n")}\n`;
+  return renderAppProfileEvaluationReportModule(report);
 }
 
 function renderAppProfileMutationScoreReport(report) {
-  if (report.status === "pass") {
-    return `ok: ${report.profile.id} app profile mutation score ${report.score} (${report.detected}/${report.generated} detected)\n`;
-  }
-  return `${report.errors.join("\n")}\n`;
+  return renderAppProfileMutationScoreReportModule(report);
 }
 
 function sqlQueryName(chunk, index) {
@@ -17998,6 +17035,79 @@ function projectionImpactReport(beforeModel, afterModel, afterFile) {
   };
 }
 
+function domainImpactItems(model, collection) {
+  return list(model?.patterns?.domain?.[collection]);
+}
+
+function normalizedImplementationRef(reference) {
+  if (!reference) return null;
+  return {
+    kind: reference.kind,
+    path: reference.path,
+    symbol: reference.symbol ?? null,
+  };
+}
+
+function impactContext(change, beforeModel, afterModel, beforeSourceMap, afterSourceMap) {
+  return {
+    sourceModel: sourceModelForChange(change, beforeModel, afterModel),
+    sourceMap: sourceMapForChange(change, beforeSourceMap, afterSourceMap),
+  };
+}
+
+function sortedChecks(entry) {
+  return list(entry?.checks).slice().sort();
+}
+
+function reverificationForChecks(checks) {
+  return ["traceability", ...checks.map((check) => `check:${check}`)];
+}
+
+function sortedImplementationRefs(references) {
+  return references
+    .filter(Boolean)
+    .map(normalizedImplementationRef)
+    .sort((left, right) => `${left.kind}\u0000${left.path}\u0000${left.symbol ?? ""}`.localeCompare(`${right.kind}\u0000${right.path}\u0000${right.symbol ?? ""}`));
+}
+
+function formalizationImpact(change, beforeModel, afterModel, beforeSourceMap, afterSourceMap) {
+  const { sourceModel, sourceMap } = impactContext(change, beforeModel, afterModel, beforeSourceMap, afterSourceMap);
+  const formalization = domainImpactItems(sourceModel, "formalizations").find((entry) => entry.id === change.id) ?? null;
+  const affectedRules = formalization?.rule ? [formalization.rule] : [];
+  const checks = sortedChecks(formalization);
+  return {
+    kind: "formalization",
+    id: change.id,
+    change: change.change,
+    affectedRules,
+    generated: generatedForRuleIds(sourceMap, affectedRules),
+    implementationRefs: sortedImplementationRefs([formalization?.target]),
+    checks,
+    reverification: reverificationForChecks(checks),
+  };
+}
+
+function refinementImpact(change, beforeModel, afterModel, beforeSourceMap, afterSourceMap) {
+  const { sourceModel, sourceMap } = impactContext(change, beforeModel, afterModel, beforeSourceMap, afterSourceMap);
+  const refinement = domainImpactItems(sourceModel, "refinements").find((entry) => entry.id === change.id) ?? null;
+  const formalizations = new Map(domainImpactItems(sourceModel, "formalizations").map((entry) => [entry.id, entry]));
+  const source = formalizations.get(refinement?.sourceFormalization) ?? null;
+  const target = formalizations.get(refinement?.targetFormalization) ?? null;
+  const affectedRules = [...new Set([source?.rule, target?.rule, ...list(refinement?.preserves)].filter(Boolean))].sort();
+  const checks = sortedChecks(refinement);
+  const implementationRefs = sortedImplementationRefs([source?.target, target?.target]);
+  return {
+    kind: "refinement",
+    id: change.id,
+    change: change.change,
+    affectedRules,
+    generated: generatedForRuleIds(sourceMap, affectedRules),
+    implementationRefs,
+    checks,
+    reverification: reverificationForChecks(checks),
+  };
+}
+
 function impactReport(beforeModel, afterModel, { afterFile = null } = {}) {
   const beforeErrors = validate(beforeModel).map((error) => `before: ${error}`);
   const afterErrors = validate(afterModel).map((error) => `after: ${error}`);
@@ -18009,7 +17119,7 @@ function impactReport(beforeModel, afterModel, { afterFile = null } = {}) {
 
   if (errors.length > 0) {
     return {
-      changed: { projections: [], terms: [], rules: [] },
+      changed: { projections: [], terms: [], rules: [], formalizations: [], refinements: [] },
       errors,
       impacts: [],
       model,
@@ -18024,6 +17134,8 @@ function impactReport(beforeModel, afterModel, { afterFile = null } = {}) {
     projections: diffItems(projections(beforeModel), projections(afterModel)),
     terms: diffItems(beforeModel.vocabulary, afterModel.vocabulary),
     rules: diffItems(beforeModel.rules, afterModel.rules),
+    formalizations: diffItems(domainImpactItems(beforeModel, "formalizations"), domainImpactItems(afterModel, "formalizations")),
+    refinements: diffItems(domainImpactItems(beforeModel, "refinements"), domainImpactItems(afterModel, "refinements")),
   };
   const impacts = [];
 
@@ -18060,6 +17172,16 @@ function impactReport(beforeModel, afterModel, { afterFile = null } = {}) {
     });
   }
 
+  for (const change of changed.formalizations) {
+    impacts.push(formalizationImpact(change, beforeModel, afterModel, beforeSourceMap, afterSourceMap));
+  }
+
+  for (const change of changed.refinements) {
+    impacts.push(refinementImpact(change, beforeModel, afterModel, beforeSourceMap, afterSourceMap));
+  }
+
+  impacts.sort((left, right) => `${left.kind}\u0000${left.id}`.localeCompare(`${right.kind}\u0000${right.id}`));
+
   return {
     changed,
     errors: [],
@@ -18074,7 +17196,11 @@ function renderImpactReport(report) {
   if (report.status === "fail") {
     return `spec impact failed\n${report.errors.join("\n")}\n`;
   }
-  const changeCount = report.changed.projections.length + report.changed.terms.length + report.changed.rules.length;
+  const changeCount = report.changed.projections.length
+    + report.changed.terms.length
+    + report.changed.rules.length
+    + report.changed.formalizations.length
+    + report.changed.refinements.length;
   const lines = [`ok: spec impact (${changeCount} changes)`];
   for (const impact of report.impacts) {
     lines.push(`- ${impact.kind} ${impact.id} ${impact.change}`);
@@ -18086,6 +17212,9 @@ function renderImpactReport(report) {
     }
     if (impact.implementationRefs.length > 0) {
       lines.push(`  implementation refs: ${impact.implementationRefs.map((ref) => `${ref.path}${ref.symbol ? `#${ref.symbol}` : ""}`).join(", ")}`);
+    }
+    if (impact.reverification?.length > 0) {
+      lines.push(`  reverify: ${impact.reverification.join(", ")}`);
     }
   }
   for (const artifact of report.projectionImpact.artifacts) {

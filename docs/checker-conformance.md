@@ -22,8 +22,10 @@ must preserve the report fields and error semantics for every case.
 - `dspec/Schema.pkl` is the stable authoring facade. Its `Core -> Claims ->
   Checks` implementation chain is internal.
 - `src/adapters/pkl.mjs` owns Pkl subprocess evaluation and JSON decoding.
-- `src/core/*.mjs` and the TypeScript source/compiled pair for external
-  holdouts own filesystem-free semantic calculations.
+- `src/core/*.mjs` own filesystem-free semantic calculations. Selected modules
+  use checked `.mts` source with generated `.mjs` execution artifacts.
+- `src/commands/*.mts` owns typed usage and argument contracts for extracted
+  CLI command groups; `src/cli.mjs` adapts them to process I/O.
 - `src/cli.mjs` remains the reference command dispatcher and adapts failures to
   process exit status.
 

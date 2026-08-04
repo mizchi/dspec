@@ -204,6 +204,8 @@ export function domainTraceabilityReport(model, evidenceEntries = []) {
       targetFormalization: refinement.targetFormalization,
       sourceCondition: refinement.sourceCondition,
       targetCondition: refinement.targetCondition,
+      stateRelation: refinement.stateRelation ?? null,
+      preserves: list(refinement.preserves).slice().sort(),
       assumptions: list(refinement.assumptions).slice(),
       checks,
       status: hasFailure ? "fail" : ready ? "pass" : "unexecuted",
@@ -295,6 +297,8 @@ export function renderDomainTraceabilityMarkdown(report, { locale = "en" } = {})
       lines.push(`- kind: \`${refinement.kind}\`; evidence: \`${refinement.status}\``);
       lines.push(`- abstract: \`${refinement.sourceFormalization}\` — ${refinement.sourceCondition}`);
       lines.push(`- concrete: \`${refinement.targetFormalization}\` — ${refinement.targetCondition}`);
+      if (refinement.stateRelation) lines.push(`- state relation: ${refinement.stateRelation}`);
+      for (const rule of refinement.preserves) lines.push(`- preserves rule: \`${rule}\``);
       for (const assumption of refinement.assumptions) lines.push(`- assumption: ${assumption}`);
       for (const check of refinement.checks) lines.push(`- check: \`${check.id}\` — \`${check.status}\` (${check.assurance ?? "unknown"})`);
       lines.push("");
@@ -325,11 +329,16 @@ export function renderDomainTraceabilityMarkdown(report, { locale = "en" } = {})
     for (const error of formalization.evidence?.errors ?? []) lines.push(`- evidence error: ${error}`);
     for (const counterexample of formalization.evidence?.counterexamples ?? []) {
       lines.push("", `#### Counterexample ${counterexample.check ?? "witness"}`, "");
+      if (counterexample.source?.kind) {
+        const source = [counterexample.source.kind, counterexample.source.check].filter(Boolean).join(":");
+        lines.push(`- source: \`${source}\``);
+      }
       const trace = list(counterexample.trace);
       const path = list(counterexample.path);
       if (path.length > 0) lines.push(`- action trace: ${path.map((step) => tracePathLine(step, formalization.mappings)).join(" → ")}`);
       trace.forEach((state, index) => lines.push(`- 状態 ${index}: ${stateLine(state)}`));
       if (counterexample.violation?.index !== undefined) lines.push(`- 違反位置: ${counterexample.violation.index}`);
+      if (counterexample.violation?.message) lines.push(`- violation: ${counterexample.violation.message}`);
     }
     if (index < report.formalizations.length - 1) lines.push("");
   }

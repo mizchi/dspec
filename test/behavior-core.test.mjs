@@ -117,6 +117,41 @@ test("labels explicit scheduled traces as assumptions, not as a general fairness
   }]);
 });
 
+test("checks a bounded until formula without claiming unbounded liveness", () => {
+  const document = purchaseDocument();
+  const availableIs = (value) => ({
+    kind: "state",
+    constraint: {
+      kind: "equals",
+      terms: [
+        { kind: "current", field: "available", value: null, children: [] },
+        { kind: "number", field: null, value, children: [] },
+      ],
+      children: [],
+    },
+    children: [],
+  });
+  document.behavior.temporal = [{
+    id: "purchase.available-until-empty.holds",
+    rule: "PURCHASE-CAPACITY",
+    scope: "path",
+    path: [{ action: "purchase", input: { quantity: 10 } }],
+    formula: {
+      kind: "until",
+      constraint: null,
+      children: [availableIs(10), availableIs(0)],
+    },
+    expectation: "holds",
+  }];
+
+  const compiled = compileBehaviorModel(document);
+  const report = verifyBehaviorModel(document);
+
+  assert.equal(compiled.temporalChecks[0].formula.kind, "until");
+  assert.equal(report.status, "pass");
+  assert.equal(report.temporal.checks[0].assurance, "finite-trace");
+});
+
 test("checks domain constraints and preserves an all-path counterexample", () => {
   const report = verifyBehaviorModel(purchaseDocument());
 

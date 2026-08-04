@@ -15,7 +15,7 @@ typealias TemporalExpectation = "holds" | "violated"
 typealias TemporalScope = "path" | "allPaths"
 typealias NatKind = "current" | "initial" | "input" | "number" | "plus" | "minus"
 typealias ConstraintKind = "atMost" | "equals" | "allOf" | "ifThen"
-typealias TemporalKind = "state" | "not" | "all" | "any" | "next" | "always" | "eventually"
+typealias TemporalKind = "state" | "not" | "all" | "any" | "next" | "always" | "eventually" | "until"
 
 /// A natural-number value in the behavior language. Prefer the constructors
 /// below (`current`, `input`, `atMost`, and so on) over constructing AST nodes.
@@ -109,6 +109,10 @@ function anyTemporal(parts: Listing<TemporalFormula>): TemporalFormula = new { k
 function next(childFormula: TemporalFormula): TemporalFormula = new { kind = "next"; children { childFormula } }
 function always(childFormula: TemporalFormula): TemporalFormula = new { kind = "always"; children { childFormula } }
 function eventually(childFormula: TemporalFormula): TemporalFormula = new { kind = "eventually"; children { childFormula } }
+/// `until(guard, goal)` is true on a finite trace when `goal` is reached and
+/// `guard` holds at every preceding position. It is bounded evidence, not an
+/// unbounded liveness or fairness proof.
+function until(guard: TemporalFormula, goal: TemporalFormula): TemporalFormula = new { kind = "until"; children { guard; goal } }
 
 /// A scheduling premise for one explicit finite trace. This records an
 /// assumption made by the selected path; it is deliberately not an infinite

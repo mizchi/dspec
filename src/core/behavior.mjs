@@ -82,6 +82,7 @@ function compileTemporalFormula(formula) {
     next: "next",
     always: "always",
     eventually: "eventually",
+    until: "until",
   }[formula.kind];
   if (!kind) throw new Error(`unknown behavior temporal formula: ${formula.kind ?? "missing"}`);
   return {
