@@ -4024,7 +4024,7 @@
           "key": "model:LICENSE"
         },
         {
-          "contentHash": "sha256:b6692a1002b36003808c07f184fa11f2c9964e59689eb70d3c0b6d6dfe5d4eb3",
+          "contentHash": "sha256:cdb29c08c226ae91a5ef38f2650076be542a5717e4e567afd0112c930f37a8d3",
           "hashScope": "file",
           "key": "model:package.json"
         },
