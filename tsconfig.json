@@ -8,5 +8,5 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
-  "include": ["src/core/**/*.mts"]
+  "include": ["src/core/**/*.mts", "src/commands/**/*.mts"]
 }

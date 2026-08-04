@@ -22,7 +22,9 @@ concrete Formalization ──┘
 - `checks`: 形式化が責任を持つ安定した検査 ID
 
 `DomainFormalizationRefinement` は「抽象モデルの前提が、どの具体モデルの
-どの条件に対応するか」を明示する。たとえばテトリスでは
+どの条件に対応するか」を明示する。`stateRelation` は両側の状態・入力の
+対応をレビュー可能な文として残し、`preserves` はその境界を越えて維持すべき
+Rule を明示する。たとえばテトリスでは
 `spawn-open = 1` を、座標モデルの `no (spawn & locked)` に結び、具体
 モデルの Alloy assertion を check として指定する。レポートは両端の
 形式化とその check が通って初めて refinement を `pass` と表示する。
@@ -72,6 +74,8 @@ dspec formal-mutation --json --require-formal-tools fixtures/tetris-alloy.pkl
 - `fixtures/tetris-line-clear-alloy.pkl`: 満行の消去と、残ったセルの行圧縮
 - `docs/generated/tetris/traceability.md`: 現在の接地済み範囲と未接地のレビューキュー
 
-時相の `fairness` は無限トレースの LTL 公平性を証明する機能ではない。選んだ有限経路が依存するスケジューリング前提を記録し、結果を `finite-scheduled-trace` と表示する。そのため「重力 tick が来続ける」という環境仮定と、モデルが実際に検査した有限トレースを分離して読める。
+時相の `fairness` は無限トレースの LTL 公平性を証明する機能ではない。選んだ有限経路が依存するスケジューリング前提を記録し、結果を `finite-scheduled-trace` と表示する。そのため「重力 tick が来続ける」という環境仮定と、モデルが実際に検査した有限トレースを分離して読める。`until(guard, goal)` は同じ有限トレースで、`goal` が到達するまで `guard` が成立することを検査する。これは無限時間の liveness 証明ではない。
+
+時相、Alloy、実装 grounding の失敗は、`schemaVersion`、source、action path、state trace、expected/actual、violation を持つ共通 Counterexample envelope に正規化される。元のツール固有の証跡は失わず、この envelope は Markdown、実装 replay、後続のテストアダプタに渡すための共通の入口になる。
 
 Alloy 6 が PATH にあれば `verifyTetrisAlloyWithAnalyzer` が生成済みの assertion を有限スコープで実行する。入っていない環境では reference evaluator と生成物同期検査だけが通り、Alloy 実行済みであるという主張にはならない。

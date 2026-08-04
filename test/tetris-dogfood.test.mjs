@@ -40,16 +40,22 @@ test("dogfoods the domain DSL with a bounded Tetris rules specification", () => 
   assert.deepEqual(traceabilityReport.refinements.map((refinement) => ({
     id: refinement.id,
     status: refinement.status,
+    stateRelation: refinement.stateRelation,
+    preserves: refinement.preserves,
     checks: refinement.checks.map((check) => check.status),
   })), [{
     id: "spawn-open-from-coordinates",
     status: "pass",
+    stateRelation: "spawn-open is 1 exactly when the fixed spawn footprint has no locked coordinate",
+    preserves: ["TETRIS-START-GAME"],
     checks: ["pass", "pass"],
   }]);
   const graph = JSON.parse(relationships.stdout);
   assert.ok(graph.edges.some((edge) => edge.from === "domain/invariant/gravity-locks-piece" && edge.relation === "states-rule" && edge.to === "rule/TETRIS-GRAVITY-LOCKS"));
   assert.ok(graph.edges.some((edge) => edge.from === "domain/formalization/gravity-lock-behavior" && edge.relation === "uses-artifact" && edge.to === "artifact/model/fixtures/tetris-gravity-behavior.pkl"));
   assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/spawn-open-from-coordinates" && edge.relation === "refines-to-formalization" && edge.to === "domain/formalization/coordinate-start-spawn-alloy"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/spawn-open-from-coordinates" && edge.relation === "states-relation" && edge.to === "formal-relation/spawn-open-from-coordinates"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/spawn-open-from-coordinates" && edge.relation === "preserves-rule" && edge.to === "rule/TETRIS-START-GAME"));
   assert.match(markdown.stdout, /## Domain Model/);
   assert.match(markdown.stdout, /重力で下降できないピースは固定される/);
   assert.match(markdown.stdout, /SRS、ホールド、T-spin、得点は今回の仕様範囲外/);

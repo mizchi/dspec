@@ -15,7 +15,7 @@ const FORMULA_KINDS = new Set(["le", "eq", "and", "implies"]);
 const BOOLEAN_FORMULA_KINDS = new Set(["variable", "literal", "not", "and", "or"]);
 const INT_EXPR_KINDS = new Set(["variable", "literal", "add", "sub", "scale"]);
 const INT_FORMULA_KINDS = new Set(["le", "eq", "not", "and", "or"]);
-const TEMPORAL_FORMULA_KINDS = new Set(["state", "not", "and", "or", "next", "always", "eventually"]);
+const TEMPORAL_FORMULA_KINDS = new Set(["state", "not", "and", "or", "next", "always", "eventually", "until"]);
 const MAX_BOUNDED_SMT_ASSIGNMENTS = 100_000;
 const MAX_BOUNDED_TEMPORAL_PATHS = 10_000;
 
@@ -374,6 +374,9 @@ function validateTemporalFormula(formula, context, stateFields, errors) {
   }
   if ((formula.kind === "not" || formula.kind === "next" || formula.kind === "always" || formula.kind === "eventually") && children.length !== 1) {
     errors.push(`${formula.kind} temporal formula requires exactly one child formula: ${context}`);
+  }
+  if (formula.kind === "until" && children.length !== 2) {
+    errors.push(`until temporal formula requires exactly two child formulas: ${context}`);
   }
   if ((formula.kind === "and" || formula.kind === "or") && children.length === 0) {
     errors.push(`${formula.kind} temporal formula requires at least one child formula: ${context}`);
@@ -1416,6 +1419,14 @@ export function evaluateLeanTemporalFormula(system, trace, formula, index = 0) {
       return trace.slice(index).every((_, offset) => evaluateLeanTemporalFormula(system, trace, formula.children[0], index + offset));
     case "eventually":
       return trace.slice(index).some((_, offset) => evaluateLeanTemporalFormula(system, trace, formula.children[0], index + offset));
+    case "until": {
+      const [guard, goal] = formula.children;
+      for (let position = index; position < trace.length; position += 1) {
+        if (evaluateLeanTemporalFormula(system, trace, goal, position)) return true;
+        if (!evaluateLeanTemporalFormula(system, trace, guard, position)) return false;
+      }
+      return false;
+    }
     default: throw new Error(`cannot evaluate unknown temporal formula kind: ${formula.kind}`);
   }
 }
@@ -1437,6 +1448,16 @@ function temporalViolation(system, trace, formula, index = 0) {
   if (formula.kind === "and") {
     const child = formula.children.find((candidate) => !evaluateLeanTemporalFormula(system, trace, candidate, index));
     if (child) return temporalViolation(system, trace, child, index) ?? { index, state: trace[index] };
+  }
+  if (formula.kind === "until") {
+    const [guard, goal] = formula.children;
+    for (let position = index; position < trace.length; position += 1) {
+      if (evaluateLeanTemporalFormula(system, trace, goal, position)) return { index: position, state: trace[position] };
+      if (!evaluateLeanTemporalFormula(system, trace, guard, position)) {
+        return temporalViolation(system, trace, guard, position) ?? { index: position, state: trace[position] };
+      }
+    }
+    return { index: trace.length - 1, state: trace.at(-1) };
   }
   return { index, state: trace[index] };
 }

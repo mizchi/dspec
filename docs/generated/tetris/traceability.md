@@ -14,6 +14,8 @@
 - kind: `input-abstraction`; evidence: `pass`
 - abstract: `start-game-behavior` — spawn-open = 1
 - concrete: `coordinate-start-spawn-alloy` — no (SpawnScenario.spawn & SpawnScenario.locked)
+- state relation: spawn-open is 1 exactly when the fixed spawn footprint has no locked coordinate
+- preserves rule: `TETRIS-START-GAME`
 - assumption: The correspondence is checked for one locked cell and the fixed north-facing T spawn footprint on the finite 4 by 4 board.
 - assumption: It identifies the abstract input only; random tetromino selection and production board size remain outside this refinement.
 - check: `tetris.coordinate-spawn.availability-refines-coordinates.holds` — `pass` (bounded-relational-reference)

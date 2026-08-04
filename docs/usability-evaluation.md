@@ -466,9 +466,10 @@ Pkl remains the authoring language. The schema is now split behind the stable
   records
 
 `src/adapters/pkl.mjs` owns the Pkl-to-JSON process boundary. Pure semantic
-calculations live under `src/core/`, including the TypeScript source and
-compiled Node module for external holdout aggregation. The current Node CLI is
-the first command dispatcher; `fixtures/checker-conformance-suite.json` lets a
+calculations live under `src/core/`. Selected CLI command boundaries use typed
+`.mts` sources and generated `.mjs` execution artifacts under `src/commands/`.
+The current Node CLI is the first command dispatcher;
+`fixtures/checker-conformance-suite.json` lets a
 `mizchi/pkl-mbt` checker compare the same typed Pkl inputs and report fixtures
 without changing the authoring surface.
 `check --json`, `drift --json`, `coverage --json`, `impact --json`,

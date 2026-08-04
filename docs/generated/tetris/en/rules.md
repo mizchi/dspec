@@ -498,8 +498,8 @@ After game over, movement, rotation, gravity, and locking are not accepted
 
 ## Specification Relationships
 
-- nodes: `122`
-- relationships: `165`
+- nodes: `123`
+- relationships: `167`
 - status: `pass`
 
 ### Relationship ledger
@@ -612,7 +612,9 @@ After game over, movement, rotation, gravity, and locking are not accepted
 | `domain/refinement/spawn-open-from-coordinates` | `abstracts-formalization` | `domain/formalization/start-game-behavior` |
 | `domain/refinement/spawn-open-from-coordinates` | `asserts-check` | `formal-check/coordinate-start-spawn-alloy/tetris.coordinate-spawn.availability-refines-coordinates.holds` |
 | `domain/refinement/spawn-open-from-coordinates` | `asserts-check` | `formal-check/coordinate-start-spawn-alloy/tetris.coordinate-spawn.implementation-input-conforms.holds` |
+| `domain/refinement/spawn-open-from-coordinates` | `preserves-rule` | `rule/TETRIS-START-GAME` |
 | `domain/refinement/spawn-open-from-coordinates` | `refines-to-formalization` | `domain/formalization/coordinate-start-spawn-alloy` |
+| `domain/refinement/spawn-open-from-coordinates` | `states-relation` | `formal-relation/spawn-open-from-coordinates` |
 | `domain/value-object/active-piece` | `declares-field` | `domain/field/valueObjects/active-piece/kind` |
 | `domain/value-object/active-piece` | `declares-field` | `domain/field/valueObjects/active-piece/orientation` |
 | `domain/value-object/active-piece` | `declares-field` | `domain/field/valueObjects/active-piece/origin` |
@@ -780,24 +782,25 @@ flowchart LR
   N101["formal check terminal-game-over-behavior.tetris.game-over.always-terminal"]
   N102["formal check terminal-game-over-behavior.tetris.game-over.playing.unreachable"]
   N103["formal check translation-rejection-alloy.tetris.translation.illegal-rejected.holds"]
-  N104["Rule TETRIS-ADVANCED-RULES-OUT-OF-SCOPE"]
-  N105["Rule TETRIS-BOARD-BOUNDS"]
-  N106["Rule TETRIS-CLEAR-FULL-ROWS"]
-  N107["Rule TETRIS-GRAVITY-LOCKS"]
-  N108["Rule TETRIS-LEGAL-ROTATION"]
-  N109["Rule TETRIS-LEGAL-TRANSLATION"]
-  N110["Rule TETRIS-NO-OVERLAP"]
-  N111["Rule TETRIS-SPAWN-GAME-OVER"]
-  N112["Rule TETRIS-START-GAME"]
-  N113["Rule TETRIS-TERMINAL-GAME-OVER"]
-  N114["Term tetris.active-piece"]
-  N115["Term tetris.board"]
-  N116["Term tetris.cell"]
-  N117["Term tetris.game-over"]
-  N118["Term tetris.gravity"]
-  N119["Term tetris.line-clear"]
-  N120["Term tetris.lock"]
-  N121["Term tetris.tetromino"]
+  N104["spawn-open is 1 exactly when the fixed spawn footprint has no locked coordinate"]
+  N105["Rule TETRIS-ADVANCED-RULES-OUT-OF-SCOPE"]
+  N106["Rule TETRIS-BOARD-BOUNDS"]
+  N107["Rule TETRIS-CLEAR-FULL-ROWS"]
+  N108["Rule TETRIS-GRAVITY-LOCKS"]
+  N109["Rule TETRIS-LEGAL-ROTATION"]
+  N110["Rule TETRIS-LEGAL-TRANSLATION"]
+  N111["Rule TETRIS-NO-OVERLAP"]
+  N112["Rule TETRIS-SPAWN-GAME-OVER"]
+  N113["Rule TETRIS-START-GAME"]
+  N114["Rule TETRIS-TERMINAL-GAME-OVER"]
+  N115["Term tetris.active-piece"]
+  N116["Term tetris.board"]
+  N117["Term tetris.cell"]
+  N118["Term tetris.game-over"]
+  N119["Term tetris.gravity"]
+  N120["Term tetris.line-clear"]
+  N121["Term tetris.lock"]
+  N122["Term tetris.tetromino"]
   N6 -->|member| N12
   N6 -->|root| N12
   N7 -->|declares-field| N21
@@ -839,72 +842,74 @@ flowchart LR
   N41 -->|references| N14
   N43 -->|references| N69
   N51 -->|asserts-check| N86
-  N51 -->|checks-rule| N105
+  N51 -->|checks-rule| N106
   N51 -->|models-action| N71
   N51 -->|uses-artifact| N0
   N52 -->|asserts-check| N87
-  N52 -->|checks-rule| N111
+  N52 -->|checks-rule| N112
   N52 -->|models-action| N72
   N52 -->|uses-artifact| N0
   N53 -->|asserts-check| N88
   N53 -->|asserts-check| N89
   N53 -->|asserts-check| N90
-  N53 -->|checks-rule| N112
+  N53 -->|checks-rule| N113
   N53 -->|models-action| N73
   N53 -->|uses-artifact| N0
   N54 -->|asserts-check| N91
   N54 -->|asserts-check| N92
   N54 -->|asserts-check| N93
-  N54 -->|checks-rule| N107
+  N54 -->|checks-rule| N108
   N54 -->|models-action| N74
   N54 -->|models-action| N75
   N54 -->|uses-artifact| N1
   N55 -->|asserts-check| N94
-  N55 -->|checks-rule| N106
+  N55 -->|checks-rule| N107
   N55 -->|models-action| N76
   N55 -->|uses-artifact| N2
   N56 -->|asserts-check| N95
-  N56 -->|checks-rule| N110
+  N56 -->|checks-rule| N111
   N56 -->|models-action| N77
   N56 -->|uses-artifact| N0
   N57 -->|asserts-check| N96
-  N57 -->|checks-rule| N108
+  N57 -->|checks-rule| N109
   N57 -->|models-action| N78
   N57 -->|uses-artifact| N0
   N58 -->|asserts-check| N97
   N58 -->|asserts-check| N98
-  N58 -->|checks-rule| N111
+  N58 -->|checks-rule| N112
   N58 -->|models-action| N79
   N58 -->|uses-artifact| N3
   N59 -->|asserts-check| N99
   N59 -->|asserts-check| N100
-  N59 -->|checks-rule| N112
+  N59 -->|checks-rule| N113
   N59 -->|models-action| N80
   N59 -->|uses-artifact| N4
   N60 -->|asserts-check| N101
   N60 -->|asserts-check| N102
-  N60 -->|checks-rule| N113
+  N60 -->|checks-rule| N114
   N60 -->|models-action| N81
   N60 -->|models-action| N82
   N60 -->|models-action| N83
   N60 -->|models-action| N84
   N60 -->|uses-artifact| N5
   N61 -->|asserts-check| N103
-  N61 -->|checks-rule| N109
+  N61 -->|checks-rule| N110
   N61 -->|models-action| N85
   N61 -->|uses-artifact| N0
   N62 -->|invariant-of| N6
-  N62 -->|states-rule| N105
+  N62 -->|states-rule| N106
   N63 -->|invariant-of| N6
-  N63 -->|states-rule| N107
+  N63 -->|states-rule| N108
   N64 -->|invariant-of| N6
-  N64 -->|states-rule| N110
+  N64 -->|states-rule| N111
   N65 -->|invariant-of| N6
-  N65 -->|states-rule| N113
+  N65 -->|states-rule| N114
   N66 -->|abstracts-formalization| N59
   N66 -->|asserts-check| N88
   N66 -->|asserts-check| N90
+  N66 -->|preserves-rule| N113
   N66 -->|refines-to-formalization| N53
+  N66 -->|states-relation| N104
   N67 -->|declares-field| N41
   N67 -->|declares-field| N42
   N67 -->|declares-field| N43
@@ -938,31 +943,31 @@ flowchart LR
   N84 -->|implements-command| N11
   N85 -->|emits-event| N16
   N85 -->|implements-command| N11
-  N104 -->|uses-term| N121
-  N105 -->|uses-term| N114
-  N105 -->|uses-term| N115
-  N105 -->|uses-term| N116
+  N105 -->|uses-term| N122
   N106 -->|uses-term| N115
-  N106 -->|uses-term| N119
-  N106 -->|uses-term| N120
-  N107 -->|uses-term| N114
-  N107 -->|uses-term| N118
+  N106 -->|uses-term| N116
+  N106 -->|uses-term| N117
+  N107 -->|uses-term| N116
   N107 -->|uses-term| N120
-  N108 -->|uses-term| N114
+  N107 -->|uses-term| N121
   N108 -->|uses-term| N115
-  N109 -->|uses-term| N114
+  N108 -->|uses-term| N119
+  N108 -->|uses-term| N121
   N109 -->|uses-term| N115
-  N110 -->|uses-term| N114
+  N109 -->|uses-term| N116
   N110 -->|uses-term| N115
   N110 -->|uses-term| N116
   N111 -->|uses-term| N115
+  N111 -->|uses-term| N116
   N111 -->|uses-term| N117
-  N111 -->|uses-term| N121
-  N112 -->|uses-term| N114
-  N112 -->|uses-term| N115
-  N112 -->|uses-term| N121
-  N113 -->|uses-term| N114
-  N113 -->|uses-term| N117
+  N112 -->|uses-term| N116
+  N112 -->|uses-term| N118
+  N112 -->|uses-term| N122
+  N113 -->|uses-term| N115
+  N113 -->|uses-term| N116
+  N113 -->|uses-term| N122
+  N114 -->|uses-term| N115
+  N114 -->|uses-term| N118
 ```
 
 ## Decisions

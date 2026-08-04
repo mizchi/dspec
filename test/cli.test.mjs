@@ -2971,6 +2971,11 @@ profile: d.AppProfile = new {
     assert.deepEqual(report.changed.terms, [{ id: "action.view", change: "modified" }]);
     assert.deepEqual(report.changed.rules, [{ id: "IMPACT-AUDIT", change: "added" }]);
     assert.deepEqual(report.changed.projections, []);
+    assert.deepEqual(report.changed.formalizations, [
+      { id: "impact-allow-alloy", change: "added" },
+      { id: "impact-allow-behavior", change: "added" },
+    ]);
+    assert.deepEqual(report.changed.refinements, [{ id: "impact-allow-refinement", change: "added" }]);
     assert.deepEqual(report.projectionImpact.regenerateArgv, ["dspec", "generate", "fixtures/impact-after.pkl"]);
     assert.equal(report.projectionImpact.regenerateCommand, "dspec generate fixtures/impact-after.pkl");
     assert.deepEqual(
@@ -3014,6 +3019,18 @@ profile: d.AppProfile = new {
     assert.ok(ruleImpact);
     assert.ok(ruleImpact.generated.some((entry) => entry.generated === "markdown.rule.IMPACT-AUDIT"));
     assert.ok(ruleImpact.generated.some((entry) => entry.generated === "lean.RuleId.IMPACT_AUDIT"));
+
+    const formalizationImpact = report.impacts.find((impact) => impact.kind === "formalization" && impact.id === "impact-allow-behavior");
+    assert.ok(formalizationImpact);
+    assert.deepEqual(formalizationImpact.affectedRules, ["IMPACT-ALLOW"]);
+    assert.deepEqual(formalizationImpact.checks, ["purchase.capacity-always.holds"]);
+    assert.deepEqual(formalizationImpact.reverification, ["traceability", "check:purchase.capacity-always.holds"]);
+
+    const refinementImpact = report.impacts.find((impact) => impact.kind === "refinement" && impact.id === "impact-allow-refinement");
+    assert.ok(refinementImpact);
+    assert.deepEqual(refinementImpact.affectedRules, ["IMPACT-ALLOW"]);
+    assert.deepEqual(refinementImpact.checks, ["impact.allow.refines.holds"]);
+    assert.deepEqual(refinementImpact.reverification, ["traceability", "check:impact.allow.refines.holds"]);
   });
 
   it("keeps impact JSON report fixture in sync", () => {

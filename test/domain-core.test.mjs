@@ -80,9 +80,11 @@ function fixtureModel() {
           kind: "input-abstraction",
           sourceFormalization: "order-total-behavior",
           targetFormalization: "order-total-alloy",
-          sourceCondition: "total-input >= 0",
-          targetCondition: "no negative order total exists",
-          checks: ["order.total.holds"],
+        sourceCondition: "total-input >= 0",
+        targetCondition: "no negative order total exists",
+        stateRelation: "input total maps to the candidate order total",
+        preserves: ["ORDER-TOTAL-NON-NEGATIVE"],
+        checks: ["order.total.holds"],
         }],
       },
     },
@@ -146,6 +148,8 @@ test("compiles Entity, Value Object, Aggregate, Command, Event, and Invariant de
     targetFormalization: "order-total-alloy",
     sourceCondition: "total-input >= 0",
     targetCondition: "no negative order total exists",
+    stateRelation: "input total maps to the candidate order total",
+    preserves: ["ORDER-TOTAL-NON-NEGATIVE"],
     assumptions: [],
     checks: ["order.total.holds"],
   }]);
@@ -199,6 +203,8 @@ test("projects DDD declarations, rules, evidence, and formalizations into one re
   assert.ok(graph.edges.some((edge) => edge.from === "domain/formalization/order-total-alloy" && edge.relation === "asserts-check" && edge.to === "formal-check/order-total-alloy/order.total.holds"));
   assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/order-total-input-abstraction" && edge.relation === "abstracts-formalization" && edge.to === "domain/formalization/order-total-behavior"));
   assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/order-total-input-abstraction" && edge.relation === "refines-to-formalization" && edge.to === "domain/formalization/order-total-alloy"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/order-total-input-abstraction" && edge.relation === "states-relation" && edge.to === "formal-relation/order-total-input-abstraction"));
+  assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/order-total-input-abstraction" && edge.relation === "preserves-rule" && edge.to === "rule/ORDER-TOTAL-NON-NEGATIVE"));
   assert.ok(graph.edges.some((edge) => edge.from === "domain/refinement/order-total-input-abstraction" && edge.relation === "asserts-check" && edge.to === "formal-check/order-total-alloy/order.total.holds"));
   assert.ok(graph.edges.some((edge) => edge.from === "rule/ORDER-TOTAL-NON-NEGATIVE" && edge.relation === "has-check" && edge.to.startsWith("check/node/")));
   assert.ok(graph.edges.some((edge) => edge.from === "rule/ORDER-TOTAL-NON-NEGATIVE" && edge.relation === "implemented-by" && edge.to === "artifact/code/src/core/domain.mjs#renderDomainTypescript"));
@@ -256,4 +262,34 @@ test("requires a refinement to anchor every check in its concrete formalization"
   assert.deepEqual(ir.errors, [
     "domain refinement check is not declared by target formalization: order-total-input-abstraction -> order.total.missing.holds",
   ]);
+});
+
+test("requires transition refinements to declare their state relation", () => {
+  const model = fixtureModel();
+  model.patterns.domain.refinements[0].kind = "transition-refinement";
+  model.patterns.domain.refinements[0].stateRelation = null;
+
+  const ir = domainCodegenIr(model);
+
+  assert.equal(ir.status, "fail");
+  assert.deepEqual(ir.errors, [
+    "domain transition refinement state relation is missing: order-total-input-abstraction",
+  ]);
+});
+
+test("keeps every declared refinement structurally connected to its concrete evidence", () => {
+  const model = fixtureModel();
+  const graph = domainRelationshipGraph(model);
+
+  for (const refinement of model.patterns.domain.refinements) {
+    const node = `domain/refinement/${refinement.id}`;
+    assert.ok(graph.edges.some((edge) => edge.from === node && edge.relation === "abstracts-formalization"));
+    assert.ok(graph.edges.some((edge) => edge.from === node && edge.relation === "refines-to-formalization"));
+    for (const check of refinement.checks) {
+      assert.ok(graph.edges.some((edge) => edge.from === node && edge.relation === "asserts-check" && edge.to === `formal-check/${refinement.targetFormalization}/${check}`));
+    }
+    for (const rule of refinement.preserves) {
+      assert.ok(graph.edges.some((edge) => edge.from === node && edge.relation === "preserves-rule" && edge.to === `rule/${rule}`));
+    }
+  }
 });

@@ -109,6 +109,26 @@ test("renders a failed formalization counterexample in domain language", () => {
   assert.match(markdown, /違反位置: 1/);
 });
 
+test("renders the common counterexample source and violation detail", () => {
+  const report = domainTraceabilityReport(model(), [{
+    formalization: "advance-behavior",
+    status: "fail",
+    actions: ["advance"],
+    checks: [{ id: "advance.one-step.holds", status: "fail", assurance: "bounded" }],
+    counterexamples: [{
+      source: { kind: "implementation", check: "advance-grounding" },
+      path: [{ id: "advance", input: {} }],
+      trace: [{ count: 0 }, { count: 2 }],
+      violation: { index: 1, state: { count: 2 }, message: "implementation returned two steps" },
+    }],
+  }]);
+
+  const markdown = renderDomainTraceabilityMarkdown(report, { locale: "ja" });
+
+  assert.match(markdown, /source: `implementation:advance-grounding`/);
+  assert.match(markdown, /violation: implementation returned two steps/);
+});
+
 test("requires a declared concrete check to substantiate an abstraction refinement", () => {
   const refinementModel = model();
   refinementModel.patterns.domain.formalizations.push({
@@ -126,6 +146,8 @@ test("requires a declared concrete check to substantiate an abstraction refineme
     targetFormalization: "advance-coordinate-alloy",
     sourceCondition: "advance-input = 1",
     targetCondition: "the coordinate step is available",
+    stateRelation: "an available coordinate step denotes one advance input",
+    preserves: ["RULE-ADVANCE"],
     checks: ["advance.coordinate.refines-input.holds"],
   }];
 
@@ -153,6 +175,8 @@ test("requires a declared concrete check to substantiate an abstraction refineme
     targetFormalization: "advance-coordinate-alloy",
     sourceCondition: "advance-input = 1",
     targetCondition: "the coordinate step is available",
+    stateRelation: "an available coordinate step denotes one advance input",
+    preserves: ["RULE-ADVANCE"],
     assumptions: [],
     checks: [{ id: "advance.coordinate.refines-input.holds", status: "pass", assurance: "alloy6-bounded" }],
     status: "pass",
@@ -161,4 +185,5 @@ test("requires a declared concrete check to substantiate an abstraction refineme
   assert.match(markdown, /## Refinements/);
   assert.match(markdown, /advance-input-from-coordinate/);
   assert.match(markdown, /advance-input = 1/);
+  assert.match(markdown, /an available coordinate step denotes one advance input/);
 });

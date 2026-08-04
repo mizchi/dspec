@@ -527,9 +527,10 @@ It models the current implementation boundary:
   `check-app-profile --json`, profile suite reports, and scaffold diff reports
   use it for observed-to-spec coverage and bundled app gates.
 - `impact --json` compares two spec entrypoints and maps changed
-  terms/rules/projections to affected generated selectors, implementation
-  references, owned artifact `regenerate`/`remove` actions, and the after-side
-  `dspec generate` command.
+  terms/rules/projections/formalizations/refinements to affected generated
+  selectors, implementation references, named formal checks that require
+  re-verification, owned artifact `regenerate`/`remove` actions, and the
+  after-side `dspec generate` command.
 - `spec-change compat --json` compares two spec models and classifies the
   change as `compatible`, `breaking`, `narrowing`, `widening`, or `unknown`,
   with one decision per changed term/rule/domain element.

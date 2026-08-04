@@ -481,6 +481,11 @@ class DomainFormalizationRefinement {
   targetFormalization: Identifier
   sourceCondition: String(length > 0)
   targetCondition: String(length > 0)
+  /// A reviewable relation between the source and target states or inputs.
+  /// Required for transition refinements by the JavaScript validator.
+  stateRelation: String? = null
+  /// Rules whose meaning must survive this abstraction boundary.
+  preserves: Listing<Identifier> = new {}
   assumptions: Listing<String(length > 0)> = new {}
   checks: Listing<Identifier> = new {}
   text: LocalizedText? = null
