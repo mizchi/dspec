@@ -973,7 +973,7 @@
           "key": "code:src/core/projection.mjs#validateProjectionContracts"
         },
         {
-          "contentHash": "sha256:01898f7160fe007702e4e2dac27ad72a8e5067cae64e6115681d5a4cac8b326c",
+          "contentHash": "sha256:4b9c7d5a609b94c2c359c9da9e820fa93b4e6861ae4abea855e610927fa94d83",
           "hashScope": "file",
           "key": "doc:generated/backends/dspec-self.als"
         },
@@ -998,7 +998,7 @@
           "key": "doc:generated/backends/DSpecSelf.tla"
         },
         {
-          "contentHash": "sha256:89a793ac9897df1464caea5f7abba409cc82724044b5329d87c22f560028396c",
+          "contentHash": "sha256:97f692c1c5cd73b4c9a99a8764727766716d33940575e8e0677d3eeb738c2800",
           "hashScope": "file",
           "key": "doc:generated/manifest.json"
         },
@@ -2139,7 +2139,7 @@
           "key": "model:fixtures/documented-cli-examples-holdout.md"
         },
         {
-          "contentHash": "sha256:446b807b9fd1eec7cf53070c6f43010c4e0008986586c5a616d2fd702c4bc329",
+          "contentHash": "sha256:c23b14750d632f7fbadb204cfb51c7f52d836c7dcc91a4000534ae522f89081e",
           "hashScope": "file",
           "key": "model:README.md"
         },
@@ -2719,7 +2719,7 @@
           "key": "code:src/cli.mjs#verifyGenerated"
         },
         {
-          "contentHash": "sha256:bb2ff7e575caf062d4d2986ccf84c31d002295993a7617091207a18968bfd8f9",
+          "contentHash": "sha256:533ce0e8aa9aba16d05a52a28e118d93cc39db4c467228a4aaf0335087412884",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#verifyGeneratedAlloyWithAnalyzer"
         }
@@ -2758,7 +2758,7 @@
           "key": "code:src/cli.mjs#sha256"
         },
         {
-          "contentHash": "sha256:89a793ac9897df1464caea5f7abba409cc82724044b5329d87c22f560028396c",
+          "contentHash": "sha256:97f692c1c5cd73b4c9a99a8764727766716d33940575e8e0677d3eeb738c2800",
           "hashScope": "file",
           "key": "model:generated/manifest.json"
         },
@@ -3975,7 +3975,7 @@
           "key": "node:test/release.test.mjs#defines explicit release and compatibility policy"
         },
         {
-          "contentHash": "sha256:94ffe051ea7a41a5e4fc1e726a70d61a913a52a33a56c44d0c2fd6c0a1d3786b",
+          "contentHash": "sha256:2e297964071854527b280bf7309e68ed34ea5f744a2f8ae1690d954f3a3a0727",
           "hashScope": "symbol-text",
           "key": "node:test/release.test.mjs#defines the v0.1 public package boundary"
         },
@@ -4024,7 +4024,7 @@
           "key": "model:LICENSE"
         },
         {
-          "contentHash": "sha256:cdb29c08c226ae91a5ef38f2650076be542a5717e4e567afd0112c930f37a8d3",
+          "contentHash": "sha256:a87d7b6f52791263aad8f5e12aecae0669e218be2fecdb5c3d24e82f8b46319b",
           "hashScope": "file",
           "key": "model:package.json"
         },

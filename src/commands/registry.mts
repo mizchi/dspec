@@ -23,6 +23,7 @@ export const TOP_LEVEL_COMMANDS: readonly TopLevelCommand[] = [
   { name: "spec-change", usage: "dspec spec-change <compat|scaffold|review> ..." },
   { name: "evidence", usage: "dspec evidence <create|verify|refresh> ..." },
   { name: "domain", usage: "dspec domain <ir|generate|relationships> ..." },
+  { name: "graph", usage: "dspec graph <export|embed|build|query-dsl|query> ..." },
   { name: "intent", usage: "dspec intent <verify|exercise|generate-tests|test|schema> ..." },
   { name: "daily-drift", usage: "dspec daily-drift <collect|approve> ..." },
   { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },

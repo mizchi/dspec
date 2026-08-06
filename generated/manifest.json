@@ -1,8 +1,8 @@
 {
   "artifacts": {
     "alloy": {
-      "bytes": 39677,
-      "sha256": "01898f7160fe007702e4e2dac27ad72a8e5067cae64e6115681d5a4cac8b326c"
+      "bytes": 42251,
+      "sha256": "4b9c7d5a609b94c2c359c9da9e820fa93b4e6861ae4abea855e610927fa94d83"
     },
     "lean": {
       "bytes": 64073,

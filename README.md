@@ -57,6 +57,26 @@ This catches both directions of drift: a declared requirement that no longer
 has an implementation anchor, and an observed route, resource, or operational
 fact that was never made part of the specification master.
 
+## Semantic Graph Interoperability
+
+The Pkl master can be exported as a labelled semantic graph for RDF tooling or
+for retrieval/navigation with `mizchi/meandb`:
+
+```sh
+dspec graph export --format turtle --output specification.ttl examples/tetris.pkl
+dspec graph export --format graphdb --output generated/tetris.graphdb-input examples/tetris.pkl
+dspec graph embed generated/tetris.graphdb-input
+dspec graph build --mutual generated/tetris.graphdb-input
+dspec graph query-dsl --explain generated/tetris.graphdb-input/specification.graphdb traceability.gql
+dspec graph query --locale ja examples/tetris.pkl "テトリスの回転規則"
+```
+
+The graph explicitly distinguishes Pkl-declared relationships from observed
+or verified evidence. Turtle retains labelled predicates; the GraphDB bundle
+reifies each relation as a tagged intermediate node, while JSON/Turtle remain
+lossless sidecars. See [`docs/semantic-graph.md`](docs/semantic-graph.md) for
+the contract and embedding/import flow.
+
 ## Daily Drift Review
 
 `examples/daily-drift-targets.pkl` is a typed `DailyDrift.Manifest`. It names

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import { TOP_LEVEL_COMMANDS, topLevelCommand, topLevelCommandRegistry } from "../src/commands/registry.mjs";
 import { domainUsage, parseDomainArgs } from "../src/commands/domain.mjs";
+import { graphUsage, parseGraphArgs, parseMeandbQueryArgs } from "../src/commands/graph.mjs";
 import { dailyDriftUsage } from "../src/commands/daily-drift.mjs";
 import { appProfileObservedFixtureStep } from "../src/commands/app-profile-observed-fixture.mjs";
 import { parseAppProfileArgs, parseScaffoldAppProfileArgs } from "../src/commands/app-profile-options.mjs";
@@ -69,6 +70,25 @@ describe("command modules", () => {
       markdown: true,
       locale: "ja",
       modelFile: "examples/dspec.pkl",
+    });
+  });
+
+  it("parses semantic graph exports outside the executable entrypoint", () => {
+    assert.deepEqual(parseGraphArgs(["--format", "graphdb", "--locale", "ja", "--output", "out", "examples/tetris.pkl"]), {
+      format: "graphdb",
+      locale: "ja",
+      output: "out",
+      modelFile: "examples/tetris.pkl",
+    });
+    assert.match(graphUsage(), /graphdb/);
+  });
+
+  it("parses a meandb text query without depending on the executable entrypoint", () => {
+    assert.deepEqual(parseMeandbQueryArgs(["--meandb", "meandb-local", "--explain", "specification.graphdb", "traceability.gql"]), {
+      meandb: "meandb-local",
+      explain: true,
+      graph: "specification.graphdb",
+      query: "traceability.gql",
     });
   });
 

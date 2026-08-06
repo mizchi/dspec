@@ -16,6 +16,8 @@
   "files": [
     "PklProject",
     "dspec",
+    "examples/dspec.pkl",
+    "examples/dspec.traceability.gql",
     "pkl-tests",
     "scripts",
     "skills",
@@ -34,6 +36,7 @@
     "./intent": "./src/core/intent.mjs",
     "./protocol-tests": "./src/core/protocol-tests.mjs",
     "./domain": "./src/core/domain.mjs",
+    "./semantic-graph": "./src/core/semantic-graph.mjs",
     "./projection": "./src/core/projection.mjs",
     "./schema": "./dspec/Schema.pkl"
   },
@@ -48,6 +51,7 @@
     "build": "tsc --project tsconfig.build.json",
     "test": "pnpm run build && node --test",
     "typecheck": "tsc --noEmit",
+    "meandb:traceability": "node scripts/verify-meandb-traceability.mjs",
     "package:smoke": "node scripts/verify-package.mjs",
     "checker:conformance": "node scripts/verify-checker-conformance.mjs"
   },

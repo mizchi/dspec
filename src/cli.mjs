@@ -52,6 +52,7 @@ import {
   usage as registryUsage,
 } from "./commands/registry.mjs";
 import { runDomainCommand as runDomainCommandModule } from "./commands/domain.mjs";
+import { runGraphCommand as runGraphCommandModule } from "./commands/graph.mjs";
 import { runDailyDriftCommand } from "./commands/daily-drift.mjs";
 import { appProfileObservedFixtureStep as appProfileObservedFixtureStepModule } from "./commands/app-profile-observed-fixture.mjs";
 import {
@@ -320,6 +321,20 @@ supported model is dspec.TetrisAlloy.
 
 function runDomainCommand(args) {
   return runDomainCommandModule(args, {
+    fail(message) {
+      throw new CommandError(message);
+    },
+    loadModel,
+    stableJson,
+    validate,
+    write(value) {
+      process.stdout.write(value);
+    },
+  });
+}
+
+function runGraphCommand(args) {
+  return runGraphCommandModule(args, {
     fail(message) {
       throw new CommandError(message);
     },
@@ -14406,6 +14421,19 @@ function emitAlloy(model) {
     const parent = rule.reviewStatus === "approved" && !rule.deprecated ? "ActiveApprovedRule" : rule.deprecated ? "DeprecatedRule" : "Rule";
     lines.push(`one sig R_${sanitizeIdentifier(rule.id)} extends ${parent} {}`);
   }
+  const activeRuleNames = rules
+    .filter((rule) => rule.reviewStatus === "approved" && !rule.deprecated)
+    .map((rule) => `R_${sanitizeIdentifier(rule.id)}`);
+  const deprecatedRuleNames = rules
+    .filter((rule) => rule.deprecated)
+    .map((rule) => `R_${sanitizeIdentifier(rule.id)}`);
+  // Alloy treats an abstract signature with no subsignatures as a set that may
+  // still contain atoms. Make the generated classification exact so models
+  // with zero approved rules do not invent an ActiveApprovedRule witness.
+  lines.push("", "fact GeneratedRuleClasses {");
+  lines.push(`  ActiveApprovedRule = ${activeRuleNames.length > 0 ? activeRuleNames.join(" + ") : "none"}`);
+  lines.push(`  DeprecatedRule = ${deprecatedRuleNames.length > 0 ? deprecatedRuleNames.join(" + ") : "none"}`);
+  lines.push("}");
   lines.push("");
   rules.forEach((rule, index) => {
     for (const [target, targetIndex] of list(rule.checks).map((candidate, idx) => [candidate, idx])) {
@@ -16126,7 +16154,24 @@ function verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath, toolAvailable) 
   if (!toolAvailable("alloy6")) return skipBackend("alloy6 not found on PATH");
   const commands = runGeneratedToolResult("alloy6", ["commands", alloyPath]);
   if (commands.status !== "pass") return commands;
-  return runGeneratedToolResult("alloy6", ["exec", "-q", "-t", "none", "-o", outputPath, "-f", alloyPath]);
+  // Alloy's CLI exits successfully when a `check` finds a counterexample. Use
+  // its JSON receipt instead of treating a zero process status as a proof.
+  const execution = runGeneratedToolResult("alloy6", ["exec", "-q", "-t", "json", "-o", outputPath, "-f", alloyPath]);
+  if (execution.status !== "pass") return execution;
+  let receipt;
+  try {
+    receipt = JSON.parse(readFileSync(join(outputPath, "receipt.json"), "utf8"));
+  } catch (error) {
+    return failBackend(`Alloy execution did not produce a readable receipt: ${error.message}`);
+  }
+  const counterexamples = Object.values(receipt.commands ?? {})
+    .filter((command) => command?.type === "check" && list(command.solution).length > 0)
+    .map((command) => command.name ?? "unknown")
+    .sort();
+  if (counterexamples.length > 0) {
+    return failBackend(`Alloy checks found counterexamples: ${counterexamples.join(", ")}`);
+  }
+  return execution;
 }
 
 function verifyGeneratedReport(model, options = {}) {
@@ -18550,7 +18595,7 @@ async function run(argv) {
     return;
   }
 
-  if (!["spec-change", "evidence", "generated", "scaffold", "domain", "intent", "daily-drift", "trace", "translation"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
+  if (!["spec-change", "evidence", "generated", "scaffold", "domain", "graph", "intent", "daily-drift", "trace", "translation"].includes(command) && (args[0] === "--help" || args[0] === "-h" || args[0] === "help")) {
     process.stdout.write(topLevelCommandHelp(commandSpec));
     return;
   }
@@ -18605,6 +18650,11 @@ async function run(argv) {
 
   if (command === "domain") {
     runDomainCommand(args);
+    return;
+  }
+
+  if (command === "graph") {
+    runGraphCommand(args);
     return;
   }
 
