@@ -10,7 +10,7 @@ import {
   CLAUSE_AST_SEMANTICS_VERSION,
   validateClauseAst,
 } from "./core/clause-ast.mjs";
-import { renderQuintModel } from "./core/quint.mjs";
+import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
   validateConformanceModel,
@@ -15266,20 +15266,11 @@ function verifyGeneratedQuintTypecheck(quintPath, toolAvailable) {
 function verifyGeneratedQuintModel(quintPath, toolAvailable) {
   if (!hasQuintTool(toolAvailable)) return skipBackend("quint not installed");
   if (!hasWorkingJava(toolAvailable)) return skipBackend("working Java runtime not found (required by Quint verify)");
-  return runGeneratedToolResult(quintCommand(), [
-    "verify",
-    quintPath,
-    "--invariants",
-    "coverageInvariant",
-    "workflowInvariant",
-    "intentConcurrencyBounded",
-    "intentIdempotencyKeysAreExclusive",
-    "intentTimeoutsBounded",
-    "--max-steps",
-    "10",
-    "--backend",
-    "tlc",
-  ]);
+  const serverEndpoint = quintServerEndpoint({
+    configured: process.env.DSPEC_QUINT_SERVER_ENDPOINT,
+    pid: process.pid,
+  });
+  return runGeneratedToolResult(quintCommand(), quintVerifyArgs(quintPath, { serverEndpoint }));
 }
 
 function verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath, toolAvailable) {

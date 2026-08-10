@@ -2864,7 +2864,7 @@
           "key": "code:src/cli.mjs#verifyGenerated"
         },
         {
-          "contentHash": "sha256:cecc9feeb2e8aa49ffd75233a351c844097dd4b669ee2b79ac5b145194ed1377",
+          "contentHash": "sha256:a9a3a8e321a12104006675491ee072658194608b7eb61f3eea61a9833c8d8cdb",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#verifyGeneratedQuintModel"
         },

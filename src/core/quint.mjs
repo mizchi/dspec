@@ -2,6 +2,34 @@ function list(value) {
   return Array.isArray(value) ? value : [];
 }
 
+export function quintServerEndpoint({ configured, pid }) {
+  const override = String(configured ?? "").trim();
+  if (override) return override;
+  if (!Number.isSafeInteger(pid) || pid < 0) {
+    throw new TypeError("pid must be a non-negative safe integer");
+  }
+  return `127.0.0.1:${30000 + (pid % 30000)}`;
+}
+
+export function quintVerifyArgs(quintPath, { serverEndpoint }) {
+  return [
+    "verify",
+    quintPath,
+    "--invariants",
+    "coverageInvariant",
+    "workflowInvariant",
+    "intentConcurrencyBounded",
+    "intentIdempotencyKeysAreExclusive",
+    "intentTimeoutsBounded",
+    "--max-steps",
+    "10",
+    "--server-endpoint",
+    serverEndpoint,
+    "--backend",
+    "tlc",
+  ];
+}
+
 function quintModuleName(value) {
   const name = String(value ?? "dspec")
     .replace(/[^A-Za-z0-9_]/g, "_")

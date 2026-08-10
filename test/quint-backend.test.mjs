@@ -3,7 +3,11 @@ import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { renderQuintModel } from "../src/core/quint.mjs";
+import {
+  quintServerEndpoint,
+  quintVerifyArgs,
+  renderQuintModel,
+} from "../src/core/quint.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const cli = join(root, "src", "cli.mjs");
@@ -12,6 +16,26 @@ const quintTypecheck = join(root, "scripts", "typecheck-quint-stdin.mjs");
 function run(args) {
   return spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: "utf8" });
 }
+
+test("assigns each Quint verifier process a distinct Apalache endpoint", () => {
+  assert.equal(quintServerEndpoint({ pid: 101 }), "127.0.0.1:30101");
+  assert.equal(quintServerEndpoint({ pid: 102 }), "127.0.0.1:30102");
+  assert.equal(
+    quintServerEndpoint({ configured: "apalache.internal:9900", pid: 101 }),
+    "apalache.internal:9900",
+  );
+});
+
+test("passes the isolated endpoint to bounded Quint verification", () => {
+  const args = quintVerifyArgs("/tmp/model.qnt", {
+    serverEndpoint: "127.0.0.1:30101",
+  });
+
+  assert.deepEqual(
+    args.slice(-4),
+    ["--server-endpoint", "127.0.0.1:30101", "--backend", "tlc"],
+  );
+});
 
 test("emits Quint as the temporal model backend", () => {
   const result = run(["emit", "quint", "fixtures/typed-ast.pkl"]);
