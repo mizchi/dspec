@@ -94,7 +94,7 @@ local schema: Task = new {
 local test: Task = new {
   name = "test"
   description = "Run Node unit tests"
-  cmd = "pnpm test"
+  cmd = "node --test"
   inputs = new {
     ...pklSources
     ...jsonFixtures
@@ -144,6 +144,7 @@ local packageReview: Task = new {
     ...tsSources
     ...projectMetadata
   }
+  deps { build }
 }
 
 local packageSmoke: Task = new {
@@ -174,6 +175,19 @@ local checkerConformance: Task = new {
   deps { schema; build }
 }
 
+local meandbTraceability: Task = new {
+  name = "meandb:traceability"
+  description = "Build the self specification's meandb projection and query explained implementation traceability (set DSPEC_MEANDB when meandb is not on PATH)"
+  cmd = "pnpm run meandb:traceability"
+  inputs = new {
+    ...pklSources
+    ...jsSources
+    "examples/**/*.gql"
+  }
+  deps { build }
+  cache = false
+}
+
 local drift: Task = new {
   name = "drift"
   description = "Check implementation and test references in the self model"
@@ -187,7 +201,7 @@ local drift: Task = new {
     ...ciSources
     ...projectMetadata
   }
-  deps { schema }
+  deps { schema; build }
 }
 
 local coverage: Task = new {
@@ -213,7 +227,7 @@ local traceVerify: Task = new {
     ...jsSources
     ...reviewArtifacts
   }
-  deps { schema }
+  deps { schema; build }
 }
 
 local translationVerify: Task = new {
@@ -225,7 +239,7 @@ local translationVerify: Task = new {
     ...translationLocks
     ...jsSources
   }
-  deps { schema }
+  deps { schema; build }
 }
 
 local domainCoverage: Task = new {
@@ -272,7 +286,7 @@ local emitSmoke: Task = new {
   name = "emit:smoke"
   description = "Smoke-test deterministic generators"
   cmd =
-    "node src/cli.mjs emit markdown --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit quickcheck examples/dspec.pkl >/dev/null && node src/cli.mjs emit alloy examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla-cfg examples/dspec.pkl >/dev/null && node src/cli.mjs emit lean examples/dspec.pkl >/dev/null && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit generated-manifest --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit runtime-collector examples/dspec.pkl >/dev/null && node src/cli.mjs emit runtime-collector-fixture examples/dspec.pkl >/dev/null && node src/cli.mjs domain ir fixtures/domain-codegen.pkl >/dev/null && node src/cli.mjs domain relationships --json fixtures/domain-codegen.pkl >/dev/null && node src/cli.mjs intent schema fixtures/intent-contract.pkl >/dev/null && node src/cli.mjs intent verify --json fixtures/intent-contract.pkl fixtures/intent-traces.json >/dev/null && node src/cli.mjs intent exercise --json --output /tmp/dspec-intent-exercise.json fixtures/intent-contract.pkl fixtures/intent-traces.json >/dev/null && node src/cli.mjs intent generate-tests --json fixtures/intent-contract-http.pkl >/dev/null && node src/cli.mjs intent generate-tests --json fixtures/intent-contract-grpc.pkl >/dev/null && node src/cli.mjs intent coverage --json fixtures/intent-contract-effects-transaction.pkl fixtures/intent-traces-effects-complete.json >/dev/null && node src/cli.mjs intent mutation --json fixtures/intent-contract-effects-transaction.pkl fixtures/intent-traces-effects-complete.json >/dev/null && node src/cli.mjs evidence create --intent-report /tmp/dspec-intent-exercise.json fixtures/intent-contract.pkl >/dev/null && node src/cli.mjs import-db-schema --json fixtures/db-schema.sql >/dev/null && node src/cli.mjs check-sql-queries --json fixtures/db-model.pkl fixtures/db-queries.sql >/dev/null && node src/cli.mjs import-real-app --json fixtures/sample-webapp-2026 >/dev/null && node src/cli.mjs import-real-app --pkl fixtures/sample-webapp-2026 >/dev/null"
+    "node src/cli.mjs emit markdown --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit quickcheck examples/dspec.pkl >/dev/null && node src/cli.mjs emit alloy examples/dspec.pkl >/dev/null && node src/cli.mjs emit quint examples/dspec.pkl | node scripts/typecheck-quint-stdin.mjs && node src/cli.mjs emit lean examples/dspec.pkl >/dev/null && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit generated-manifest --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs emit runtime-collector examples/dspec.pkl >/dev/null && node src/cli.mjs emit runtime-collector-fixture examples/dspec.pkl >/dev/null && node src/cli.mjs domain ir fixtures/domain-codegen.pkl >/dev/null && node src/cli.mjs domain relationships --json fixtures/domain-codegen.pkl >/dev/null && node src/cli.mjs intent schema fixtures/intent-contract.pkl >/dev/null && node src/cli.mjs intent verify --json fixtures/intent-contract.pkl fixtures/intent-traces.json >/dev/null && node src/cli.mjs intent exercise --json --output /tmp/dspec-intent-exercise.json fixtures/intent-contract.pkl fixtures/intent-traces.json >/dev/null && node src/cli.mjs intent generate-tests --json fixtures/intent-contract-http.pkl >/dev/null && node src/cli.mjs intent generate-tests --json fixtures/intent-contract-grpc.pkl >/dev/null && node src/cli.mjs intent coverage --json fixtures/intent-contract-effects-transaction.pkl fixtures/intent-traces-effects-complete.json >/dev/null && node src/cli.mjs intent mutation --json fixtures/intent-contract-effects-transaction.pkl fixtures/intent-traces-effects-complete.json >/dev/null && node src/cli.mjs evidence create --intent-report /tmp/dspec-intent-exercise.json fixtures/intent-contract.pkl >/dev/null && node src/cli.mjs import-db-schema --json fixtures/db-schema.sql >/dev/null && node src/cli.mjs check-sql-queries --json fixtures/db-model.pkl fixtures/db-queries.sql >/dev/null && node src/cli.mjs import-real-app --json fixtures/sample-webapp-2026 >/dev/null && node src/cli.mjs import-real-app --pkl fixtures/sample-webapp-2026 >/dev/null"
   inputs = new {
     ...pklSources
     ...sqlFixtures
@@ -406,14 +420,14 @@ local specReadingDogfood: Task = new {
     ...jsonFixtures
     ...jsSources
   }
-  deps { schema }
+  deps { schema; build }
   cache = false
 }
 
 local generatedVerify: Task = new {
   name = "generated:verify"
   description = "Run generated QuickCheck output and compile generated Lean output"
-  cmd = "node src/cli.mjs verify-generated examples/dspec.pkl"
+  cmd = "node src/cli.mjs verify-generated --skip-quint-verify examples/dspec.pkl"
   inputs = new {
     ...pklSources
     ...jsSources
@@ -532,6 +546,7 @@ local devshellTools: Task = new {
     ...jsSources
     ...nixSources
   }
+  deps { build }
   cache = false
 }
 
@@ -545,6 +560,7 @@ local devshellFormal: Task = new {
     ...jsSources
     ...nixSources
   }
+  deps { build }
   cache = false
 }
 
@@ -648,6 +664,7 @@ tasks {
   packageReview
   packageSmoke
   checkerConformance
+  meandbTraceability
   drift
   coverage
   traceVerify

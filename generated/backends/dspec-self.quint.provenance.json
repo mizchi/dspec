@@ -1,14 +1,14 @@
 {
   "artifacts": [
     {
-      "bytes": 884,
-      "digest": "sha256:9c0b91af57dbc35291a73d3991e156afc82034a11551e4c368f82a89c03576cf",
+      "bytes": 79574,
+      "digest": "sha256:795fb8241704eeb8d7c9a8af0e41ea5c93cace9b70452a3e8d56b2e5592b2766",
       "locale": null,
-      "path": "generated/manifest.json"
+      "path": "generated/backends/dspec-self.qnt"
     }
   ],
   "emitter": {
-    "name": "dspec/generated-manifest",
+    "name": "dspec/quint",
     "version": "1.0"
   },
   "generatedAt": "2026-08-10T12:50:23.673Z",
@@ -19,15 +19,15 @@
   },
   "projection": {
     "emitter": {
-      "name": "dspec/generated-manifest",
+      "name": "dspec/quint",
       "version": "1.0"
     },
     "freshness": "exact",
-    "id": "self-generated-manifest",
-    "kind": "generated-manifest",
+    "id": "self-quint",
+    "kind": "quint",
     "matrix": "single",
-    "output": "generated/manifest.json",
-    "provenance": "generated/manifest.provenance.json",
+    "output": "generated/backends/dspec-self.qnt",
+    "provenance": "generated/backends/dspec-self.quint.provenance.json",
     "source": "self"
   },
   "schemaVersion": "1.0"

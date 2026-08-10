@@ -1,32 +1,28 @@
 {
   "artifacts": {
     "alloy": {
-      "bytes": 39677,
-      "sha256": "01898f7160fe007702e4e2dac27ad72a8e5067cae64e6115681d5a4cac8b326c"
+      "bytes": 42261,
+      "sha256": "9a7036093e445a573131c9afaba81681096728538fd8cb5864b403525014f2ee"
     },
     "lean": {
-      "bytes": 64073,
-      "sha256": "00f5fe2537c2a68dbb2df86c11f9a635d7d2140e20bbdd925dfd67df5c2f55e0"
+      "bytes": 64082,
+      "sha256": "9eb7eba6f33c69bd95bec3fa26e6568aa9f6f002facf692a6944082026666e39"
     },
     "markdown": {
-      "bytes": 176696,
-      "sha256": "c2a0ea9ce487f4bf36d16d4c4e35eb2ce17fdab00f59c7dabad54088a3f82018"
+      "bytes": 176477,
+      "sha256": "09e2e15e2a66ef241fe11114ecb4247b06d0991e644bf82611f59db596b4ac1d"
     },
     "quickcheck": {
-      "bytes": 222883,
-      "sha256": "928fea139f9c675a025b782fea8d3239a7d35e160563b18fc9e575aa07464b8f"
+      "bytes": 222898,
+      "sha256": "8833a98461dc8daa72449e679df963abdae04cf87fd8e3839d4ffdf3acb9a062"
+    },
+    "quint": {
+      "bytes": 79574,
+      "sha256": "795fb8241704eeb8d7c9a8af0e41ea5c93cace9b70452a3e8d56b2e5592b2766"
     },
     "sourceMap": {
-      "bytes": 1498339,
-      "sha256": "177e5f94c2adf0392f1f4c459704256dd818d81f3158f14946bd353e70f23ff8"
-    },
-    "tla": {
-      "bytes": 70996,
-      "sha256": "7ed3745b5f9e367bc7d35a005df9c51966e0dcdc3140fa59da5e4bcd76f9386c"
-    },
-    "tlaCfg": {
-      "bytes": 1351,
-      "sha256": "0fd2e6b6b40f435f2367e04a76794e516cf39ed7a11316ffec034d748272f7ba"
+      "bytes": 1494905,
+      "sha256": "d8715d30d07d98791973f8bdc84aaf33adc2c78a5cb4b38d95841195beff4fdc"
     }
   },
   "locale": "ja",

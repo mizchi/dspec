@@ -26,7 +26,7 @@ It works today as:
 - first-class generated artifact projections whose locale or single-artifact
   matrix, output path, exact freshness, and provenance path are declared next
   to the model in the same typed source entrypoint; checked-in QuickCheck,
-  Lean, Alloy, TLA+, source-map, and generated-manifest artifacts use the same
+  Lean, Alloy, Quint, source-map, and generated-manifest artifacts use the same
   ownership path as localized Markdown
 - a second Projection dogfood entrypoint over the real-app sample model, with
   checked-in Japanese and English review artifacts
@@ -76,9 +76,9 @@ It works today as:
   and alternative CLI implementations
 - optional clause-level coverage that requires `CheckTarget.covers` to support
   every `when` / `must` / `mustNot` clause for selected rules
-- deterministic projections to Markdown, QuickCheck-style JS, Alloy, TLA+, and
+- deterministic projections to Markdown, QuickCheck-style JS, Alloy, Quint, and
   Lean skeletons
-- typed `Clause.ast` preservation in QuickCheck, TLA+, and Lean projections
+- typed `Clause.ast` preservation in QuickCheck, Quint, and Lean projections
 - a typed DB model pattern for tables, invariants, transactions, migrations,
   preservation projections, migration mapping coverage projections, and
   mapping well-formedness checks
@@ -106,17 +106,18 @@ It works today as:
   requests from Runtime safety specs
 - a runtime evidence verifier that compares collector `expects` blocks with
   normalized observations and reports coverage/drift as JSON
-- backend-aware drift validators for Node, Playwright, Lean, TLA+, Alloy, Pkl,
+- backend-aware drift validators for Node, Playwright, Lean, Quint, Alloy, Pkl,
   and runtime collector manifest `CheckTarget` refs
 - a runtime collector fixture generator that emits collectable inline provider
   payloads for bootstrapping the observation loop
 - generated QuickCheck execution and generated Lean compilation through
   `dspec verify-generated`
-- generated TLA+/Alloy syntax-shape validation through `dspec verify-generated`
-- generated TLA+ SANY/TLC and Alloy analyzer smoke checks when `tlasany`,
-  `tlc`, and `alloy6` are available, for example through `nix develop`
-- a Nix devShell contract for Node.js 24, pnpm, Pkl, Lean via elan, Z3, TLA+,
-  and Alloy 6
+- generated Quint typechecking and Alloy structural validation through
+  `dspec verify-generated`
+- bounded Quint verification and Alloy analyzer checks when Java and `alloy6`
+  are available, for example through `nix develop`
+- a Nix devShell contract for Node.js 24, pnpm, Pkl, Lean via elan, Z3, Java,
+  and Alloy 6; Quint is installed as a project dependency
 - a JSON verification report from `dspec verify-generated --json`
 - a load-bearing negative fixture proving generated backend checks fail when
   an approved rule lacks support
@@ -128,7 +129,7 @@ It works today as:
 - a checked-in generated manifest at `generated/manifest.json` that records
   SHA-256 freshness hashes for primary generated artifacts
 - counterexample normalization that maps generated QuickCheck/Lean failures
-  and TLA+/Alloy generated-selector witnesses back to `Rule.id`, source path,
+  and Quint/Alloy generated-selector witnesses back to `Rule.id`, source path,
   generated selector, and reviewable message
 - a GitHub Actions gate that runs required-tool smoke, required formal-backend
   smoke, and `pkf run check` inside the Nix devShell
@@ -162,9 +163,9 @@ It is not yet enough as:
   named adapter with Clause.ast reference semantics over explicit finite Pkl
   cases, but it is executable evidence rather than a proof over arbitrary
   production executions
-- a deep TLC/Alloy model-checking workflow with meaningful bounded scopes and
+- a deep Quint/Alloy model-checking workflow with meaningful bounded scopes and
   counterexample interpretation beyond the current smoke checks
-- structured trace valuation for TLA+/Alloy beyond generated-selector witness
+- structured trace valuation for Quint/Alloy beyond generated-selector witness
   extraction
 - SQL query equivalence, observed transaction isolation checking, or executable
   migration-code preservation beyond the current DB preservation declaration
@@ -438,7 +439,7 @@ these remaining gates:
    tutorials only.
 3. Extend `Clause.ast` from a preserved projection carrier into a contract
    language with explicit backend-specific semantics where needed.
-4. Add non-trivial TLC transitions and scoped Alloy assertion checks once the
+4. Add non-trivial Quint transitions and scoped Alloy assertion checks once the
    emitted models carry enough domain semantics to make counterexamples useful.
 5. Extend DB pattern support into SQL query equivalence, isolation-history
    checking, and executable migration-code preservation.
@@ -482,7 +483,7 @@ without changing the authoring surface.
 spec change review, app change replay, backend verification, and counterexample
 report shapes. `fixtures/spec-change-scaffold-*.pkl` fixes the typed
 authoring draft shape. The backend fixtures use stable projections because
-optional TLA+/Alloy tools differ between local and Nix environments.
+optional Quint/Alloy tools differ between local and Nix environments.
 The spec-change review contract now includes a breaking-change evidence gate:
 breaking updates must carry migration, deprecation, rollout, and owner-approval
 evidence unless the typed review explicitly narrows that policy.

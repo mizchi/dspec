@@ -80,6 +80,18 @@ export {
 } from "./domain.mjs";
 
 export {
+  SEMANTIC_GRAPH_NAMESPACE,
+  SEMANTIC_GRAPH_SCHEMA_VERSION,
+  embedGraphdbDocuments,
+  graphdbBundle,
+  querySemanticGraph,
+  renderSemanticGraphQueryMarkdown,
+  renderSemanticGraphTurtle,
+  semanticGraph,
+  semanticGraphWithEvidence,
+} from "./semantic-graph.mjs";
+
+export {
   DOMAIN_TRACEABILITY_SCHEMA_VERSION,
   domainTraceabilityReport,
   renderDomainTraceabilityMarkdown,

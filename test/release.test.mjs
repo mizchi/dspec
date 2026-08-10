@@ -9,18 +9,26 @@ import * as core from "../src/core/index.mjs";
 const read = (path) => readFileSync(path, "utf8");
 const pkg = JSON.parse(read("package.json"));
 
+function taskBlock(source, name) {
+  const start = source.indexOf(`local ${name}: Task = new {`);
+  assert.notEqual(start, -1, `missing task: ${name}`);
+  const next = source.indexOf("\nlocal ", start + 1);
+  return source.slice(start, next === -1 ? source.length : next);
+}
+
 test("defines the v0.1 public package boundary", () => {
   assert.equal(pkg.name, "@mizchi/dspec");
   assert.equal(pkg.private, undefined);
   assert.equal(pkg.license, "MIT");
   assert.deepEqual(pkg.publishConfig, { access: "public" });
-  assert.deepEqual(pkg.files, ["PklProject", "dspec", "pkl-tests", "scripts", "skills", "src", "README.md", "LICENSE"]);
+  assert.deepEqual(pkg.files, ["PklProject", "dspec", "examples/dspec.pkl", "examples/dspec.traceability.gql", "pkl-tests", "scripts", "skills", "src", "README.md", "LICENSE"]);
   assert.equal(pkg.exports["."], "./src/core/index.mjs");
   assert.equal(pkg.exports["./clause-ast"], "./src/core/clause-ast.mjs");
   assert.equal(pkg.exports["./conformance"], "./src/core/conformance.mjs");
   assert.equal(pkg.exports["./spec-query"], "./src/core/spec-query.mjs");
   assert.equal(pkg.exports["./assurance-evidence"], "./src/core/assurance-evidence.mjs");
   assert.equal(pkg.exports["./real-app"], "./src/core/real-app.mjs");
+  assert.equal(pkg.exports["./semantic-graph"], "./src/core/semantic-graph.mjs");
   assert.equal(pkg.exports["./projection"], "./src/core/projection.mjs");
   assert.equal(pkg.exports["./external-holdouts"], "./src/core/external-holdouts.mjs");
   assert.equal(pkg.exports["./schema"], "./dspec/Schema.pkl");
@@ -31,7 +39,9 @@ test("defines the v0.1 public package boundary", () => {
   assert.equal(typeof core.conformanceReport, "function");
   assert.equal(typeof core.querySpec, "function");
   assert.equal(typeof core.externalHoldoutCorpusReport, "function");
+  assert.equal(typeof core.semanticGraph, "function");
   assert.equal(pkg.scripts["checker:conformance"], "node scripts/verify-checker-conformance.mjs");
+  assert.equal(pkg.scripts["meandb:traceability"], "node scripts/verify-meandb-traceability.mjs");
 });
 
 test("defines explicit release and compatibility policy", () => {
@@ -70,6 +80,29 @@ test("tracks release inputs and reviews the package in the fast gate", () => {
   assert.match(taskfile, /name = "checker:conformance"/);
   assert.match(taskfile, /npm pack --dry-run --json >\/dev\/null/);
   assert.match(taskfile, /checkFast:[\s\S]*?packageReview/);
+});
+
+test("builds generated Node modules before fast and formal runtime consumers", () => {
+  const taskfile = read("Taskfile.pkl");
+
+  assert.match(taskBlock(taskfile, "test"), /cmd = "node --test"/);
+  for (const name of [
+    "packageReview",
+    "drift",
+    "traceVerify",
+    "translationVerify",
+    "specReadingDogfood",
+    "devshellTools",
+    "devshellFormal",
+  ]) {
+    assert.match(taskBlock(taskfile, name), /deps \{[^}]*\bbuild\b[^}]*\}/, `${name} must depend on build`);
+  }
+});
+
+test("keeps transient test fixtures outside the package root", () => {
+  const cliTests = read("test/cli.test.mjs");
+
+  assert.doesNotMatch(cliTests, /join\(root,\s*["']\.tmp-/);
 });
 
 test("builds the public Pkl package after checking its facade API", () => {

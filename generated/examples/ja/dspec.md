@@ -8,8 +8,8 @@
 
 - approvedRules: `79`
 - automatedCheckTargets: `356`
-- implementationRefs: `739`
-- projections: `8`
+- implementationRefs: `737`
+- projections: `7`
 - domainElements: `21`
 - runtimeEvidenceRecords: `0`
 - assuranceTargets: `reference=356, executed=5, mutation-tested=1, bounded=0, proved=0`
@@ -56,28 +56,20 @@
 - output: `generated/backends/dspec-self.mjs`
 - freshness: `exact`
 
+### self-quint
+
+- kind: `quint`
+- source: `self`
+- matrix: `single`
+- output: `generated/backends/dspec-self.qnt`
+- freshness: `exact`
+
 ### self-source-map
 
 - kind: `source-map`
 - source: `self`
 - matrix: `single`
 - output: `generated/source-map.json`
-- freshness: `exact`
-
-### self-tla
-
-- kind: `tla`
-- source: `self`
-- matrix: `single`
-- output: `generated/backends/DSpecSelf.tla`
-- freshness: `exact`
-
-### self-tla-cfg
-
-- kind: `tla-cfg`
-- source: `self`
-- matrix: `single`
-- output: `generated/backends/DSpecSelf.cfg`
 - freshness: `exact`
 
 ## Vocabulary
@@ -552,7 +544,7 @@ checked-in backend 生成物は kind 固有の single projection と provenance 
 - term: `artifact.projection`
 - term: `artifact.quickcheck`
 - term: `artifact.source_map`
-- must: `projection.kind in {quickcheck, lean, alloy, tla, tla-cfg, source-map, generated-manifest} -> projection.matrix == single`
+- must: `projection.kind in {quickcheck, lean, alloy, quint, source-map, generated-manifest} -> projection.matrix == single`
 - must: `generatedCheck(projection) detects missing + stale + unexpected owned artifacts without writing`
 - must: `impact(before, after).projectionArtifacts includes projectionKind + path + action for all materialized projections`
 - must: `assuranceEvidenceManifest is execution evidence and is created or verified outside static projection generation`
@@ -572,8 +564,7 @@ checked-in backend 生成物は kind 固有の single projection と provenance 
 - implementation: doc generated/backends/dspec-self.mjs
 - implementation: doc generated/backends/DSpecSelf.lean
 - implementation: doc generated/backends/dspec-self.als
-- implementation: doc generated/backends/DSpecSelf.tla
-- implementation: doc generated/backends/DSpecSelf.cfg
+- implementation: doc generated/backends/dspec-self.qnt
 - implementation: doc generated/source-map.json
 - implementation: doc generated/manifest.json
 
@@ -582,7 +573,7 @@ checked-in backend 生成物は kind 固有の single projection と provenance 
 - source: model.rules[66]
 - coverage: rule
 - automatedChecks: 5
-- implementationRefs: 15
+- implementationRefs: 14
 - selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[0]
 - selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[1]
 - selector: DSPEC-BACKEND-PROJECTION-OWNERSHIP.must[2]
@@ -661,7 +652,7 @@ CheckTarget は保証の種類と証拠を明示し、coverage は必要な保�
 - term: `concept.verification_target`
 - must: `check.assurances subsetOf {reference, executed, mutation-tested, bounded, proved}`
 - must: `check.assurances - {reference} subsetOf check.assuranceEvidence.keys`
-- must: `proved -> backend == lean && bounded -> backend in {tla, alloy}`
+- must: `proved -> backend == lean && bounded -> backend in {quint, alloy}`
 - must: `rule.requiredAssurances subsetOf union(rule.automatedChecks.assurances)`
 - must: `reports.assurance == summary(activeApprovedRules.checks.assurances)`
 - must: `generated.quickcheck.rules preserves (requiredAssurances + checks.assurances + assuranceEvidence)`
@@ -886,9 +877,9 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 - term: `artifact.source_map`
 - term: `concept.rule`
 - must: `normalizesCounterexample(report, source-map)`
-- must: `normalizeCounterexamples(tlaOrAlloyWitness).uses(source-map.generatedSelector)`
+- must: `normalizeCounterexamples(quintOrAlloyWitness).uses(source-map.generatedSelector)`
 - check: node test/cli.test.mjs#normalizes generated counterexamples to source rules [reference]
-- check: node test/cli.test.mjs#normalizes TLA and Alloy backend witnesses to source records [reference]
+- check: node test/cli.test.mjs#normalizes Alloy backend witnesses to source records [reference]
 - implementation: code src/cli.mjs#normalizeCounterexamples
 - implementation: code src/cli.mjs#renderCounterexampleReport
 - implementation: code src/cli.mjs#generatedSelectorsInText
@@ -1458,7 +1449,7 @@ CheckTarget は機械的に解決できる参照を持つ
 - check: node test/cli.test.mjs#rejects missing backend-aware drift target symbols [reference]
 - implementation: code src/cli.mjs#validateCheckTargets
 - implementation: code src/cli.mjs#hasLeanSymbol
-- implementation: code src/cli.mjs#hasTlaSymbol
+- implementation: code src/cli.mjs#hasQuintSymbol
 - implementation: code src/cli.mjs#hasAlloySymbol
 - implementation: code src/cli.mjs#validateRuntimeCheckTarget
 - implementation: model fixtures/backend-aware-drift.pkl
@@ -1509,7 +1500,7 @@ implementedBy の path と symbol は実装内で解決できる
 - term: `artifact.formal_backend`
 - term: `artifact.generator`
 - term: `concept.verification_target`
-- must: `emit(alloy|tla|lean, model).deterministic`
+- must: `emit(alloy|quint|lean, model).deterministic`
 - check: node test/cli.test.mjs#emits formal backend skeletons [reference]
 - implementation: code src/cli.mjs#emitFormalBackend
 
@@ -1569,7 +1560,7 @@ implementedBy の path と symbol は実装内で解決できる
 
 ### DSPEC-EXPR-AST-PROJECTION
 
-生成器は Clause.ast を QuickCheck/TLA+/Lean の投影へ決定的に保存する
+生成器は Clause.ast を QuickCheck/Quint/Lean の投影へ決定的に保存する
 
 - kind: obligation
 - status: approved
@@ -1579,11 +1570,11 @@ implementedBy の path と symbol は実装内で解決できる
 - term: `artifact.generator`
 - term: `artifact.quickcheck`
 - term: `concept.expr_ast`
-- must: `preservesClauseAst(quickcheck, tla, lean)`
+- must: `preservesClauseAst(quickcheck, quint, lean)`
 - check: node test/cli.test.mjs#emits typed Clause.ast into backend projections [reference]
 - implementation: code src/cli.mjs#emitQuickcheck
 - implementation: code src/cli.mjs#exprToLean
-- implementation: code src/cli.mjs#exprToTla
+- implementation: code src/core/quint.mjs#renderQuintModel
 
 #### Review
 
@@ -1726,7 +1717,7 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 - term: `artifact.markdown`
 - term: `artifact.quickcheck`
 - term: `artifact.source_map`
-- must: `generatedManifest.hashes(markdown, quickcheck, alloy, tla, tlaCfg, lean, sourceMap)`
+- must: `generatedManifest.hashes(markdown, quickcheck, alloy, quint, quint, lean, sourceMap)`
 - must: `generated/manifest.json == emit(generated-manifest, examples/dspec.pkl)`
 - check: node test/cli.test.mjs#emits generated artifact manifest [reference]
 - check: node test/cli.test.mjs#keeps generated manifest artifact in sync [reference]
@@ -1817,9 +1808,9 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 - implementationRefs: 2
 - selector: DSPEC-GENERATED-QUICKCHECK-RUNS.must[0]
 
-### DSPEC-GENERATED-TLA-SYNTAX
+### DSPEC-GENERATED-QUINT-VERIFY
 
-生成された TLA+ 仕様は構文形状を検証され、tlasany/tlc があれば SANY と TLC でも検査される
+生成された Quint 仕様は型検査され、Java があれば有限の状態遷移も検証される
 
 - kind: obligation
 - status: approved
@@ -1828,27 +1819,26 @@ Clause.ast は operator ごとの意味論を持つ型付き式 AST として検
 - term: `artifact.formal_backend`
 - term: `artifact.generator`
 - term: `concept.verification_target`
-- must: `validatesGeneratedTlaSyntax(model)`
-- must: `(hasTool(tlasany)) -> (runsGeneratedTlaSany(model))`
-- must: `(hasTool(tlc)) -> (runsGeneratedTlaTlc(model))`
-- check: node test/cli.test.mjs#validates generated TLA+ syntax [reference]
-- check: node test/cli.test.mjs#runs generated TLA+ through SANY when available [reference]
-- check: node test/cli.test.mjs#runs generated TLA+ through TLC when available [reference]
+- must: `typechecksGeneratedQuint(model)`
+- must: `(hasTool(quint)) -> (runsGeneratedQuintTypecheck(model))`
+- must: `(hasTool(java)) -> (runsGeneratedQuintVerify(model))`
+- check: node test/cli.test.mjs#validates generated Quint syntax [reference]
+- check: node test/cli.test.mjs#runs generated Quint typecheck [reference]
+- check: node test/cli.test.mjs#runs generated Quint verify when available [reference]
 - implementation: code src/cli.mjs#verifyGenerated
-- implementation: code src/cli.mjs#validateGeneratedTla
-- implementation: code src/cli.mjs#verifyGeneratedTlaWithSany
-- implementation: code src/cli.mjs#verifyGeneratedTlaWithTlc
-- implementation: code src/cli.mjs#emitTlaConfig
+- implementation: code src/core/quint.mjs#renderQuintModel
+- implementation: code src/cli.mjs#verifyGeneratedQuintTypecheck
+- implementation: code src/cli.mjs#verifyGeneratedQuintModel
 
 #### Review
 
 - source: model.rules[51]
 - coverage: rule
 - automatedChecks: 3
-- implementationRefs: 5
-- selector: DSPEC-GENERATED-TLA-SYNTAX.must[0]
-- selector: DSPEC-GENERATED-TLA-SYNTAX.must[1]
-- selector: DSPEC-GENERATED-TLA-SYNTAX.must[2]
+- implementationRefs: 4
+- selector: DSPEC-GENERATED-QUINT-VERIFY.must[0]
+- selector: DSPEC-GENERATED-QUINT-VERIFY.must[1]
+- selector: DSPEC-GENERATED-QUINT-VERIFY.must[2]
 
 ### DSPEC-I18N-RENDER
 
@@ -2365,9 +2355,9 @@ Nix devShell は dspec 実行基盤と形式 backend ツールを提供する
 - term: `artifact.formal_backend`
 - term: `artifact.generator`
 - term: `artifact.nix_dev_shell`
-- must: `devShell.packages.includes(nodejs_24, pnpm, pkl, elan, z3, tlaplus, alloy6)`
+- must: `devShell.packages.includes(nodejs_24, pnpm, pkl, elan, z3, jdk21_headless, alloy6)`
 - must: `devshellSmoke(strict + requireStorePath).checks(requiredTools)`
-- must: `verifyGenerated(requireFormalTools).requires(tlaSany + tlaTlc + alloyAnalyzer)`
+- must: `verifyGenerated(requireFormalTools).requires(quintTypecheck + quintVerify + alloyAnalyzer)`
 - check: node test/cli.test.mjs#declares formal backend tools in Nix devShell [reference]
 - check: node test/cli.test.mjs#emits devShell tool smoke reports [reference]
 - check: node test/cli.test.mjs#requires formal backend tools when requested [reference]

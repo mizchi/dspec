@@ -153,6 +153,9 @@ test("writes typed target reports and declared implementation observations", () 
     ]);
     assert.ok(summary.targets[0].checks.every((check) => check.status === "pass"));
     assert.match(summary.targets[0].checks.find((check) => check.id === "drift").args.join(" "), /drift --json examples\/dspec\.pkl/);
+    assert.ok(
+      summary.targets[0].checks.find((check) => check.id === "verify-generated").args.includes("--skip-quint-verify"),
+    );
     assert.equal(JSON.parse(readFileSync(join(output, "targets", "dspec-self", "reports", "intent-graph.json"), "utf8")).status, "pass");
     assert.match(readFileSync(join(output, "targets", "dspec-self", "review", "render-ja.md"), "utf8"), /DSpec/);
     assert.match(readFileSync(join(output, "prompt.md"), "utf8"), /skill\/SKILL\.md/);

@@ -5,12 +5,11 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { createServer } from "node:http";
 import { hostname, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   normalizeCounterexamples,
   topLevelCommandRegistry,
   validateGeneratedAlloy,
-  validateGeneratedTla,
   verifyGenerated,
   verifyGeneratedReport,
 } from "../src/cli.mjs";
@@ -20,8 +19,8 @@ import { verifyGeneratedFixtureProjection } from "../scripts/project-verify-gene
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const cli = join(root, "src", "cli.mjs");
 const hasLean = spawnSync("which", ["lean"]).status === 0;
-const hasTlasany = spawnSync("which", ["tlasany"]).status === 0;
-const hasTlc = spawnSync("which", ["tlc"]).status === 0;
+const hasQuint = existsSync(join(root, "node_modules", ".bin", "quint"));
+const hasJava = spawnSync("java", ["-version"]).status === 0;
 const hasAlloy6 = spawnSync("which", ["alloy6"]).status === 0;
 
 function run(args) {
@@ -1048,7 +1047,8 @@ describe("dspec CLI", () => {
   });
 
   it("checks scaffolded app profiles after saving them", () => {
-    const profilePath = join(root, ".tmp-scaffolded-app-profile.pkl");
+    const directory = mkdtempSync(join(tmpdir(), "dspec-scaffolded-app-profile-"));
+    const profilePath = join(directory, "profile.pkl");
     try {
       const scaffold = run([
         "scaffold-app-profile",
@@ -1058,7 +1058,11 @@ describe("dspec CLI", () => {
         "fixtures/sample-webapp-2026",
       ]);
       assert.equal(scaffold.status, 0, scaffold.stderr);
-      writeFileSync(profilePath, scaffold.stdout);
+      const schemaUrl = pathToFileURL(join(root, "dspec", "Schema.pkl")).href;
+      writeFileSync(
+        profilePath,
+        scaffold.stdout.replace('import "./dspec/Schema.pkl" as d', `import "${schemaUrl}" as d`),
+      );
 
       const result = run(["check-app-profile", "--json", profilePath]);
 
@@ -1067,7 +1071,7 @@ describe("dspec CLI", () => {
       assert.equal(report.status, "pass");
       assert.equal(report.profile.id, "sample-webapp-2026");
     } finally {
-      rmSync(profilePath, { force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 
@@ -2822,7 +2826,7 @@ profile: d.AppProfile = new {
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
     assert.equal(report.summary.terms, 138);
-    assert.equal(report.summary.projections, 8);
+    assert.equal(report.summary.projections, 7);
     assert.equal(report.summary.rules, 81);
     assert.deepEqual(report.assurance.rules, { satisfied: 79, total: 79 });
     assert.equal(report.assurance.targets.byKind.executed, 5);
@@ -2848,7 +2852,7 @@ profile: d.AppProfile = new {
 
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /missing lean check target symbol: BACKEND-DRIFT-MISSING -> fixtures\/backend-drift\/Proof\.lean#missing_anchor/);
-    assert.match(result.stderr, /missing tla check target symbol: BACKEND-DRIFT-MISSING -> fixtures\/backend-drift\/Spec\.tla#MissingInvariant/);
+    assert.match(result.stderr, /missing quint check target symbol: BACKEND-DRIFT-MISSING -> fixtures\/backend-drift\/spec\.qnt#missingInvariant/);
     assert.match(result.stderr, /missing alloy check target symbol: BACKEND-DRIFT-MISSING -> fixtures\/backend-drift\/model\.als#MissingInvariant/);
     assert.match(result.stderr, /missing runtime check target source: BACKEND-DRIFT-MISSING -> fixtures\/backend-drift\/runtime-manifest\.json#missing-runtime/);
     assert.match(result.stderr, /missing playwright check target anchor: BACKEND-DRIFT-MISSING -> fixtures\/backend-drift\/example\.spec\.ts#missing playwright target/);
@@ -2884,7 +2888,7 @@ profile: d.AppProfile = new {
     assert.match(result.stdout, /- approvedRules: `\d+`/);
     assert.match(result.stdout, /- automatedCheckTargets: `\d+`/);
     assert.match(result.stdout, /- implementationRefs: `\d+`/);
-    assert.match(result.stdout, /- projections: `8`/);
+    assert.match(result.stdout, /- projections: `7`/);
     assert.match(result.stdout, /- domainElements: `\d+`/);
     assert.match(result.stdout, /- runtimeEvidenceRecords: `\d+`/);
     assert.match(result.stdout, /## Projections/);
@@ -2911,26 +2915,21 @@ profile: d.AppProfile = new {
 
   it("emits formal backend skeletons", () => {
     const alloy = run(["emit", "alloy", "examples/dspec.pkl"]);
-    const tla = run(["emit", "tla", "examples/dspec.pkl"]);
-    const tlaCfg = run(["emit", "tla-cfg", "examples/dspec.pkl"]);
+    const quint = run(["emit", "quint", "examples/dspec.pkl"]);
     const lean = run(["emit", "lean", "examples/dspec.pkl"]);
 
     assert.equal(alloy.status, 0, alloy.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
-    assert.equal(tlaCfg.status, 0, tlaCfg.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.equal(lean.status, 0, lean.stderr);
     assert.match(alloy.stdout, /assert ApprovedRulesHaveChecks/);
     assert.match(alloy.stdout, /abstract sig ActiveApprovedRule extends Rule/);
     assert.match(alloy.stdout, /abstract sig AutomatedCheckTarget extends CheckTarget/);
     assert.match(alloy.stdout, /assert ActiveApprovedRulesHaveAutomatedSupport/);
-    assert.match(tla.stdout, /RuleWorkflowState ==/);
-    assert.match(tla.stdout, /DetectUncovered ==/);
-    assert.match(tla.stdout, /Spec ==/);
-    assert.match(tla.stdout, /CoverageInvariant ==/);
-    assert.match(tla.stdout, /WorkflowInvariant ==/);
-    assert.match(tlaCfg.stdout, /SPECIFICATION Spec/);
-    assert.match(tlaCfg.stdout, /INVARIANT CoverageInvariant/);
-    assert.match(tlaCfg.stdout, /INVARIANT WorkflowInvariant/);
+    assert.match(quint.stdout, /^module dspec_self \{/);
+    assert.match(quint.stdout, /action init/);
+    assert.match(quint.stdout, /action step/);
+    assert.match(quint.stdout, /val coverageInvariant/);
+    assert.match(quint.stdout, /val workflowInvariant/);
     assert.match(lean.stdout, /def AutomatedSupport/);
     assert.match(lean.stdout, /theorem coverage_invariant/);
     assert.match(lean.stdout, /theorem approved_rules_have_checks/);
@@ -2942,7 +2941,7 @@ profile: d.AppProfile = new {
     assert.equal(result.status, 0, result.stderr);
     const sourceMap = JSON.parse(result.stdout);
     assert.equal(sourceMap.model.id, "typed-ast-fixture");
-    for (const artifact of ["markdown", "quickcheck", "alloy", "tla", "tlaCfg", "lean"]) {
+    for (const artifact of ["markdown", "quickcheck", "alloy", "quint", "lean"]) {
       assert.ok(Array.isArray(sourceMap.artifacts[artifact]), artifact);
     }
     assert.ok(
@@ -2956,7 +2955,7 @@ profile: d.AppProfile = new {
       ),
     );
     assert.ok(sourceMap.artifacts.alloy.some((entry) => entry.generated === "alloy.sig.R_TYPED_AST_PRESERVED"));
-    assert.ok(sourceMap.artifacts.tla.some((entry) => entry.generated === "tla.Checks[TYPED-AST-PRESERVED]"));
+    assert.ok(sourceMap.artifacts.quint.some((entry) => entry.generated === "quint.checks[TYPED-AST-PRESERVED]"));
     assert.ok(sourceMap.artifacts.lean.some((entry) => entry.generated === "lean.RuleId.TYPED_AST_PRESERVED"));
   });
 
@@ -3663,7 +3662,7 @@ profile: d.AppProfile = new {
     const manifest = JSON.parse(result.stdout);
     assert.equal(manifest.model.id, "dspec-self");
     assert.equal(manifest.locale, "ja");
-    for (const artifact of ["markdown", "quickcheck", "alloy", "tla", "tlaCfg", "lean", "sourceMap"]) {
+    for (const artifact of ["markdown", "quickcheck", "alloy", "quint", "lean", "sourceMap"]) {
       assert.match(manifest.artifacts[artifact].sha256, /^[a-f0-9]{64}$/);
       assert.ok(manifest.artifacts[artifact].bytes > 0);
     }
@@ -3740,12 +3739,12 @@ profile: d.AppProfile = new {
       const generated = run(["generate", "--json", "--root", dir, "fixtures/projection-all-kinds.pkl"]);
       assert.equal(generated.status, 0, generated.stderr);
       const report = JSON.parse(generated.stdout);
-      assert.equal(report.summary.projections, 8);
-      assert.equal(report.summary.artifacts, 9);
-      assert.equal(report.summary.actions.create, 17);
+      assert.equal(report.summary.projections, 7);
+      assert.equal(report.summary.artifacts, 8);
+      assert.equal(report.summary.actions.create, 15);
       assert.deepEqual(
         report.projections.map((projection) => projection.kind),
-        ["alloy", "generated-manifest", "lean", "markdown", "quickcheck", "source-map", "tla", "tla-cfg"],
+        ["alloy", "generated-manifest", "lean", "markdown", "quickcheck", "quint", "source-map"],
       );
 
       const sourceMap = JSON.parse(run(["emit", "source-map", "fixtures/projection-all-kinds.pkl"]).stdout);
@@ -3756,8 +3755,7 @@ profile: d.AppProfile = new {
         markdown: ["markdown", "markdown.projection.localized-markdown"],
         quickcheck: ["quickcheck", "quickcheck.projection.quickcheck"],
         "source-map": ["sourceMap", "sourceMap.projection.source-map"],
-        tla: ["tla", "tla.projection.tla"],
-        "tla-cfg": ["tlaCfg", "tlaCfg.projection.tla-cfg"],
+        quint: ["quint", "quint.projection.quint"],
       };
       for (const [kind, [artifact, generated]] of Object.entries(sourceMapProjectionEntries)) {
         assert.ok(sourceMap.artifacts[artifact].some((entry) => entry.generated === generated), kind);
@@ -3791,7 +3789,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.deepEqual(
       new Set(report.projectionImpact.artifacts.map((artifact) => artifact.projectionKind)),
-      new Set(["markdown", "quickcheck", "lean", "alloy", "tla", "tla-cfg", "source-map", "generated-manifest"]),
+      new Set(["markdown", "quickcheck", "lean", "alloy", "quint", "source-map", "generated-manifest"]),
     );
     assert.ok(report.projectionImpact.artifacts.some(
       (artifact) => artifact.kind === "source-map" && artifact.path === "generated/projection-kinds/source-map.json" && artifact.action === "regenerate",
@@ -4084,7 +4082,7 @@ profile: d.AppProfile = new {
   it("declares formal backend tools in Nix devShell", () => {
     const source = readFileSync(join(root, "flake.nix"), "utf8");
 
-    for (const packageName of ["nodejs_24", "pnpm", "pkl", "elan", "z3", "tlaplus", "alloy6"]) {
+    for (const packageName of ["nodejs_24", "pnpm", "pkl", "elan", "z3", "jdk21_headless", "alloy6"]) {
       assert.match(source, new RegExp(`\\b${packageName}\\b`));
     }
     assert.match(source, /nixpkgs-weekly/);
@@ -4096,7 +4094,7 @@ profile: d.AppProfile = new {
     assert.equal(result.status, 0, result.stderr);
     const report = JSON.parse(result.stdout);
     assert.match(report.status, /^(pass|fail)$/);
-    for (const tool of ["node", "pnpm", "pkl", "pkf", "lean", "z3", "tlasany", "tlc", "alloy6"]) {
+    for (const tool of ["node", "pnpm", "pkl", "pkf", "lean", "z3", "quint", "java", "alloy6"]) {
       assert.ok(report.tools.some((entry) => entry.name === tool), tool);
     }
     assert.equal(report.summary.required, 9);
@@ -4106,7 +4104,7 @@ profile: d.AppProfile = new {
   it("requires formal backend tools when requested", () => {
     const result = run(["verify-generated", "--json", "--require-formal-tools", "fixtures/typed-ast.pkl"]);
     const report = JSON.parse(result.stdout);
-    const skipped = [report.backends.lean, report.backends.tlaSany, report.backends.tlaTlc, report.backends.alloyAnalyzer]
+    const skipped = [report.backends.lean, report.backends.quintTypecheck, report.backends.quintVerify, report.backends.alloyAnalyzer]
       .filter((backend) => backend.status === "skip");
 
     if (skipped.length > 0) {
@@ -4114,8 +4112,8 @@ profile: d.AppProfile = new {
       assert.match(result.stderr, /required formal backend skipped/);
     } else {
       assert.equal(result.status, 0, result.stderr);
-      assert.equal(report.backends.tlaSany.status, "pass");
-      assert.equal(report.backends.tlaTlc.status, "pass");
+      assert.equal(report.backends.quintTypecheck.status, "pass");
+      assert.equal(report.backends.quintVerify.status, "pass");
       assert.equal(report.backends.alloyAnalyzer.status, "pass");
     }
   });
@@ -4189,31 +4187,29 @@ profile: d.AppProfile = new {
   it("emits typed Clause.ast into backend projections", () => {
     const quickcheck = run(["emit", "quickcheck", "fixtures/typed-ast.pkl"]);
     const lean = run(["emit", "lean", "fixtures/typed-ast.pkl"]);
-    const tla = run(["emit", "tla", "fixtures/typed-ast.pkl"]);
+    const quint = run(["emit", "quint", "fixtures/typed-ast.pkl"]);
 
     assert.equal(quickcheck.status, 0, quickcheck.stderr);
     assert.equal(lean.status, 0, lean.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.match(quickcheck.stdout, /"ast": \{\n\s+"op": "atom",\n\s+"name": "approvedHasAutomatedCheck"/);
     assert.match(quickcheck.stdout, /export const clauseAstSemanticsVersion = "1\.0"/);
     assert.match(quickcheck.stdout, /"astSemanticsVersion": "1\.0"/);
     assert.match(lean.stdout, /def clauseAstSemanticsVersion : String := "1\.0"/);
     assert.match(lean.stdout, /Expr\.atom "approvedHasAutomatedCheck" \["rule"\]/);
-    assert.match(tla.stdout, /ClauseAstSemanticsVersion == "1\.0"/);
-    assert.match(tla.stdout, /approvedHasAutomatedCheck\(rule\)/);
   });
 
   it("emits DB model pattern into backend projections", () => {
     const markdown = run(["emit", "markdown", "--locale", "ja", "fixtures/db-model.pkl"]);
     const quickcheck = run(["emit", "quickcheck", "fixtures/db-model.pkl"]);
     const alloy = run(["emit", "alloy", "fixtures/db-model.pkl"]);
-    const tla = run(["emit", "tla", "fixtures/db-model.pkl"]);
+    const quint = run(["emit", "quint", "fixtures/db-model.pkl"]);
     const sourceMap = run(["emit", "source-map", "--locale", "ja", "fixtures/db-model.pkl"]);
 
     assert.equal(markdown.status, 0, markdown.stderr);
     assert.equal(quickcheck.status, 0, quickcheck.stderr);
     assert.equal(alloy.status, 0, alloy.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.equal(sourceMap.status, 0, sourceMap.stderr);
 
     assert.match(markdown.stdout, /## Database Model/);
@@ -4231,34 +4227,25 @@ profile: d.AppProfile = new {
     assert.match(alloy.stdout, /one sig DBT_orders extends DbTable/);
     assert.match(alloy.stdout, /one sig DBM_v2_add_payments extends DbMigration/);
     assert.match(alloy.stdout, /one sig DBMAP_v2_add_payments_paid_orders_create_payments extends DbMapping/);
-    assert.match(tla.stdout, /DbTransactions == \{"pay-order"\}/);
-    assert.match(tla.stdout, /DbMigrations == \{"v2-add-payments"\}/);
-    assert.match(tla.stdout, /DbInvariantPreserved ==/);
-    assert.match(tla.stdout, /DbMigrationPreserved ==/);
-    assert.match(tla.stdout, /DbMigrationMappingCovered ==/);
-    assert.match(tla.stdout, /DbMigrationMappingRefsMentionTables ==/);
     assert.deepEqual(validateGeneratedAlloy(alloy.stdout), []);
-    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
 
     const map = JSON.parse(sourceMap.stdout);
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.db.transactions.pay-order"));
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.db.migrations.v2-add-payments"));
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.db.migrations.v2-add-payments.mappings.paid-orders-create-payments"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.DbTransactions[pay-order]"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.DbMigrations[v2-add-payments]"));
   });
 
   it("emits Cloud topology pattern into backend projections", () => {
     const markdown = run(["emit", "markdown", "--locale", "ja", "fixtures/cloud-model.pkl"]);
     const quickcheck = run(["emit", "quickcheck", "fixtures/cloud-model.pkl"]);
     const alloy = run(["emit", "alloy", "fixtures/cloud-model.pkl"]);
-    const tla = run(["emit", "tla", "fixtures/cloud-model.pkl"]);
+    const quint = run(["emit", "quint", "fixtures/cloud-model.pkl"]);
     const sourceMap = run(["emit", "source-map", "--locale", "ja", "fixtures/cloud-model.pkl"]);
 
     assert.equal(markdown.status, 0, markdown.stderr);
     assert.equal(quickcheck.status, 0, quickcheck.stderr);
     assert.equal(alloy.status, 0, alloy.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.equal(sourceMap.status, 0, sourceMap.stderr);
 
     assert.match(markdown.stdout, /## Cloud Topology/);
@@ -4271,28 +4258,23 @@ profile: d.AppProfile = new {
     assert.match(quickcheck.stdout, /propertyCloudQueuePublishesHaveIdempotencyKey/);
     assert.match(alloy.stdout, /abstract sig CloudNode/);
     assert.match(alloy.stdout, /one sig CN_api extends CloudNode/);
-    assert.match(tla.stdout, /CloudFlows ==/);
-    assert.match(tla.stdout, /CloudPublicIngressBlocked ==/);
-    assert.match(tla.stdout, /CloudResourceAccessHasPolicy ==/);
     assert.deepEqual(validateGeneratedAlloy(alloy.stdout), []);
-    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
 
     const map = JSON.parse(sourceMap.stdout);
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.cloud.flows.api-to-db"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.CloudFlows[api-to-db]"));
   });
 
   it("emits Data governance pattern into backend projections", () => {
     const markdown = run(["emit", "markdown", "--locale", "ja", "fixtures/data-model.pkl"]);
     const quickcheck = run(["emit", "quickcheck", "fixtures/data-model.pkl"]);
     const alloy = run(["emit", "alloy", "fixtures/data-model.pkl"]);
-    const tla = run(["emit", "tla", "fixtures/data-model.pkl"]);
+    const quint = run(["emit", "quint", "fixtures/data-model.pkl"]);
     const sourceMap = run(["emit", "source-map", "--locale", "ja", "fixtures/data-model.pkl"]);
 
     assert.equal(markdown.status, 0, markdown.stderr);
     assert.equal(quickcheck.status, 0, quickcheck.stderr);
     assert.equal(alloy.status, 0, alloy.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.equal(sourceMap.status, 0, sourceMap.stderr);
 
     assert.match(markdown.stdout, /## Data Governance/);
@@ -4305,28 +4287,23 @@ profile: d.AppProfile = new {
     assert.match(quickcheck.stdout, /propertyDataRetentionWithinPolicy/);
     assert.match(alloy.stdout, /abstract sig DataSet/);
     assert.match(alloy.stdout, /one sig DS_customer_profile extends DataSet/);
-    assert.match(tla.stdout, /DataFlows ==/);
-    assert.match(tla.stdout, /DataSensitivePlacementsEncrypted ==/);
-    assert.match(tla.stdout, /DataCrossRegionFlowsHaveLegalBasis ==/);
     assert.deepEqual(validateGeneratedAlloy(alloy.stdout), []);
-    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
 
     const map = JSON.parse(sourceMap.stdout);
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.data.flows.customer-profile-to-analytics"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.DataFlows[customer-profile-to-analytics]"));
   });
 
   it("emits Release safety pattern into backend projections", () => {
     const markdown = run(["emit", "markdown", "--locale", "ja", "fixtures/release-model.pkl"]);
     const quickcheck = run(["emit", "quickcheck", "fixtures/release-model.pkl"]);
     const alloy = run(["emit", "alloy", "fixtures/release-model.pkl"]);
-    const tla = run(["emit", "tla", "fixtures/release-model.pkl"]);
+    const quint = run(["emit", "quint", "fixtures/release-model.pkl"]);
     const sourceMap = run(["emit", "source-map", "--locale", "ja", "fixtures/release-model.pkl"]);
 
     assert.equal(markdown.status, 0, markdown.stderr);
     assert.equal(quickcheck.status, 0, quickcheck.stderr);
     assert.equal(alloy.status, 0, alloy.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.equal(sourceMap.status, 0, sourceMap.stderr);
 
     assert.match(markdown.stdout, /## Release Safety/);
@@ -4338,28 +4315,23 @@ profile: d.AppProfile = new {
     assert.match(quickcheck.stdout, /propertyReleaseMigrationsAreBackwardCompatible/);
     assert.match(alloy.stdout, /abstract sig ReleaseStep/);
     assert.match(alloy.stdout, /one sig RS_prod_canary extends ReleaseStep/);
-    assert.match(tla.stdout, /ReleaseSteps ==/);
-    assert.match(tla.stdout, /ReleaseProductionStepsHaveHealthGate ==/);
-    assert.match(tla.stdout, /ReleaseTrafficShiftsHaveRollback ==/);
     assert.deepEqual(validateGeneratedAlloy(alloy.stdout), []);
-    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
 
     const map = JSON.parse(sourceMap.stdout);
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.release.steps.prod-canary"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.ReleaseSteps[prod-canary]"));
   });
 
   it("emits Runtime safety pattern into backend projections", () => {
     const markdown = run(["emit", "markdown", "--locale", "ja", "fixtures/runtime-model.pkl"]);
     const quickcheck = run(["emit", "quickcheck", "fixtures/runtime-model.pkl"]);
     const alloy = run(["emit", "alloy", "fixtures/runtime-model.pkl"]);
-    const tla = run(["emit", "tla", "fixtures/runtime-model.pkl"]);
+    const quint = run(["emit", "quint", "fixtures/runtime-model.pkl"]);
     const sourceMap = run(["emit", "source-map", "--locale", "ja", "fixtures/runtime-model.pkl"]);
 
     assert.equal(markdown.status, 0, markdown.stderr);
     assert.equal(quickcheck.status, 0, quickcheck.stderr);
     assert.equal(alloy.status, 0, alloy.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.equal(sourceMap.status, 0, sourceMap.stderr);
 
     assert.match(markdown.stdout, /## Runtime Safety/);
@@ -4383,19 +4355,12 @@ profile: d.AppProfile = new {
     assert.match(alloy.stdout, /abstract sig RuntimeTelemetry/);
     assert.match(alloy.stdout, /one sig RSLO_checkout_availability extends RuntimeSlo/);
     assert.match(alloy.stdout, /one sig RTELEM_checkout_availability_30d extends RuntimeTelemetry/);
-    assert.match(tla.stdout, /RuntimeSlos ==/);
-    assert.match(tla.stdout, /RuntimeTelemetry ==/);
-    assert.match(tla.stdout, /RuntimeCriticalSlosHavePageAlert ==/);
-    assert.match(tla.stdout, /RuntimeRetriesAreIdempotent ==/);
-    assert.match(tla.stdout, /RuntimeTelemetryMeetsSlo ==/);
     assert.deepEqual(validateGeneratedAlloy(alloy.stdout), []);
-    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
 
     const map = JSON.parse(sourceMap.stdout);
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.runtime.slos.checkout-availability"));
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.runtime.telemetry.checkout-availability-30d"));
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.runtime.dependencyTraces.checkout-api-to-payments-p95"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.RuntimeSlos[checkout-availability]"));
     assert.ok(map.artifacts.runtimeCollector.some((entry) => entry.generated === "runtimeCollector.sources.prometheus.telemetry.checkout-availability-30d"));
   });
 
@@ -4403,15 +4368,13 @@ profile: d.AppProfile = new {
     const markdown = run(["emit", "markdown", "--locale", "ja", "fixtures/intent-process.pkl"]);
     const quickcheck = run(["emit", "quickcheck", "fixtures/intent-process.pkl"]);
     const alloy = run(["emit", "alloy", "fixtures/intent-process.pkl"]);
-    const tla = run(["emit", "tla", "fixtures/intent-process.pkl"]);
-    const tlaCfg = run(["emit", "tla-cfg", "fixtures/intent-process.pkl"]);
+    const quint = run(["emit", "quint", "fixtures/intent-process.pkl"]);
     const sourceMap = run(["emit", "source-map", "--locale", "ja", "fixtures/intent-process.pkl"]);
 
     assert.equal(markdown.status, 0, markdown.stderr);
     assert.equal(quickcheck.status, 0, quickcheck.stderr);
     assert.equal(alloy.status, 0, alloy.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
-    assert.equal(tlaCfg.status, 0, tlaCfg.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.equal(sourceMap.status, 0, sourceMap.stderr);
 
     assert.match(markdown.stdout, /## Intent Model/);
@@ -4426,17 +4389,10 @@ profile: d.AppProfile = new {
     assert.match(alloy.stdout, /abstract sig IntentOutcome/);
     assert.match(alloy.stdout, /one sig IO_request_approved extends IntentOutcome/);
     assert.match(alloy.stdout, /assert IntentProcessConstructionIsAuthorized/);
-    assert.match(tla.stdout, /IntentOutcomes ==/);
-    assert.match(tla.stdout, /IntentProcessConstructionIsAuthorized ==/);
-    assert.match(tla.stdout, /IntentScenarioTraceIsContinuous ==/);
-    assert.match(tlaCfg.stdout, /INVARIANT IntentProcessConstructionIsAuthorized/);
-    assert.match(tlaCfg.stdout, /INVARIANT IntentScenarioTraceIsContinuous/);
     assert.deepEqual(validateGeneratedAlloy(alloy.stdout), []);
-    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
 
     const map = JSON.parse(sourceMap.stdout);
     assert.ok(map.artifacts.quickcheck.some((entry) => entry.generated === "quickcheck.intent.processes.request.approve"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.IntentOutcomes[request.approved]"));
     assert.ok(map.artifacts.alloy.some((entry) => entry.generated === "alloy.sig.IO_request_approved"));
   });
 
@@ -5162,14 +5118,13 @@ profile: d.AppProfile = new {
     assert.ok(map.artifacts.markdown.some((entry) => entry.generated === "markdown.intent.processes.request.approve.refinements.request.approve-handler"));
   });
 
-  it("projects bounded Intent execution policies into Markdown, QuickCheck, and TLA+", () => {
+  it("projects bounded Intent execution policies into Markdown, QuickCheck, and Quint", () => {
     const model = "fixtures/intent-contract-execution-policy.pkl";
     const valid = run(["check", model]);
     const invalid = run(["check", "fixtures/intent-contract-execution-policy-invalid-key.pkl"]);
     const markdown = run(["emit", "markdown", "--locale", "ja", model]);
     const quickcheck = run(["emit", "quickcheck", model]);
-    const tla = run(["emit", "tla", model]);
-    const tlaCfg = run(["emit", "tla-cfg", model]);
+    const quint = run(["emit", "quint", model]);
     const sourceMap = run(["emit", "source-map", model]);
     const traceSchema = run(["intent", "schema", model]);
     const compatibility = run(["spec-change", "compat", "--json", "fixtures/intent-contract.pkl", model]);
@@ -5180,8 +5135,7 @@ profile: d.AppProfile = new {
     assert.match(invalid.stderr, /intent execution idempotency key must have identifier or string type: request\.approve -> amountCents/);
     assert.equal(markdown.status, 0, markdown.stderr);
     assert.equal(quickcheck.status, 0, quickcheck.stderr);
-    assert.equal(tla.status, 0, tla.stderr);
-    assert.equal(tlaCfg.status, 0, tlaCfg.stderr);
+    assert.equal(quint.status, 0, quint.stderr);
     assert.equal(sourceMap.status, 0, sourceMap.stderr);
     assert.equal(traceSchema.status, 0, traceSchema.stderr);
     assert.equal(compatibility.status, 0, compatibility.stderr);
@@ -5191,17 +5145,15 @@ profile: d.AppProfile = new {
     assert.match(markdown.stdout, /- execution timeout ms: `1000`/);
     assert.match(quickcheck.stdout, /"maxInFlight": 2/);
     assert.match(quickcheck.stdout, /"timeoutMs": 1000/);
+    assert.match(quint.stdout, /pure val intentProcessMaxInFlight: str -> int/);
+    assert.match(quint.stdout, /action intentStart/);
+    assert.match(quint.stdout, /action intentComplete/);
+    assert.match(quint.stdout, /action intentTick/);
+    assert.match(quint.stdout, /action intentExpire/);
+    assert.match(quint.stdout, /val intentConcurrencyBounded/);
+    assert.match(quint.stdout, /val intentIdempotencyKeysAreExclusive/);
+    assert.match(quint.stdout, /val intentTimeoutsBounded/);
     assert.equal(JSON.parse(traceSchema.stdout).processes[0].execution.timeoutMs, 1000);
-    assert.match(tla.stdout, /IntentExecutionProcesses == \{"request\.approve"\}/);
-    assert.match(tla.stdout, /IntentIdempotentProcesses == \{"request\.approve"\}/);
-    assert.match(tla.stdout, /IntentTimedProcesses == \{"request\.approve"\}/);
-    assert.match(tla.stdout, /IntentConcurrencyBounded ==/);
-    assert.match(tla.stdout, /IntentIdempotencyKeysAreExclusive ==/);
-    assert.match(tla.stdout, /IntentTimeoutsBounded ==/);
-    assert.match(tlaCfg.stdout, /INVARIANT IntentConcurrencyBounded/);
-    assert.match(tlaCfg.stdout, /INVARIANT IntentIdempotencyKeysAreExclusive/);
-    assert.match(tlaCfg.stdout, /INVARIANT IntentTimeoutsBounded/);
-    assert.deepEqual(validateGeneratedTla(tla.stdout), []);
 
     const compatibilityReport = JSON.parse(compatibility.stdout);
     assert.equal(compatibilityReport.classification, "narrowing");
@@ -5213,11 +5165,8 @@ profile: d.AppProfile = new {
 
     const map = JSON.parse(sourceMap.stdout);
     assert.ok(map.artifacts.markdown.some((entry) => entry.generated === "markdown.intent.processes.request.approve.execution"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.IntentExecutionPolicy[request.approve]"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.IntentExecutionTypeInvariant"));
-    assert.ok(map.artifacts.tla.some((entry) => entry.generated === "tla.IntentConcurrencyBounded"));
-    assert.ok(map.artifacts.tlaCfg.some((entry) => entry.generated === "tlaCfg.INVARIANT.IntentExecutionTypeInvariant"));
-    assert.ok(map.artifacts.tlaCfg.some((entry) => entry.generated === "tlaCfg.INVARIANT.IntentTimeoutsBounded"));
+    assert.ok(map.artifacts.quint.some((entry) => entry.generated === "quint.intentProcessMaxInFlight[request.approve]"));
+    assert.ok(map.artifacts.quint.some((entry) => entry.generated === "quint.intentConcurrencyBounded"));
   });
 
   it("replays trace inputs for opt-in Intent execution policy observations", () => {
@@ -5270,7 +5219,7 @@ profile: d.AppProfile = new {
   });
 
   it("verifies generated backends for an Intent model without rules", () => {
-    const result = run(["verify-generated", "fixtures/intent-process.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/intent-process.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: intent-process-fixture generated quickcheck/);
@@ -5282,14 +5231,14 @@ profile: d.AppProfile = new {
   });
 
   it("runs generated QuickCheck output", () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated quickcheck/);
   });
 
   it("emits verify-generated JSON artifacts", () => {
-    const result = run(["verify-generated", "--json", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--json", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     const report = JSON.parse(result.stdout);
@@ -5297,11 +5246,22 @@ profile: d.AppProfile = new {
     assert.equal(report.status, "pass");
     assert.equal(report.backends.quickcheck.status, "pass");
     assert.match(report.backends.lean.status, /^(pass|skip)$/);
-    assert.equal(report.backends.tlaSyntax.status, "pass");
     assert.equal(report.backends.alloySyntax.status, "pass");
-    assert.match(report.backends.tlaSany.status, /^(pass|skip)$/);
-    assert.match(report.backends.tlaTlc.status, /^(pass|skip)$/);
+    assert.match(report.backends.quintTypecheck.status, /^(pass|skip)$/);
+    assert.match(report.backends.quintVerify.status, /^(pass|skip)$/);
     assert.match(report.backends.alloyAnalyzer.status, /^(pass|skip)$/);
+  });
+
+  it("keeps bounded Quint verification out of the fast gate when requested", () => {
+    const result = run(["verify-generated", "--json", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.backends.quintTypecheck.status, "pass");
+    assert.deepEqual(report.backends.quintVerify, {
+      status: "skip",
+      reason: "disabled by --skip-quint-verify",
+    });
   });
 
   it("skips unavailable formal tools unless they are required", () => {
@@ -5320,7 +5280,7 @@ profile: d.AppProfile = new {
 
   it("keeps verify-generated JSON report fixture in sync", () => {
     assertProjectedReportFixture(
-      ["verify-generated", "--json", "fixtures/typed-ast.pkl"],
+      ["verify-generated", "--json", "--skip-quint-verify", "fixtures/typed-ast.pkl"],
       "fixtures/reports/verify-generated-typed-ast.json",
       verifyGeneratedFixtureProjection,
     );
@@ -5352,7 +5312,7 @@ profile: d.AppProfile = new {
         status: "fail",
         backends: {
           lean: { status: "fail", message: "AutomatedSupport is false" },
-          tlaTlc: { status: "fail", message: "Error: The invariant of CoverageInvariant is equal to FALSE" },
+          quintVerify: { status: "fail", message: "Error: The invariant of CoverageInvariant is equal to FALSE" },
           alloyAnalyzer: { status: "fail", message: "check ApprovedRulesHaveChecks found a failure" },
         },
       },
@@ -5361,15 +5321,15 @@ profile: d.AppProfile = new {
     const lean = normalized.counterexamples.find((entry) => entry.backend === "lean");
     assert.equal(lean.generated, "lean.RuleId.COVERAGE_MISSING_CHECK");
     assert.equal(lean.source.ruleId, "COVERAGE-MISSING-CHECK");
-    const tla = normalized.counterexamples.find((entry) => entry.backend === "tlaTlc");
-    assert.equal(tla.generated, "tla.Checks[COVERAGE-MISSING-CHECK]");
-    assert.equal(tla.source.ruleId, "COVERAGE-MISSING-CHECK");
+    const quint = normalized.counterexamples.find((entry) => entry.backend === "quintVerify");
+    assert.equal(quint.generated, "quint.checks[COVERAGE-MISSING-CHECK]");
+    assert.equal(quint.source.ruleId, "COVERAGE-MISSING-CHECK");
     const alloy = normalized.counterexamples.find((entry) => entry.backend === "alloyAnalyzer");
     assert.equal(alloy.generated, "alloy.sig.R_COVERAGE_MISSING_CHECK");
     assert.equal(alloy.source.ruleId, "COVERAGE-MISSING-CHECK");
   });
 
-  it("normalizes TLA and Alloy backend witnesses to source records", () => {
+  it("normalizes Alloy backend witnesses to source records", () => {
     const model = loadModel("fixtures/cloud-model-broken.pkl");
     const normalized = normalizeCounterexamples(
       model,
@@ -5377,10 +5337,6 @@ profile: d.AppProfile = new {
         model: { id: model.id, version: model.version },
         status: "fail",
         backends: {
-          tlaTlc: {
-            status: "fail",
-            message: "Error: The invariant of CloudPublicIngressBlocked is equal to FALSE\nwitness: tla.CloudFlows[internet-to-db]",
-          },
           alloyAnalyzer: {
             status: "fail",
             message: "check CloudPublicIngressBlocked found a counterexample\nthis/CF_internet_to_db",
@@ -5389,12 +5345,6 @@ profile: d.AppProfile = new {
       },
       "ja",
     );
-
-    const tla = normalized.counterexamples.find((entry) => entry.backend === "tlaTlc");
-    assert.equal(tla.generated, "tla.CloudFlows[internet-to-db]");
-    assert.equal(tla.source.kind, "cloudFlow");
-    assert.match(tla.source.path, /model\.patterns\.cloud\.flows\[/);
-    assert.equal(tla.property, "cloud-public-ingress-blocked");
 
     const alloy = normalized.counterexamples.find((entry) => entry.backend === "alloyAnalyzer");
     assert.equal(alloy.generated, "alloy.sig.CF_internet_to_db");
@@ -5560,7 +5510,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated backend checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/coverage-missing-check.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/coverage-missing-check.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5568,8 +5518,8 @@ profile: d.AppProfile = new {
     if (report.backends.lean.status !== "skip") {
       assert.equal(report.backends.lean.status, "fail");
     }
-    if (report.backends.tlaTlc.status !== "skip") {
-      assert.equal(report.backends.tlaTlc.status, "fail");
+    if (report.backends.quintVerify.status !== "skip") {
+      assert.equal(report.backends.quintVerify.status, "fail");
     }
     if (report.backends.alloyAnalyzer.status !== "skip") {
       assert.equal(report.backends.alloyAnalyzer.status, "fail");
@@ -5577,7 +5527,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated DB invariant checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/db-model-missing-preserve.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/db-model-missing-preserve.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5586,7 +5536,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated DB migration checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/db-model-migration-missing-preserve.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/db-model-migration-missing-preserve.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5595,7 +5545,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated DB migration mapping checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/db-model-migration-missing-mapping.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/db-model-migration-missing-mapping.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5604,7 +5554,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated DB migration mapping expression checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/db-model-mapping-missing-table-mention.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/db-model-mapping-missing-table-mention.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5613,7 +5563,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated Cloud topology checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/cloud-model-broken.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/cloud-model-broken.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5624,7 +5574,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated Data governance checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/data-model-broken.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/data-model-broken.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5635,7 +5585,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated Release safety checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/release-model-broken.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/release-model-broken.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5646,7 +5596,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated Runtime safety checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/runtime-model-broken.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/runtime-model-broken.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5662,149 +5612,23 @@ profile: d.AppProfile = new {
   });
 
   it("compiles generated Lean output", { skip: !hasLean }, () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated lean/);
   });
 
-  it("validates generated TLA+ syntax", () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+  it("validates generated Quint syntax", () => {
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: typed-ast-fixture generated tla syntax/);
-    assert.deepEqual(validateGeneratedTla("---- MODULE BROKEN ----\nApprovedRules == {"), [
-      "missing TLA+ module terminator",
-      "missing TLA+ definition: Rules",
-      "missing TLA+ definition: ActiveApprovedRules",
-      "missing TLA+ definition: Checks",
-      "missing TLA+ definition: RuleClauses",
-      "missing TLA+ definition: DbTables",
-      "missing TLA+ definition: DbInvariants",
-      "missing TLA+ definition: DbTransactions",
-      "missing TLA+ definition: DbPreserves",
-      "missing TLA+ definition: DbTouches",
-      "missing TLA+ definition: DbMigrations",
-      "missing TLA+ definition: DbMigrationPreserves",
-      "missing TLA+ definition: DbMigrationTouches",
-      "missing TLA+ definition: DbMigrationMappings",
-      "missing TLA+ definition: DbMappings",
-      "missing TLA+ definition: DbMappingCovers",
-      "missing TLA+ definition: DbMigrationMappingCoverage",
-      "missing TLA+ definition: DbMigrationSources",
-      "missing TLA+ definition: DbMigrationTargets",
-      "missing TLA+ definition: DbMappingMentionsSource",
-      "missing TLA+ definition: DbMappingMentionsTarget",
-      "missing TLA+ definition: CloudNodes",
-      "missing TLA+ definition: CloudFlows",
-      "missing TLA+ definition: CloudPublicIngress",
-      "missing TLA+ definition: CloudSensitiveResources",
-      "missing TLA+ definition: CloudFlowFrom",
-      "missing TLA+ definition: CloudFlowTo",
-      "missing TLA+ definition: CloudRequiresPolicy",
-      "missing TLA+ definition: CloudAllowedByPolicy",
-      "missing TLA+ definition: CloudTenantScopedNodes",
-      "missing TLA+ definition: CloudTenantPropagatedFlows",
-      "missing TLA+ definition: CloudQueuePublishes",
-      "missing TLA+ definition: CloudIdempotentFlows",
-      "missing TLA+ definition: DataSets",
-      "missing TLA+ definition: DataStores",
-      "missing TLA+ definition: DataPlacements",
-      "missing TLA+ definition: DataFlows",
-      "missing TLA+ definition: DataSensitivePlacements",
-      "missing TLA+ definition: DataEncryptedPlacements",
-      "missing TLA+ definition: DataPersonalPlacements",
-      "missing TLA+ definition: DataDeletionSupportedPlacements",
-      "missing TLA+ definition: DataCrossRegionFlows",
-      "missing TLA+ definition: DataLegalBasisFlows",
-      "missing TLA+ definition: DataRetentionScopedSets",
-      "missing TLA+ definition: DataRetentionCompliantSets",
-      "missing TLA+ definition: ReleaseServices",
-      "missing TLA+ definition: ReleaseEnvironments",
-      "missing TLA+ definition: ReleaseGates",
-      "missing TLA+ definition: ReleaseRollbacks",
-      "missing TLA+ definition: ReleaseMigrations",
-      "missing TLA+ definition: ReleaseSteps",
-      "missing TLA+ definition: ReleaseProductionSteps",
-      "missing TLA+ definition: ReleaseHealthGatedSteps",
-      "missing TLA+ definition: ReleaseTrafficShiftSteps",
-      "missing TLA+ definition: ReleaseRollbackPlannedSteps",
-      "missing TLA+ definition: ReleaseRollbackTestedSteps",
-      "missing TLA+ definition: ReleaseMigrationScopedSteps",
-      "missing TLA+ definition: ReleaseMigrationCompatibleSteps",
-      "missing TLA+ definition: RuntimeServices",
-      "missing TLA+ definition: RuntimeDependencies",
-      "missing TLA+ definition: RuntimeSignals",
-      "missing TLA+ definition: RuntimeRunbooks",
-      "missing TLA+ definition: RuntimeAlerts",
-      "missing TLA+ definition: RuntimeSlos",
-      "missing TLA+ definition: RuntimeTelemetry",
-      "missing TLA+ definition: RuntimeAlertPolicies",
-      "missing TLA+ definition: RuntimeRunbookExecutions",
-      "missing TLA+ definition: RuntimeDependencyTraces",
-      "missing TLA+ definition: RuntimeCriticalSlos",
-      "missing TLA+ definition: RuntimePageAlertedSlos",
-      "missing TLA+ definition: RuntimePageAlerts",
-      "missing TLA+ definition: RuntimeTestedRunbookAlerts",
-      "missing TLA+ definition: RuntimeTimeoutDependencies",
-      "missing TLA+ definition: RuntimeRetryDependencies",
-      "missing TLA+ definition: RuntimeIdempotentDependencies",
-      "missing TLA+ definition: RuntimeTelemetrySlos",
-      "missing TLA+ definition: RuntimePassingTelemetry",
-      "missing TLA+ definition: RuntimeEnabledPolicyAlerts",
-      "missing TLA+ definition: RuntimeExecutedRunbookAlerts",
-      "missing TLA+ definition: RuntimeTimeoutCompliantTraces",
-      "missing TLA+ definition: IntentExecutionProcesses",
-      "missing TLA+ definition: IntentIdempotentProcesses",
-      "missing TLA+ definition: IntentTimedProcesses",
-      "missing TLA+ definition: IntentProcessMaxInFlight",
-      "missing TLA+ definition: IntentProcessTimeoutSteps",
-      "missing TLA+ definition: IntentExecutionKeySpace",
-      "missing TLA+ definition: RuleWorkflowState",
-      "missing TLA+ definition: vars",
-      "missing TLA+ definition: Init",
-      "missing TLA+ definition: MarkVerified",
-      "missing TLA+ definition: DetectUncovered",
-      "missing TLA+ definition: Deprecate",
-      "missing TLA+ definition: Next",
-      "missing TLA+ definition: Spec",
-      "missing TLA+ definition: CoverageInvariant",
-      "missing TLA+ definition: WorkflowInvariant",
-      "missing TLA+ definition: DbInvariantPreserved",
-      "missing TLA+ definition: DbMigrationPreserved",
-      "missing TLA+ definition: DbMigrationMappingCovered",
-      "missing TLA+ definition: DbMigrationMappingRefsMentionTables",
-      "missing TLA+ definition: CloudPublicIngressBlocked",
-      "missing TLA+ definition: CloudResourceAccessHasPolicy",
-      "missing TLA+ definition: CloudTenantFlowsPropagateTenant",
-      "missing TLA+ definition: CloudQueuePublishesHaveIdempotencyKey",
-      "missing TLA+ definition: DataSensitivePlacementsEncrypted",
-      "missing TLA+ definition: DataPersonalPlacementsSupportDeletion",
-      "missing TLA+ definition: DataCrossRegionFlowsHaveLegalBasis",
-      "missing TLA+ definition: DataRetentionWithinPolicy",
-      "missing TLA+ definition: ReleaseProductionStepsHaveHealthGate",
-      "missing TLA+ definition: ReleaseTrafficShiftsHaveRollback",
-      "missing TLA+ definition: ReleaseRollbackPlansAreTested",
-      "missing TLA+ definition: ReleaseMigrationsAreBackwardCompatible",
-      "missing TLA+ definition: RuntimeCriticalSlosHavePageAlert",
-      "missing TLA+ definition: RuntimePageAlertsHaveTestedRunbook",
-      "missing TLA+ definition: RuntimeDependenciesHaveTimeout",
-      "missing TLA+ definition: RuntimeRetriesAreIdempotent",
-      "missing TLA+ definition: RuntimeSlosHaveTelemetry",
-      "missing TLA+ definition: RuntimeTelemetryMeetsSlo",
-      "missing TLA+ definition: RuntimePageAlertsHaveEnabledPolicy",
-      "missing TLA+ definition: RuntimePageAlertsHaveExecutedRunbook",
-      "missing TLA+ definition: RuntimeDependencyTracesWithinTimeout",
-      "missing TLA+ definition: IntentExecutionTypeInvariant",
-      "missing TLA+ definition: IntentConcurrencyBounded",
-      "missing TLA+ definition: IntentIdempotencyKeysAreExclusive",
-      "missing TLA+ definition: IntentTimeoutsBounded",
-      "unbalanced TLA+ delimiters: {",
-    ]);
+    assert.match(result.stdout, /ok: typed-ast-fixture generated quint/);
+    const report = verifyGeneratedReport(loadModel("fixtures/typed-ast.pkl"), { skipQuintVerify: true });
+    assert.equal(report.backends.quintTypecheck.status, "pass");
   });
 
   it("validates generated Alloy syntax", () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated alloy syntax/);
@@ -5821,22 +5645,22 @@ profile: d.AppProfile = new {
     ]);
   });
 
-  it("runs generated TLA+ through SANY when available", { skip: !hasTlasany }, () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+  it("runs generated Quint typecheck", { skip: !hasQuint }, () => {
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: typed-ast-fixture generated tla sany/);
+    assert.match(result.stdout, /ok: typed-ast-fixture generated quint typecheck/);
   });
 
-  it("runs generated TLA+ through TLC when available", { skip: !hasTlc }, () => {
+  it("runs generated Quint verify when available", { skip: !hasJava }, () => {
     const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /ok: typed-ast-fixture generated tla tlc/);
+    assert.match(result.stdout, /ok: typed-ast-fixture generated quint verify/);
   });
 
   it("runs generated Alloy through analyzer when available", { skip: !hasAlloy6 }, () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated alloy exec/);
@@ -5856,7 +5680,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 1126);
+    assert.equal(report.references, 1124);
     assert.deepEqual(report.assurance.rules, { satisfied: 79, total: 79 });
     assert.deepEqual(report.errors, []);
   });
@@ -5979,11 +5803,11 @@ profile: d.AppProfile = new {
     assert.match(emitted.stdout, /propertyApprovedRulesHaveRequiredAssurances/);
     assert.match(emitted.stdout, /approved-rules-have-required-assurances/);
 
-    const verified = run(["verify-generated", "fixtures/assurance-levels.pkl"]);
+    const verified = run(["verify-generated", "--skip-quint-verify", "fixtures/assurance-levels.pkl"]);
     assert.equal(verified.status, 0, verified.stderr);
     assert.match(verified.stdout, /ok: assurance-levels generated quickcheck/);
 
-    const missing = verifyGeneratedReport(loadModel("fixtures/assurance-required-missing.pkl"));
+    const missing = verifyGeneratedReport(loadModel("fixtures/assurance-required-missing.pkl"), { skipQuintVerify: true });
     assert.equal(missing.status, "fail");
     assert.equal(missing.backends.quickcheck.status, "fail");
     assert.match(missing.backends.quickcheck.message, /approved-rules-have-required-assurances/);
@@ -6055,13 +5879,13 @@ profile: d.AppProfile = new {
       assert.equal(manifest.model.id, "typed-ast-fixture");
       assert.match(manifest.model.digest, /^sha256:[a-f0-9]{64}$/);
       assert.match(manifest.sourceMapDigest, /^sha256:[a-f0-9]{64}$/);
-      assert.deepEqual(manifest.artifacts.map((artifact) => artifact.id), ["alloy", "lean", "quickcheck", "tla"]);
+      assert.deepEqual(manifest.artifacts.map((artifact) => artifact.id), ["alloy", "lean", "quickcheck", "quint"]);
       assert.ok(manifest.artifacts.every((artifact) => artifact.scope === "generator"));
       assert.ok(manifest.clauseBindings.length > 0);
       const binding = manifest.clauseBindings[0];
       assert.match(binding.astDigest, /^sha256:[a-f0-9]{64}$/);
       assert.ok(binding.backends.some((backend) => backend.backend === "lean" && backend.support === "structural"));
-      assert.ok(binding.backends.some((backend) => backend.backend === "tla" && backend.support === "textual"));
+      assert.ok(binding.backends.some((backend) => backend.backend === "quint" && backend.support === "textual"));
       assert.ok(binding.backends.some((backend) => backend.backend === "alloy" && backend.support === "unmapped"));
       assert.ok(binding.backends.every((backend) => backend.support !== "semantic"));
 
@@ -6268,7 +6092,7 @@ profile: d.AppProfile = new {
     assert.notEqual(result.status, 0);
     assert.match(
       result.stderr,
-      /formal assurance requires evidence manifest: ASSURANCE-LEVELS -> bounded fixtures\/backend-drift\/Spec\.tla#BackendInvariant/,
+      /formal assurance requires evidence manifest: ASSURANCE-LEVELS -> bounded fixtures\/backend-drift\/spec\.qnt#backendInvariant/,
     );
     assert.match(
       result.stderr,

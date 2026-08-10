@@ -16,6 +16,8 @@
   "files": [
     "PklProject",
     "dspec",
+    "examples/dspec.pkl",
+    "examples/dspec.traceability.gql",
     "pkl-tests",
     "scripts",
     "skills",
@@ -34,6 +36,7 @@
     "./intent": "./src/core/intent.mjs",
     "./protocol-tests": "./src/core/protocol-tests.mjs",
     "./domain": "./src/core/domain.mjs",
+    "./semantic-graph": "./src/core/semantic-graph.mjs",
     "./projection": "./src/core/projection.mjs",
     "./schema": "./dspec/Schema.pkl"
   },
@@ -44,10 +47,11 @@
     "access": "public"
   },
   "scripts": {
-    "check": "pnpm run build && pkl eval examples/rbac.pkl >/dev/null && pkl eval examples/dspec.pkl >/dev/null && node src/cli.mjs drift examples/dspec.pkl && node src/cli.mjs coverage examples/dspec.pkl && node src/cli.mjs score-app-profile-mutations --json fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs generated check examples/dspec.pkl && node src/cli.mjs generated check examples/sample-webapp-2026.pkl && node src/cli.mjs generated check fixtures/projection-holdout-single-locale.pkl && node src/cli.mjs generated check fixtures/projection-holdout-monorepo.pkl && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl | diff -u generated/source-map.json - && node src/cli.mjs emit quickcheck examples/dspec.pkl >/dev/null && node src/cli.mjs emit alloy examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla examples/dspec.pkl >/dev/null && node src/cli.mjs emit tla-cfg examples/dspec.pkl >/dev/null && node src/cli.mjs emit lean examples/dspec.pkl >/dev/null && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs verify-generated --json examples/dspec.pkl >/dev/null && node src/cli.mjs verify-generated examples/dspec.pkl && node --test",
+    "check": "pnpm run build && pkl eval examples/rbac.pkl >/dev/null && pkl eval examples/dspec.pkl >/dev/null && node src/cli.mjs drift examples/dspec.pkl && node src/cli.mjs coverage examples/dspec.pkl && node src/cli.mjs score-app-profile-mutations --json fixtures/sample-webapp-profile-extended-scenarios.pkl >/dev/null && node src/cli.mjs generated check examples/dspec.pkl && node src/cli.mjs generated check examples/sample-webapp-2026.pkl && node src/cli.mjs generated check fixtures/projection-holdout-single-locale.pkl && node src/cli.mjs generated check fixtures/projection-holdout-monorepo.pkl && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl | diff -u generated/source-map.json - && node src/cli.mjs emit quickcheck examples/dspec.pkl >/dev/null && node src/cli.mjs emit alloy examples/dspec.pkl >/dev/null && node src/cli.mjs emit quint examples/dspec.pkl | node scripts/typecheck-quint-stdin.mjs && node src/cli.mjs emit lean examples/dspec.pkl >/dev/null && node src/cli.mjs emit source-map --locale ja examples/dspec.pkl >/dev/null && node src/cli.mjs verify-generated --json examples/dspec.pkl >/dev/null && node src/cli.mjs verify-generated examples/dspec.pkl && node --test",
     "build": "tsc --project tsconfig.build.json",
     "test": "pnpm run build && node --test",
     "typecheck": "tsc --noEmit",
+    "meandb:traceability": "node scripts/verify-meandb-traceability.mjs",
     "package:smoke": "node scripts/verify-package.mjs",
     "checker:conformance": "node scripts/verify-checker-conformance.mjs"
   },
@@ -55,6 +59,9 @@
     "node": ">=24"
   },
   "packageManager": "pnpm@10.33.0",
+  "dependencies": {
+    "@informalsystems/quint": "0.32.0"
+  },
   "devDependencies": {
     "@types/node": "^26.1.2",
     "typescript": "5.9.3"

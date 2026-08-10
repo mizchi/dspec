@@ -158,8 +158,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.ActiveApprovedRules.IMPACT-ALLOW",
+          "artifact": "quint",
+          "generated": "quint.activeApprovedRules.IMPACT-ALLOW",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -167,8 +167,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.Checks[IMPACT-ALLOW]",
+          "artifact": "quint",
+          "generated": "quint.checks[IMPACT-ALLOW]",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -176,8 +176,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-ALLOW]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-ALLOW]",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -185,8 +185,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-ALLOW].must[0]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-ALLOW].must[0]",
           "source": {
             "field": "must",
             "index": 0,
@@ -336,8 +336,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.ActiveApprovedRules.IMPACT-ALLOW",
+          "artifact": "quint",
+          "generated": "quint.activeApprovedRules.IMPACT-ALLOW",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -345,8 +345,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.Checks[IMPACT-ALLOW]",
+          "artifact": "quint",
+          "generated": "quint.checks[IMPACT-ALLOW]",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -354,8 +354,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-ALLOW]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-ALLOW]",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -363,8 +363,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-ALLOW].must[0]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-ALLOW].must[0]",
           "source": {
             "field": "must",
             "index": 0,
@@ -514,8 +514,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.ActiveApprovedRules.IMPACT-ALLOW",
+          "artifact": "quint",
+          "generated": "quint.activeApprovedRules.IMPACT-ALLOW",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -523,8 +523,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.Checks[IMPACT-ALLOW]",
+          "artifact": "quint",
+          "generated": "quint.checks[IMPACT-ALLOW]",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -532,8 +532,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-ALLOW]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-ALLOW]",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -541,8 +541,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-ALLOW].must[0]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-ALLOW].must[0]",
           "source": {
             "field": "must",
             "index": 0,
@@ -694,8 +694,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.ActiveApprovedRules.IMPACT-AUDIT",
+          "artifact": "quint",
+          "generated": "quint.activeApprovedRules.IMPACT-AUDIT",
           "source": {
             "kind": "rule",
             "path": "model.rules[1]",
@@ -703,8 +703,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.Checks[IMPACT-AUDIT]",
+          "artifact": "quint",
+          "generated": "quint.checks[IMPACT-AUDIT]",
           "source": {
             "kind": "rule",
             "path": "model.rules[1]",
@@ -712,8 +712,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-AUDIT]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-AUDIT]",
           "source": {
             "kind": "rule",
             "path": "model.rules[1]",
@@ -721,8 +721,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-AUDIT].must[0]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-AUDIT].must[0]",
           "source": {
             "field": "must",
             "index": 0,
@@ -991,8 +991,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.ActiveApprovedRules.IMPACT-ALLOW",
+          "artifact": "quint",
+          "generated": "quint.activeApprovedRules.IMPACT-ALLOW",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -1000,8 +1000,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.ActiveApprovedRules.IMPACT-AUDIT",
+          "artifact": "quint",
+          "generated": "quint.activeApprovedRules.IMPACT-AUDIT",
           "source": {
             "kind": "rule",
             "path": "model.rules[1]",
@@ -1009,8 +1009,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.Checks[IMPACT-ALLOW]",
+          "artifact": "quint",
+          "generated": "quint.checks[IMPACT-ALLOW]",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -1018,8 +1018,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.Checks[IMPACT-AUDIT]",
+          "artifact": "quint",
+          "generated": "quint.checks[IMPACT-AUDIT]",
           "source": {
             "kind": "rule",
             "path": "model.rules[1]",
@@ -1027,8 +1027,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-ALLOW]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-ALLOW]",
           "source": {
             "kind": "rule",
             "path": "model.rules[0]",
@@ -1036,8 +1036,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-ALLOW].must[0]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-ALLOW].must[0]",
           "source": {
             "field": "must",
             "index": 0,
@@ -1047,8 +1047,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-AUDIT]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-AUDIT]",
           "source": {
             "kind": "rule",
             "path": "model.rules[1]",
@@ -1056,8 +1056,8 @@
           }
         },
         {
-          "artifact": "tla",
-          "generated": "tla.RuleClauses[IMPACT-AUDIT].must[0]",
+          "artifact": "quint",
+          "generated": "quint.ruleClauses[IMPACT-AUDIT].must[0]",
           "source": {
             "field": "must",
             "index": 0,

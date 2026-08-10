@@ -24,6 +24,10 @@ try {
   writeFileSync(join(consumerRoot, "package.json"), JSON.stringify({ private: true, type: "module" }));
   run("npm", ["install", "--ignore-scripts", "--no-package-lock", tarball], consumerRoot);
   const dspec = join(consumerRoot, "node_modules", ".bin", "dspec");
+  const packageRoot = join(consumerRoot, "node_modules", "@mizchi", "dspec");
+  for (const source of ["examples/dspec.pkl", "examples/dspec.traceability.gql"]) {
+    if (!existsSync(join(packageRoot, source))) throw new Error(`published package is missing self-traceability source: ${source}`);
+  }
   run(dspec, ["--help"], consumerRoot);
   run(process.execPath, [
     "--input-type=module",

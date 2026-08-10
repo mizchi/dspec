@@ -23,10 +23,9 @@ export function verifyGeneratedFixtureProjection(report) {
     backends: {
       quickcheck: { status: report.backends.quickcheck.status },
       lean: { status: optionalToolStatus(report.backends.lean) },
-      tlaSyntax: { status: report.backends.tlaSyntax.status },
       alloySyntax: { status: report.backends.alloySyntax.status },
-      tlaSany: { status: optionalToolStatus(report.backends.tlaSany) },
-      tlaTlc: { status: optionalToolStatus(report.backends.tlaTlc) },
+      quintTypecheck: { status: optionalToolStatus(report.backends.quintTypecheck) },
+      quintVerify: { status: optionalToolStatus(report.backends.quintVerify) },
       alloyAnalyzer: { status: optionalToolStatus(report.backends.alloyAnalyzer) },
     },
   };

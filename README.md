@@ -57,6 +57,26 @@ This catches both directions of drift: a declared requirement that no longer
 has an implementation anchor, and an observed route, resource, or operational
 fact that was never made part of the specification master.
 
+## Semantic Graph Interoperability
+
+The Pkl master can be exported as a labelled semantic graph for RDF tooling or
+for retrieval/navigation with `mizchi/meandb`:
+
+```sh
+dspec graph export --format turtle --output specification.ttl examples/tetris.pkl
+dspec graph export --format graphdb --output generated/tetris.graphdb-input examples/tetris.pkl
+dspec graph embed generated/tetris.graphdb-input
+dspec graph build --mutual generated/tetris.graphdb-input
+dspec graph query-dsl --explain generated/tetris.graphdb-input/specification.graphdb traceability.gql
+dspec graph query --locale ja examples/tetris.pkl "テトリスの回転規則"
+```
+
+The graph explicitly distinguishes Pkl-declared relationships from observed
+or verified evidence. Turtle retains labelled predicates; the GraphDB bundle
+reifies each relation as a tagged intermediate node, while JSON/Turtle remain
+lossless sidecars. See [`docs/semantic-graph.md`](docs/semantic-graph.md) for
+the contract and embedding/import flow.
+
 ## Daily Drift Review
 
 `examples/daily-drift-targets.pkl` is a typed `DailyDrift.Manifest`. It names
@@ -125,7 +145,7 @@ fragment; other backend paths are structural, textual, or unmapped.
 
 It does not prove that arbitrary production code refines a business rule, that
 an imported cloud declaration is deployed or reachable, or that a generated
-TLA+/Alloy artifact covers an undeclared behavior. These limits are deliberate
+Quint/Alloy artifact covers an undeclared behavior. These limits are deliberate
 and are recorded in the model and evidence contracts.
 
 For cases that need direct Lean or Alloy source, [`docs/formal-links.md`](docs/formal-links.md)
@@ -145,7 +165,7 @@ and freshness boundary to translations of `LocalizedText`.
 | --- | --- | --- |
 | Architecture, ownership, topology, and data placement | Typed model consistency plus reconciliation and reverse coverage for supported adapters | That the deployment actually occurred, is reachable, or remains healthy |
 | API and business process behavior | Declared Intent contracts, finite scenarios, refinement exercises, and current runtime evidence | Universal equivalence between an implementation and a business process |
-| Distributed or temporal behavior | A generated artifact can be syntax-checked or tool-checked within its declared model and scope | That generated TLA+/Alloy output covers undeclared states or production execution |
+| Distributed or temporal behavior | A generated artifact can be syntax-checked or tool-checked within its declared model and scope | That generated Quint/Alloy output covers undeclared states or production execution |
 | Clause semantics | Clause-scoped Lean evidence only for the documented `eq`/`neq`/`not`/`implies` fragment | A generic proof path for algorithms, SDK behavior, or arbitrary application code |
 | Compliance and audit | Reviewable rules, evidence manifests, provenance, and CI results | Legal certification or compliance by itself |
 
@@ -154,6 +174,17 @@ Adapter coverage is an implementation boundary, not a claim that dspec is tied
 to one permanent stack. There is also no validated service-count threshold:
 adoption is justified when the cost of cross-artifact drift exceeds the cost of
 maintaining the model.
+
+### Quint temporal backend
+
+`dspec emit quint <model.pkl>` is the temporal projection surface and emits one
+`.qnt` artifact. The former direct `tla` and `tla-cfg` emit targets are removed.
+The generated model covers approved-rule workflow safety plus bounded Intent
+execution concurrency, idempotency, and timeout state. `verify-generated`
+always runs `quint typecheck`; with a working Java runtime it additionally runs
+`quint verify --backend tlc --max-steps 10`. Assurance evidence records that
+bound and backend, so a bounded pass is not presented as an unbounded proof or
+as evidence about undeclared production behavior.
 
 ## Install
 
@@ -230,6 +261,7 @@ pnpm run checker:conformance
 node src/cli.mjs devshell-smoke --json
 node src/cli.mjs verify-generated examples/dspec.pkl
 node src/cli.mjs verify-generated --json examples/dspec.pkl
+node src/cli.mjs verify-generated --skip-quint-verify examples/dspec.pkl
 node src/cli.mjs verify-generated --json --require-formal-tools fixtures/typed-ast.pkl
 node src/cli.mjs traceability --gate --require-executed-formal-tools examples/tetris.pkl
 node src/cli.mjs formal-mutation --json --require-formal-tools fixtures/tetris-alloy.pkl
@@ -247,10 +279,12 @@ node src/cli.mjs generated check examples/sample-webapp-2026.pkl
 node src/cli.mjs generated unlock --root .
 ```
 
-The dev shell provides Node.js 24, pnpm, Pkl, Lean via elan, Z3, TLA+, and Alloy 6.
-When `tlasany`, `tlc`, and `alloy6` are on `PATH`, `verify-generated` promotes
-the generated TLA+/Alloy gates from built-in syntax-shape checks to tool-backed
-SANY, TLC, and Alloy analyzer checks.
+The dev shell provides Node.js 24, pnpm, Pkl, Lean via elan, Z3, Java 21, and Alloy 6.
+The project dependency provides Quint. `verify-generated` always runs
+`quint typecheck`; when Java is available it also runs bounded `quint verify`
+with the TLC backend, alongside the Alloy analyzer gate.
+Fast gates may pass `--skip-quint-verify` to leave bounded execution to the
+separate `--require-formal-tools` gate while retaining Quint typechecking.
 `devshell-smoke --json --strict --require-store-path` checks that required
 tools come from the devShell rather than the host. `pkf run devshell:tools`,
 `pkf run devshell:formal`, and `pkf run devshell:check` mirror the CI gates.
@@ -332,8 +366,7 @@ node src/cli.mjs impact --json fixtures/impact-before.pkl fixtures/impact-after.
 node src/cli.mjs emit markdown --locale ja examples/dspec.pkl
 node src/cli.mjs emit quickcheck examples/dspec.pkl
 node src/cli.mjs emit alloy examples/dspec.pkl
-node src/cli.mjs emit tla examples/dspec.pkl
-node src/cli.mjs emit tla-cfg examples/dspec.pkl
+node src/cli.mjs emit quint examples/dspec.pkl
 node src/cli.mjs emit lean examples/dspec.pkl
 node src/cli.mjs emit source-map --locale ja examples/dspec.pkl
 node src/cli.mjs emit runtime-collector fixtures/runtime-model.pkl
@@ -433,7 +466,7 @@ It models the current implementation boundary:
 - `drift` validates that implementation references and check targets still
   resolve to files, symbols, and test anchors.
 - `drift` resolves backend-specific check target anchors for Node, Playwright,
-  Lean, TLA+, Alloy, Pkl, and runtime collector manifests.
+  Lean, Quint, Alloy, Pkl, and runtime collector manifests.
 - Top-level CLI usage is generated from a command registry. README/docs/Taskfile
   command examples are checked and help-smoked against that live surface, with a
   holdout Markdown fixture covering extractor shapes such as fenced `dspec`,
@@ -582,11 +615,11 @@ It models the current implementation boundary:
   `fixtures/spec-change-scaffold-*.pkl` does the same for deterministic
   authoring scaffolds.
 - `emit` deterministically projects the source model to Markdown, QuickCheck,
-  Alloy, TLA+, Lean skeletons, runtime collector manifests, and
+  Alloy, Quint, Lean skeletons, runtime collector manifests, and
   generated-artifact source maps.
 - `patterns.db` models database tables, invariants, transactions, and
   migrations, then projects preservation, mapping-coverage, and mapping
-  well-formedness checks to QuickCheck, Alloy, and TLA+.
+  well-formedness checks to QuickCheck, Alloy, and Quint.
 - `import-db-schema` seeds `patterns.db.tables` from existing SQL
   `CREATE TABLE` DDL, preserving primary keys, uniqueness, nullability, and
   foreign references as deterministic JSON or Pkl fragments.
@@ -596,23 +629,23 @@ It models the current implementation boundary:
 - `patterns.cloud` models network zones, cloud nodes, flows, and explicit
   access policies, then projects boundary, sensitive-resource policy,
   tenant-propagation, and queue idempotency checks to QuickCheck, Alloy, and
-  TLA+.
+  Quint.
 - `patterns.data` models data classifications, datasets, stores, placements,
   and flows, then projects encryption-at-rest, deletion support,
   cross-region-transfer basis, and retention-policy checks to QuickCheck,
-  Alloy, and TLA+.
+  Alloy, and Quint.
 - `patterns.release` models services, environments, gates, rollbacks,
   migrations, and release steps, then projects production health-gate, traffic
   rollback, rollback-test, and migration-compatibility checks to QuickCheck,
-  Alloy, and TLA+.
+  Alloy, and Quint.
 - `patterns.runtime` models services, dependencies, signals, runbooks, alerts,
   and SLOs, then projects critical-SLO page-alert, tested-runbook,
   dependency-timeout, and retry-idempotency checks to QuickCheck, Alloy, and
-  TLA+.
+  Quint.
 - `patterns.runtime` also accepts imported runtime evidence records for
   telemetry windows, alert policies, runbook executions, and dependency traces,
   then projects evidence coverage and drift checks to QuickCheck, Alloy, and
-  TLA+. Runtime evidence expectations can require freshness with
+  Quint. Runtime evidence expectations can require freshness with
   `freshWithinDays` and `asOf`; `verify-runtime-evidence --json` also emits an
   evidence quality summary with missing, stale, freshness-checked, and score
   counts.
@@ -631,16 +664,16 @@ It models the current implementation boundary:
   A Process may also declare an `execution` policy with a finite
   `maxInFlight`, an `idempotencyKey` naming a required string or identifier
   input, a discrete `timeoutSteps` bound, and an optional adapter deadline
-  `timeoutMs`. TLA+ checks the discrete declarations with an abstract finite
+  `timeoutMs`. Quint checks the discrete declarations with an abstract finite
   scheduler; `timeoutMs` is exercised only by runtime adapters.
   It does not embed implementation code or claim universal equivalence:
   QuickCheck shrinks Process/Scenario ids and rechecks refinement bindings,
-  Alloy checks closed construction relations, and TLA+ checks ordered trace
+  Alloy checks closed construction relations, and Quint checks ordered trace
   continuity. Process and refinement references are included in drift
   detection.
 - `verify-generated` executes generated QuickCheck output, compiles generated
-  Lean output, validates generated TLA+/Alloy syntax shape, and runs TLA+ SANY,
-  TLA+ TLC, plus Alloy analyzer smoke checks when those tools are available.
+  Lean output, typechecks generated Quint, and runs bounded Quint verification
+  plus Alloy analyzer checks when their runtime dependencies are available.
 - `verify-generated --json` emits a deterministic backend-status report for CI
   artifacts and future drift/coverage ingestion.
 - `evidence create` executes the generated backends and records a typed
@@ -656,7 +689,7 @@ It models the current implementation boundary:
   composed only from `eq`, `neq`, `not`, and `implies`: it generates a
   satisfaction theorem and a clause-scoped artifact, so a passing manifest can
   authorize `proved` for that selector. Lean `atom`, `and`, `or`, and quantifier
-  operators remain structural, TLA+ remains textual, and Alloy remains
+  operators remain structural, Quint remains textual, and Alloy remains
   unmapped.
 - the top-level `projections` entrypoint contract declares generated artifact
   ownership next to the source model. The current `self-markdown` projection
@@ -698,13 +731,13 @@ It models the current implementation boundary:
   Projection materialization and freshness report contracts.
 - `normalize-counterexamples` turns generated backend failures into `Rule.id`,
   source path, generated selector, and reviewable explanation records. When
-  TLA+/Alloy output contains generated selectors, the source map resolves them
+  Quint/Alloy output contains generated selectors, the source map resolves them
   back to concrete spec records.
-- `flake.nix` provides the devShell used to put Z3 and the TLA+/Alloy tools on
+- `flake.nix` provides the devShell used to put Z3 and the Quint/Alloy tools on
   `PATH`.
 - `.github/workflows/check.yml` runs an Ubuntu `check:fast` job with pnpm,
   Pkl, and pkfire CAS caches in parallel with a macOS/Nix `check:formal` job.
-  The formal job requires devShell tools plus Lean/TLA+/Alloy execution while
+  The formal job requires devShell tools plus Lean/Quint/Alloy execution while
   the fast job provides earlier schema, report, test, and dogfood feedback.
 - `Clause.expr` remains a compatibility/display string, while `Clause.ast`
   carries the typed expression structure used by deterministic projections
@@ -736,7 +769,7 @@ without inheriting where the base entrypoint materializes generated files.
 - `decisions`: append-only design history.
 - `domainPacks`: preset pack helper contracts for local domain DSL modules.
 - `checks`: links from a rule to verification backends such as Lean, Alloy,
-  TLA+, Rego, Playwright, or runtime monitoring.
+  Quint, Rego, Playwright, or runtime monitoring.
 - `implementedBy`: implementation markers used for drift detection.
 - `patterns.db`: optional DB model with `tables`, `invariants`,
   `transactions`, and `migrations`.
@@ -759,7 +792,7 @@ The top-level `projections` listing contains typed ownership and freshness
 contracts for generated artifacts. `kind = "markdown"` with
 `matrix = "locales"` expands a Markdown artifact for every locale and requires
 one `{locale}` placeholder. The `single` matrix owns one kind-specific artifact
-for `quickcheck`, `lean`, `alloy`, `tla`, `tla-cfg`, `source-map`, or
+for `quickcheck`, `lean`, `alloy`, `quint`, `source-map`, or
 `generated-manifest`; each kind has a required output extension. `output` and
 the required non-templated JSON `provenance` path must stay below the generation
 root and cannot collide. Repeated generation preserves `generatedAt` while
@@ -771,11 +804,11 @@ overwritten by static projection generation.
 Domain preset packs under `dspec/domains/` are authoring helpers over this
 shape. They do not add a separate semantics layer; they return ordinary Core IR
 records so drift detection, coverage, Markdown rendering, QuickCheck, Lean,
-TLA+, and Alloy projections keep one source format.
+Quint, and Alloy projections keep one source format.
 
 `Clause.expr` is a stable compatibility string. `Clause.ast` is the first typed
 expression layer: small boolean/relation nodes that emitters can preserve in
-QuickCheck, TLA+, and Lean outputs. The current implementation still falls back
+QuickCheck, Quint, and Lean outputs. The current implementation still falls back
 to `expr` when `ast` is absent, which keeps older specs readable while giving
 new specs a deterministic projection surface.
 
@@ -786,7 +819,7 @@ uninterpreted `atom` predicates, symbolic `eq`/`neq`, boolean
 `not`/`and`/`or`/`implies`, and single-child `exists`/`forall` binders.
 `dspec check` rejects nodes that use fields outside the selected operator's
 semantics or models that request an unsupported semantics version. QuickCheck,
-TLA+, and Lean projections carry the version explicitly. The executable
+Quint, and Lean projections carry the version explicitly. The executable
 reference semantics and conformance tests live in `src/core/clause-ast.mjs` and
 `test/clause-ast-core.test.mjs`.
 
@@ -811,7 +844,7 @@ tenant columns, and foreign references; invariants name the tables they
 constrain; transactions declare reads, writes, idempotency keys, and which
 invariants they preserve; migrations declare source tables, target tables,
 which invariants they preserve, and mapping witnesses for those preservation
-claims. Generated QuickCheck/TLA+/Alloy projections check that a transaction or
+claims. Generated QuickCheck/Quint/Alloy projections check that a transaction or
 migration touching a table constrained by an invariant declares that invariant
 in `preserves`, and that every migration `preserves` entry is covered by at
 least one `DbMapping.invariants` entry. They also check that mapping
@@ -822,7 +855,7 @@ mapping text from drifting away from the tables it claims to connect.
 implementation details: zones declare exposure, nodes declare resource kind and
 tenant scope, flows declare source/target/action plus tenant propagation or
 idempotency evidence, and policies declare which principal may access which
-resource actions. Generated QuickCheck/TLA+/Alloy projections check four cheap
+resource actions. Generated QuickCheck/Quint/Alloy projections check four cheap
 cloud-architecture invariants: public ingress must not directly reach sensitive
 resources, sensitive-resource access must have an explicit policy, tenant-scoped
 flows must propagate tenant context, and queue publish flows must carry an
@@ -833,7 +866,7 @@ provider-specific infrastructure: policies declare classification-level
 retention limits, datasets declare classification/residency/retention, stores
 declare region/encryption/deletion support, placements declare where datasets
 are stored, and flows declare store-to-store movement with purpose and optional
-legal basis. Generated QuickCheck/TLA+/Alloy projections check that sensitive
+legal basis. Generated QuickCheck/Quint/Alloy projections check that sensitive
 data placements use encrypted stores, personal data placements use stores that
 support deletion, cross-region personal-data flows have a legal basis, and
 dataset retention stays within the classification policy.
@@ -843,7 +876,7 @@ from CI/CD vendor details: services and environments define deployment targets,
 gates define review/test/health evidence, rollback plans declare whether they
 are tested, migrations declare backward compatibility, and release steps attach
 strategy, traffic percentage, gates, rollback, and migration evidence.
-Generated QuickCheck/TLA+/Alloy projections check that production release steps
+Generated QuickCheck/Quint/Alloy projections check that production release steps
 have health gates, production traffic shifts have rollback plans, referenced
 rollback plans are tested, and production migrations are backward compatible.
 
@@ -852,7 +885,7 @@ from monitoring vendor details: services declare criticality, dependencies
 declare target/kind/timeout/retry/idempotency intent, signals declare observed
 indicators, runbooks declare tested operational response, alerts connect
 signals to severity and response, and SLOs declare service-level targets.
-Generated QuickCheck/TLA+/Alloy projections check that critical-service SLOs
+Generated QuickCheck/Quint/Alloy projections check that critical-service SLOs
 have page alerts, page alerts have tested runbooks, dependencies have positive
 timeouts, and retryable dependencies are explicitly idempotent.
 The same pattern now accepts imported evidence records: telemetry windows are
@@ -871,7 +904,7 @@ transitions, and legal constructions, and ConstructionAuthority closes the
 paths that may create each Outcome. Scenarios are finite ordered traces used to
 check that Process inputs, transitions, and final states compose. QuickCheck
 generates Process/Scenario ids with deterministic shrinking, Alloy checks that
-declared constructions are authorized, and TLA+ checks trace continuity. A
+declared constructions are authorized, and Quint checks trace continuity. A
 Process may carry `implementedBy` references so the normal drift detector can
 find a removed implementation symbol or path.
 
@@ -999,14 +1032,15 @@ A Process may also declare `execution = new d.IntentExecutionPolicy { ... }`.
 `identifier` or `string` field in the input contract, and `timeoutSteps` is a
 discrete abstract scheduler bound. `timeoutMs` is an optional wall-clock
 deadline enforced by `intent exercise` adapters; it is not projected into the
-TLA+ scheduler. `intent exercise --policy` is an explicit test/staging opt-in:
+Quint scheduler. `intent exercise --policy` is an explicit test/staging opt-in:
 it replays one verified input `maxInFlight + 1` times, using the same mapped
 idempotency-key value, with at most `maxInFlight` client invocations at once.
 The resulting evidence records response/effect consistency and client-side
 pressure. It does not prove an internal queue, distributed idempotency store,
 DB isolation level, retry implementation, or deployment capacity. The
-generated TLA+ model starts, completes, ticks, and expires bounded executions;
-TLC checks the in-flight bound, unique active idempotency keys, and elapsed-step
+generated Quint model starts, completes, ticks, and expires bounded executions;
+Quint's bounded TLC backend checks the in-flight bound, unique active
+idempotency keys, and elapsed-step
 bound. Introducing or tightening this policy is classified as narrowing by
 `spec-change compat`; relaxing it is widening, while mixed changes or replacing
 an idempotency key are unknown and require review.
@@ -1085,7 +1119,7 @@ does not see globally:
 - approved rules with no verification or implementation target
 - implementation reference paths and symbols for `dspec drift`
 - check target paths and node test anchors for `dspec drift`
-- backend-aware check target anchors for Playwright, Lean, TLA+, Alloy, Pkl,
+- backend-aware check target anchors for Playwright, Lean, Quint, Alloy, Pkl,
   and runtime collector manifests
 - approved-rule automated check coverage for `dspec coverage`
 - stable JSON reports for `dspec check --json`, `dspec drift --json`, and
@@ -1099,14 +1133,13 @@ does not see globally:
 - JSON report compatibility fixtures under `fixtures/reports/`
 - stable compatibility fixtures for `verify-generated --json` and
   `normalize-counterexamples --json`; these use projections so optional
-  TLA+/Alloy tools can be installed or absent without changing the fixtures
+  Quint/Alloy tools can be installed or absent without changing the fixtures
 - generated QuickCheck execution and generated Lean compilation for
   `dspec verify-generated`
-- generated TLA+/Alloy module shape, required declarations, and delimiter
-  balance for `dspec verify-generated`
-- generated TLA+ SANY/TLC and Alloy analyzer checks for `dspec verify-generated`
-  when `tlasany`, `tlc`, and `alloy6` are installed, for example through
-  `nix develop path:$PWD`
+- generated Quint typechecking and Alloy structural validation for
+  `dspec verify-generated`
+- bounded `quint verify` and Alloy analyzer checks when Java and `alloy6` are
+  available, for example through `nix develop path:$PWD`
 - generated backend checks are load-bearing against
   `fixtures/coverage-missing-check.pkl`
 - generated DB invariant checks are load-bearing against
@@ -1129,12 +1162,12 @@ does not see globally:
 - generated source-map artifact drift via `generated/source-map.json`
 - JSON verification report shape via `dspec verify-generated --json`
 - counterexample normalization from generated backend failures to source
-  `Rule.id`, source-map paths, and TLA+/Alloy generated-selector witnesses
+  `Rule.id`, source-map paths, and Quint/Alloy generated-selector witnesses
 - stale runtime evidence detection via `freshWithinDays` and `asOf`
 
 These are deliberately cheap checks, but they are now load-bearing: a fixture
 with an unsupported approved rule fails generated QuickCheck and Lean, and in
-the Nix shell also fails the TLA+/Alloy backend gates. The normalizer maps
+the Nix shell also fails the Quint/Alloy backend gates. The normalizer maps
 those failures back to spec source records. The useful next step is to split the
 remaining checker and generators into reusable core modules. Clause AST
 semantics and real-app normalization already have filesystem-independent core
@@ -1149,7 +1182,7 @@ review.
 `examples/dspec.pkl` is now usable as the prototype's active self-spec ledger;
 the remaining gap is full backend semantics for `Clause.ast`,
 backend-specific proof/model-check generation beyond the current QuickCheck,
-Lean, TLA+ SANY/TLC, Alloy analyzer smoke gates, and richer counterexample
+Lean, Quint typecheck/verify, Alloy analyzer gates, and richer counterexample
 interpretation. `patterns.db` is the first concrete domain pattern for this
 direction, including declaration-level migration preservation checks and
 mapping coverage / well-formedness checks. `patterns.cloud` extends the same

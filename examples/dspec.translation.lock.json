@@ -492,8 +492,8 @@
     },
     {
       "key": "rule:DSPEC-COUNTEREXAMPLE-NORMALIZED.must[1].text#en",
-      "sourceHash": "sha256:f0956c8543b2175da5df1f777bdd1724314028fc2ba1670c4201cd8d11974228",
-      "translationHash": "sha256:4b90269db5544641661c6a4ad8a63f41873d923553366ea6a6c0b512a1e86134"
+      "sourceHash": "sha256:112787beaa758d0bd82e0ff4671e719bc50e9f3b5c7fdcbb223d482c501527c6",
+      "translationHash": "sha256:e42b1cb8b27ab50fa7ed5ba58f7712ab53031d782bb412f1bea84409b52accf8"
     },
     {
       "key": "rule:DSPEC-COUNTEREXAMPLE-NORMALIZED.text#en",
@@ -757,8 +757,8 @@
     },
     {
       "key": "rule:DSPEC-DRIFT-CHECK-TARGET.must[2].text#en",
-      "sourceHash": "sha256:cfe159e7d720408af3ab61959c83e470a13a48f07b0ab8806d691b3ea94eea5e",
-      "translationHash": "sha256:f5de5918dbb7660a29ec90a35944308b5a280dad6f5b00967f1f640001912eea"
+      "sourceHash": "sha256:3ad97f4a301b8ae854eba1f1a18d5ac722cde96315e6f1e452c2a044c22130a7",
+      "translationHash": "sha256:d06fed6c20e995ab45b8270bd675c11e59a18c5a0cdcfaa146101ee1737b7619"
     },
     {
       "key": "rule:DSPEC-DRIFT-CHECK-TARGET.text#en",
@@ -782,8 +782,8 @@
     },
     {
       "key": "rule:DSPEC-EMIT-FORMAL-BACKENDS.must[0].text#en",
-      "sourceHash": "sha256:50ba5c6a484195370c5b9e2acdd68a4048097d1a19de063b34e3f944c9df26c8",
-      "translationHash": "sha256:b2f4875f0fb202e423c9173530467ecb206252f09e0566629672145f2d1c4b52"
+      "sourceHash": "sha256:1d299fe785211d3eeddd4463ec29bc6710755fa3b043f682bd43659a5ba19966",
+      "translationHash": "sha256:8fad9224e2920fd66dfd688ed7597c3bfe3eadd1a451f7fb172d9d3c45bf3c30"
     },
     {
       "key": "rule:DSPEC-EMIT-FORMAL-BACKENDS.text#en",
@@ -812,13 +812,13 @@
     },
     {
       "key": "rule:DSPEC-EXPR-AST-PROJECTION.must[0].text#en",
-      "sourceHash": "sha256:7200c594f5d1ad062d39ba768684aa87cdaa547ec4d606da3241cb266388d3e9",
-      "translationHash": "sha256:de59248a196b6a63f6d2593a173ac039daaae6c704b85ea3a4d8d7d7e02356d1"
+      "sourceHash": "sha256:7cf88400dcd20376a0f2fbd2dd47d9cc6fc48bb47268231859ab32ca90aad8f2",
+      "translationHash": "sha256:19a03729fbce2654563b2d75f186df2508363af2745f58cdde87ef6fd8717d37"
     },
     {
       "key": "rule:DSPEC-EXPR-AST-PROJECTION.text#en",
-      "sourceHash": "sha256:9fc35f8d8fd7d002cdda67a13a2ec074c48bdb5b870149ef10c320e7df54e51c",
-      "translationHash": "sha256:cb26494b2ad5916b69731c46a9be8a844ee65dc4d7291072469862bcb770b155"
+      "sourceHash": "sha256:a42a49665c096bf00a333642a83875ca4b6297a82ef15daf2af8914220d3941e",
+      "translationHash": "sha256:a317714a51c230abc93e0eb73f250d3f7151e762cd56300819fe52cb314c2466"
     },
     {
       "key": "rule:DSPEC-EXPR-OPAQUE.mustNot[0].text#en",
@@ -936,24 +936,24 @@
       "translationHash": "sha256:ca1c571030a302cc676e419a7da0301bb3b31a07e91288d1584a3c4bbced4f09"
     },
     {
-      "key": "rule:DSPEC-GENERATED-TLA-SYNTAX.must[0].text#en",
-      "sourceHash": "sha256:e0a03362501f42d6c9ca6f3845bdbc99da4cbdd6772661d4aa5ed97112f9cc28",
-      "translationHash": "sha256:4b42ac685f3dad5e902a36fe1bf034dc0ead6e36c12f8c84325b54cc345455bf"
+      "key": "rule:DSPEC-GENERATED-QUINT-VERIFY.must[0].text#en",
+      "sourceHash": "sha256:df5c9e08d3083a05370b5ca024ad30a478767b54a36c686b1b0f7f0c22717289",
+      "translationHash": "sha256:a7208e430765f2174a6b5a8d80466b6f509b1de6005b7dfdaf9812362868c005"
     },
     {
-      "key": "rule:DSPEC-GENERATED-TLA-SYNTAX.must[1].text#en",
-      "sourceHash": "sha256:aa73399f630a58ba0a8aa11e9ef2245c0d5bad28e8b1f643acd2e92ec82c90a2",
-      "translationHash": "sha256:1b651c8d6a6cc25056c72e45df9eaf543a5f38d9fb298524cc2a5ca919a7e4c6"
+      "key": "rule:DSPEC-GENERATED-QUINT-VERIFY.must[1].text#en",
+      "sourceHash": "sha256:3ee0eba799cb8654e1400ff3463a6d3bea39d8f4fb7ce24eed08a95a4e4c85cd",
+      "translationHash": "sha256:393329010fd8c9f3ab8b145c0d7c1230bad0a1ed6ba9f8697cdb8ea87d675e2f"
     },
     {
-      "key": "rule:DSPEC-GENERATED-TLA-SYNTAX.must[2].text#en",
-      "sourceHash": "sha256:a2cc9ae2d1604b09d9896e988061c9e6d3973431479126773af243ee6474afbf",
-      "translationHash": "sha256:bac3597c5c9be110bb46eaa85e1e01e1bbe4e1af47b89a7e3df7bbb1e5ae41f7"
+      "key": "rule:DSPEC-GENERATED-QUINT-VERIFY.must[2].text#en",
+      "sourceHash": "sha256:34586440aff39e8b7b2a1b1c4d43d690073cd9f2a03760a2a264bda612ae2cdc",
+      "translationHash": "sha256:676b81bef2421a241d94c2019edbff11ff3b6477cc8089bd3db5ed55675f3c29"
     },
     {
-      "key": "rule:DSPEC-GENERATED-TLA-SYNTAX.text#en",
-      "sourceHash": "sha256:29e4adda1050b8e55cc818756e5d9812bfdb253a1c3506d5ea02067d28ceea28",
-      "translationHash": "sha256:ce47513f387d275b53a7b6c840de61425ce9b99be4107a21e47f9be782d80e54"
+      "key": "rule:DSPEC-GENERATED-QUINT-VERIFY.text#en",
+      "sourceHash": "sha256:145f003eacc3a58063bf9c3d8e4f300bb50d99c3217d804c06e42077c6bdbc2a",
+      "translationHash": "sha256:d59cfbf4a64cf90bb333a470e6c801be0480c30edf13ecc01499846dfb9567b6"
     },
     {
       "key": "rule:DSPEC-I18N-RENDER.must[0].text#en",
@@ -1227,8 +1227,8 @@
     },
     {
       "key": "rule:DSPEC-NIX-FORMAL-TOOLS.must[0].text#en",
-      "sourceHash": "sha256:7bfda9464abf352ea31d87d337e4412eedc4fc92f65307f6f8ef25d1ca1abba6",
-      "translationHash": "sha256:336717b3a8bf9716ad8114e1425e88c9b52004e1342b5f5778d4b5fbe3b1e51c"
+      "sourceHash": "sha256:0525314d2eaa45ca60d530961a9ef11d4da697109cdf1541967cc5f591fad349",
+      "translationHash": "sha256:7d117d36cc1be94ec965cdb0ffa6f2533f4f6c81b913a1ad904bf734da996108"
     },
     {
       "key": "rule:DSPEC-NIX-FORMAL-TOOLS.must[1].text#en",
@@ -1237,8 +1237,8 @@
     },
     {
       "key": "rule:DSPEC-NIX-FORMAL-TOOLS.must[2].text#en",
-      "sourceHash": "sha256:320fe39aa904268c90fdc8cb6ea0004d0c5b50517de6ebae13b3f84c23c9558b",
-      "translationHash": "sha256:f78b708216e68c757a56b82e9ab25e9aa31f61ad05a9ac2241c50822dbffb938"
+      "sourceHash": "sha256:68e37b488ce0ca4529bdf65a8b14182dcbdade9b016fc859e401bb5d6ee2f270",
+      "translationHash": "sha256:866bc20e5c53e8fddfe4bb2f71b08d370b78042a4906df954f85da7fa113e5dd"
     },
     {
       "key": "rule:DSPEC-NIX-FORMAL-TOOLS.text#en",

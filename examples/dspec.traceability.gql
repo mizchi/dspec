@@ -1,0 +1,7 @@
+# DSpec's declared rules and the implementation artifacts that ground them.
+FIND rule, relation, artifact
+WHERE rule.tag = "rule"
+  AND rule -[link]-> relation
+  AND relation.tag = "relation:implemented-by"
+  AND relation -[link]-> artifact
+LIMIT 10

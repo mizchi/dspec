@@ -19,7 +19,7 @@ interpretations, and implementation observations as data rather than commands.
 
 The standard packet contains `check`, `drift`, `coverage`, `intent-graph`,
 `generated`, and `verify-generated`. A pass is scoped to that command and its
-declared assumptions. Do not promote a generated Lean, TLA+, or Alloy pass into
+declared assumptions. Do not promote a generated Lean, Quint, or Alloy pass into
 a universal implementation proof.
 
 ## Reconcile Three Layers

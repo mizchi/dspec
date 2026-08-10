@@ -735,7 +735,7 @@ export const rules = [
     "when": [],
     "must": [
       {
-        "expr": "projection.kind in {quickcheck, lean, alloy, tla, tla-cfg, source-map, generated-manifest} -> projection.matrix == single",
+        "expr": "projection.kind in {quickcheck, lean, alloy, quint, source-map, generated-manifest} -> projection.matrix == single",
         "astSemanticsVersion": null,
         "ast": null
       },
@@ -939,7 +939,7 @@ export const rules = [
         "ast": null
       },
       {
-        "expr": "proved -> backend == lean && bounded -> backend in {tla, alloy}",
+        "expr": "proved -> backend == lean && bounded -> backend in {quint, alloy}",
         "astSemanticsVersion": null,
         "ast": null
       },
@@ -1324,7 +1324,7 @@ export const rules = [
       },
       {
         "backend": "node",
-        "ref": "test/cli.test.mjs#normalizes TLA and Alloy backend witnesses to source records",
+        "ref": "test/cli.test.mjs#normalizes Alloy backend witnesses to source records",
         "automated": true,
         "assurances": [
           "reference"
@@ -1354,7 +1354,7 @@ export const rules = [
         }
       },
       {
-        "expr": "normalizeCounterexamples(tlaOrAlloyWitness).uses(source-map.generatedSelector)",
+        "expr": "normalizeCounterexamples(quintOrAlloyWitness).uses(source-map.generatedSelector)",
         "astSemanticsVersion": null,
         "ast": null
       }
@@ -2545,7 +2545,7 @@ export const rules = [
     "when": [],
     "must": [
       {
-        "expr": "emit(alloy|tla|lean, model).deterministic",
+        "expr": "emit(alloy|quint|lean, model).deterministic",
         "astSemanticsVersion": null,
         "ast": null
       }
@@ -2645,14 +2645,14 @@ export const rules = [
     "when": [],
     "must": [
       {
-        "expr": "emit(quickcheck|tla|lean, model).preserves(clause.ast + clauseAstSemanticsVersion)",
+        "expr": "emit(quickcheck|quint|lean, model).preserves(clause.ast + clauseAstSemanticsVersion)",
         "astSemanticsVersion": "1.0",
         "ast": {
           "op": "atom",
           "name": "preservesClauseAst",
           "args": [
             "quickcheck",
-            "tla",
+            "quint",
             "lean"
           ],
           "children": []
@@ -2993,7 +2993,7 @@ export const rules = [
     "when": [],
     "must": [
       {
-        "expr": "generatedManifest.hashes(markdown, quickcheck, alloy, tla, tlaCfg, lean, sourceMap)",
+        "expr": "generatedManifest.hashes(markdown, quickcheck, alloy, quint, quint, lean, sourceMap)",
         "astSemanticsVersion": null,
         "ast": null
       },
@@ -3141,7 +3141,7 @@ export const rules = [
     "mustNot": []
   },
   {
-    "id": "DSPEC-GENERATED-TLA-SYNTAX",
+    "id": "DSPEC-GENERATED-QUINT-VERIFY",
     "kind": "obligation",
     "status": "approved",
     "requiredAssurances": [
@@ -3150,7 +3150,7 @@ export const rules = [
     "checks": [
       {
         "backend": "node",
-        "ref": "test/cli.test.mjs#validates generated TLA+ syntax",
+        "ref": "test/cli.test.mjs#validates generated Quint syntax",
         "automated": true,
         "assurances": [
           "reference"
@@ -3159,7 +3159,7 @@ export const rules = [
       },
       {
         "backend": "node",
-        "ref": "test/cli.test.mjs#runs generated TLA+ through SANY when available",
+        "ref": "test/cli.test.mjs#runs generated Quint typecheck",
         "automated": true,
         "assurances": [
           "reference"
@@ -3168,7 +3168,7 @@ export const rules = [
       },
       {
         "backend": "node",
-        "ref": "test/cli.test.mjs#runs generated TLA+ through TLC when available",
+        "ref": "test/cli.test.mjs#runs generated Quint verify when available",
         "automated": true,
         "assurances": [
           "reference"
@@ -3184,11 +3184,11 @@ export const rules = [
     "when": [],
     "must": [
       {
-        "expr": "verifyGenerated(model).validatesSyntax(tla)",
+        "expr": "verifyGenerated(model).typechecks(quint)",
         "astSemanticsVersion": "1.0",
         "ast": {
           "op": "atom",
-          "name": "validatesGeneratedTlaSyntax",
+          "name": "typechecksGeneratedQuint",
           "args": [
             "model"
           ],
@@ -3196,7 +3196,7 @@ export const rules = [
         }
       },
       {
-        "expr": "hasTool(tlasany) -> verifyGenerated(model).runsSany(tla)",
+        "expr": "hasTool(quint) -> verifyGenerated(model).runsTypecheck(quint)",
         "astSemanticsVersion": "1.0",
         "ast": {
           "op": "implies",
@@ -3207,13 +3207,13 @@ export const rules = [
               "op": "atom",
               "name": "hasTool",
               "args": [
-                "tlasany"
+                "quint"
               ],
               "children": []
             },
             {
               "op": "atom",
-              "name": "runsGeneratedTlaSany",
+              "name": "runsGeneratedQuintTypecheck",
               "args": [
                 "model"
               ],
@@ -3223,7 +3223,7 @@ export const rules = [
         }
       },
       {
-        "expr": "hasTool(tlc) -> verifyGenerated(model).runsTlc(tla)",
+        "expr": "hasTool(java) -> verifyGenerated(model).runsVerify(quint)",
         "astSemanticsVersion": "1.0",
         "ast": {
           "op": "implies",
@@ -3234,13 +3234,13 @@ export const rules = [
               "op": "atom",
               "name": "hasTool",
               "args": [
-                "tlc"
+                "java"
               ],
               "children": []
             },
             {
               "op": "atom",
-              "name": "runsGeneratedTlaTlc",
+              "name": "runsGeneratedQuintVerify",
               "args": [
                 "model"
               ],
@@ -4416,7 +4416,7 @@ export const rules = [
     "when": [],
     "must": [
       {
-        "expr": "devShell.packages.includes(nodejs_24, pnpm, pkl, elan, z3, tlaplus, alloy6)",
+        "expr": "devShell.packages.includes(nodejs_24, pnpm, pkl, elan, z3, jdk21_headless, alloy6)",
         "astSemanticsVersion": null,
         "ast": null
       },
@@ -4426,7 +4426,7 @@ export const rules = [
         "ast": null
       },
       {
-        "expr": "verifyGenerated(requireFormalTools).requires(tlaSany + tlaTlc + alloyAnalyzer)",
+        "expr": "verifyGenerated(requireFormalTools).requires(quintTypecheck + quintVerify + alloyAnalyzer)",
         "astSemanticsVersion": null,
         "ast": null
       }
@@ -6904,7 +6904,7 @@ export const approvedRuleIds = [
   "DSPEC-GENERATED-CHECKS-LOAD-BEARING",
   "DSPEC-GENERATED-LEAN-COMPILES",
   "DSPEC-GENERATED-QUICKCHECK-RUNS",
-  "DSPEC-GENERATED-TLA-SYNTAX",
+  "DSPEC-GENERATED-QUINT-VERIFY",
   "DSPEC-I18N-RENDER",
   "DSPEC-I18N-SEMANTIC-DRIFT",
   "DSPEC-IMPLEMENTATION-CONFORMANCE",
