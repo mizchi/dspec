@@ -94,7 +94,7 @@ local schema: Task = new {
 local test: Task = new {
   name = "test"
   description = "Run Node unit tests"
-  cmd = "pnpm test"
+  cmd = "node --test"
   inputs = new {
     ...pklSources
     ...jsonFixtures
@@ -144,6 +144,7 @@ local packageReview: Task = new {
     ...tsSources
     ...projectMetadata
   }
+  deps { build }
 }
 
 local packageSmoke: Task = new {
@@ -200,7 +201,7 @@ local drift: Task = new {
     ...ciSources
     ...projectMetadata
   }
-  deps { schema }
+  deps { schema; build }
 }
 
 local coverage: Task = new {
@@ -226,7 +227,7 @@ local traceVerify: Task = new {
     ...jsSources
     ...reviewArtifacts
   }
-  deps { schema }
+  deps { schema; build }
 }
 
 local translationVerify: Task = new {
@@ -238,7 +239,7 @@ local translationVerify: Task = new {
     ...translationLocks
     ...jsSources
   }
-  deps { schema }
+  deps { schema; build }
 }
 
 local domainCoverage: Task = new {
@@ -419,7 +420,7 @@ local specReadingDogfood: Task = new {
     ...jsonFixtures
     ...jsSources
   }
-  deps { schema }
+  deps { schema; build }
   cache = false
 }
 
@@ -545,6 +546,7 @@ local devshellTools: Task = new {
     ...jsSources
     ...nixSources
   }
+  deps { build }
   cache = false
 }
 
@@ -558,6 +560,7 @@ local devshellFormal: Task = new {
     ...jsSources
     ...nixSources
   }
+  deps { build }
   cache = false
 }
 

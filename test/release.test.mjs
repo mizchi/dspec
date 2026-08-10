@@ -9,6 +9,13 @@ import * as core from "../src/core/index.mjs";
 const read = (path) => readFileSync(path, "utf8");
 const pkg = JSON.parse(read("package.json"));
 
+function taskBlock(source, name) {
+  const start = source.indexOf(`local ${name}: Task = new {`);
+  assert.notEqual(start, -1, `missing task: ${name}`);
+  const next = source.indexOf("\nlocal ", start + 1);
+  return source.slice(start, next === -1 ? source.length : next);
+}
+
 test("defines the v0.1 public package boundary", () => {
   assert.equal(pkg.name, "@mizchi/dspec");
   assert.equal(pkg.private, undefined);
@@ -73,6 +80,23 @@ test("tracks release inputs and reviews the package in the fast gate", () => {
   assert.match(taskfile, /name = "checker:conformance"/);
   assert.match(taskfile, /npm pack --dry-run --json >\/dev\/null/);
   assert.match(taskfile, /checkFast:[\s\S]*?packageReview/);
+});
+
+test("builds generated Node modules before fast and formal runtime consumers", () => {
+  const taskfile = read("Taskfile.pkl");
+
+  assert.match(taskBlock(taskfile, "test"), /cmd = "node --test"/);
+  for (const name of [
+    "packageReview",
+    "drift",
+    "traceVerify",
+    "translationVerify",
+    "specReadingDogfood",
+    "devshellTools",
+    "devshellFormal",
+  ]) {
+    assert.match(taskBlock(taskfile, name), /deps \{[^}]*\bbuild\b[^}]*\}/, `${name} must depend on build`);
+  }
 });
 
 test("keeps transient test fixtures outside the package root", () => {
