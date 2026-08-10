@@ -156,3 +156,31 @@ test("keeps imported implementation evidence distinct from Pkl declarations", ()
   assert.ok(enriched.edges.some((edge) => edge.from === "rule/ORDER-VALID" && edge.relation === "has-conformance-result" && edge.to === "evidence/conformance/order-valid"));
   assert.ok(enriched.nodes.filter((node) => node.origin === "pkl").every((node) => node.evidenceStatus === "declared"));
 });
+
+test("rejects imported evidence without the exact source model identity", () => {
+  const graph = semanticGraph(fixtureModel());
+  const enriched = semanticGraphWithEvidence(graph, {
+    conformance: {
+      status: "pass",
+      targets: [],
+    },
+    assurance: {
+      model: { id: "semantic-graph-fixture" },
+      artifacts: [],
+    },
+    realApp: {
+      model: { id: "other-model", version: "9.9.9" },
+      status: "pass",
+      checks: [],
+    },
+  });
+
+  assert.equal(enriched.status, "fail");
+  assert.deepEqual(enriched.errors, [
+    "assurance evidence model version is missing: expected 0.1.0",
+    "conformance evidence model id is missing: expected semantic-graph-fixture",
+    "conformance evidence model version is missing: expected 0.1.0",
+    "real app evidence model id mismatch: expected semantic-graph-fixture, got other-model",
+    "real app evidence model version mismatch: expected 0.1.0, got 9.9.9",
+  ]);
+});

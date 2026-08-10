@@ -175,6 +175,10 @@ The imported nodes use separate origins:
 - `real-app-reconciliation`: facts observed in the inspected app, connected to
   the exact Pkl declaration path checked.
 
+Every imported document must identify the exact source model with both `id`
+and `version`. A missing or mismatched identity fails graph export instead of
+attaching evidence from another model or an unknown revision.
+
 A successful imported report is evidence only in its stated scope. In
 particular, a passing finite conformance report is not a proof for all inputs,
 and a real-app observation does not turn the Pkl declaration itself from

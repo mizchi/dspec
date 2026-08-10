@@ -89,6 +89,13 @@ test("exports a semantic graph as JSON, Turtle, and a GraphDB-ready bundle", () 
     assert.ok(evidenceGraph.nodes.some((node) => node.id === "evidence/conformance/report"));
     assert.ok(evidenceGraph.nodes.some((node) => node.origin === "assurance-manifest"));
     assert.ok(evidenceGraph.nodes.some((node) => node.origin === "real-app-reconciliation"));
+
+    const unscoped = join(directory, "unscoped-conformance.json");
+    writeFileSync(unscoped, JSON.stringify({ status: "pass", targets: [] }));
+    const rejected = run(["graph", "export", "--conformance", unscoped, "examples/tetris.pkl"]);
+    assert.equal(rejected.status, 1);
+    assert.match(rejected.stdout, /conformance evidence model id is missing/);
+    assert.match(rejected.stdout, /conformance evidence model version is missing/);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

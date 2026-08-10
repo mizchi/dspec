@@ -392,8 +392,10 @@ function sourceArtifacts(document: RecordValue): RecordValue[] {
 function sourceIdentityErrors(graph: SemanticGraph, document: RecordValue, label: string): string[] {
   const source = sourceModel(document);
   const errors: string[] = [];
-  if (source.id && String(source.id) !== graph.model.id) errors.push(`${label} evidence model id mismatch: expected ${graph.model.id ?? "missing"}, got ${source.id}`);
-  if (source.version && String(source.version) !== graph.model.version) errors.push(`${label} evidence model version mismatch: expected ${graph.model.version ?? "missing"}, got ${source.version}`);
+  if (!source.id) errors.push(`${label} evidence model id is missing: expected ${graph.model.id ?? "missing"}`);
+  else if (String(source.id) !== graph.model.id) errors.push(`${label} evidence model id mismatch: expected ${graph.model.id ?? "missing"}, got ${source.id}`);
+  if (!source.version) errors.push(`${label} evidence model version is missing: expected ${graph.model.version ?? "missing"}`);
+  else if (String(source.version) !== graph.model.version) errors.push(`${label} evidence model version mismatch: expected ${graph.model.version ?? "missing"}, got ${source.version}`);
   return errors;
 }
 
