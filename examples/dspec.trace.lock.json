@@ -27,7 +27,7 @@
           "key": "node:test/cli.test.mjs#checks multiple app profiles as an aggregate bundle"
         },
         {
-          "contentHash": "sha256:7ca4a3fcf2025864b74b38f21e74c6de4e3eb2d484ccdcf2b310f19927df4444",
+          "contentHash": "sha256:2cb158b0c721165f216af9a793f2f028e149224d3aef5ba81a082841d9bb3c51",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#checks scaffolded app profiles after saving them"
         },

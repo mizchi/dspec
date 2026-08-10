@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { createServer } from "node:http";
 import { hostname, tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import {
   normalizeCounterexamples,
   topLevelCommandRegistry,
@@ -1047,7 +1047,8 @@ describe("dspec CLI", () => {
   });
 
   it("checks scaffolded app profiles after saving them", () => {
-    const profilePath = join(root, ".tmp-scaffolded-app-profile.pkl");
+    const directory = mkdtempSync(join(tmpdir(), "dspec-scaffolded-app-profile-"));
+    const profilePath = join(directory, "profile.pkl");
     try {
       const scaffold = run([
         "scaffold-app-profile",
@@ -1057,7 +1058,11 @@ describe("dspec CLI", () => {
         "fixtures/sample-webapp-2026",
       ]);
       assert.equal(scaffold.status, 0, scaffold.stderr);
-      writeFileSync(profilePath, scaffold.stdout);
+      const schemaUrl = pathToFileURL(join(root, "dspec", "Schema.pkl")).href;
+      writeFileSync(
+        profilePath,
+        scaffold.stdout.replace('import "./dspec/Schema.pkl" as d', `import "${schemaUrl}" as d`),
+      );
 
       const result = run(["check-app-profile", "--json", profilePath]);
 
@@ -1066,7 +1071,7 @@ describe("dspec CLI", () => {
       assert.equal(report.status, "pass");
       assert.equal(report.profile.id, "sample-webapp-2026");
     } finally {
-      rmSync(profilePath, { force: true });
+      rmSync(directory, { recursive: true, force: true });
     }
   });
 

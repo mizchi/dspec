@@ -75,6 +75,12 @@ test("tracks release inputs and reviews the package in the fast gate", () => {
   assert.match(taskfile, /checkFast:[\s\S]*?packageReview/);
 });
 
+test("keeps transient test fixtures outside the package root", () => {
+  const cliTests = read("test/cli.test.mjs");
+
+  assert.doesNotMatch(cliTests, /join\(root,\s*["']\.tmp-/);
+});
+
 test("builds the public Pkl package after checking its facade API", () => {
   assert.ok(existsSync("PklProject"));
   const output = mkdtempSync(join(tmpdir(), "dspec-pkl-package-"));
