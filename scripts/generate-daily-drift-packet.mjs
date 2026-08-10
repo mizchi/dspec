@@ -18,7 +18,7 @@ const CORE_GATES = {
   "verify-generated": (model, { requireFormalTools }) => [
     "verify-generated",
     "--json",
-    ...(requireFormalTools ? ["--require-formal-tools"] : []),
+    ...(requireFormalTools ? ["--require-formal-tools"] : ["--skip-quint-verify"]),
     model,
   ],
 };

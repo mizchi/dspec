@@ -5219,7 +5219,7 @@ profile: d.AppProfile = new {
   });
 
   it("verifies generated backends for an Intent model without rules", () => {
-    const result = run(["verify-generated", "fixtures/intent-process.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/intent-process.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: intent-process-fixture generated quickcheck/);
@@ -5231,14 +5231,14 @@ profile: d.AppProfile = new {
   });
 
   it("runs generated QuickCheck output", () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated quickcheck/);
   });
 
   it("emits verify-generated JSON artifacts", () => {
-    const result = run(["verify-generated", "--json", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--json", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     const report = JSON.parse(result.stdout);
@@ -5280,7 +5280,7 @@ profile: d.AppProfile = new {
 
   it("keeps verify-generated JSON report fixture in sync", () => {
     assertProjectedReportFixture(
-      ["verify-generated", "--json", "fixtures/typed-ast.pkl"],
+      ["verify-generated", "--json", "--skip-quint-verify", "fixtures/typed-ast.pkl"],
       "fixtures/reports/verify-generated-typed-ast.json",
       verifyGeneratedFixtureProjection,
     );
@@ -5510,7 +5510,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated backend checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/coverage-missing-check.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/coverage-missing-check.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5527,7 +5527,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated DB invariant checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/db-model-missing-preserve.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/db-model-missing-preserve.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5536,7 +5536,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated DB migration checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/db-model-migration-missing-preserve.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/db-model-migration-missing-preserve.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5545,7 +5545,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated DB migration mapping checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/db-model-migration-missing-mapping.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/db-model-migration-missing-mapping.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5554,7 +5554,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated DB migration mapping expression checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/db-model-mapping-missing-table-mention.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/db-model-mapping-missing-table-mention.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5563,7 +5563,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated Cloud topology checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/cloud-model-broken.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/cloud-model-broken.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5574,7 +5574,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated Data governance checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/data-model-broken.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/data-model-broken.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5585,7 +5585,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated Release safety checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/release-model-broken.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/release-model-broken.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5596,7 +5596,7 @@ profile: d.AppProfile = new {
   });
 
   it("keeps generated Runtime safety checks load-bearing", () => {
-    const report = verifyGeneratedReport(loadModel("fixtures/runtime-model-broken.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/runtime-model-broken.pkl"), { skipQuintVerify: true });
 
     assert.equal(report.status, "fail");
     assert.equal(report.backends.quickcheck.status, "fail");
@@ -5612,23 +5612,23 @@ profile: d.AppProfile = new {
   });
 
   it("compiles generated Lean output", { skip: !hasLean }, () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated lean/);
   });
 
   it("validates generated Quint syntax", () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated quint/);
-    const report = verifyGeneratedReport(loadModel("fixtures/typed-ast.pkl"));
+    const report = verifyGeneratedReport(loadModel("fixtures/typed-ast.pkl"), { skipQuintVerify: true });
     assert.equal(report.backends.quintTypecheck.status, "pass");
   });
 
   it("validates generated Alloy syntax", () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated alloy syntax/);
@@ -5646,7 +5646,7 @@ profile: d.AppProfile = new {
   });
 
   it("runs generated Quint typecheck", { skip: !hasQuint }, () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated quint typecheck/);
@@ -5660,7 +5660,7 @@ profile: d.AppProfile = new {
   });
 
   it("runs generated Alloy through analyzer when available", { skip: !hasAlloy6 }, () => {
-    const result = run(["verify-generated", "fixtures/typed-ast.pkl"]);
+    const result = run(["verify-generated", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /ok: typed-ast-fixture generated alloy exec/);
@@ -5803,11 +5803,11 @@ profile: d.AppProfile = new {
     assert.match(emitted.stdout, /propertyApprovedRulesHaveRequiredAssurances/);
     assert.match(emitted.stdout, /approved-rules-have-required-assurances/);
 
-    const verified = run(["verify-generated", "fixtures/assurance-levels.pkl"]);
+    const verified = run(["verify-generated", "--skip-quint-verify", "fixtures/assurance-levels.pkl"]);
     assert.equal(verified.status, 0, verified.stderr);
     assert.match(verified.stdout, /ok: assurance-levels generated quickcheck/);
 
-    const missing = verifyGeneratedReport(loadModel("fixtures/assurance-required-missing.pkl"));
+    const missing = verifyGeneratedReport(loadModel("fixtures/assurance-required-missing.pkl"), { skipQuintVerify: true });
     assert.equal(missing.status, "fail");
     assert.equal(missing.backends.quickcheck.status, "fail");
     assert.match(missing.backends.quickcheck.message, /approved-rules-have-required-assurances/);

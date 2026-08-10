@@ -1013,7 +1013,7 @@
           "key": "node:test/cli.test.mjs#keeps normalized counterexample JSON report fixture in sync"
         },
         {
-          "contentHash": "sha256:21c31f7cc30ec6766291f1fe066e19e613e8f75dfc50fb759308f77a7da52416",
+          "contentHash": "sha256:8717bd22045725cc3f5265646a9709cf5884ca592543a230290ad347f1965f64",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps verify-generated JSON report fixture in sync"
         }
@@ -1091,7 +1091,7 @@
           "key": "node:test/cli.test.mjs#classifies assurance requirement compatibility"
         },
         {
-          "contentHash": "sha256:2ed8ed1e8d024a02b76fd786137087f82f65476aea2ac7f22ec201d2ce30c8ee",
+          "contentHash": "sha256:3e6e0b6a076deb14603be69570cbd8b86fb35bc86356159fe68182979b64e12d",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#preserves assurance requirements in generated QuickCheck properties"
         },
@@ -1401,7 +1401,7 @@
           "key": "node:test/cli.test.mjs#emits Cloud topology pattern into backend projections"
         },
         {
-          "contentHash": "sha256:77aa684c2661792e8bf95720fb2723ddf07eaf8c5d0ffe80b60c0ffe8f5feb46",
+          "contentHash": "sha256:e65df901f4142b1ea9cefa9f51d412e037ea6bc9b2ad409f65d24fd308f78fe9",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated Cloud topology checks load-bearing"
         },
@@ -1632,7 +1632,7 @@
           "key": "node:test/daily-drift-packet.test.mjs#runs declared runtime evidence as a target observation gate"
         },
         {
-          "contentHash": "sha256:c345778665debec32f0f645198fa347a2b24fc61f32576b70180869f44a2a6ed",
+          "contentHash": "sha256:350d212919aaaf28a311a7f770e34ddf8459b711b2fe8507ae4ef8000ae341a1",
           "hashScope": "symbol-text",
           "key": "node:test/daily-drift-packet.test.mjs#writes typed target reports and declared implementation observations"
         },
@@ -1721,7 +1721,7 @@
           "key": "node:test/cli.test.mjs#emits Data governance pattern into backend projections"
         },
         {
-          "contentHash": "sha256:81c11cbf8b53711e96bcd85e9ad0663f6f2fc0edd2a6dabdc2c0994e65bd14f6",
+          "contentHash": "sha256:d8a7e31d396697cbf05ec4f7604b6a841a08f644655c2ff7f761dc5fe5518474",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated Data governance checks load-bearing"
         },
@@ -1795,7 +1795,7 @@
           "key": "node:test/cli.test.mjs#emits DB model pattern into backend projections"
         },
         {
-          "contentHash": "sha256:9b722b870938a09355a2fdc93b2c161533913027dce5121e1fbfbf24999404e2",
+          "contentHash": "sha256:b0ea19f5b5a29826acdd75fcf7647e9574538f511c2aadb8756e43da6a81fe51",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated DB migration mapping checks load-bearing"
         },
@@ -1849,7 +1849,7 @@
           "key": "node:test/cli.test.mjs#emits DB model pattern into backend projections"
         },
         {
-          "contentHash": "sha256:9adaafb398ad505251a5cd3baeb485d88f68abbdfcd4f9dbb39d519337d8cf4a",
+          "contentHash": "sha256:61412839ecce5a4bbad588c18388831a4c3e8c744ed3b0cdb6a640380c94db37",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated DB migration mapping expression checks load-bearing"
         },
@@ -1908,7 +1908,7 @@
           "key": "node:test/cli.test.mjs#emits DB model pattern into backend projections"
         },
         {
-          "contentHash": "sha256:5024cfa71301b24911490871965956a9711700bc5bd097c4d8f3157ff1dbb9cb",
+          "contentHash": "sha256:104f5b8bb37a677186cf2142c38d0a785c084f3bf2bf38f29357f1732d296937",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated DB migration checks load-bearing"
         },
@@ -1972,7 +1972,7 @@
           "key": "node:test/cli.test.mjs#emits DB model pattern into backend projections"
         },
         {
-          "contentHash": "sha256:124e8095c988543d6ac3d3284c750de2433cfac3c4a4edc80999271a16b318eb",
+          "contentHash": "sha256:7b62fda131830efb0d03737178039dc18a8015dbc40c0d2a385725168ac6d01e",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated DB invariant checks load-bearing"
         }
@@ -2695,7 +2695,7 @@
           "key": "node:test/cli.test.mjs#runs generated Alloy through analyzer when available"
         },
         {
-          "contentHash": "sha256:e621163e07b32d6e97283a4b30f0a4a3337fe3e7ad94461082bb78b563db917f",
+          "contentHash": "sha256:05051c2dd1baf31f276081469ede254020507966c6627cad381e4ee86e125af9",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#validates generated Alloy syntax"
         }
@@ -2768,7 +2768,7 @@
     {
       "checks": [
         {
-          "contentHash": "sha256:e6846654ec2c032ae55dfb0d6a5eb3ba5712e7cdd3e29c8831e077b1db968915",
+          "contentHash": "sha256:65aa3147c0ccb7a45bc7373e2babd180bde34685e2f81a3ea9eef53dafbe8b24",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated backend checks load-bearing"
         }
@@ -2816,7 +2816,7 @@
     {
       "checks": [
         {
-          "contentHash": "sha256:ecb88131844daf181fe5cd3a47ba9eadeed9546b9f31eef8d1429d766cc2a1cd",
+          "contentHash": "sha256:3b55515853c06ecdb813ad3d489af3d1d221ccc52f138c668e2d8b5818d20c10",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#runs generated QuickCheck output"
         }
@@ -2850,7 +2850,7 @@
           "key": "node:test/cli.test.mjs#runs generated Quint verify when available"
         },
         {
-          "contentHash": "sha256:332bf268fe786f012be0915b169eb0a62d66fade42a273d2cf8293043b882a1e",
+          "contentHash": "sha256:9d3de1b0fd1efe6b6494783cbdfbbf78710a2f17eabb715152b774c7a06bcbdf",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#validates generated Quint syntax"
         }
@@ -4568,7 +4568,7 @@
           "key": "node:test/cli.test.mjs#emits Release safety pattern into backend projections"
         },
         {
-          "contentHash": "sha256:251b7b2fa1ee1ffdf49bd00fcc5f69326bc9491d18893b034d35a62f908a6316",
+          "contentHash": "sha256:105e68ab8763f5fcbc6783bc076b557841b450e1a7f588fdf2798fad451ffc63",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated Release safety checks load-bearing"
         },
@@ -4813,7 +4813,7 @@
           "key": "node:test/cli.test.mjs#emits Runtime safety pattern into backend projections"
         },
         {
-          "contentHash": "sha256:f29b421402de0e17846231b8c6c3f84a36249baa59e701c63e4b2ce9a3738bb8",
+          "contentHash": "sha256:ff7fc9d3f3c716becb6cf03f26d038a9ec06b38125bb0faf4cf9b122578ec435",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated Runtime safety checks load-bearing"
         },
@@ -4981,7 +4981,7 @@
           "key": "node:test/cli.test.mjs#emits Runtime safety pattern into backend projections"
         },
         {
-          "contentHash": "sha256:f29b421402de0e17846231b8c6c3f84a36249baa59e701c63e4b2ce9a3738bb8",
+          "contentHash": "sha256:ff7fc9d3f3c716becb6cf03f26d038a9ec06b38125bb0faf4cf9b122578ec435",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#keeps generated Runtime safety checks load-bearing"
         },
@@ -6171,7 +6171,7 @@
     {
       "checks": [
         {
-          "contentHash": "sha256:438e777f0c2938c13e6cbc27a4e9613b96db38683728eb8604b3752ddb372afe",
+          "contentHash": "sha256:f4e0fd26d8a748b19810a39eb14158901b67db80f247261926219f86648cd646",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#emits verify-generated JSON artifacts"
         }
