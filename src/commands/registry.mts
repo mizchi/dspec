@@ -29,7 +29,7 @@ export const TOP_LEVEL_COMMANDS: readonly TopLevelCommand[] = [
   { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
   { name: "generated", usage: "dspec generated <check|unlock> ..." },
   { name: "emit", usage: "dspec emit <markdown|json|quickcheck|alloy|quint|lean|source-map|generated-manifest|runtime-collector|runtime-collector-fixture> [--locale <locale>] <model.pkl>" },
-  { name: "verify-generated", usage: "dspec verify-generated [--json] [--require-formal-tools] <model.pkl>" },
+  { name: "verify-generated", usage: "dspec verify-generated [--json] [--require-formal-tools|--skip-quint-verify] <model.pkl>" },
   { name: "devshell-smoke", usage: "dspec devshell-smoke [--json] [--strict] [--require-store-path]" },
   { name: "normalize-counterexamples", usage: "dspec normalize-counterexamples [--json] [--locale <locale>] <model.pkl>" },
   { name: "import-db-schema", usage: "dspec import-db-schema [--json] <schema.sql>" },

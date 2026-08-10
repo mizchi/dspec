@@ -4005,6 +4005,7 @@ function parseEmitArgs(args) {
 function parseVerifyGeneratedArgs(args) {
   let json = false;
   let requireFormalTools = false;
+  let skipQuintVerify = false;
   let file = null;
 
   for (const arg of args) {
@@ -4016,6 +4017,10 @@ function parseVerifyGeneratedArgs(args) {
       requireFormalTools = true;
       continue;
     }
+    if (arg === "--skip-quint-verify") {
+      skipQuintVerify = true;
+      continue;
+    }
     if (!file) {
       file = arg;
       continue;
@@ -4023,10 +4028,10 @@ function parseVerifyGeneratedArgs(args) {
     throw new CommandError(`unexpected argument: ${arg}`);
   }
 
-  if (!file) {
+  if (!file || (requireFormalTools && skipQuintVerify)) {
     throw new CommandError(usage());
   }
-  return { file, json, requireFormalTools };
+  return { file, json, requireFormalTools, skipQuintVerify };
 }
 
 function parseEvidenceCreateArgs(args) {
@@ -15321,7 +15326,9 @@ function verifyGeneratedReport(model, options = {}) {
     const quintPath = join(dir, "model.qnt");
     writeFileSync(quintPath, quintSource);
     backends.quintTypecheck = verifyGeneratedQuintTypecheck(quintPath, toolAvailable);
-    backends.quintVerify = verifyGeneratedQuintModel(quintPath, toolAvailable);
+    backends.quintVerify = options.skipQuintVerify
+      ? skipBackend("disabled by --skip-quint-verify")
+      : verifyGeneratedQuintModel(quintPath, toolAvailable);
 
     const alloyPath = join(dir, "model.als");
     const outputPath = join(dir, "alloy-out");
@@ -18029,20 +18036,21 @@ async function run(argv) {
   }
 
   if (command === "verify-generated") {
-    const { file, json, requireFormalTools } = parseVerifyGeneratedArgs(args);
+    const { file, json, requireFormalTools, skipQuintVerify } = parseVerifyGeneratedArgs(args);
     const model = loadModel(file);
     const coverage = validateCoverage(model);
     if (coverage.errors.length > 0) {
       throw new CommandError(`${coverage.errors.join("\n")}\n`);
     }
-    const report = verifyGeneratedReport(model);
+    const options = { requireFormalTools, skipQuintVerify };
+    const report = verifyGeneratedReport(model, options);
     if (json) {
       process.stdout.write(stableJson(report));
-      assertVerifyGeneratedReport(report, { requireFormalTools });
+      assertVerifyGeneratedReport(report, options);
       return;
     }
-    assertVerifyGeneratedReport(report, { requireFormalTools });
-    process.stdout.write(verifyGenerated(model, { requireFormalTools }));
+    assertVerifyGeneratedReport(report, options);
+    process.stdout.write(verifyGenerated(model, options));
     return;
   }
 

@@ -5252,6 +5252,18 @@ profile: d.AppProfile = new {
     assert.match(report.backends.alloyAnalyzer.status, /^(pass|skip)$/);
   });
 
+  it("keeps bounded Quint verification out of the fast gate when requested", () => {
+    const result = run(["verify-generated", "--json", "--skip-quint-verify", "fixtures/typed-ast.pkl"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(result.stdout);
+    assert.equal(report.backends.quintTypecheck.status, "pass");
+    assert.deepEqual(report.backends.quintVerify, {
+      status: "skip",
+      reason: "disabled by --skip-quint-verify",
+    });
+  });
+
   it("skips unavailable formal tools unless they are required", () => {
     const model = loadModel("fixtures/typed-ast.pkl");
     const toolAvailable = () => false;

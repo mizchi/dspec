@@ -261,6 +261,7 @@ pnpm run checker:conformance
 node src/cli.mjs devshell-smoke --json
 node src/cli.mjs verify-generated examples/dspec.pkl
 node src/cli.mjs verify-generated --json examples/dspec.pkl
+node src/cli.mjs verify-generated --skip-quint-verify examples/dspec.pkl
 node src/cli.mjs verify-generated --json --require-formal-tools fixtures/typed-ast.pkl
 node src/cli.mjs traceability --gate --require-executed-formal-tools examples/tetris.pkl
 node src/cli.mjs formal-mutation --json --require-formal-tools fixtures/tetris-alloy.pkl
@@ -282,6 +283,8 @@ The dev shell provides Node.js 24, pnpm, Pkl, Lean via elan, Z3, Java 21, and Al
 The project dependency provides Quint. `verify-generated` always runs
 `quint typecheck`; when Java is available it also runs bounded `quint verify`
 with the TLC backend, alongside the Alloy analyzer gate.
+Fast gates may pass `--skip-quint-verify` to leave bounded execution to the
+separate `--require-formal-tools` gate while retaining Quint typechecking.
 `devshell-smoke --json --strict --require-store-path` checks that required
 tools come from the devShell rather than the host. `pkf run devshell:tools`,
 `pkf run devshell:formal`, and `pkf run devshell:check` mirror the CI gates.

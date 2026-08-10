@@ -426,7 +426,7 @@ local specReadingDogfood: Task = new {
 local generatedVerify: Task = new {
   name = "generated:verify"
   description = "Run generated QuickCheck output and compile generated Lean output"
-  cmd = "node src/cli.mjs verify-generated examples/dspec.pkl"
+  cmd = "node src/cli.mjs verify-generated --skip-quint-verify examples/dspec.pkl"
   inputs = new {
     ...pklSources
     ...jsSources
