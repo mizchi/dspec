@@ -7,7 +7,7 @@ import { renderQuintModel } from "../src/core/quint.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const cli = join(root, "src", "cli.mjs");
-const quint = join(root, "node_modules", ".bin", "quint");
+const quintTypecheck = join(root, "scripts", "typecheck-quint-stdin.mjs");
 
 function run(args) {
   return spawnSync(process.execPath, [cli, ...args], { cwd: root, encoding: "utf8" });
@@ -23,7 +23,7 @@ test("emits Quint as the temporal model backend", () => {
   assert.match(result.stdout, /val coverageInvariant/);
   assert.doesNotMatch(result.stdout, /---- MODULE|EXTENDS|VARIABLES/);
 
-  const typecheck = spawnSync(quint, ["typecheck", "/dev/stdin"], {
+  const typecheck = spawnSync(process.execPath, [quintTypecheck], {
     cwd: root,
     encoding: "utf8",
     input: result.stdout,
@@ -72,7 +72,7 @@ test("encodes non-ASCII model strings for the TLC backend", () => {
     /DRAFT-WITHOUT-CHECK/,
   );
 
-  const typecheck = spawnSync(quint, ["typecheck", "/dev/stdin"], {
+  const typecheck = spawnSync(process.execPath, [quintTypecheck], {
     cwd: root,
     encoding: "utf8",
     input: source,

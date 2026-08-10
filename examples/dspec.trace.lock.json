@@ -771,7 +771,7 @@
           "key": "model:fixtures/sample-webapp-profile.pkl"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -1057,7 +1057,7 @@
           "key": "model:fixtures/typed-ast.pkl"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -2139,7 +2139,7 @@
           "key": "model:README.md"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -2158,7 +2158,7 @@
       "id": "DSPEC-DOGFOOD-TASK",
       "implementations": [
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -2758,7 +2758,7 @@
           "key": "model:generated/manifest.json"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -3507,7 +3507,7 @@
           "key": "model:fixtures/reports/spec-reading-eval-suite.json"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -3906,7 +3906,7 @@
           "key": "runtime:.github/workflows/check.yml"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -3950,7 +3950,7 @@
           "key": "model:flake.nix"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -4014,7 +4014,7 @@
           "key": "model:LICENSE"
         },
         {
-          "contentHash": "sha256:6b73b3f50459b641851b49a2e1b50583f400498dedaae0d68275b07acfb753c9",
+          "contentHash": "sha256:57add50e34d27bbbb72aec6791416f7c11eb0e1a9316942768f42ba07af5ffb6",
           "hashScope": "file",
           "key": "model:package.json"
         },
@@ -4216,7 +4216,7 @@
           "key": "model:fixtures/sample-webapp-profile.pkl"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -5463,7 +5463,7 @@
           "key": "model:fixtures/spec-change-scaffold-narrowing.pkl"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -6089,7 +6089,7 @@
           "key": "model:fixtures/spec-reading-eval-suite.pkl"
         },
         {
-          "contentHash": "sha256:80f548a46d786865af4d79d99445844d12773a960858d5be32ddd5d5de1d0056",
+          "contentHash": "sha256:435ee59fdbc8afdcbac9bed203803e13d5c54a6e8fa21c9a3c83b7dee0b8917d",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
