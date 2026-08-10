@@ -23,7 +23,7 @@ export const TOP_LEVEL_COMMANDS = [
     { name: "daily-drift", usage: "dspec daily-drift <collect|approve> ..." },
     { name: "generate", usage: "dspec generate [--dry-run] [--json] [--generated-at <iso>] [--root <dir>] <model.pkl>" },
     { name: "generated", usage: "dspec generated <check|unlock> ..." },
-    { name: "emit", usage: "dspec emit <markdown|json|quickcheck|alloy|tla|tla-cfg|lean|source-map|generated-manifest|runtime-collector|runtime-collector-fixture> [--locale <locale>] <model.pkl>" },
+    { name: "emit", usage: "dspec emit <markdown|json|quickcheck|alloy|quint|lean|source-map|generated-manifest|runtime-collector|runtime-collector-fixture> [--locale <locale>] <model.pkl>" },
     { name: "verify-generated", usage: "dspec verify-generated [--json] [--require-formal-tools] <model.pkl>" },
     { name: "devshell-smoke", usage: "dspec devshell-smoke [--json] [--strict] [--require-store-path]" },
     { name: "normalize-counterexamples", usage: "dspec normalize-counterexamples [--json] [--locale <locale>] <model.pkl>" },

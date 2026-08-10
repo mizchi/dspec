@@ -15,8 +15,7 @@ export const PROJECTION_EMITTERS = Object.freeze({
   quickcheck: Object.freeze({ name: "dspec/quickcheck", version: "1.0" }),
   lean: Object.freeze({ name: "dspec/lean", version: "1.0" }),
   alloy: Object.freeze({ name: "dspec/alloy", version: "1.0" }),
-  tla: Object.freeze({ name: "dspec/tla", version: "1.0" }),
-  "tla-cfg": Object.freeze({ name: "dspec/tla-cfg", version: "1.0" }),
+  quint: Object.freeze({ name: "dspec/quint", version: "1.0" }),
   "source-map": Object.freeze({ name: "dspec/source-map", version: "1.0" }),
   "generated-manifest": Object.freeze({ name: "dspec/generated-manifest", version: "1.0" }),
 });
@@ -26,8 +25,7 @@ const PROJECTION_OUTPUT_EXTENSIONS = Object.freeze({
   quickcheck: ".mjs",
   lean: ".lean",
   alloy: ".als",
-  tla: ".tla",
-  "tla-cfg": ".cfg",
+  quint: ".qnt",
   "source-map": ".json",
   "generated-manifest": ".json",
 });

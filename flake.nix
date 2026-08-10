@@ -30,7 +30,7 @@
             pkl
             elan
             z3
-            tlaplus
+            jdk21_headless
             alloy6
             pkfire.packages.${system}.default
           ];
@@ -47,8 +47,8 @@
             echo "  elan    : $(elan --version 2>&1 | head -1 || echo not-found)"
             echo "  lean    : $(lean --version 2>&1 | head -1 || echo not-found)"
             echo "  z3      : $(z3 --version 2>&1 | head -1 || echo not-found)"
-            echo "  tlasany : $(command -v tlasany 2>/dev/null || echo not-found)"
-            echo "  tlc     : $(command -v tlc 2>/dev/null || echo not-found)"
+            echo "  quint   : $(pnpm exec quint --version 2>&1 | head -1 || echo 'not-found; run pnpm install')"
+            echo "  java    : $(java -version 2>&1 | head -1 || echo not-found)"
             echo "  alloy6  : $(command -v alloy6 2>/dev/null || echo not-found)"
             echo "  pkf     : $(pkf --version 2>&1 | head -1 || echo 'not-found; install pkfire separately')"
           '';

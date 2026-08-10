@@ -30,18 +30,11 @@ projections: Listing<d.Projection> = new {
     provenance = "generated/projection-kinds/alloy.provenance.json"
   }
   new d.Projection {
-    id = "tla"
-    kind = "tla"
+    id = "quint"
+    kind = "quint"
     matrix = "single"
-    output = "generated/projection-kinds/Spec.tla"
-    provenance = "generated/projection-kinds/tla.provenance.json"
-  }
-  new d.Projection {
-    id = "tla-cfg"
-    kind = "tla-cfg"
-    matrix = "single"
-    output = "generated/projection-kinds/Spec.cfg"
-    provenance = "generated/projection-kinds/tla-cfg.provenance.json"
+    output = "generated/projection-kinds/spec.qnt"
+    provenance = "generated/projection-kinds/quint.provenance.json"
   }
   new d.Projection {
     id = "source-map"

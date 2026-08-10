@@ -53,7 +53,7 @@ evidence time:
   and a passing clause-scoped artifact.
 
 These kinds are intentionally not a total order. A passing `proved` selector is
-not a proof of the whole system, and a generated TLA+/Alloy artifact is not a
+not a proof of the whole system, and a generated Quint/Alloy artifact is not a
 semantic claim unless the model, selector, backend support, and evidence
 contract say so. Algorithmic correctness and universal implementation
 refinement require a separately designed formal model or proof artifact; dspec
@@ -76,7 +76,7 @@ For the current prototype:
   human-language surface of stable vocabulary ids.
 - `Projection` is a source-level ownership contract for deterministic support
   artifacts. Its `locales` matrix expands Markdown review output; its `single`
-  matrix owns one QuickCheck, Lean, Alloy, TLA+, TLA config, source-map, or
+  matrix owns one QuickCheck, Lean, Alloy, Quint, source-map, or
   generated-manifest artifact. Its output path names the artifact and its
   freshness policy determines which filesystem states are valid. Its provenance
   artifact binds those bytes to the source model, projection contract, emitter
@@ -111,7 +111,7 @@ For the current prototype:
   implementation DSL.
 - `drift` checks that declared support still resolves to concrete artifacts.
 - backend-aware drift checks parse common support surfaces directly: Node and
-  Playwright test anchors, Lean declarations, TLA+ definitions/theorems, Alloy
+  Playwright test anchors, Lean declarations, Quint definitions/theorems, Alloy
   sig/assert/pred/check names, Pkl targets, and runtime collector sources.
 - `coverage` checks that approved claims have automated support, and checks
   full clause support for rules that opt into `coverage = "clause"`. It also
@@ -172,7 +172,7 @@ For the current prototype:
   filesystem without writing. `markdown x locales x exact` rejects missing,
   stale, and template-matching undeclared-locale artifacts; the `single`
   matrix applies the same ownership and provenance rules to QuickCheck, Lean,
-  Alloy, TLA+, TLA config, source-map, and generated-manifest artifacts.
+  Alloy, Quint, source-map, and generated-manifest artifacts.
   An unchanged deterministic input preserves provenance `generatedAt`, avoiding
   time-only drift. `AssuranceEvidenceManifest` is intentionally separate: it
   attests to an executed tool run and is captured by `evidence`, rather than
@@ -194,7 +194,7 @@ For the current prototype:
   generated support channels.
 - `normalize-counterexamples` uses the source map to translate backend
   failures back into `Rule.id`, source paths, and reviewable messages.
-- when TLA+/Alloy failures expose generated selectors, the normalizer treats
+- when Quint/Alloy failures expose generated selectors, the normalizer treats
   those selectors as witnesses and returns the concrete source record behind
   the generated artifact.
 
@@ -204,7 +204,7 @@ This gives dspec three layers:
 2. **Support sites**: tests, implementation symbols, proof files, generated
    backend models.
 3. **Channels**: deterministic emitters such as Markdown, QuickCheck, Alloy,
-   TLA+, Lean, and source maps. A `Projection` promotes a selected channel from
+   Quint, Lean, and source maps. A `Projection` promotes a selected channel from
    an ad hoc command into a source-owned materialization contract.
 
 `IntentGoal` adds a localized human-level purpose to this source base. It owns
@@ -512,8 +512,9 @@ production implementations.
 refer to a required `identifier` or `string` input field, and `timeoutSteps`
 is a discrete scheduler counter rather than milliseconds. Optional `timeoutMs`
 is a runtime adapter deadline and is deliberately absent from that abstract
-scheduler. TLA+ projects the declared processes into an abstract state machine
-with start, complete, tick, and expire actions over a finite key space. TLC checks
+scheduler. Quint projects the declared processes into an abstract state machine
+with start, complete, tick, and expire actions over a finite key space. Quint's
+bounded TLC backend checks
 `IntentConcurrencyBounded`, `IntentIdempotencyKeysAreExclusive`, and
 `IntentTimeoutsBounded`. These establish safety only for that generated finite
 model. They do not establish a real worker queue's delivery behavior, actual
@@ -665,7 +666,7 @@ operator/backend pair is classified as:
   relation is checked.
 - `semantic`: the generated property checks the source Clause meaning.
 
-The current matrix classifies Alloy as `unmapped`, TLA+ as `textual`, and
+The current matrix classifies Alloy as `unmapped`, Quint as `textual`, and
 QuickCheck as `structural`. Lean is `semantic` for expression trees composed
 only from `eq`, `neq`, `not`, and `implies`, and remains `structural` when an
 `atom`, `and`, `or`, or quantifier occurs. Lean resolves equality operands
@@ -715,7 +716,7 @@ preserves:
   generated model distinguishes active approved rules, deprecated rules,
   automated support, and manual/runtime support. The analyzer gate checks that
   active approved rules have automated support within the generated scope.
-- TLA+ preserves state/set invariants and temporal transition structure. The
+- Quint preserves state/set invariants and temporal transition structure. The
   generated model now includes a minimal rule workflow transition:
   approved-with-support can become verified, approved-without-support can
   become uncovered, and uncovered is an invariant violation. DB transactions
@@ -740,7 +741,7 @@ preserves:
   `RuntimePageAlertsHaveExecutedRunbook`, and
   `RuntimeDependencyTracesWithinTimeout` invariants.
   Intent generation adds `IntentProcessConstructionIsAuthorized` to Alloy and
-  TLA+ and `IntentScenarioTraceIsContinuous` to TLA+. An optional
+  Quint and `IntentScenarioTraceIsContinuous` to Quint. An optional
   `Process.execution` additionally generates the finite
   `IntentConcurrencyBounded`, `IntentIdempotencyKeysAreExclusive`, and
   `IntentTimeoutsBounded` scheduler invariants. QuickCheck generates and
@@ -803,5 +804,5 @@ preserves:
 - What is the proof object for a `drift` or `coverage` result, and should it be
   stored beside the JSON verification report?
 - How much backend-specific trace parsing is needed before normalized
-  counterexamples can explain Alloy/TLA+ witnesses beyond generated-selector
+  counterexamples can explain Alloy/Quint witnesses beyond generated-selector
   support?

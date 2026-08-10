@@ -220,7 +220,7 @@ test("rejects incompatible projection matrices and output extensions", () => {
     kind: "lean",
     source: "self",
     matrix: "single",
-    output: "generated/projection/spec.tla",
+    output: "generated/projection/spec.qnt",
     provenance: "generated/projection/spec.lean.provenance.json",
     freshness: "exact",
   };

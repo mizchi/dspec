@@ -1,8 +1,8 @@
 {
   "artifacts": [
     {
-      "bytes": 42251,
-      "digest": "sha256:4b9c7d5a609b94c2c359c9da9e820fa93b4e6861ae4abea855e610927fa94d83",
+      "bytes": 42261,
+      "digest": "sha256:9a7036093e445a573131c9afaba81681096728538fd8cb5864b403525014f2ee",
       "locale": null,
       "path": "generated/backends/dspec-self.als"
     }
@@ -11,9 +11,9 @@
     "name": "dspec/alloy",
     "version": "1.0"
   },
-  "generatedAt": "2026-08-04T10:57:22.535Z",
+  "generatedAt": "2026-08-10T00:00:00Z",
   "model": {
-    "digest": "sha256:9a959232e50b6618bce39454438edac9225424a0a1c2d040342cfe218b71c434",
+    "digest": "sha256:a0ac4c1d8260da379b3dae215b6fe26e569e018a34cc9199f4d9f5d5fcc778f5",
     "id": "dspec-self",
     "version": "0.1.0"
   },

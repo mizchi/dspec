@@ -12,13 +12,10 @@
     "quickcheck": {
       "status": "pass"
     },
-    "tlaSany": {
+    "quintTypecheck": {
       "status": "available-or-skip"
     },
-    "tlaSyntax": {
-      "status": "pass"
-    },
-    "tlaTlc": {
+    "quintVerify": {
       "status": "available-or-skip"
     }
   },

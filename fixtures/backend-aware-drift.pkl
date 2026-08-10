@@ -26,7 +26,7 @@ model: d.Model = new {
       reviewStatus = "approved"
       checks {
         d.linkedCheck("lean", "fixtures/backend-drift/Proof.lean#backend_anchor")
-        d.linkedCheck("tla", "fixtures/backend-drift/Spec.tla#BackendInvariant")
+        d.linkedCheck("quint", "fixtures/backend-drift/spec.qnt#backendInvariant")
         d.linkedCheck("alloy", "fixtures/backend-drift/model.als#BackendInvariant")
         d.linkedCheck("runtime", "fixtures/backend-drift/runtime-manifest.json#runtime-evidence")
         d.linkedCheck("playwright", "fixtures/backend-drift/example.spec.ts#backend drift target")

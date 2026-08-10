@@ -42,19 +42,11 @@ projections: Listing<d.Projection> = new {
     freshness = "exact"
   }
   new d.Projection {
-    id = "self-tla"
-    kind = "tla"
+    id = "self-quint"
+    kind = "quint"
     matrix = "single"
-    output = "generated/backends/DSpecSelf.tla"
-    provenance = "generated/backends/dspec-self.tla.provenance.json"
-    freshness = "exact"
-  }
-  new d.Projection {
-    id = "self-tla-cfg"
-    kind = "tla-cfg"
-    matrix = "single"
-    output = "generated/backends/DSpecSelf.cfg"
-    provenance = "generated/backends/dspec-self.tla-cfg.provenance.json"
+    output = "generated/backends/dspec-self.qnt"
+    provenance = "generated/backends/dspec-self.quint.provenance.json"
     freshness = "exact"
   }
   new d.Projection {
@@ -1335,8 +1327,8 @@ model: d.Model = new {
         }
         d.clause(
           "backendCheckTarget.anchor.resolvesAs(backendSpecificSymbol)",
-          "Lean/TLA+/Alloy/Playwright/runtime の CheckTarget は backend 固有の symbol/source として解決される",
-          "Lean, TLA+, Alloy, Playwright, and runtime CheckTargets resolve as backend-specific symbols or sources",
+          "Lean/Quint/Alloy/Playwright/runtime の CheckTarget は backend 固有の symbol/source として解決される",
+          "Lean, Quint, Alloy, Playwright, and runtime CheckTargets resolve as backend-specific symbols or sources",
         )
       }
       reviewStatus = "approved"
@@ -1355,7 +1347,7 @@ model: d.Model = new {
           symbol = "validateCheckTargets"
         }
         d.codeRef("src/cli.mjs", "hasLeanSymbol")
-        d.codeRef("src/cli.mjs", "hasTlaSymbol")
+        d.codeRef("src/cli.mjs", "hasQuintSymbol")
         d.codeRef("src/cli.mjs", "hasAlloySymbol")
         d.codeRef("src/cli.mjs", "validateRuntimeCheckTarget")
         d.modelRef("fixtures/backend-aware-drift.pkl")
@@ -1510,7 +1502,7 @@ model: d.Model = new {
           "assurance stronger than reference has an evidence reference",
         )
         d.clause(
-          "proved -> backend == lean && bounded -> backend in {tla, alloy}",
+          "proved -> backend == lean && bounded -> backend in {quint, alloy}",
           "proved/bounded/mutation-tested は互換 backend にだけ宣言できる",
           "proved, bounded, and mutation-tested can only be declared on compatible backends",
         )
@@ -2631,8 +2623,8 @@ model: d.Model = new {
       }
       must {
         new d.Clause {
-          expr = "emit(alloy|tla|lean, model).deterministic"
-          text = text("Alloy/TLA/Lean の出力は決定的である", "Alloy/TLA/Lean outputs are deterministic")
+          expr = "emit(alloy|quint|lean, model).deterministic"
+          text = text("Alloy/Quint/Lean の出力は決定的である", "Alloy/Quint/Lean outputs are deterministic")
         }
       }
       reviewStatus = "approved"
@@ -2666,11 +2658,11 @@ model: d.Model = new {
       }
       must {
         new d.Clause {
-          expr = "devShell.packages.includes(nodejs_24, pnpm, pkl, elan, z3, tlaplus, alloy6)"
+          expr = "devShell.packages.includes(nodejs_24, pnpm, pkl, elan, z3, jdk21_headless, alloy6)"
           text =
             text(
-              "devShell packages は Node/Pkl/Lean/Z3 と TLA+/Alloy ツールを含む",
-              "devShell packages include Node/Pkl/Lean/Z3 and TLA+/Alloy tools",
+              "devShell packages は Node/Pkl/Lean/Z3/Java と Alloy ツールを含む",
+              "devShell packages include Node/Pkl/Lean/Z3/Java and Alloy tools",
             )
         }
         d.clause(
@@ -2679,9 +2671,9 @@ model: d.Model = new {
           "devShell smoke checks required tools and host-tool leakage",
         )
         d.clause(
-          "verifyGenerated(requireFormalTools).requires(tlaSany + tlaTlc + alloyAnalyzer)",
-          "verify-generated の formal required mode は TLA+/Alloy analyzer の skip を失敗にする",
-          "verify-generated formal-required mode fails skipped TLA+/Alloy analyzer checks",
+          "verifyGenerated(requireFormalTools).requires(quintTypecheck + quintVerify + alloyAnalyzer)",
+          "verify-generated の formal required mode は Quint/Alloy analyzer の skip を失敗にする",
+          "verify-generated formal-required mode fails skipped Quint/Alloy analyzer checks",
         )
       }
       reviewStatus = "approved"
@@ -2866,8 +2858,8 @@ model: d.Model = new {
       kind = "obligation"
       text =
         text(
-          "生成器は Clause.ast を QuickCheck/TLA+/Lean の投影へ決定的に保存する",
-          "Generators deterministically preserve Clause.ast in QuickCheck, TLA+, and Lean projections",
+          "生成器は Clause.ast を QuickCheck/Quint/Lean の投影へ決定的に保存する",
+          "Generators deterministically preserve Clause.ast in QuickCheck, Quint, and Lean projections",
         )
       terms {
         "concept.expr_ast"
@@ -2877,20 +2869,20 @@ model: d.Model = new {
       }
       must {
         new d.Clause {
-          expr = "emit(quickcheck|tla|lean, model).preserves(clause.ast + clauseAstSemanticsVersion)"
+          expr = "emit(quickcheck|quint|lean, model).preserves(clause.ast + clauseAstSemanticsVersion)"
           ast = new d.ExprAst {
             op = "atom"
             name = "preservesClauseAst"
             args {
               "quickcheck"
-              "tla"
+              "quint"
               "lean"
             }
           }
           text =
             text(
-              "QuickCheck/TLA+/Lean 出力は Clause.ast 由来の構造と意味論 version を含む",
-              "QuickCheck, TLA+, and Lean outputs contain structure derived from Clause.ast and its semantics version",
+              "QuickCheck/Quint/Lean 出力は Clause.ast 由来の構造と意味論 version を含む",
+              "QuickCheck, Quint, and Lean outputs contain structure derived from Clause.ast and its semantics version",
             )
         }
       }
@@ -2914,8 +2906,8 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
-          symbol = "exprToTla"
+          path = "src/core/quint.mjs"
+          symbol = "renderQuintModel"
         }
       }
     }
@@ -4735,12 +4727,12 @@ model: d.Model = new {
     }
 
     new d.Rule {
-      id = "DSPEC-GENERATED-TLA-SYNTAX"
+      id = "DSPEC-GENERATED-QUINT-VERIFY"
       kind = "obligation"
       text =
         text(
-          "生成された TLA+ 仕様は構文形状を検証され、tlasany/tlc があれば SANY と TLC でも検査される",
-          "Generated TLA+ specifications have their syntax shape checked and are checked by SANY and TLC when tlasany/tlc are available",
+          "生成された Quint 仕様は型検査され、Java があれば有限の状態遷移も検証される",
+          "Generated Quint specifications are typechecked and their bounded transitions are verified when Java is available",
         )
       terms {
         "artifact.generator"
@@ -4749,22 +4741,22 @@ model: d.Model = new {
       }
       must {
         new d.Clause {
-          expr = "verifyGenerated(model).validatesSyntax(tla)"
+          expr = "verifyGenerated(model).typechecks(quint)"
           ast = new d.ExprAst {
             op = "atom"
-            name = "validatesGeneratedTlaSyntax"
+            name = "typechecksGeneratedQuint"
             args {
               "model"
             }
           }
           text =
             text(
-              "verify-generated は TLA+ 出力の module と主要定義を検証する",
-              "verify-generated checks the TLA+ module and required definitions",
+              "verify-generated は Quint 出力を Quint CLI で型検査する",
+              "verify-generated typechecks the Quint output with the Quint CLI",
             )
         }
         new d.Clause {
-          expr = "hasTool(tlasany) -> verifyGenerated(model).runsSany(tla)"
+          expr = "hasTool(quint) -> verifyGenerated(model).runsTypecheck(quint)"
           ast = new d.ExprAst {
             op = "implies"
             children {
@@ -4772,12 +4764,12 @@ model: d.Model = new {
                 op = "atom"
                 name = "hasTool"
                 args {
-                  "tlasany"
+                  "quint"
                 }
               }
               new d.ExprAst {
                 op = "atom"
-                name = "runsGeneratedTlaSany"
+                name = "runsGeneratedQuintTypecheck"
                 args {
                   "model"
                 }
@@ -4786,12 +4778,12 @@ model: d.Model = new {
           }
           text =
             text(
-              "tlasany が PATH にある場合は生成 TLA+ を SANY に通す",
-              "when tlasany is on PATH, generated TLA+ is passed through SANY",
+              "プロジェクトの Quint で生成仕様を型検査する",
+              "the project Quint dependency typechecks the generated specification",
             )
         }
         new d.Clause {
-          expr = "hasTool(tlc) -> verifyGenerated(model).runsTlc(tla)"
+          expr = "hasTool(java) -> verifyGenerated(model).runsVerify(quint)"
           ast = new d.ExprAst {
             op = "implies"
             children {
@@ -4799,12 +4791,12 @@ model: d.Model = new {
                 op = "atom"
                 name = "hasTool"
                 args {
-                  "tlc"
+                  "java"
                 }
               }
               new d.ExprAst {
                 op = "atom"
-                name = "runsGeneratedTlaTlc"
+                name = "runsGeneratedQuintVerify"
                 args {
                   "model"
                 }
@@ -4813,8 +4805,8 @@ model: d.Model = new {
           }
           text =
             text(
-              "tlc が PATH にある場合は生成 TLA+ と生成 config を TLC に通す",
-              "when tlc is on PATH, generated TLA+ and generated config are passed through TLC",
+              "Java が利用できる場合は生成 Quint を 10 step の bounded verify に通す",
+              "when Java is available, generated Quint is verified with a 10-step bound",
             )
         }
       }
@@ -4822,15 +4814,15 @@ model: d.Model = new {
       checks {
         new d.CheckTarget {
           backend = "node"
-          ref = "test/cli.test.mjs#validates generated TLA+ syntax"
+          ref = "test/cli.test.mjs#validates generated Quint syntax"
         }
         new d.CheckTarget {
           backend = "node"
-          ref = "test/cli.test.mjs#runs generated TLA+ through SANY when available"
+          ref = "test/cli.test.mjs#runs generated Quint typecheck"
         }
         new d.CheckTarget {
           backend = "node"
-          ref = "test/cli.test.mjs#runs generated TLA+ through TLC when available"
+          ref = "test/cli.test.mjs#runs generated Quint verify when available"
         }
       }
       implementedBy {
@@ -4841,23 +4833,18 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
-          symbol = "validateGeneratedTla"
+          path = "src/core/quint.mjs"
+          symbol = "renderQuintModel"
         }
         new d.ImplementationRef {
           kind = "code"
           path = "src/cli.mjs"
-          symbol = "verifyGeneratedTlaWithSany"
+          symbol = "verifyGeneratedQuintTypecheck"
         }
         new d.ImplementationRef {
           kind = "code"
           path = "src/cli.mjs"
-          symbol = "verifyGeneratedTlaWithTlc"
-        }
-        new d.ImplementationRef {
-          kind = "code"
-          path = "src/cli.mjs"
-          symbol = "emitTlaConfig"
+          symbol = "verifyGeneratedQuintModel"
         }
       }
     }
@@ -5712,7 +5699,7 @@ model: d.Model = new {
       }
       must {
         d.clause(
-          "generatedManifest.hashes(markdown, quickcheck, alloy, tla, tlaCfg, lean, sourceMap)",
+          "generatedManifest.hashes(markdown, quickcheck, alloy, quint, quint, lean, sourceMap)",
           "manifest は主要生成物の sha256 と byte length を含む",
           "the manifest includes sha256 and byte length for primary generated artifacts",
         )
@@ -5769,9 +5756,9 @@ model: d.Model = new {
             )
         }
         d.clause(
-          "normalizeCounterexamples(tlaOrAlloyWitness).uses(source-map.generatedSelector)",
-          "TLA+/Alloy の失敗 message が生成 selector を含む場合は source map で仕様要素へ戻す",
-          "when TLA+/Alloy failure messages contain generated selectors, source maps normalize them back to spec elements",
+          "normalizeCounterexamples(quintOrAlloyWitness).uses(source-map.generatedSelector)",
+          "Quint/Alloy の失敗 message が生成 selector を含む場合は source map で仕様要素へ戻す",
+          "when Quint/Alloy failure messages contain generated selectors, source maps normalize them back to spec elements",
         )
       }
       reviewStatus = "approved"
@@ -5781,7 +5768,7 @@ model: d.Model = new {
           ref = "test/cli.test.mjs#normalizes generated counterexamples to source rules"
         }
         d.nodeCheck(
-          "test/cli.test.mjs#normalizes TLA and Alloy backend witnesses to source records",
+          "test/cli.test.mjs#normalizes Alloy backend witnesses to source records",
         )
       }
       implementedBy {
@@ -5996,7 +5983,7 @@ model: d.Model = new {
       }
       must {
         d.clause(
-          "projection.kind in {quickcheck, lean, alloy, tla, tla-cfg, source-map, generated-manifest} -> projection.matrix == single",
+          "projection.kind in {quickcheck, lean, alloy, quint, source-map, generated-manifest} -> projection.matrix == single",
           "backend/source-map/生成マニフェストは各 kind に対応する single output と provenance を持つ",
           "backend, source-map, and generated-manifest outputs have one kind-specific output and provenance",
         )
@@ -6047,11 +6034,7 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "doc"
-          path = "generated/backends/DSpecSelf.tla"
-        }
-        new d.ImplementationRef {
-          kind = "doc"
-          path = "generated/backends/DSpecSelf.cfg"
+          path = "generated/backends/dspec-self.qnt"
         }
         new d.ImplementationRef {
           kind = "doc"

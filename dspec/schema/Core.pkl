@@ -142,7 +142,7 @@ typealias SpecKind =
     | "non_goal"
     | "equivalence"
 typealias Backend =
-  "node" | "pkl" | "lean" | "alloy" | "tla" | "rego" | "cue" | "playwright" | "runtime" | "manual"
+  "node" | "pkl" | "lean" | "alloy" | "quint" | "rego" | "cue" | "playwright" | "runtime" | "manual"
 typealias CheckAssuranceKind = "reference" | "executed" | "mutation-tested" | "bounded" | "proved"
 typealias AssuranceEvidenceSchemaVersion = "1.0"
 typealias AssuranceEvidenceScope = "generator" | "clause"
@@ -150,7 +150,7 @@ typealias AssuranceEvidenceResult = "pass" | "fail" | "skip"
 typealias AssuranceEvidenceTimestamp = String(matches(Regex(#"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$"#)))
 typealias ClauseBackendSupport = "unmapped" | "textual" | "structural" | "semantic"
 typealias ProjectionKind =
-  "markdown" | "quickcheck" | "lean" | "alloy" | "tla" | "tla-cfg" | "source-map" | "generated-manifest"
+  "markdown" | "quickcheck" | "lean" | "alloy" | "quint" | "source-map" | "generated-manifest"
 typealias ProjectionMatrix = "locales" | "single"
 typealias ProjectionFreshness = "exact"
 
@@ -269,7 +269,7 @@ class AssuranceEvidenceTool {
 /// proof of the source business clauses.
 class AssuranceEvidenceArtifact {
   id: Identifier
-  backend: "quickcheck" | "lean" | "tla" | "alloy"
+  backend: "quickcheck" | "lean" | "quint" | "alloy"
   scope: AssuranceEvidenceScope
   propertyIds: Listing<String(length > 0)> = new {}
   digest: String(matches(Regex(#"^sha256:[a-f0-9]{64}$"#)))
@@ -281,7 +281,7 @@ class AssuranceEvidenceArtifact {
 
 /// Backend applicability for one source Clause.ast selector.
 class AssuranceEvidenceClauseBackend {
-  backend: "quickcheck" | "lean" | "tla" | "alloy"
+  backend: "quickcheck" | "lean" | "quint" | "alloy"
   support: ClauseBackendSupport
   generatedSelectors: Listing<String(length > 0)> = new {}
 }

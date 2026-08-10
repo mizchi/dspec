@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 export const ASSURANCE_EVIDENCE_SCHEMA_VERSION = "1.0";
-export const CLAUSE_EVIDENCE_BACKENDS = ["alloy", "lean", "quickcheck", "tla"];
+export const CLAUSE_EVIDENCE_BACKENDS = ["alloy", "lean", "quickcheck", "quint"];
 export const CLAUSE_AST_OPERATORS = ["and", "atom", "eq", "exists", "forall", "implies", "neq", "not", "or"];
 
 export const CLAUSE_BACKEND_OPERATOR_SUPPORT = Object.freeze({
@@ -14,7 +14,7 @@ export const CLAUSE_BACKEND_OPERATOR_SUPPORT = Object.freeze({
     not: "semantic",
   }),
   quickcheck: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "structural"]))),
-  tla: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "textual"]))),
+  quint: Object.freeze(Object.fromEntries(CLAUSE_AST_OPERATORS.map((operator) => [operator, "textual"]))),
 });
 
 function list(value) {

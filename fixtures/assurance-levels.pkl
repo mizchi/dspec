@@ -46,14 +46,14 @@ model: d.Model = new {
           }
         }
         new d.CheckTarget {
-          backend = "tla"
-          ref = "fixtures/backend-drift/Spec.tla#BackendInvariant"
+          backend = "quint"
+          ref = "fixtures/backend-drift/spec.qnt#backendInvariant"
           assurances {
             "reference"
             "bounded"
           }
           assuranceEvidence {
-            ["bounded"] = "fixtures/backend-drift/Spec.tla#BackendInvariant"
+            ["bounded"] = "fixtures/backend-drift/spec.qnt#backendInvariant"
           }
         }
         new d.CheckTarget {

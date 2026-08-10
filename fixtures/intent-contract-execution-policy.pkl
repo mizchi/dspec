@@ -23,7 +23,7 @@ model: d.Model = (base.model) {
       checks {
         new d.CheckTarget {
           backend = "node"
-          ref = "test/cli.test.mjs#projects bounded Intent execution policies into Markdown, QuickCheck, and TLA+"
+          ref = "test/cli.test.mjs#projects bounded Intent execution policies into Markdown, QuickCheck, and Quint"
         }
       }
     }

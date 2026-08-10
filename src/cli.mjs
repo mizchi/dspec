@@ -10,6 +10,7 @@ import {
   CLAUSE_AST_SEMANTICS_VERSION,
   validateClauseAst,
 } from "./core/clause-ast.mjs";
+import { renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
   validateConformanceModel,
@@ -1443,9 +1444,9 @@ function automatedCheckTargets(rule) {
 const CHECK_ASSURANCE_KINDS = ["reference", "executed", "mutation-tested", "bounded", "proved"];
 
 const CHECK_ASSURANCE_BACKENDS = {
-  executed: ["node", "pkl", "lean", "alloy", "tla", "rego", "cue", "playwright", "runtime"],
+  executed: ["node", "pkl", "lean", "alloy", "quint", "rego", "cue", "playwright", "runtime"],
   "mutation-tested": ["node", "playwright"],
-  bounded: ["alloy", "tla"],
+  bounded: ["alloy", "quint"],
   proved: ["lean"],
 };
 
@@ -1702,9 +1703,9 @@ function hasLeanSymbol(content, symbol) {
   return new RegExp(`\\b(theorem|lemma|def|abbrev|inductive|structure|class|axiom)\\s+${escaped}\\b`).test(content);
 }
 
-function hasTlaSymbol(content, symbol) {
+function hasQuintSymbol(content, symbol) {
   const escaped = escapeRegex(symbol);
-  return new RegExp(`(^|\\n)\\s*(${escaped}\\s*==|THEOREM\\s+${escaped}\\b)`).test(content);
+  return new RegExp(`\\b(?:pure\\s+)?(?:val|def|action|run|temporal)\\s+${escaped}\\b`).test(content);
 }
 
 function hasAlloySymbol(content, symbol) {
@@ -2609,8 +2610,8 @@ function validateIntentModel(errors, model) {
       }
     }
     if (task.kind === "formal-model") {
-      if (!["lean", "alloy", "tla"].includes(task.backend)) {
-        errors.push(`intent formal-model task requires lean, alloy, or tla backend: ${task.id}`);
+      if (!["lean", "alloy", "quint"].includes(task.backend)) {
+        errors.push(`intent formal-model task requires lean, alloy, or quint backend: ${task.id}`);
       }
       if (!(["model", "proof"].includes(task.target.kind))) {
         errors.push(`intent formal-model task requires a model or proof target: ${task.id}`);
@@ -3302,12 +3303,12 @@ function validateCheckTargetRef(rule, target) {
     return hasLeanSymbol(content, anchor) ? [] : [`missing lean check target symbol: ${rule.id} -> ${target.ref}`];
   }
 
-  if (target.backend === "tla") {
+  if (target.backend === "quint") {
     if (!anchor) {
-      return [`missing tla check target symbol: ${rule.id} -> ${target.ref}`];
+      return [`missing quint check target symbol: ${rule.id} -> ${target.ref}`];
     }
     const content = readTextFile(path);
-    return hasTlaSymbol(content, anchor) ? [] : [`missing tla check target symbol: ${rule.id} -> ${target.ref}`];
+    return hasQuintSymbol(content, anchor) ? [] : [`missing quint check target symbol: ${rule.id} -> ${target.ref}`];
   }
 
   if (target.backend === "alloy") {
@@ -9509,11 +9510,6 @@ function ruleClauses(rule) {
   return [...list(rule.when), ...list(rule.must), ...list(rule.mustNot)];
 }
 
-function exprToTla(ast, fallback) {
-  if (!ast) return fallback;
-  return exprToText(ast);
-}
-
 function exprToLean(ast, fallback) {
   if (!ast) return `Expr.opaque ${JSON.stringify(fallback)}`;
   const children = list(ast.children);
@@ -9528,10 +9524,6 @@ function exprToLean(ast, fallback) {
   if (ast.op === "exists") return `Expr.exists_ ${JSON.stringify(ast.name)} (${exprToLean(children[0], "")})`;
   if (ast.op === "forall") return `Expr.forall_ ${JSON.stringify(ast.name)} (${exprToLean(children[0], "")})`;
   return `Expr.opaque ${JSON.stringify(fallback)}`;
-}
-
-function ruleClauseTexts(rule) {
-  return ruleClauses(rule).map((clause) => exprToTla(clause.ast, clause.expr));
 }
 
 function ruleClauseExprs(rule) {
@@ -9867,8 +9859,7 @@ function emitSourceMapObject(model, requestedLocale) {
     markdown: [generatedEntry("markdown.model", modelSource(), { locale })],
     quickcheck: [generatedEntry("quickcheck.modelId", modelSource())],
     alloy: [generatedEntry("alloy.module", modelSource())],
-    tla: [generatedEntry("tla.module", modelSource())],
-    tlaCfg: [generatedEntry("tlaCfg.config", modelSource())],
+    quint: [generatedEntry("quint.module", modelSource())],
     lean: [generatedEntry("lean.namespace", modelSource())],
     sourceMap: [generatedEntry("sourceMap.document", modelSource(), { locale })],
     generatedManifest: [generatedEntry("generatedManifest.document", modelSource(), { locale })],
@@ -9886,8 +9877,7 @@ function emitSourceMapObject(model, requestedLocale) {
       quickcheck: "quickcheck",
       lean: "lean",
       alloy: "alloy",
-      tla: "tla",
-      "tla-cfg": "tlaCfg",
+      quint: "quint",
       "source-map": "sourceMap",
       "generated-manifest": "generatedManifest",
     }[projection.kind];
@@ -9933,7 +9923,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.db.table.${table.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.db.tables.${table.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dbName("DBT", table.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DbTables[${table.id}]`, source));
         list(table.columns)
           .slice()
           .sort(byId)
@@ -9951,7 +9940,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.db.invariants.${invariant.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.db.invariants.${invariant.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dbName("DBI", invariant.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DbInvariants[${invariant.id}]`, source));
       });
     dbTransactions(db)
       .slice()
@@ -9962,7 +9950,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.db.transactions.${transaction.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.db.transactions.${transaction.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dbName("DBTX", transaction.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DbTransactions[${transaction.id}]`, source));
       });
     dbMigrations(db)
       .slice()
@@ -9973,7 +9960,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.db.migrations.${migration.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.db.migrations.${migration.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dbName("DBM", migration.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DbMigrations[${migration.id}]`, source));
         list(migration.mappings)
           .slice()
           .sort(byId)
@@ -9984,7 +9970,6 @@ function emitSourceMapObject(model, requestedLocale) {
             artifacts.markdown.push(generatedEntry(`markdown.${mappingGenerated}`, mappingSource));
             artifacts.quickcheck.push(generatedEntry(`quickcheck.${mappingGenerated}`, mappingSource));
             artifacts.alloy.push(generatedEntry(`alloy.sig.${dbMappingName(migration, mapping)}`, mappingSource));
-            artifacts.tla.push(generatedEntry(`tla.DbMigrationMappings[${migration.id}][${dbMappingId(migration, mapping)}]`, mappingSource));
           });
       });
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyDbTransactionsPreserveInvariants", { kind: "dbPolicy", path: "model.patterns.db.transactions" }));
@@ -9995,14 +9980,6 @@ function emitSourceMapObject(model, requestedLocale) {
     artifacts.alloy.push(generatedEntry("alloy.assert.DbMigrationsPreserveInvariants", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.DbMigrationMappingsCoverInvariants", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.DbMigrationMappingExpressionsMentionTables", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
-    artifacts.tla.push(generatedEntry("tla.DbInvariantPreserved", { kind: "dbPolicy", path: "model.patterns.db.transactions" }));
-    artifacts.tla.push(generatedEntry("tla.DbMigrationPreserved", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
-    artifacts.tla.push(generatedEntry("tla.DbMigrationMappingCovered", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
-    artifacts.tla.push(generatedEntry("tla.DbMigrationMappingRefsMentionTables", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.DbInvariantPreserved", { kind: "dbPolicy", path: "model.patterns.db.transactions" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.DbMigrationPreserved", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.DbMigrationMappingCovered", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.DbMigrationMappingRefsMentionTables", { kind: "dbPolicy", path: "model.patterns.db.migrations" }));
   }
 
   const cloud = cloudPattern(model);
@@ -10016,7 +9993,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.cloud.zones.${zone.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.cloud.zones.${zone.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${cloudName("CZ", zone.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.CloudZones[${zone.id}]`, source));
       });
     cloudNodes(cloud)
       .slice()
@@ -10027,7 +10003,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.cloud.nodes.${node.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.cloud.nodes.${node.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${cloudName("CN", node.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.CloudNodes[${node.id}]`, source));
       });
     cloudFlows(cloud)
       .slice()
@@ -10038,7 +10013,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.cloud.flows.${flow.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.cloud.flows.${flow.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${cloudName("CF", flow.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.CloudFlows[${flow.id}]`, source));
       });
     cloudPolicies(cloud)
       .slice()
@@ -10049,7 +10023,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.cloud.policies.${policy.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.cloud.policies.${policy.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${cloudName("CP", policy.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.CloudPolicies[${policy.id}]`, source));
       });
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyCloudPublicIngressBlocked", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyCloudResourceAccessHasPolicy", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
@@ -10059,14 +10032,6 @@ function emitSourceMapObject(model, requestedLocale) {
     artifacts.alloy.push(generatedEntry("alloy.assert.CloudResourceAccessHasPolicy", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.CloudTenantFlowsPropagateTenant", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.CloudQueuePublishesHaveIdempotencyKey", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
-    artifacts.tla.push(generatedEntry("tla.CloudPublicIngressBlocked", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
-    artifacts.tla.push(generatedEntry("tla.CloudResourceAccessHasPolicy", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
-    artifacts.tla.push(generatedEntry("tla.CloudTenantFlowsPropagateTenant", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
-    artifacts.tla.push(generatedEntry("tla.CloudQueuePublishesHaveIdempotencyKey", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.CloudPublicIngressBlocked", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.CloudResourceAccessHasPolicy", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.CloudTenantFlowsPropagateTenant", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.CloudQueuePublishesHaveIdempotencyKey", { kind: "cloudPolicy", path: "model.patterns.cloud.flows" }));
   }
 
   const data = dataPattern(model);
@@ -10080,7 +10045,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.data.policies.${policy.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.data.policies.${policy.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dataName("DPOL", policy.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DataPolicies[${policy.id}]`, source));
       });
     dataSets(data)
       .slice()
@@ -10091,7 +10055,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.data.datasets.${dataset.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.data.datasets.${dataset.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dataName("DS", dataset.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DataSets[${dataset.id}]`, source));
       });
     dataStores(data)
       .slice()
@@ -10102,7 +10065,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.data.stores.${store.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.data.stores.${store.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dataName("DSTORE", store.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DataStores[${store.id}]`, source));
       });
     dataPlacements(data)
       .slice()
@@ -10113,7 +10075,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.data.placements.${placement.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.data.placements.${placement.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dataName("DPL", placement.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DataPlacements[${placement.id}]`, source));
       });
     dataFlows(data)
       .slice()
@@ -10124,7 +10085,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.data.flows.${flow.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.data.flows.${flow.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${dataName("DF", flow.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.DataFlows[${flow.id}]`, source));
       });
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyDataSensitivePlacementsEncrypted", { kind: "dataPolicy", path: "model.patterns.data.placements" }));
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyDataPersonalPlacementsSupportDeletion", { kind: "dataPolicy", path: "model.patterns.data.placements" }));
@@ -10134,14 +10094,6 @@ function emitSourceMapObject(model, requestedLocale) {
     artifacts.alloy.push(generatedEntry("alloy.assert.DataPersonalPlacementsSupportDeletion", { kind: "dataPolicy", path: "model.patterns.data.placements" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.DataCrossRegionFlowsHaveLegalBasis", { kind: "dataPolicy", path: "model.patterns.data.flows" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.DataRetentionWithinPolicy", { kind: "dataPolicy", path: "model.patterns.data.datasets" }));
-    artifacts.tla.push(generatedEntry("tla.DataSensitivePlacementsEncrypted", { kind: "dataPolicy", path: "model.patterns.data.placements" }));
-    artifacts.tla.push(generatedEntry("tla.DataPersonalPlacementsSupportDeletion", { kind: "dataPolicy", path: "model.patterns.data.placements" }));
-    artifacts.tla.push(generatedEntry("tla.DataCrossRegionFlowsHaveLegalBasis", { kind: "dataPolicy", path: "model.patterns.data.flows" }));
-    artifacts.tla.push(generatedEntry("tla.DataRetentionWithinPolicy", { kind: "dataPolicy", path: "model.patterns.data.datasets" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.DataSensitivePlacementsEncrypted", { kind: "dataPolicy", path: "model.patterns.data.placements" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.DataPersonalPlacementsSupportDeletion", { kind: "dataPolicy", path: "model.patterns.data.placements" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.DataCrossRegionFlowsHaveLegalBasis", { kind: "dataPolicy", path: "model.patterns.data.flows" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.DataRetentionWithinPolicy", { kind: "dataPolicy", path: "model.patterns.data.datasets" }));
   }
 
   const release = releasePattern(model);
@@ -10155,7 +10107,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.release.services.${service.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.release.services.${service.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${releaseName("RSVC", service.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.ReleaseServices[${service.id}]`, source));
       });
     releaseEnvironments(release)
       .slice()
@@ -10166,7 +10117,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.release.environments.${environment.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.release.environments.${environment.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${releaseName("RENV", environment.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.ReleaseEnvironments[${environment.id}]`, source));
       });
     releaseGates(release)
       .slice()
@@ -10177,7 +10127,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.release.gates.${gate.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.release.gates.${gate.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${releaseName("RG", gate.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.ReleaseGates[${gate.id}]`, source));
       });
     releaseRollbacks(release)
       .slice()
@@ -10188,7 +10137,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.release.rollbacks.${rollback.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.release.rollbacks.${rollback.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${releaseName("RR", rollback.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.ReleaseRollbacks[${rollback.id}]`, source));
       });
     releaseMigrations(release)
       .slice()
@@ -10199,7 +10147,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.release.migrations.${migration.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.release.migrations.${migration.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${releaseName("RM", migration.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.ReleaseMigrations[${migration.id}]`, source));
       });
     releaseSteps(release)
       .slice()
@@ -10210,7 +10157,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.release.steps.${step.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.release.steps.${step.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${releaseName("RS", step.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.ReleaseSteps[${step.id}]`, source));
       });
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyReleaseProductionStepsHaveHealthGate", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyReleaseTrafficShiftsHaveRollback", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
@@ -10220,14 +10166,6 @@ function emitSourceMapObject(model, requestedLocale) {
     artifacts.alloy.push(generatedEntry("alloy.assert.ReleaseTrafficShiftsHaveRollback", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.ReleaseRollbackPlansAreTested", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.ReleaseMigrationsAreBackwardCompatible", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
-    artifacts.tla.push(generatedEntry("tla.ReleaseProductionStepsHaveHealthGate", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
-    artifacts.tla.push(generatedEntry("tla.ReleaseTrafficShiftsHaveRollback", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
-    artifacts.tla.push(generatedEntry("tla.ReleaseRollbackPlansAreTested", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
-    artifacts.tla.push(generatedEntry("tla.ReleaseMigrationsAreBackwardCompatible", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.ReleaseProductionStepsHaveHealthGate", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.ReleaseTrafficShiftsHaveRollback", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.ReleaseRollbackPlansAreTested", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.ReleaseMigrationsAreBackwardCompatible", { kind: "releasePolicy", path: "model.patterns.release.steps" }));
   }
 
   const runtime = runtimePattern(model);
@@ -10241,7 +10179,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.services.${service.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.services.${service.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RTSVC", service.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeServices[${service.id}]`, source));
       });
     runtimeDependencies(runtime)
       .slice()
@@ -10252,7 +10189,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.dependencies.${dependency.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.dependencies.${dependency.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RDEP", dependency.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeDependencies[${dependency.id}]`, source));
       });
     runtimeSignals(runtime)
       .slice()
@@ -10263,7 +10199,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.signals.${signal.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.signals.${signal.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RSIG", signal.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeSignals[${signal.id}]`, source));
       });
     runtimeRunbooks(runtime)
       .slice()
@@ -10274,7 +10209,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.runbooks.${runbook.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.runbooks.${runbook.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RRB", runbook.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeRunbooks[${runbook.id}]`, source));
       });
     runtimeAlerts(runtime)
       .slice()
@@ -10285,7 +10219,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.alerts.${alert.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.alerts.${alert.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RALERT", alert.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeAlerts[${alert.id}]`, source));
       });
     runtimeSlos(runtime)
       .slice()
@@ -10296,7 +10229,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.slos.${slo.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.slos.${slo.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RSLO", slo.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeSlos[${slo.id}]`, source));
       });
     runtimeTelemetry(runtime)
       .slice()
@@ -10307,7 +10239,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.telemetry.${window.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.telemetry.${window.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RTELEM", window.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeTelemetry[${window.id}]`, source));
       });
     runtimeAlertPolicies(runtime)
       .slice()
@@ -10318,7 +10249,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.alertPolicies.${policy.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.alertPolicies.${policy.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RPOL", policy.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeAlertPolicies[${policy.id}]`, source));
       });
     runtimeRunbookExecutions(runtime)
       .slice()
@@ -10329,7 +10259,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.runbookExecutions.${execution.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.runbookExecutions.${execution.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("REXEC", execution.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeRunbookExecutions[${execution.id}]`, source));
       });
     runtimeDependencyTraces(runtime)
       .slice()
@@ -10340,7 +10269,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.runtime.dependencyTraces.${trace.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.runtime.dependencyTraces.${trace.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${runtimeName("RTR", trace.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.RuntimeDependencyTraces[${trace.id}]`, source));
       });
     runtimeIntentExecutions(runtime)
       .slice()
@@ -10369,24 +10297,6 @@ function emitSourceMapObject(model, requestedLocale) {
     artifacts.alloy.push(generatedEntry("alloy.assert.RuntimePageAlertsHaveEnabledPolicy", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.RuntimePageAlertsHaveExecutedRunbook", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.RuntimeDependencyTracesWithinTimeout", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencyTraces" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimeCriticalSlosHavePageAlert", { kind: "runtimePolicy", path: "model.patterns.runtime.slos" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimePageAlertsHaveTestedRunbook", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimeDependenciesHaveTimeout", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencies" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimeRetriesAreIdempotent", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencies" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimeSlosHaveTelemetry", { kind: "runtimePolicy", path: "model.patterns.runtime.slos" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimeTelemetryMeetsSlo", { kind: "runtimePolicy", path: "model.patterns.runtime.telemetry" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimePageAlertsHaveEnabledPolicy", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimePageAlertsHaveExecutedRunbook", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
-    artifacts.tla.push(generatedEntry("tla.RuntimeDependencyTracesWithinTimeout", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencyTraces" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimeCriticalSlosHavePageAlert", { kind: "runtimePolicy", path: "model.patterns.runtime.slos" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimePageAlertsHaveTestedRunbook", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimeDependenciesHaveTimeout", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencies" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimeRetriesAreIdempotent", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencies" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimeSlosHaveTelemetry", { kind: "runtimePolicy", path: "model.patterns.runtime.slos" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimeTelemetryMeetsSlo", { kind: "runtimePolicy", path: "model.patterns.runtime.telemetry" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimePageAlertsHaveEnabledPolicy", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimePageAlertsHaveExecutedRunbook", { kind: "runtimePolicy", path: "model.patterns.runtime.alerts" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.RuntimeDependencyTracesWithinTimeout", { kind: "runtimePolicy", path: "model.patterns.runtime.dependencyTraces" }));
   }
   for (const source of runtimeCollectorSources(model)) {
     artifacts.runtimeCollector.push(
@@ -10405,7 +10315,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.intent.capabilities.${capability.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.capabilities.${capability.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("IC", capability.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.IntentCapabilities[${capability.id}]`, source));
       });
     intentOutcomes(intent)
       .slice()
@@ -10416,7 +10325,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.intent.outcomes.${outcome.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.outcomes.${outcome.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("IO", outcome.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.IntentOutcomes[${outcome.id}]`, source));
         list(outcome.outputContract?.fields)
           .slice()
           .sort(byId)
@@ -10445,12 +10353,10 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.intent.processes.${process.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.processes.${process.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("IP", process.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.IntentProcesses[${process.id}]`, source));
         if (process.execution) {
           const executionSource = intentExecutionPolicySource(process, processIndex);
           artifacts.markdown.push(generatedEntry(`markdown.intent.processes.${process.id}.execution`, executionSource));
           artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.processes.${process.id}.execution`, executionSource));
-          artifacts.tla.push(generatedEntry(`tla.IntentExecutionPolicy[${process.id}]`, executionSource));
         }
         list(process.inputContract?.fields)
           .slice()
@@ -10480,7 +10386,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.intent.constructionAuthorities.${authority.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.constructionAuthorities.${authority.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("ICA", authority.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.IntentAuthorisedConstruction[${authority.id}]`, source));
       });
     intentAccessPolicies(intent)
       .slice()
@@ -10536,7 +10441,6 @@ function emitSourceMapObject(model, requestedLocale) {
         artifacts.markdown.push(generatedEntry(`markdown.intent.scenarios.${scenario.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.scenarios.${scenario.id}`, source));
         artifacts.alloy.push(generatedEntry(`alloy.sig.${intentName("ISC", scenario.id)}`, source));
-        artifacts.tla.push(generatedEntry(`tla.IntentScenarios[${scenario.id}]`, source));
       });
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentProcessConstructionIsAuthorized", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentScenarioTraceIsContinuous", { kind: "intentPolicy", path: "model.patterns.intent.scenarios" }));
@@ -10547,18 +10451,22 @@ function emitSourceMapObject(model, requestedLocale) {
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentSemanticBindingsAreWellFormed", { kind: "intentPolicy", path: "model.patterns.intent.semanticBindings" }));
     artifacts.quickcheck.push(generatedEntry("quickcheck.propertyIntentClaimGraphIsComplete", { kind: "intentPolicy", path: "model.patterns.intent" }));
     artifacts.alloy.push(generatedEntry("alloy.assert.IntentProcessConstructionIsAuthorized", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tla.push(generatedEntry("tla.IntentProcessConstructionIsAuthorized", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tla.push(generatedEntry("tla.IntentScenarioTraceIsContinuous", { kind: "intentPolicy", path: "model.patterns.intent.scenarios" }));
-    artifacts.tla.push(generatedEntry("tla.IntentExecutionTypeInvariant", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tla.push(generatedEntry("tla.IntentConcurrencyBounded", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tla.push(generatedEntry("tla.IntentIdempotencyKeysAreExclusive", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tla.push(generatedEntry("tla.IntentTimeoutsBounded", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentProcessConstructionIsAuthorized", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentScenarioTraceIsContinuous", { kind: "intentPolicy", path: "model.patterns.intent.scenarios" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentExecutionTypeInvariant", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentConcurrencyBounded", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentIdempotencyKeysAreExclusive", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
-    artifacts.tlaCfg.push(generatedEntry("tlaCfg.INVARIANT.IntentTimeoutsBounded", { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    intentProcesses(intent)
+      .filter((process) => process.execution)
+      .forEach((process) => {
+        const processIndex = intentProcesses(intent).findIndex((candidate) => candidate.id === process.id);
+        artifacts.quint.push(generatedEntry(
+          `quint.intentProcessMaxInFlight[${process.id}]`,
+          intentExecutionPolicySource(process, processIndex),
+        ));
+      });
+    for (const generated of [
+      "quint.intentConcurrencyBounded",
+      "quint.intentIdempotencyKeysAreExclusive",
+      "quint.intentTimeoutsBounded",
+    ]) {
+      artifacts.quint.push(generatedEntry(generated, { kind: "intentPolicy", path: "model.patterns.intent.processes" }));
+    }
   }
 
   rules.forEach((rule, sortedRuleIndex) => {
@@ -10575,15 +10483,15 @@ function emitSourceMapObject(model, requestedLocale) {
   activeApproved.forEach((rule) => {
     const ruleIndex = originalRuleIndex.get(rule.id);
     artifacts.quickcheck.push(generatedEntry(`quickcheck.approvedRuleIds.${rule.id}`, ruleSource(rule, ruleIndex)));
-    artifacts.tla.push(generatedEntry(`tla.ActiveApprovedRules.${rule.id}`, ruleSource(rule, ruleIndex)));
-    artifacts.tla.push(generatedEntry(`tla.Checks[${rule.id}]`, ruleSource(rule, ruleIndex)));
-    artifacts.tla.push(generatedEntry(`tla.RuleClauses[${rule.id}]`, ruleSource(rule, ruleIndex)));
+    artifacts.quint.push(generatedEntry(`quint.activeApprovedRules.${rule.id}`, ruleSource(rule, ruleIndex)));
+    artifacts.quint.push(generatedEntry(`quint.checks[${rule.id}]`, ruleSource(rule, ruleIndex)));
+    artifacts.quint.push(generatedEntry(`quint.ruleClauses[${rule.id}]`, ruleSource(rule, ruleIndex)));
     artifacts.lean.push(generatedEntry(`lean.RuleId.${sanitizeIdentifier(rule.id)}`, ruleSource(rule, ruleIndex)));
     artifacts.lean.push(generatedEntry(`lean.checks.${sanitizeIdentifier(rule.id)}`, ruleSource(rule, ruleIndex)));
     artifacts.lean.push(generatedEntry(`lean.clauseExprs.${sanitizeIdentifier(rule.id)}`, ruleSource(rule, ruleIndex)));
 
     list(rule.checks).forEach((_target, index) => {
-      artifacts.tla.push(generatedEntry(`tla.Checks[${rule.id}][${index}]`, checkTargetSource(rule, ruleIndex, index)));
+      artifacts.quint.push(generatedEntry(`quint.checks[${rule.id}][${index}]`, checkTargetSource(rule, ruleIndex, index)));
       artifacts.lean.push(generatedEntry(`lean.checks.${sanitizeIdentifier(rule.id)}[${index}]`, checkTargetSource(rule, ruleIndex, index)));
     });
 
@@ -10593,7 +10501,7 @@ function emitSourceMapObject(model, requestedLocale) {
       ["mustNot", list(rule.mustNot)],
     ]) {
       clauses.forEach((_clause, index) => {
-        artifacts.tla.push(generatedEntry(`tla.RuleClauses[${rule.id}].${field}[${index}]`, clauseSource(rule, ruleIndex, field, index)));
+        artifacts.quint.push(generatedEntry(`quint.ruleClauses[${rule.id}].${field}[${index}]`, clauseSource(rule, ruleIndex, field, index)));
         artifacts.lean.push(generatedEntry(`lean.clauseExprs.${sanitizeIdentifier(rule.id)}.${field}[${index}]`, clauseSource(rule, ruleIndex, field, index)));
       });
     }
@@ -10614,10 +10522,8 @@ function emitSourceMapObject(model, requestedLocale) {
     "quickcheck.propertyApprovedRulesHaveRequiredAssurances",
     "alloy.assert.ApprovedRulesHaveChecks",
     "alloy.assert.ActiveApprovedRulesHaveAutomatedSupport",
-    "tla.CoverageInvariant",
-    "tla.WorkflowInvariant",
-    "tlaCfg.INVARIANT.CoverageInvariant",
-    "tlaCfg.INVARIANT.WorkflowInvariant",
+    "quint.coverageInvariant",
+    "quint.workflowInvariant",
     "lean.AutomatedSupport",
     "lean.CoverageInvariant",
     "lean.theorem.coverage_invariant",
@@ -10651,8 +10557,7 @@ function generatedArtifactContents(model, requestedLocale) {
     markdown: emitMarkdown(model, requestedLocale),
     quickcheck: emitQuickcheck(model),
     sourceMap: emitSourceMap(model, requestedLocale),
-    tla: emitTla(model),
-    tlaCfg: emitTlaConfig(model),
+    quint: renderQuintModel(model),
   };
 }
 
@@ -10690,7 +10595,7 @@ function sourceMapIndex(sourceMap) {
 function counterexampleArtifactPrefix(backend) {
   if (backend === "quickcheck") return "quickcheck.";
   if (backend === "lean") return "lean.";
-  if (backend.startsWith("tla")) return "tla.";
+  if (backend.startsWith("quint")) return "quint.";
   if (backend.startsWith("alloy")) return "alloy.";
   return null;
 }
@@ -10851,7 +10756,7 @@ function ruleIdsInText(model, message) {
 function generatedSelectorForRule(backend, rule) {
   if (backend === "quickcheck") return `quickcheck.approvedRuleIds.${rule.id}`;
   if (backend === "lean") return `lean.RuleId.${sanitizeIdentifier(rule.id)}`;
-  if (backend.startsWith("tla")) return `tla.Checks[${rule.id}]`;
+  if (backend.startsWith("quint")) return `quint.checks[${rule.id}]`;
   if (backend.startsWith("alloy")) return `alloy.sig.R_${sanitizeIdentifier(rule.id)}`;
   return `generated.rule.${rule.id}`;
 }
@@ -10863,132 +10768,132 @@ function generatedSelectorForPolicy(backend, property = "approved-rules-have-aut
   }
   if (property === "db-transaction-preserves-invariants") {
     if (backend === "quickcheck") return "quickcheck.propertyDbTransactionsPreserveInvariants";
-    if (backend.startsWith("tla")) return "tla.DbInvariantPreserved";
+    if (backend.startsWith("quint")) return "quint.DbInvariantPreserved";
     if (backend.startsWith("alloy")) return "alloy.assert.DbTransactionsPreserveInvariants";
   }
   if (property === "db-migration-preserves-invariants") {
     if (backend === "quickcheck") return "quickcheck.propertyDbMigrationsPreserveInvariants";
-    if (backend.startsWith("tla")) return "tla.DbMigrationPreserved";
+    if (backend.startsWith("quint")) return "quint.DbMigrationPreserved";
     if (backend.startsWith("alloy")) return "alloy.assert.DbMigrationsPreserveInvariants";
   }
   if (property === "db-migration-mappings-cover-invariants") {
     if (backend === "quickcheck") return "quickcheck.propertyDbMigrationMappingsCoverInvariants";
-    if (backend.startsWith("tla")) return "tla.DbMigrationMappingCovered";
+    if (backend.startsWith("quint")) return "quint.DbMigrationMappingCovered";
     if (backend.startsWith("alloy")) return "alloy.assert.DbMigrationMappingsCoverInvariants";
   }
   if (property === "db-migration-mapping-expressions-mention-tables") {
     if (backend === "quickcheck") return "quickcheck.propertyDbMigrationMappingExpressionsMentionTables";
-    if (backend.startsWith("tla")) return "tla.DbMigrationMappingRefsMentionTables";
+    if (backend.startsWith("quint")) return "quint.DbMigrationMappingRefsMentionTables";
     if (backend.startsWith("alloy")) return "alloy.assert.DbMigrationMappingExpressionsMentionTables";
   }
   if (property === "cloud-public-ingress-blocked") {
     if (backend === "quickcheck") return "quickcheck.propertyCloudPublicIngressBlocked";
-    if (backend.startsWith("tla")) return "tla.CloudPublicIngressBlocked";
+    if (backend.startsWith("quint")) return "quint.CloudPublicIngressBlocked";
     if (backend.startsWith("alloy")) return "alloy.assert.CloudPublicIngressBlocked";
   }
   if (property === "cloud-resource-access-has-policy") {
     if (backend === "quickcheck") return "quickcheck.propertyCloudResourceAccessHasPolicy";
-    if (backend.startsWith("tla")) return "tla.CloudResourceAccessHasPolicy";
+    if (backend.startsWith("quint")) return "quint.CloudResourceAccessHasPolicy";
     if (backend.startsWith("alloy")) return "alloy.assert.CloudResourceAccessHasPolicy";
   }
   if (property === "cloud-tenant-flow-propagates-tenant") {
     if (backend === "quickcheck") return "quickcheck.propertyCloudTenantFlowsPropagateTenant";
-    if (backend.startsWith("tla")) return "tla.CloudTenantFlowsPropagateTenant";
+    if (backend.startsWith("quint")) return "quint.CloudTenantFlowsPropagateTenant";
     if (backend.startsWith("alloy")) return "alloy.assert.CloudTenantFlowsPropagateTenant";
   }
   if (property === "cloud-queue-publish-has-idempotency-key") {
     if (backend === "quickcheck") return "quickcheck.propertyCloudQueuePublishesHaveIdempotencyKey";
-    if (backend.startsWith("tla")) return "tla.CloudQueuePublishesHaveIdempotencyKey";
+    if (backend.startsWith("quint")) return "quint.CloudQueuePublishesHaveIdempotencyKey";
     if (backend.startsWith("alloy")) return "alloy.assert.CloudQueuePublishesHaveIdempotencyKey";
   }
   if (property === "data-sensitive-placement-encrypted") {
     if (backend === "quickcheck") return "quickcheck.propertyDataSensitivePlacementsEncrypted";
-    if (backend.startsWith("tla")) return "tla.DataSensitivePlacementsEncrypted";
+    if (backend.startsWith("quint")) return "quint.DataSensitivePlacementsEncrypted";
     if (backend.startsWith("alloy")) return "alloy.assert.DataSensitivePlacementsEncrypted";
   }
   if (property === "data-personal-placement-supports-deletion") {
     if (backend === "quickcheck") return "quickcheck.propertyDataPersonalPlacementsSupportDeletion";
-    if (backend.startsWith("tla")) return "tla.DataPersonalPlacementsSupportDeletion";
+    if (backend.startsWith("quint")) return "quint.DataPersonalPlacementsSupportDeletion";
     if (backend.startsWith("alloy")) return "alloy.assert.DataPersonalPlacementsSupportDeletion";
   }
   if (property === "data-cross-region-flow-has-legal-basis") {
     if (backend === "quickcheck") return "quickcheck.propertyDataCrossRegionFlowsHaveLegalBasis";
-    if (backend.startsWith("tla")) return "tla.DataCrossRegionFlowsHaveLegalBasis";
+    if (backend.startsWith("quint")) return "quint.DataCrossRegionFlowsHaveLegalBasis";
     if (backend.startsWith("alloy")) return "alloy.assert.DataCrossRegionFlowsHaveLegalBasis";
   }
   if (property === "data-retention-within-policy") {
     if (backend === "quickcheck") return "quickcheck.propertyDataRetentionWithinPolicy";
-    if (backend.startsWith("tla")) return "tla.DataRetentionWithinPolicy";
+    if (backend.startsWith("quint")) return "quint.DataRetentionWithinPolicy";
     if (backend.startsWith("alloy")) return "alloy.assert.DataRetentionWithinPolicy";
   }
   if (property === "release-production-step-has-health-gate") {
     if (backend === "quickcheck") return "quickcheck.propertyReleaseProductionStepsHaveHealthGate";
-    if (backend.startsWith("tla")) return "tla.ReleaseProductionStepsHaveHealthGate";
+    if (backend.startsWith("quint")) return "quint.ReleaseProductionStepsHaveHealthGate";
     if (backend.startsWith("alloy")) return "alloy.assert.ReleaseProductionStepsHaveHealthGate";
   }
   if (property === "release-traffic-shift-has-rollback") {
     if (backend === "quickcheck") return "quickcheck.propertyReleaseTrafficShiftsHaveRollback";
-    if (backend.startsWith("tla")) return "tla.ReleaseTrafficShiftsHaveRollback";
+    if (backend.startsWith("quint")) return "quint.ReleaseTrafficShiftsHaveRollback";
     if (backend.startsWith("alloy")) return "alloy.assert.ReleaseTrafficShiftsHaveRollback";
   }
   if (property === "release-rollback-plan-tested") {
     if (backend === "quickcheck") return "quickcheck.propertyReleaseRollbackPlansAreTested";
-    if (backend.startsWith("tla")) return "tla.ReleaseRollbackPlansAreTested";
+    if (backend.startsWith("quint")) return "quint.ReleaseRollbackPlansAreTested";
     if (backend.startsWith("alloy")) return "alloy.assert.ReleaseRollbackPlansAreTested";
   }
   if (property === "release-migration-backward-compatible") {
     if (backend === "quickcheck") return "quickcheck.propertyReleaseMigrationsAreBackwardCompatible";
-    if (backend.startsWith("tla")) return "tla.ReleaseMigrationsAreBackwardCompatible";
+    if (backend.startsWith("quint")) return "quint.ReleaseMigrationsAreBackwardCompatible";
     if (backend.startsWith("alloy")) return "alloy.assert.ReleaseMigrationsAreBackwardCompatible";
   }
   if (property === "runtime-critical-slo-has-page-alert") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimeCriticalSlosHavePageAlert";
-    if (backend.startsWith("tla")) return "tla.RuntimeCriticalSlosHavePageAlert";
+    if (backend.startsWith("quint")) return "quint.RuntimeCriticalSlosHavePageAlert";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimeCriticalSlosHavePageAlert";
   }
   if (property === "runtime-page-alert-has-tested-runbook") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimePageAlertsHaveTestedRunbook";
-    if (backend.startsWith("tla")) return "tla.RuntimePageAlertsHaveTestedRunbook";
+    if (backend.startsWith("quint")) return "quint.RuntimePageAlertsHaveTestedRunbook";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimePageAlertsHaveTestedRunbook";
   }
   if (property === "runtime-dependency-has-timeout") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimeDependenciesHaveTimeout";
-    if (backend.startsWith("tla")) return "tla.RuntimeDependenciesHaveTimeout";
+    if (backend.startsWith("quint")) return "quint.RuntimeDependenciesHaveTimeout";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimeDependenciesHaveTimeout";
   }
   if (property === "runtime-retry-is-idempotent") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimeRetriesAreIdempotent";
-    if (backend.startsWith("tla")) return "tla.RuntimeRetriesAreIdempotent";
+    if (backend.startsWith("quint")) return "quint.RuntimeRetriesAreIdempotent";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimeRetriesAreIdempotent";
   }
   if (property === "runtime-slo-has-telemetry") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimeSlosHaveTelemetry";
-    if (backend.startsWith("tla")) return "tla.RuntimeSlosHaveTelemetry";
+    if (backend.startsWith("quint")) return "quint.RuntimeSlosHaveTelemetry";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimeSlosHaveTelemetry";
   }
   if (property === "runtime-telemetry-meets-slo") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimeTelemetryMeetsSlo";
-    if (backend.startsWith("tla")) return "tla.RuntimeTelemetryMeetsSlo";
+    if (backend.startsWith("quint")) return "quint.RuntimeTelemetryMeetsSlo";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimeTelemetryMeetsSlo";
   }
   if (property === "runtime-page-alert-has-enabled-policy") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimePageAlertsHaveEnabledPolicy";
-    if (backend.startsWith("tla")) return "tla.RuntimePageAlertsHaveEnabledPolicy";
+    if (backend.startsWith("quint")) return "quint.RuntimePageAlertsHaveEnabledPolicy";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimePageAlertsHaveEnabledPolicy";
   }
   if (property === "runtime-page-alert-has-runbook-execution") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimePageAlertsHaveExecutedRunbook";
-    if (backend.startsWith("tla")) return "tla.RuntimePageAlertsHaveExecutedRunbook";
+    if (backend.startsWith("quint")) return "quint.RuntimePageAlertsHaveExecutedRunbook";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimePageAlertsHaveExecutedRunbook";
   }
   if (property === "runtime-dependency-trace-within-timeout") {
     if (backend === "quickcheck") return "quickcheck.propertyRuntimeDependencyTracesWithinTimeout";
-    if (backend.startsWith("tla")) return "tla.RuntimeDependencyTracesWithinTimeout";
+    if (backend.startsWith("quint")) return "quint.RuntimeDependencyTracesWithinTimeout";
     if (backend.startsWith("alloy")) return "alloy.assert.RuntimeDependencyTracesWithinTimeout";
   }
   if (backend === "quickcheck") return "quickcheck.propertyApprovedRulesHaveAutomatedChecks";
   if (backend === "lean") return "lean.CoverageInvariant";
-  if (backend.startsWith("tla")) return "tla.CoverageInvariant";
+  if (backend.startsWith("quint")) return "quint.CoverageInvariant";
   if (backend.startsWith("alloy")) return "alloy.assert.ApprovedRulesHaveChecks";
   return null;
 }
@@ -11275,7 +11180,7 @@ function normalizeTextCounterexamples(model, sourceByGenerated, locale, backendN
   const unsupported = unsupportedApprovedRules(model);
   const isCoverageSupportFailure =
     property === "approved-rules-have-automated-checks" ||
-    ((backendName === "alloyAnalyzer" || backendName === "tlaTlc") && unsupported.length > 0);
+    ((backendName === "alloyAnalyzer" || backendName === "quintVerify") && unsupported.length > 0);
   if (isCoverageSupportFailure) {
     if (unsupported.length > 0) {
       return unsupported.map((rule) => {
@@ -12410,8 +12315,7 @@ function projectionSnapshot(model) {
         case "quickcheck": return emitQuickcheck(sourceModel);
         case "lean": return emitLean(sourceModel);
         case "alloy": return emitAlloy(sourceModel);
-        case "tla": return emitTla(sourceModel);
-        case "tla-cfg": return emitTlaConfig(sourceModel);
+        case "quint": return renderQuintModel(sourceModel);
         case "source-map": return emitSourceMap(sourceModel, sourceModel.primaryLocale);
         case "generated-manifest": return emitGeneratedManifest(sourceModel, sourceModel.primaryLocale);
         default: throw new Error(`unsupported projection renderer: ${projection.kind}`);
@@ -14395,13 +14299,6 @@ function runtimeTimeoutCompliantTraceIds(runtime) {
     .sort();
 }
 
-function tlaSet(values) {
-  return `{${values.map((value) => JSON.stringify(value)).join(", ")}}`;
-}
-
-function tlaTupleSet(pairs) {
-  return `{${pairs.map(([left, right]) => `<<${JSON.stringify(left)}, ${JSON.stringify(right)}>>`).join(", ")}}`;
-}
 
 function emitAlloy(model) {
   const rules = sortedRules(model);
@@ -15049,664 +14946,6 @@ function emitAlloy(model) {
   return `${lines.join("\n")}\n`;
 }
 
-function emitTla(model) {
-  const rules = sortedRules(model);
-  const approved = rules.filter((rule) => rule.reviewStatus === "approved" && !rule.deprecated);
-  const db = dbPattern(model);
-  const moduleName = tlaModuleName(model);
-  const allRuleSet = tlaSet(rules.map((rule) => rule.id));
-  const ruleSet = tlaSet(approved.map((rule) => rule.id));
-  const checkMap = approved
-    .map((rule) => `(${JSON.stringify(rule.id)} :> <<${automatedCheckTargets(rule).map((target) => JSON.stringify(target.ref)).join(", ")}>>)`)
-    .join(" @@ ");
-  const clauseMap = approved
-    .map((rule) => `(${JSON.stringify(rule.id)} :> <<${ruleClauseTexts(rule).map((expr) => JSON.stringify(expr)).join(", ")}>>)`)
-    .join(" @@ ");
-  const dbTransactionIds = dbTransactions(db).map((transaction) => transaction.id).sort();
-  const dbMigrationIds = dbMigrations(db).map((migration) => migration.id).sort();
-  const dbPreserves = dbTransactions(db)
-    .slice()
-    .sort(byId)
-    .map((transaction) => `(${JSON.stringify(transaction.id)} :> ${tlaSet(list(transaction.preserves).slice().sort())})`)
-    .join(" @@ ");
-  const dbTouches = dbTransactions(db)
-    .slice()
-    .sort(byId)
-    .map((transaction) => `(${JSON.stringify(transaction.id)} :> ${tlaSet(dbTouchedInvariantIds(db, transaction))})`)
-    .join(" @@ ");
-  const dbMigrationPreserves = dbMigrations(db)
-    .slice()
-    .sort(byId)
-    .map((migration) => `(${JSON.stringify(migration.id)} :> ${tlaSet(list(migration.preserves).slice().sort())})`)
-    .join(" @@ ");
-  const dbMigrationTouches = dbMigrations(db)
-    .slice()
-    .sort(byId)
-    .map((migration) => `(${JSON.stringify(migration.id)} :> ${tlaSet(dbMigrationTouchedInvariantIds(db, migration))})`)
-    .join(" @@ ");
-  const dbMigrationMappings = dbMigrations(db)
-    .slice()
-    .sort(byId)
-    .map((migration) => `(${JSON.stringify(migration.id)} :> ${tlaSet(list(migration.mappings).map((mapping) => dbMappingId(migration, mapping)).sort())})`)
-    .join(" @@ ");
-  const dbMappings = dbMigrations(db)
-    .flatMap((migration) => list(migration.mappings).map((mapping) => dbMappingId(migration, mapping)))
-    .sort();
-  const dbMappingCovers = dbMigrations(db)
-    .flatMap((migration) => list(migration.mappings).map((mapping) => `(${JSON.stringify(dbMappingId(migration, mapping))} :> ${tlaSet(list(mapping.invariants).slice().sort())})`))
-    .join(" @@ ");
-  const dbMigrationSources = dbMigrations(db)
-    .slice()
-    .sort(byId)
-    .map((migration) => `(${JSON.stringify(migration.id)} :> ${tlaSet(list(migration.fromTables).slice().sort())})`)
-    .join(" @@ ");
-  const dbMigrationTargets = dbMigrations(db)
-    .slice()
-    .sort(byId)
-    .map((migration) => `(${JSON.stringify(migration.id)} :> ${tlaSet(list(migration.toTables).slice().sort())})`)
-    .join(" @@ ");
-  const dbMappingMentionsSource = dbMigrations(db)
-    .flatMap((migration) => list(migration.mappings).map((mapping) => `(${JSON.stringify(dbMappingId(migration, mapping))} :> ${tlaSet(dbMappingMentionedSourceTableIds(migration, mapping))})`))
-    .join(" @@ ");
-  const dbMappingMentionsTarget = dbMigrations(db)
-    .flatMap((migration) => list(migration.mappings).map((mapping) => `(${JSON.stringify(dbMappingId(migration, mapping))} :> ${tlaSet(dbMappingMentionedTargetTableIds(migration, mapping))})`))
-    .join(" @@ ");
-  const cloud = cloudPattern(model);
-  const cloudFlowIds = cloudFlows(cloud).map((flow) => flow.id).sort();
-  const cloudFlowFrom = cloudFlows(cloud)
-    .slice()
-    .sort(byId)
-    .map((flow) => `(${JSON.stringify(flow.id)} :> ${JSON.stringify(flow.from)})`)
-    .join(" @@ ");
-  const cloudFlowTo = cloudFlows(cloud)
-    .slice()
-    .sort(byId)
-    .map((flow) => `(${JSON.stringify(flow.id)} :> ${JSON.stringify(flow.to)})`)
-    .join(" @@ ");
-  const data = dataPattern(model);
-  const dataSetIds = dataSets(data).map((dataset) => dataset.id).sort();
-  const dataStoreIds = dataStores(data).map((store) => store.id).sort();
-  const dataPlacementIds = dataPlacements(data).map((placement) => placement.id).sort();
-  const dataFlowIds = dataFlows(data).map((flow) => flow.id).sort();
-  const release = releasePattern(model);
-  const releaseServiceIds = releaseServices(release).map((service) => service.id).sort();
-  const releaseEnvironmentIds = releaseEnvironments(release).map((environment) => environment.id).sort();
-  const releaseGateIds = releaseGates(release).map((gate) => gate.id).sort();
-  const releaseRollbackIds = releaseRollbacks(release).map((rollback) => rollback.id).sort();
-  const releaseMigrationIds = releaseMigrations(release).map((migration) => migration.id).sort();
-  const releaseStepIds = releaseSteps(release).map((step) => step.id).sort();
-  const runtime = runtimePattern(model);
-  const runtimeServiceIds = runtimeServices(runtime).map((service) => service.id).sort();
-  const runtimeDependencyIdList = runtimeDependencyIds(runtime);
-  const runtimeSignalIds = runtimeSignals(runtime).map((signal) => signal.id).sort();
-  const runtimeRunbookIds = runtimeRunbooks(runtime).map((runbook) => runbook.id).sort();
-  const runtimeAlertIds = runtimeAlerts(runtime).map((alert) => alert.id).sort();
-  const runtimeSloIds = runtimeSlos(runtime).map((slo) => slo.id).sort();
-  const runtimeTelemetryIds = runtimeTelemetry(runtime).map((window) => window.id).sort();
-  const runtimeAlertPolicyIds = runtimeAlertPolicies(runtime).map((policy) => policy.id).sort();
-  const runtimeRunbookExecutionIds = runtimeRunbookExecutions(runtime).map((execution) => execution.id).sort();
-  const runtimeDependencyTraceIds = runtimeDependencyTraces(runtime).map((trace) => trace.id).sort();
-  const intent = intentPattern(model);
-  const intentCapabilityIds = intentCapabilities(intent).map((capability) => capability.id).sort();
-  const intentOutcomeIds = intentOutcomes(intent).map((outcome) => outcome.id).sort();
-  const intentProcessIds = intentProcesses(intent).map((process) => process.id).sort();
-  const intentScenarioIds = intentScenarios(intent).map((scenario) => scenario.id).sort();
-  const intentOutcomeState = intentOutcomes(intent)
-    .slice()
-    .sort(byId)
-    .map((outcome) => `(${JSON.stringify(outcome.id)} :> ${JSON.stringify(outcome.state)})`)
-    .join(" @@ ");
-  const intentProcessInput = intentProcesses(intent)
-    .slice()
-    .sort(byId)
-    .map((process) => `(${JSON.stringify(process.id)} :> ${JSON.stringify(process.input)})`)
-    .join(" @@ ");
-  const intentProcessOutcomes = intentProcesses(intent)
-    .slice()
-    .sort(byId)
-    .map((process) => `(${JSON.stringify(process.id)} :> ${tlaSet(list(process.outcomes).slice().sort())})`)
-    .join(" @@ ");
-  const intentProcessConstructs = intentProcesses(intent)
-    .slice()
-    .sort(byId)
-    .map((process) => `(${JSON.stringify(process.id)} :> ${tlaSet(list(process.constructs).slice().sort())})`)
-    .join(" @@ ");
-  const intentProcessTransitions = intentProcesses(intent)
-    .slice()
-    .sort(byId)
-    .map((process) => `(${JSON.stringify(process.id)} :> ${tlaTupleSet(list(process.transitions).map((transition) => [transition.from, transition.to]))})`)
-    .join(" @@ ");
-  const intentAuthorisedConstruction = tlaTupleSet(
-    constructionAuthorities(intent)
-      .slice()
-      .sort(byId)
-      .map((authority) => [authority.process, authority.outcome]),
-  );
-  const intentScenarioInitialState = intentScenarios(intent)
-    .slice()
-    .sort(byId)
-    .map((scenario) => `(${JSON.stringify(scenario.id)} :> ${JSON.stringify(scenario.initialState)})`)
-    .join(" @@ ");
-  const intentScenarioExpectedState = intentScenarios(intent)
-    .slice()
-    .sort(byId)
-    .map((scenario) => `(${JSON.stringify(scenario.id)} :> ${JSON.stringify(scenario.expectedState)})`)
-    .join(" @@ ");
-  const intentScenarioSteps = intentScenarios(intent)
-    .slice()
-    .sort(byId)
-    .map((scenario) => {
-      const steps = list(scenario.steps).map((step) => `<<${JSON.stringify(step.process)}, ${JSON.stringify(step.outcome)}>>`).join(", ");
-      return `(${JSON.stringify(scenario.id)} :> <<${steps}>>)`;
-    })
-    .join(" @@ ");
-  const intentExecutionProcesses = intentProcesses(intent)
-    .filter((process) => process.execution)
-    .map((process) => process.id)
-    .sort();
-  const intentIdempotentProcesses = intentProcesses(intent)
-    .filter((process) => process.execution?.idempotencyKey)
-    .map((process) => process.id)
-    .sort();
-  const intentTimedProcesses = intentProcesses(intent)
-    .filter((process) => process.execution?.timeoutSteps !== null && process.execution?.timeoutSteps !== undefined)
-    .map((process) => process.id)
-    .sort();
-  const intentProcessMaxInFlight = intentProcesses(intent)
-    .filter((process) => process.execution)
-    .slice()
-    .sort(byId)
-    .map((process) => `(${JSON.stringify(process.id)} :> ${process.execution.maxInFlight})`)
-    .join(" @@ ");
-  const intentProcessTimeoutSteps = intentProcesses(intent)
-    .filter((process) => process.execution?.timeoutSteps !== null && process.execution?.timeoutSteps !== undefined)
-    .slice()
-    .sort(byId)
-    .map((process) => `(${JSON.stringify(process.id)} :> ${process.execution.timeoutSteps})`)
-    .join(" @@ ");
-  const intentExecutionKeyCount = Math.max(1, ...intentProcesses(intent)
-    .filter((process) => process.execution)
-    .map((process) => process.execution.maxInFlight));
-  return `---- MODULE ${moduleName} ----
-EXTENDS Sequences, FiniteSets, Naturals, TLC
-
-ClauseAstSemanticsVersion == ${JSON.stringify(model.clauseAstSemanticsVersion)}
-
-Rules == ${allRuleSet}
-
-ActiveApprovedRules == ${ruleSet}
-
-ApprovedRules == ActiveApprovedRules
-
-Checks == ${checkMap || "[r \\in ApprovedRules |-> <<>>]"}
-
-RuleClauses == ${clauseMap || "[r \\in ApprovedRules |-> <<>>]"}
-
-DbTables == ${tlaSet(dbTables(db).map((table) => table.id).sort())}
-
-DbInvariants == ${tlaSet(dbInvariants(db).map((invariant) => invariant.id).sort())}
-
-DbTransactions == ${tlaSet(dbTransactionIds)}
-
-DbPreserves == ${dbPreserves || "[tx \\in DbTransactions |-> {}]"}
-
-DbTouches == ${dbTouches || "[tx \\in DbTransactions |-> {}]"}
-
-DbMigrations == ${tlaSet(dbMigrationIds)}
-
-DbMigrationPreserves == ${dbMigrationPreserves || "[migration \\in DbMigrations |-> {}]"}
-
-DbMigrationTouches == ${dbMigrationTouches || "[migration \\in DbMigrations |-> {}]"}
-
-DbMigrationMappings == ${dbMigrationMappings || "[migration \\in DbMigrations |-> {}]"}
-
-DbMappings == ${tlaSet(dbMappings)}
-
-DbMappingCovers == ${dbMappingCovers || "[mapping \\in DbMappings |-> {}]"}
-
-DbMigrationMappingCoverage ==
-  [migration \\in DbMigrations |-> UNION { DbMappingCovers[mapping] : mapping \\in DbMigrationMappings[migration] }]
-
-DbMigrationSources == ${dbMigrationSources || "[migration \\in DbMigrations |-> {}]"}
-
-DbMigrationTargets == ${dbMigrationTargets || "[migration \\in DbMigrations |-> {}]"}
-
-DbMappingMentionsSource == ${dbMappingMentionsSource || "[mapping \\in DbMappings |-> {}]"}
-
-DbMappingMentionsTarget == ${dbMappingMentionsTarget || "[mapping \\in DbMappings |-> {}]"}
-
-CloudNodes == ${tlaSet(cloudNodes(cloud).map((node) => node.id).sort())}
-
-CloudFlows == ${tlaSet(cloudFlowIds)}
-
-CloudPublicIngress == ${tlaSet(cloudPublicIngressNodeIds(cloud))}
-
-CloudSensitiveResources == ${tlaSet(cloudSensitiveNodeIds(cloud))}
-
-CloudFlowFrom == ${cloudFlowFrom || "[flow \\in CloudFlows |-> \"\"]"}
-
-CloudFlowTo == ${cloudFlowTo || "[flow \\in CloudFlows |-> \"\"]"}
-
-CloudRequiresPolicy == ${tlaSet(cloudRequiresPolicyFlowIds(cloud))}
-
-CloudAllowedByPolicy == ${tlaSet(cloudAllowedByPolicyFlowIds(cloud))}
-
-CloudTenantScopedNodes == ${tlaSet(cloudTenantScopedNodeIds(cloud))}
-
-CloudTenantPropagatedFlows == ${tlaSet(cloudTenantPropagatedFlowIds(cloud))}
-
-CloudQueuePublishes == ${tlaSet(cloudQueuePublishFlowIds(cloud))}
-
-CloudIdempotentFlows == ${tlaSet(cloudIdempotentFlowIds(cloud))}
-
-DataSets == ${tlaSet(dataSetIds)}
-
-DataStores == ${tlaSet(dataStoreIds)}
-
-DataPlacements == ${tlaSet(dataPlacementIds)}
-
-DataFlows == ${tlaSet(dataFlowIds)}
-
-DataSensitivePlacements == ${tlaSet(dataSensitivePlacementIds(data))}
-
-DataEncryptedPlacements == ${tlaSet(dataEncryptedPlacementIds(data))}
-
-DataPersonalPlacements == ${tlaSet(dataPersonalPlacementIds(data))}
-
-DataDeletionSupportedPlacements == ${tlaSet(dataDeletionSupportedPlacementIds(data))}
-
-DataCrossRegionFlows == ${tlaSet(dataCrossRegionFlowIds(data))}
-
-DataLegalBasisFlows == ${tlaSet(dataLegalBasisFlowIds(data))}
-
-DataRetentionScopedSets == ${tlaSet(dataRetentionScopedDataSetIds(data))}
-
-DataRetentionCompliantSets == ${tlaSet(dataRetentionCompliantDataSetIds(data))}
-
-ReleaseServices == ${tlaSet(releaseServiceIds)}
-
-ReleaseEnvironments == ${tlaSet(releaseEnvironmentIds)}
-
-ReleaseGates == ${tlaSet(releaseGateIds)}
-
-ReleaseRollbacks == ${tlaSet(releaseRollbackIds)}
-
-ReleaseMigrations == ${tlaSet(releaseMigrationIds)}
-
-ReleaseSteps == ${tlaSet(releaseStepIds)}
-
-ReleaseProductionSteps == ${tlaSet(releaseProductionStepIds(release))}
-
-ReleaseHealthGatedSteps == ${tlaSet(releaseHealthGatedStepIds(release))}
-
-ReleaseTrafficShiftSteps == ${tlaSet(releaseTrafficShiftStepIds(release))}
-
-ReleaseRollbackPlannedSteps == ${tlaSet(releaseRollbackPlannedStepIds(release))}
-
-ReleaseRollbackTestedSteps == ${tlaSet(releaseRollbackTestedStepIds(release))}
-
-ReleaseMigrationScopedSteps == ${tlaSet(releaseMigrationScopedStepIds(release))}
-
-ReleaseMigrationCompatibleSteps == ${tlaSet(releaseMigrationCompatibleStepIds(release))}
-
-RuntimeServices == ${tlaSet(runtimeServiceIds)}
-
-RuntimeDependencies == ${tlaSet(runtimeDependencyIdList)}
-
-RuntimeSignals == ${tlaSet(runtimeSignalIds)}
-
-RuntimeRunbooks == ${tlaSet(runtimeRunbookIds)}
-
-RuntimeAlerts == ${tlaSet(runtimeAlertIds)}
-
-RuntimeSlos == ${tlaSet(runtimeSloIds)}
-
-RuntimeTelemetry == ${tlaSet(runtimeTelemetryIds)}
-
-RuntimeAlertPolicies == ${tlaSet(runtimeAlertPolicyIds)}
-
-RuntimeRunbookExecutions == ${tlaSet(runtimeRunbookExecutionIds)}
-
-RuntimeDependencyTraces == ${tlaSet(runtimeDependencyTraceIds)}
-
-RuntimeCriticalSlos == ${tlaSet(runtimeCriticalSloIds(runtime))}
-
-RuntimePageAlertedSlos == ${tlaSet(runtimePageAlertedSloIds(runtime))}
-
-RuntimePageAlerts == ${tlaSet(runtimePageAlertIds(runtime))}
-
-RuntimeTestedRunbookAlerts == ${tlaSet(runtimeTestedRunbookAlertIds(runtime))}
-
-RuntimeTimeoutDependencies == ${tlaSet(runtimeTimeoutDependencyIds(runtime))}
-
-RuntimeRetryDependencies == ${tlaSet(runtimeRetryDependencyIds(runtime))}
-
-RuntimeIdempotentDependencies == ${tlaSet(runtimeIdempotentDependencyIds(runtime))}
-
-RuntimeTelemetrySlos == ${tlaSet(runtimeTelemetrySloIds(runtime))}
-
-RuntimePassingTelemetry == ${tlaSet(runtimePassingTelemetryIds(runtime))}
-
-RuntimeEnabledPolicyAlerts == ${tlaSet(runtimeEnabledPolicyAlertIds(runtime))}
-
-RuntimeExecutedRunbookAlerts == ${tlaSet(runtimeExecutedRunbookAlertIds(runtime))}
-
-RuntimeTimeoutCompliantTraces == ${tlaSet(runtimeTimeoutCompliantTraceIds(runtime))}
-
-IntentCapabilities == ${tlaSet(intentCapabilityIds)}
-
-IntentOutcomes == ${tlaSet(intentOutcomeIds)}
-
-IntentProcesses == ${tlaSet(intentProcessIds)}
-
-IntentOutcomeState == ${intentOutcomeState || "[outcome \\in IntentOutcomes |-> \"\"]"}
-
-IntentProcessInput == ${intentProcessInput || "[process \\in IntentProcesses |-> \"\"]"}
-
-IntentProcessOutcomes == ${intentProcessOutcomes || "[process \\in IntentProcesses |-> {}]"}
-
-IntentProcessConstructs == ${intentProcessConstructs || "[process \\in IntentProcesses |-> {}]"}
-
-IntentProcessTransitions == ${intentProcessTransitions || "[process \\in IntentProcesses |-> {}]"}
-
-IntentAuthorisedConstruction == ${intentAuthorisedConstruction}
-
-IntentExecutionProcesses == ${tlaSet(intentExecutionProcesses)}
-
-IntentIdempotentProcesses == ${tlaSet(intentIdempotentProcesses)}
-
-IntentTimedProcesses == ${tlaSet(intentTimedProcesses)}
-
-IntentProcessMaxInFlight == ${intentProcessMaxInFlight || "[process \\in IntentExecutionProcesses |-> 1]"}
-
-IntentProcessTimeoutSteps == ${intentProcessTimeoutSteps || "[process \\in IntentTimedProcesses |-> 1]"}
-
-IntentExecutionKeySpace == 1..${intentExecutionKeyCount}
-
-IntentScenarios == ${tlaSet(intentScenarioIds)}
-
-IntentScenarioInitialState == ${intentScenarioInitialState || "[scenario \\in IntentScenarios |-> \"\"]"}
-
-IntentScenarioExpectedState == ${intentScenarioExpectedState || "[scenario \\in IntentScenarios |-> \"\"]"}
-
-IntentScenarioSteps == ${intentScenarioSteps || "[scenario \\in IntentScenarios |-> <<>>]"}
-
-RuleWorkflowState == {"approved", "verified", "deprecated", "uncovered"}
-
-VARIABLES selectedRule, ruleState, support, intentInFlight, intentActiveKeys, intentElapsed
-
-vars == <<selectedRule, ruleState, support, intentInFlight, intentActiveKeys, intentElapsed>>
-
-Init ==
-  /\\ selectedRule \\in ActiveApprovedRules
-  /\\ ruleState = "approved"
-  /\\ support = Checks[selectedRule]
-  /\\ intentInFlight = [process \\in IntentExecutionProcesses |-> 0]
-  /\\ intentActiveKeys = [process \\in IntentExecutionProcesses |-> {}]
-  /\\ intentElapsed = [process \\in IntentExecutionProcesses |-> 0]
-
-MarkVerified ==
-  /\\ ruleState = "approved"
-  /\\ Len(support) > 0
-  /\\ ruleState' = "verified"
-  /\\ UNCHANGED <<selectedRule, support, intentInFlight, intentActiveKeys, intentElapsed>>
-
-DetectUncovered ==
-  /\\ ruleState = "approved"
-  /\\ Len(support) = 0
-  /\\ ruleState' = "uncovered"
-  /\\ UNCHANGED <<selectedRule, support, intentInFlight, intentActiveKeys, intentElapsed>>
-
-Deprecate ==
-  /\\ ruleState = "approved"
-  /\\ ruleState' = "deprecated"
-  /\\ UNCHANGED <<selectedRule, support, intentInFlight, intentActiveKeys, intentElapsed>>
-
-IntentStart(process, key) ==
-  /\\ process \\in IntentExecutionProcesses
-  /\\ key \\in IntentExecutionKeySpace
-  /\\ intentInFlight[process] < IntentProcessMaxInFlight[process]
-  /\\ (process \\notin IntentIdempotentProcesses \\/ key \\notin intentActiveKeys[process])
-  /\\ intentInFlight' = [intentInFlight EXCEPT ![process] = @ + 1]
-  /\\ intentActiveKeys' =
-    IF process \\in IntentIdempotentProcesses
-      THEN [intentActiveKeys EXCEPT ![process] = @ \\cup {key}]
-      ELSE intentActiveKeys
-  /\\ intentElapsed' =
-    IF intentInFlight[process] = 0
-      THEN [intentElapsed EXCEPT ![process] = 0]
-      ELSE intentElapsed
-  /\\ UNCHANGED <<selectedRule, ruleState, support>>
-
-IntentStartAny ==
-  \\E process \\in IntentExecutionProcesses :
-    \\E key \\in IntentExecutionKeySpace :
-      IntentStart(process, key)
-
-IntentComplete(process, key) ==
-  /\\ process \\in IntentExecutionProcesses
-  /\\ key \\in IntentExecutionKeySpace
-  /\\ intentInFlight[process] > 0
-  /\\ (process \\notin IntentIdempotentProcesses \\/ key \\in intentActiveKeys[process])
-  /\\ intentInFlight' = [intentInFlight EXCEPT ![process] = @ - 1]
-  /\\ intentActiveKeys' =
-    IF process \\in IntentIdempotentProcesses
-      THEN [intentActiveKeys EXCEPT ![process] = @ \\ {key}]
-      ELSE intentActiveKeys
-  /\\ intentElapsed' =
-    IF intentInFlight[process] = 1
-      THEN [intentElapsed EXCEPT ![process] = 0]
-      ELSE intentElapsed
-  /\\ UNCHANGED <<selectedRule, ruleState, support>>
-
-IntentCompleteAny ==
-  \\E process \\in IntentExecutionProcesses :
-    \\E key \\in IntentExecutionKeySpace :
-      IntentComplete(process, key)
-
-IntentTick(process) ==
-  /\\ process \\in IntentTimedProcesses
-  /\\ intentInFlight[process] > 0
-  /\\ intentElapsed[process] < IntentProcessTimeoutSteps[process]
-  /\\ intentElapsed' = [intentElapsed EXCEPT ![process] = @ + 1]
-  /\\ UNCHANGED <<selectedRule, ruleState, support, intentInFlight, intentActiveKeys>>
-
-IntentTickAny ==
-  \\E process \\in IntentTimedProcesses : IntentTick(process)
-
-IntentExpire(process) ==
-  /\\ process \\in IntentTimedProcesses
-  /\\ intentInFlight[process] > 0
-  /\\ intentElapsed[process] = IntentProcessTimeoutSteps[process]
-  /\\ intentInFlight' = [intentInFlight EXCEPT ![process] = 0]
-  /\\ intentActiveKeys' = [intentActiveKeys EXCEPT ![process] = {}]
-  /\\ intentElapsed' = [intentElapsed EXCEPT ![process] = 0]
-  /\\ UNCHANGED <<selectedRule, ruleState, support>>
-
-IntentExpireAny ==
-  \\E process \\in IntentTimedProcesses : IntentExpire(process)
-
-Next ==
-  MarkVerified \\/ DetectUncovered \\/ Deprecate \\/ IntentStartAny \\/ IntentCompleteAny \\/ IntentTickAny \\/ IntentExpireAny \\/ UNCHANGED vars
-
-Spec == Init /\\ [][Next]_vars
-
-CoverageInvariant ==
-  \\A r \\in ActiveApprovedRules : Len(Checks[r]) > 0
-
-WorkflowInvariant ==
-  ruleState \\in RuleWorkflowState /\\ ruleState # "uncovered"
-
-DbInvariantPreserved ==
-  \\A tx \\in DbTransactions : DbTouches[tx] \\subseteq DbPreserves[tx]
-
-DbMigrationPreserved ==
-  \\A migration \\in DbMigrations : DbMigrationTouches[migration] \\subseteq DbMigrationPreserves[migration]
-
-DbMigrationMappingCovered ==
-  \\A migration \\in DbMigrations : DbMigrationPreserves[migration] \\subseteq DbMigrationMappingCoverage[migration]
-
-DbMigrationMappingRefsMentionTables ==
-  \\A migration \\in DbMigrations :
-    \\A mapping \\in DbMigrationMappings[migration] :
-      /\\ DbMappingMentionsSource[mapping] \\cap DbMigrationSources[migration] # {}
-      /\\ DbMappingMentionsTarget[mapping] \\cap DbMigrationTargets[migration] # {}
-
-CloudPublicIngressBlocked ==
-  \\A flow \\in CloudFlows :
-    CloudFlowFrom[flow] \\in CloudPublicIngress => CloudFlowTo[flow] \\notin CloudSensitiveResources
-
-CloudResourceAccessHasPolicy ==
-  CloudRequiresPolicy \\subseteq CloudAllowedByPolicy
-
-CloudTenantFlowsPropagateTenant ==
-  \\A flow \\in CloudFlows :
-    (CloudFlowFrom[flow] \\in CloudTenantScopedNodes \\/ CloudFlowTo[flow] \\in CloudTenantScopedNodes)
-      => flow \\in CloudTenantPropagatedFlows
-
-CloudQueuePublishesHaveIdempotencyKey ==
-  CloudQueuePublishes \\subseteq CloudIdempotentFlows
-
-DataSensitivePlacementsEncrypted ==
-  DataSensitivePlacements \\subseteq DataEncryptedPlacements
-
-DataPersonalPlacementsSupportDeletion ==
-  DataPersonalPlacements \\subseteq DataDeletionSupportedPlacements
-
-DataCrossRegionFlowsHaveLegalBasis ==
-  DataCrossRegionFlows \\subseteq DataLegalBasisFlows
-
-DataRetentionWithinPolicy ==
-  DataRetentionScopedSets \\subseteq DataRetentionCompliantSets
-
-ReleaseProductionStepsHaveHealthGate ==
-  ReleaseProductionSteps \\subseteq ReleaseHealthGatedSteps
-
-ReleaseTrafficShiftsHaveRollback ==
-  ReleaseTrafficShiftSteps \\subseteq ReleaseRollbackPlannedSteps
-
-ReleaseRollbackPlansAreTested ==
-  ReleaseRollbackPlannedSteps \\subseteq ReleaseRollbackTestedSteps
-
-ReleaseMigrationsAreBackwardCompatible ==
-  ReleaseMigrationScopedSteps \\subseteq ReleaseMigrationCompatibleSteps
-
-RuntimeCriticalSlosHavePageAlert ==
-  RuntimeCriticalSlos \\subseteq RuntimePageAlertedSlos
-
-RuntimePageAlertsHaveTestedRunbook ==
-  RuntimePageAlerts \\subseteq RuntimeTestedRunbookAlerts
-
-RuntimeDependenciesHaveTimeout ==
-  RuntimeDependencies \\subseteq RuntimeTimeoutDependencies
-
-RuntimeRetriesAreIdempotent ==
-  RuntimeRetryDependencies \\subseteq RuntimeIdempotentDependencies
-
-RuntimeSlosHaveTelemetry ==
-  RuntimeSlos \\subseteq RuntimeTelemetrySlos
-
-RuntimeTelemetryMeetsSlo ==
-  RuntimeTelemetry \\subseteq RuntimePassingTelemetry
-
-RuntimePageAlertsHaveEnabledPolicy ==
-  RuntimePageAlerts \\subseteq RuntimeEnabledPolicyAlerts
-
-RuntimePageAlertsHaveExecutedRunbook ==
-  RuntimePageAlerts \\subseteq RuntimeExecutedRunbookAlerts
-
-RuntimeDependencyTracesWithinTimeout ==
-  RuntimeDependencyTraces \\subseteq RuntimeTimeoutCompliantTraces
-
-IntentExecutionTypeInvariant ==
-  /\\ intentInFlight \\in [IntentExecutionProcesses -> Nat]
-  /\\ intentActiveKeys \\in [IntentExecutionProcesses -> SUBSET IntentExecutionKeySpace]
-  /\\ intentElapsed \\in [IntentExecutionProcesses -> Nat]
-
-IntentConcurrencyBounded ==
-  \\A process \\in IntentExecutionProcesses :
-    intentInFlight[process] <= IntentProcessMaxInFlight[process]
-
-IntentIdempotencyKeysAreExclusive ==
-  \\A process \\in IntentIdempotentProcesses :
-    Cardinality(intentActiveKeys[process]) = intentInFlight[process]
-
-IntentTimeoutsBounded ==
-  \\A process \\in IntentTimedProcesses :
-    intentElapsed[process] <= IntentProcessTimeoutSteps[process]
-
-IntentProcessConstructionIsAuthorized ==
-  \\A process \\in IntentProcesses :
-    /\\ IntentProcessOutcomes[process] = IntentProcessConstructs[process]
-    /\\ \\A outcome \\in IntentProcessConstructs[process] :
-      <<process, outcome>> \\in IntentAuthorisedConstruction
-
-IntentScenarioStepInputState(scenario, index) ==
-  IF index = 1
-    THEN IntentScenarioInitialState[scenario]
-    ELSE IntentOutcomeState[IntentScenarioSteps[scenario][index - 1][2]]
-
-IntentScenarioStepIsContinuous(scenario, index) ==
-  LET step == IntentScenarioSteps[scenario][index] IN
-    /\\ step[1] \\in IntentProcesses
-    /\\ step[2] \\in IntentOutcomes
-    /\\ IntentProcessInput[step[1]] = IntentScenarioStepInputState(scenario, index)
-    /\\ step[2] \\in IntentProcessOutcomes[step[1]]
-    /\\ <<IntentScenarioStepInputState(scenario, index), IntentOutcomeState[step[2]]>> \\in IntentProcessTransitions[step[1]]
-
-IntentScenarioTraceIsContinuous ==
-  \\A scenario \\in IntentScenarios :
-    /\\ Len(IntentScenarioSteps[scenario]) > 0
-    /\\ \\A index \\in 1..Len(IntentScenarioSteps[scenario]) :
-      IntentScenarioStepIsContinuous(scenario, index)
-    /\\ IntentOutcomeState[IntentScenarioSteps[scenario][Len(IntentScenarioSteps[scenario])][2]] = IntentScenarioExpectedState[scenario]
-
-====
-`;
-}
-
-function emitTlaConfig() {
-  return `SPECIFICATION Spec
-INVARIANT CoverageInvariant
-INVARIANT WorkflowInvariant
-INVARIANT DbInvariantPreserved
-INVARIANT DbMigrationPreserved
-INVARIANT DbMigrationMappingCovered
-INVARIANT DbMigrationMappingRefsMentionTables
-INVARIANT CloudPublicIngressBlocked
-INVARIANT CloudResourceAccessHasPolicy
-INVARIANT CloudTenantFlowsPropagateTenant
-INVARIANT CloudQueuePublishesHaveIdempotencyKey
-INVARIANT DataSensitivePlacementsEncrypted
-INVARIANT DataPersonalPlacementsSupportDeletion
-INVARIANT DataCrossRegionFlowsHaveLegalBasis
-INVARIANT DataRetentionWithinPolicy
-INVARIANT ReleaseProductionStepsHaveHealthGate
-INVARIANT ReleaseTrafficShiftsHaveRollback
-INVARIANT ReleaseRollbackPlansAreTested
-INVARIANT ReleaseMigrationsAreBackwardCompatible
-INVARIANT RuntimeCriticalSlosHavePageAlert
-INVARIANT RuntimePageAlertsHaveTestedRunbook
-INVARIANT RuntimeDependenciesHaveTimeout
-INVARIANT RuntimeRetriesAreIdempotent
-INVARIANT RuntimeSlosHaveTelemetry
-INVARIANT RuntimeTelemetryMeetsSlo
-INVARIANT RuntimePageAlertsHaveEnabledPolicy
-INVARIANT RuntimePageAlertsHaveExecutedRunbook
-INVARIANT RuntimeDependencyTracesWithinTimeout
-INVARIANT IntentExecutionTypeInvariant
-INVARIANT IntentConcurrencyBounded
-INVARIANT IntentIdempotencyKeysAreExclusive
-INVARIANT IntentTimeoutsBounded
-INVARIANT IntentProcessConstructionIsAuthorized
-INVARIANT IntentScenarioTraceIsContinuous
-`;
-}
-
-function tlaModuleName(model) {
-  return sanitizeIdentifier(model.id).toUpperCase();
-}
-
 function emitLean(model) {
   const approved = sortedRules(model).filter((rule) => rule.reviewStatus === "approved" && !rule.deprecated);
   const constructors = approved.length > 0 ? approved.map((rule) => `  | ${sanitizeIdentifier(rule.id)}`).join("\n") : "  | none";
@@ -15785,8 +15024,7 @@ end DSpec.Generated
 
 function emitFormalBackend(target, model) {
   if (target === "alloy") return emitAlloy(model);
-  if (target === "tla") return emitTla(model);
-  if (target === "tla-cfg") return emitTlaConfig(model);
+  if (target === "quint") return renderQuintModel(model);
   if (target === "lean") return emitLean(model);
   throw new CommandError(`unknown emit target: ${target}`);
 }
@@ -15812,6 +15050,9 @@ function runGeneratedToolResult(command, args) {
 }
 
 function commandPath(command) {
+  if (command === "quint" && existsSync(resolve("node_modules/.bin/quint"))) {
+    return resolve("node_modules/.bin/quint");
+  }
   const result = spawnSync("which", [command], {
     encoding: "utf8",
   });
@@ -15829,8 +15070,8 @@ const DEVSHELL_REQUIRED_TOOLS = [
   { name: "pkf", args: ["--version"], managedByNix: false },
   { name: "lean", args: ["--version"], managedByNix: true },
   { name: "z3", args: ["--version"], managedByNix: true },
-  { name: "tlasany", args: [], managedByNix: true },
-  { name: "tlc", args: [], managedByNix: true },
+  { name: "quint", args: ["--version"], managedByNix: false },
+  { name: "java", args: ["-version"], managedByNix: true },
   { name: "alloy6", args: ["--help"], managedByNix: true, allowNonzeroVersion: true },
 ];
 
@@ -15846,7 +15087,7 @@ function devshellToolReport(tool, options = {}) {
       errors.push(`tool is not from /nix/store: ${tool.name} -> ${path}`);
     }
     if (tool.args.length > 0) {
-      const result = spawnSync(tool.name, tool.args, { encoding: "utf8" });
+      const result = spawnSync(path, tool.args, { encoding: "utf8" });
       versionExitCode = result.status ?? 1;
       version = (result.stdout || result.stderr || "").split("\n")[0].trim();
       if (result.status !== 0 && !tool.allowNonzeroVersion) {
@@ -15872,7 +15113,7 @@ function devshellToolReport(tool, options = {}) {
 function devshellSmokeReport(options = {}) {
   const tools = DEVSHELL_REQUIRED_TOOLS.map((tool) => devshellToolReport(tool, options));
   const errors = tools.flatMap((tool) => tool.errors);
-  const formalTools = ["lean", "z3", "tlasany", "tlc", "alloy6"];
+  const formalTools = ["lean", "z3", "quint", "java", "alloy6"];
   return {
     status: reportStatus(errors),
     nodeMajor: tools.find((tool) => tool.name === "node")?.version ?? null,
@@ -15941,152 +15182,6 @@ function delimiterErrors(source, label, pairs) {
   return [];
 }
 
-function validateGeneratedTla(source) {
-  const errors = [];
-  if (!/^---- MODULE [A-Z_][A-Z0-9_]* ----\n/.test(source)) {
-    errors.push("missing TLA+ module header");
-  }
-  if (!source.trimEnd().endsWith("====")) {
-    errors.push("missing TLA+ module terminator");
-  }
-  for (const definition of [
-    "Rules",
-    "ActiveApprovedRules",
-    "ApprovedRules",
-    "Checks",
-    "RuleClauses",
-    "DbTables",
-    "DbInvariants",
-    "DbTransactions",
-    "DbPreserves",
-    "DbTouches",
-    "DbMigrations",
-    "DbMigrationPreserves",
-    "DbMigrationTouches",
-    "DbMigrationMappings",
-    "DbMappings",
-    "DbMappingCovers",
-    "DbMigrationMappingCoverage",
-    "DbMigrationSources",
-    "DbMigrationTargets",
-    "DbMappingMentionsSource",
-    "DbMappingMentionsTarget",
-    "CloudNodes",
-    "CloudFlows",
-    "CloudPublicIngress",
-    "CloudSensitiveResources",
-    "CloudFlowFrom",
-    "CloudFlowTo",
-    "CloudRequiresPolicy",
-    "CloudAllowedByPolicy",
-    "CloudTenantScopedNodes",
-    "CloudTenantPropagatedFlows",
-    "CloudQueuePublishes",
-    "CloudIdempotentFlows",
-    "DataSets",
-    "DataStores",
-    "DataPlacements",
-    "DataFlows",
-    "DataSensitivePlacements",
-    "DataEncryptedPlacements",
-    "DataPersonalPlacements",
-    "DataDeletionSupportedPlacements",
-    "DataCrossRegionFlows",
-    "DataLegalBasisFlows",
-    "DataRetentionScopedSets",
-    "DataRetentionCompliantSets",
-    "ReleaseServices",
-    "ReleaseEnvironments",
-    "ReleaseGates",
-    "ReleaseRollbacks",
-    "ReleaseMigrations",
-    "ReleaseSteps",
-    "ReleaseProductionSteps",
-    "ReleaseHealthGatedSteps",
-    "ReleaseTrafficShiftSteps",
-    "ReleaseRollbackPlannedSteps",
-    "ReleaseRollbackTestedSteps",
-    "ReleaseMigrationScopedSteps",
-    "ReleaseMigrationCompatibleSteps",
-    "RuntimeServices",
-    "RuntimeDependencies",
-    "RuntimeSignals",
-    "RuntimeRunbooks",
-    "RuntimeAlerts",
-    "RuntimeSlos",
-    "RuntimeTelemetry",
-    "RuntimeAlertPolicies",
-    "RuntimeRunbookExecutions",
-    "RuntimeDependencyTraces",
-    "RuntimeCriticalSlos",
-    "RuntimePageAlertedSlos",
-    "RuntimePageAlerts",
-    "RuntimeTestedRunbookAlerts",
-    "RuntimeTimeoutDependencies",
-    "RuntimeRetryDependencies",
-    "RuntimeIdempotentDependencies",
-    "RuntimeTelemetrySlos",
-    "RuntimePassingTelemetry",
-    "RuntimeEnabledPolicyAlerts",
-    "RuntimeExecutedRunbookAlerts",
-    "RuntimeTimeoutCompliantTraces",
-    "IntentExecutionProcesses",
-    "IntentIdempotentProcesses",
-    "IntentTimedProcesses",
-    "IntentProcessMaxInFlight",
-    "IntentProcessTimeoutSteps",
-    "IntentExecutionKeySpace",
-    "RuleWorkflowState",
-    "vars",
-    "Init",
-    "MarkVerified",
-    "DetectUncovered",
-    "Deprecate",
-    "Next",
-    "Spec",
-    "CoverageInvariant",
-    "WorkflowInvariant",
-    "DbInvariantPreserved",
-    "DbMigrationPreserved",
-    "DbMigrationMappingCovered",
-    "DbMigrationMappingRefsMentionTables",
-    "CloudPublicIngressBlocked",
-    "CloudResourceAccessHasPolicy",
-    "CloudTenantFlowsPropagateTenant",
-    "CloudQueuePublishesHaveIdempotencyKey",
-    "DataSensitivePlacementsEncrypted",
-    "DataPersonalPlacementsSupportDeletion",
-    "DataCrossRegionFlowsHaveLegalBasis",
-    "DataRetentionWithinPolicy",
-    "ReleaseProductionStepsHaveHealthGate",
-    "ReleaseTrafficShiftsHaveRollback",
-    "ReleaseRollbackPlansAreTested",
-    "ReleaseMigrationsAreBackwardCompatible",
-    "RuntimeCriticalSlosHavePageAlert",
-    "RuntimePageAlertsHaveTestedRunbook",
-    "RuntimeDependenciesHaveTimeout",
-    "RuntimeRetriesAreIdempotent",
-    "RuntimeSlosHaveTelemetry",
-    "RuntimeTelemetryMeetsSlo",
-    "RuntimePageAlertsHaveEnabledPolicy",
-    "RuntimePageAlertsHaveExecutedRunbook",
-    "RuntimeDependencyTracesWithinTimeout",
-    "IntentExecutionTypeInvariant",
-    "IntentConcurrencyBounded",
-    "IntentIdempotencyKeysAreExclusive",
-    "IntentTimeoutsBounded",
-  ]) {
-    if (!new RegExp(`^${definition} ==`, "m").test(source)) {
-      errors.push(`missing TLA+ definition: ${definition}`);
-    }
-  }
-  if (source.includes("undefined") || source.includes("[object Object]")) {
-    errors.push("generated TLA+ contains non-rendered JavaScript value");
-  }
-  errors.push(...delimiterErrors(source, "TLA+", [["<<", ">>"], ["{", "}"], ["(", ")"], ["[", "]"]]));
-  return errors;
-}
-
 function validateGeneratedAlloy(source) {
   const errors = [];
   if (!/^module [A-Za-z_][A-Za-z0-9_]*\n/.test(source)) {
@@ -16142,12 +15237,44 @@ function runOptionalToolBackend(command, args, unavailableReason, toolAvailable 
   return runGeneratedToolResult(command, args);
 }
 
-function verifyGeneratedTlaWithSany(tlaPath, toolAvailable) {
-  return runOptionalToolBackend("tlasany", [tlaPath], "tlasany not found on PATH", toolAvailable);
+const LOCAL_QUINT_COMMAND = resolve(dirname(fileURLToPath(import.meta.url)), "../node_modules/.bin/quint");
+
+function quintCommand() {
+  return existsSync(LOCAL_QUINT_COMMAND) ? LOCAL_QUINT_COMMAND : "quint";
 }
 
-function verifyGeneratedTlaWithTlc(tlaPath, cfgPath, toolAvailable) {
-  return runOptionalToolBackend("tlc", ["-cleanup", "-config", cfgPath, tlaPath], "tlc not found on PATH", toolAvailable);
+function hasQuintTool(toolAvailable) {
+  return existsSync(LOCAL_QUINT_COMMAND) || toolAvailable("quint");
+}
+
+function hasWorkingJava(toolAvailable) {
+  if (!toolAvailable("java")) return false;
+  if (toolAvailable !== hasTool) return true;
+  return spawnSync("java", ["-version"], { encoding: "utf8" }).status === 0;
+}
+
+function verifyGeneratedQuintTypecheck(quintPath, toolAvailable) {
+  if (!hasQuintTool(toolAvailable)) return skipBackend("quint not installed");
+  return runGeneratedToolResult(quintCommand(), ["typecheck", quintPath]);
+}
+
+function verifyGeneratedQuintModel(quintPath, toolAvailable) {
+  if (!hasQuintTool(toolAvailable)) return skipBackend("quint not installed");
+  if (!hasWorkingJava(toolAvailable)) return skipBackend("working Java runtime not found (required by Quint verify)");
+  return runGeneratedToolResult(quintCommand(), [
+    "verify",
+    quintPath,
+    "--invariants",
+    "coverageInvariant",
+    "workflowInvariant",
+    "intentConcurrencyBounded",
+    "intentIdempotencyKeysAreExclusive",
+    "intentTimeoutsBounded",
+    "--max-steps",
+    "10",
+    "--backend",
+    "tlc",
+  ]);
 }
 
 function verifyGeneratedAlloyWithAnalyzer(alloyPath, outputPath, toolAvailable) {
@@ -16187,18 +15314,14 @@ function verifyGeneratedReport(model, options = {}) {
     writeFileSync(leanPath, emitLean(model));
     backends.lean = runOptionalToolBackend("lean", [leanPath], "lean not found on PATH", toolAvailable);
 
-    const tlaSource = emitTla(model);
+    const quintSource = renderQuintModel(model);
     const alloySource = emitAlloy(model);
-    backends.tlaSyntax = syntaxBackend(tlaSource, validateGeneratedTla);
     backends.alloySyntax = syntaxBackend(alloySource, validateGeneratedAlloy);
 
-    const moduleName = tlaModuleName(model);
-    const tlaPath = join(dir, `${moduleName}.tla`);
-    const cfgPath = join(dir, `${moduleName}.cfg`);
-    writeFileSync(tlaPath, tlaSource);
-    writeFileSync(cfgPath, emitTlaConfig(model));
-    backends.tlaSany = verifyGeneratedTlaWithSany(tlaPath, toolAvailable);
-    backends.tlaTlc = verifyGeneratedTlaWithTlc(tlaPath, cfgPath, toolAvailable);
+    const quintPath = join(dir, "model.qnt");
+    writeFileSync(quintPath, quintSource);
+    backends.quintTypecheck = verifyGeneratedQuintTypecheck(quintPath, toolAvailable);
+    backends.quintVerify = verifyGeneratedQuintModel(quintPath, toolAvailable);
 
     const alloyPath = join(dir, "model.als");
     const outputPath = join(dir, "alloy-out");
@@ -16224,7 +15347,7 @@ function assuranceArtifactSources(model) {
     alloy: emitAlloy(model),
     lean: emitLean(model),
     quickcheck: emitQuickcheck(model),
-    tla: emitTla(model),
+    quint: renderQuintModel(model),
   };
   for (const proof of leanSemanticClauseProofs(model)) {
     sources[proof.artifactId] = sources.lean;
@@ -16237,7 +15360,7 @@ function assuranceArtifactResults(verification) {
     alloy: verification.backends.alloyAnalyzer,
     lean: verification.backends.lean,
     quickcheck: verification.backends.quickcheck,
-    tla: verification.backends.tlaTlc,
+    quint: verification.backends.quintVerify,
   };
 }
 
@@ -16268,7 +15391,7 @@ function currentAssuranceToolVersions() {
   return {
     node: process.version,
     lean: commandVersion("lean", ["--version"]),
-    tlc: commandVersion("tlc", ["-help"]),
+    quint: commandVersion(quintCommand(), ["--version"]),
     alloy6: commandVersion("alloy6", ["version"]),
   };
 }
@@ -16304,12 +15427,18 @@ function assuranceEvidenceArtifactDefinitions(model) {
       bounds: {},
     },
     {
-      id: "tla",
-      backend: "tla",
-      tool: "tlc",
+      id: "quint",
+      backend: "quint",
+      tool: "quint",
       scope: "generator",
-      propertyIds: ["tla.CoverageInvariant", "tla.WorkflowInvariant"],
-      bounds: { configDigest: assuranceDigest(emitTlaConfig(model)) },
+      propertyIds: [
+        "quint.coverageInvariant",
+        "quint.workflowInvariant",
+        "quint.intentConcurrencyBounded",
+        "quint.intentIdempotencyKeysAreExclusive",
+        "quint.intentTimeoutsBounded",
+      ],
+      bounds: { maxSteps: 10, backend: "tlc" },
     },
   ];
   const clauseArtifacts = leanSemanticClauseProofs(model).map((proof) => ({
@@ -16551,8 +15680,8 @@ function backendFailureMessage(report) {
 function formalToolSkipFailures(report) {
   return [
     ["lean", "lean"],
-    ["tlaSany", "tlasany"],
-    ["tlaTlc", "tlc"],
+    ["quintTypecheck", "quint"],
+    ["quintVerify", "quint + java"],
     ["alloyAnalyzer", "alloy6"],
   ].flatMap(([backend, tool]) => (
     report.backends[backend]?.status === "skip"
@@ -16580,17 +15709,17 @@ function verifyGenerated(model, options = {}) {
 
   const lines = [
     `ok: ${model.id} generated quickcheck`,
-    `ok: ${model.id} generated tla syntax`,
+    `ok: ${model.id} generated quint`,
     `ok: ${model.id} generated alloy syntax`,
   ];
   if (report.backends.lean.status === "pass") {
     lines.push(`ok: ${model.id} generated lean`);
   }
-  if (report.backends.tlaSany.status === "pass") {
-    lines.push(`ok: ${model.id} generated tla sany`);
+  if (report.backends.quintTypecheck.status === "pass") {
+    lines.push(`ok: ${model.id} generated quint typecheck`);
   }
-  if (report.backends.tlaTlc.status === "pass") {
-    lines.push(`ok: ${model.id} generated tla tlc`);
+  if (report.backends.quintVerify.status === "pass") {
+    lines.push(`ok: ${model.id} generated quint verify`);
   }
   if (report.backends.alloyAnalyzer.status === "pass") {
     lines.push(`ok: ${model.id} generated alloy exec`);
@@ -19441,7 +18570,6 @@ export {
   normalizeCounterexamples,
   topLevelCommandRegistry,
   validateGeneratedAlloy,
-  validateGeneratedTla,
   verifyGenerated,
   verifyGeneratedReport,
 };
