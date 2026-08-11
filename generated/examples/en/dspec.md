@@ -2910,7 +2910,7 @@ Runtime evidence is authored as a typed pattern and projects SLO telemetry, aler
 - implementation: model dspec/Schema.pkl#RuntimeAlertPolicy
 - implementation: model dspec/Schema.pkl#RuntimeRunbookExecution
 - implementation: model dspec/Schema.pkl#RuntimeDependencyTrace
-- implementation: code src/cli.mjs#validateRuntimeModel
+- implementation: code src/core/runtime-model-validation.mjs#validateRuntimeModel
 - implementation: code src/cli.mjs#propertyRuntimeSlosHaveTelemetry
 - implementation: code src/cli.mjs#propertyRuntimeTelemetryMeetsSlo
 - implementation: code src/cli.mjs#propertyRuntimePageAlertsHaveEnabledPolicy
@@ -3003,7 +3003,7 @@ Runtime safety is authored as a typed pattern and projects SLO page-alert, teste
 - check: node test/cli.test.mjs#normalizes Runtime safety counterexamples to source records [reference]
 - check: node test/cli.test.mjs#keeps generated Runtime safety checks load-bearing [reference]
 - implementation: model dspec/Schema.pkl#RuntimeModel
-- implementation: code src/cli.mjs#validateRuntimeModel
+- implementation: code src/core/runtime-model-validation.mjs#validateRuntimeModel
 - implementation: code src/cli.mjs#runtimeProjection
 - implementation: code src/cli.mjs#propertyRuntimeCriticalSlosHavePageAlert
 - implementation: code src/cli.mjs#propertyRuntimePageAlertsHaveTestedRunbook

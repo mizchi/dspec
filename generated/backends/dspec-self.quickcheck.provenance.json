@@ -11,9 +11,9 @@
     "name": "dspec/quickcheck",
     "version": "1.0"
   },
-  "generatedAt": "2026-08-11T04:46:08.297Z",
+  "generatedAt": "2026-08-11T04:54:59.786Z",
   "model": {
-    "digest": "sha256:d7974895fe394234fa5490859e34f5638c819e3d61b1e5ef3138bfa70c92510b",
+    "digest": "sha256:b14ee730879c94bab750535ecd543008dc852293f8b7f3adeedd7145b8f7512f",
     "id": "dspec-self",
     "version": "0.1.0"
   },

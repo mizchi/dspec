@@ -3927,7 +3927,7 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/runtime-model-validation.mjs"
           symbol = "validateRuntimeModel"
         }
         new d.ImplementationRef {
@@ -4105,7 +4105,7 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/runtime-model-validation.mjs"
           symbol = "validateRuntimeModel"
         }
         new d.ImplementationRef {

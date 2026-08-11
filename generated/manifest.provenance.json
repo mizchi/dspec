@@ -2,7 +2,7 @@
   "artifacts": [
     {
       "bytes": 884,
-      "digest": "sha256:e9814142a670b23d9ae9bb5b1177ededc8ab357a029c257e9e3e4df70c784bb9",
+      "digest": "sha256:f1ac0decce32279e42250a17bbc3e5db9064e67efb5b15d8c58df21ba2e208c7",
       "locale": null,
       "path": "generated/manifest.json"
     }
@@ -11,9 +11,9 @@
     "name": "dspec/generated-manifest",
     "version": "1.0"
   },
-  "generatedAt": "2026-08-11T04:46:08.297Z",
+  "generatedAt": "2026-08-11T04:54:59.786Z",
   "model": {
-    "digest": "sha256:d7974895fe394234fa5490859e34f5638c819e3d61b1e5ef3138bfa70c92510b",
+    "digest": "sha256:b14ee730879c94bab750535ecd543008dc852293f8b7f3adeedd7145b8f7512f",
     "id": "dspec-self",
     "version": "0.1.0"
   },
