@@ -11,9 +11,9 @@
     "name": "dspec/source-map",
     "version": "1.0"
   },
-  "generatedAt": "2026-08-11T04:24:21.937Z",
+  "generatedAt": "2026-08-11T04:31:22.504Z",
   "model": {
-    "digest": "sha256:bbbb69f1410199d43ab5a940bd677c9ebfa0f96432193a71c2de71922b6234a2",
+    "digest": "sha256:2f0e24cba1daa33589173d159c02c110112766c4c5a5e9ef90817075b0c4b3da",
     "id": "dspec-self",
     "version": "0.1.0"
   },

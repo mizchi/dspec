@@ -844,7 +844,7 @@ Cloud topology は typed pattern として記述され、境界・policy・tenan
 - check: node test/cli.test.mjs#normalizes Cloud topology counterexamples to source flows [reference]
 - check: node test/cli.test.mjs#keeps generated Cloud topology checks load-bearing [reference]
 - implementation: model dspec/Schema.pkl#CloudModel
-- implementation: code src/cli.mjs#validateCloudModel
+- implementation: code src/core/cloud-model-validation.mjs#validateCloudModel
 - implementation: code src/cli.mjs#cloudProjection
 - implementation: code src/cli.mjs#propertyCloudPublicIngressBlocked
 - implementation: code src/cli.mjs#propertyCloudResourceAccessHasPolicy

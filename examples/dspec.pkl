@@ -3478,7 +3478,7 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/cloud-model-validation.mjs"
           symbol = "validateCloudModel"
         }
         new d.ImplementationRef {
