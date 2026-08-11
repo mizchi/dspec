@@ -142,6 +142,7 @@ import { runTranslationCommand } from "./commands/translation.mjs";
 import { runInitCommand } from "./commands/init.mjs";
 import { runLockCommand } from "./commands/lock.mjs";
 import { runScaffoldCommand as runScaffoldCommandModule } from "./commands/scaffold.mjs";
+import { runEvidenceCommand as runEvidenceCommandModule } from "./commands/evidence.mjs";
 import {
   pklImportPath,
   schemaLockReport,
@@ -274,14 +275,6 @@ Typical flow:
   dspec spec-change compat --json before.pkl after.pkl
   dspec spec-change scaffold --output review.pkl before.pkl after.pkl
   dspec spec-change review --json review.pkl
-`;
-}
-
-function evidenceUsage() {
-  return `usage:
-  dspec evidence create [--json] [--output <manifest.json>] [--executed-at <iso>] [--intent-report <exercise.json>] [--require-formal-tools] <model.pkl>
-  dspec evidence verify [--json] <model.pkl> <manifest.json>
-  dspec evidence refresh [--json] [--executed-at <iso>] [--intent-report <exercise.json>] [--require-formal-tools] <model.pkl> <manifest.json>
 `;
 }
 
@@ -2492,112 +2485,6 @@ function parseVerifyGeneratedArgs(args) {
     throw new CommandError(usage());
   }
   return { file, json, requireFormalTools, skipQuintVerify };
-}
-
-function parseEvidenceCreateArgs(args) {
-  let json = false;
-  let outputFile = null;
-  let executedAt = null;
-  let requireFormalTools = false;
-  const intentReportFiles = [];
-  const files = [];
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--require-formal-tools") {
-      requireFormalTools = true;
-      continue;
-    }
-    if (arg === "--output") {
-      outputFile = args[index + 1];
-      index += 1;
-      if (!outputFile) throw new CommandError("--output requires a manifest path\n");
-      continue;
-    }
-    if (arg === "--executed-at") {
-      executedAt = args[index + 1];
-      index += 1;
-      if (!executedAt) throw new CommandError("--executed-at requires an ISO timestamp\n");
-      continue;
-    }
-    if (arg === "--intent-report") {
-      const reportFile = args[index + 1];
-      index += 1;
-      if (!reportFile) throw new CommandError("--intent-report requires an Intent exercise report path\n");
-      intentReportFiles.push(reportFile);
-      continue;
-    }
-    files.push(arg);
-  }
-  if (files.length !== 1) throw new CommandError(evidenceUsage());
-  return {
-    modelFile: files[0],
-    json,
-    outputFile,
-    executedAt: executedAt ?? new Date().toISOString(),
-    requireFormalTools,
-    intentReportFiles,
-  };
-}
-
-function parseEvidenceVerifyArgs(args) {
-  let json = false;
-  const files = [];
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    files.push(arg);
-  }
-  if (files.length !== 2) throw new CommandError(evidenceUsage());
-  return { modelFile: files[0], manifestFile: files[1], json };
-}
-
-function parseEvidenceRefreshArgs(args) {
-  let json = false;
-  let executedAt = null;
-  let requireFormalTools = false;
-  const intentReportFiles = [];
-  const files = [];
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--require-formal-tools") {
-      requireFormalTools = true;
-      continue;
-    }
-    if (arg === "--executed-at") {
-      executedAt = args[index + 1];
-      index += 1;
-      if (!executedAt) throw new CommandError("--executed-at requires an ISO timestamp\n");
-      continue;
-    }
-    if (arg === "--intent-report") {
-      const reportFile = args[index + 1];
-      index += 1;
-      if (!reportFile) throw new CommandError("--intent-report requires an Intent exercise report path\n");
-      intentReportFiles.push(reportFile);
-      continue;
-    }
-    files.push(arg);
-  }
-  if (files.length !== 2) throw new CommandError(evidenceUsage());
-  return {
-    modelFile: files[0],
-    manifestFile: files[1],
-    json,
-    executedAt: executedAt ?? new Date().toISOString(),
-    requireFormalTools,
-    intentReportFiles,
-  };
 }
 
 function parseDevshellSmokeArgs(args) {
@@ -15058,83 +14945,26 @@ function assertModelCoverage(model) {
   }
 }
 
-function runEvidenceCreate(args) {
-  const options = parseEvidenceCreateArgs(args);
-  const model = loadModel(options.modelFile);
-  assertModelCoverage(model);
-  const manifest = createAssuranceEvidenceManifest(model, options);
-  const output = options.outputFile ? writeAssuranceEvidenceManifest(options.outputFile, manifest) : null;
-  if (options.json) {
-    process.stdout.write(stableJson({ status: "pass", model: modelReport(model), output, manifest }));
-    return;
-  }
-  if (output) {
-    process.stdout.write(`ok: wrote assurance evidence manifest ${output.path}\n`);
-    return;
-  }
-  process.stdout.write(stableJson(manifest));
-}
-
-function runEvidenceVerify(args) {
-  const options = parseEvidenceVerifyArgs(args);
-  const model = loadModel(options.modelFile);
-  const manifest = readJsonFile(options.manifestFile, "assurance evidence manifest");
-  const report = assuranceEvidenceVerificationReport(model, manifest);
-  if (options.json) {
-    process.stdout.write(stableJson(report));
-    assertReportOk(report);
-    return;
-  }
-  assertReportOk(report);
-  process.stdout.write(`ok: ${model.id} assurance evidence (${report.summary.artifacts} artifacts, ${report.summary.clauseBindings} clause bindings)\n`);
-}
-
-function runEvidenceRefresh(args) {
-  const options = parseEvidenceRefreshArgs(args);
-  const model = loadModel(options.modelFile);
-  assertModelCoverage(model);
-  const beforeManifest = existsSync(resolve(options.manifestFile))
-    ? readJsonFile(options.manifestFile, "assurance evidence manifest")
-    : null;
-  const before = beforeManifest ? assuranceDigest(stableJson(beforeManifest)) : null;
-  const intentReportFiles = options.intentReportFiles.length > 0
-    ? options.intentReportFiles
-    : list(beforeManifest?.intentExercises).map((entry) => entry?.report?.path).filter(Boolean);
-  const manifest = createAssuranceEvidenceManifest(model, { ...options, intentReportFiles });
-  const output = writeAssuranceEvidenceManifest(options.manifestFile, manifest);
-  const report = {
-    status: "pass",
-    model: modelReport(model),
-    changed: before !== assuranceDigest(stableJson(manifest)),
-    output,
-    manifest,
-  };
-  if (options.json) {
-    process.stdout.write(stableJson(report));
-    return;
-  }
-  process.stdout.write(`ok: refreshed assurance evidence manifest ${output.path}\n`);
-}
-
 function runEvidenceCommand(args) {
-  const [subcommand, ...rest] = args;
-  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
-    process.stdout.write(evidenceUsage());
-    return;
-  }
-  if (subcommand === "create") {
-    runEvidenceCreate(rest);
-    return;
-  }
-  if (subcommand === "verify") {
-    runEvidenceVerify(rest);
-    return;
-  }
-  if (subcommand === "refresh") {
-    runEvidenceRefresh(rest);
-    return;
-  }
-  throw new CommandError(`unknown evidence subcommand: ${subcommand}\n${evidenceUsage()}`);
+  return runEvidenceCommandModule(args, {
+    now: () => new Date().toISOString(),
+    loadModel,
+    assertModelCoverage,
+    createAssuranceEvidenceManifest,
+    writeAssuranceEvidenceManifest,
+    readJsonFile,
+    assuranceEvidenceVerificationReport,
+    assertReportOk,
+    assuranceDigest,
+    stableJson,
+    modelReport,
+    manifestExists(file) {
+      return existsSync(resolve(file));
+    },
+    write(value) {
+      process.stdout.write(value);
+    },
+  });
 }
 
 function runGenerateCommand(args) {

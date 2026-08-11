@@ -825,14 +825,14 @@
           "key": "code:src/cli.mjs#createAssuranceEvidenceManifest"
         },
         {
-          "contentHash": "sha256:83639486bdac8f97165e9ba0b2d064795c5525d01a0d4db856388de92e2b711a",
-          "hashScope": "symbol-text",
-          "key": "code:src/cli.mjs#runEvidenceCommand"
-        },
-        {
           "contentHash": "sha256:c9739cfae69db5650801ccd9f54431bb70e9826033d54f016438ea840e6e3bfd",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#validateCheckTargetAssuranceDeclarations"
+        },
+        {
+          "contentHash": "sha256:2024ad33c20eb96930016a7a9149b646a75fccc92d742d0994b2613b95d89119",
+          "hashScope": "symbol-text",
+          "key": "code:src/commands/evidence.mjs#runEvidenceCommand"
         },
         {
           "contentHash": "sha256:d1b4c1a92d1791d0a2925d81da3036d8ee131dd6d7584d920b728d261cafc434",
@@ -993,7 +993,7 @@
           "key": "doc:generated/backends/DSpecSelf.lean"
         },
         {
-          "contentHash": "sha256:1ab03988fe8b53b5e7908aa2dbbd162ca947591b0e162dc28da6f9a13d6a7d31",
+          "contentHash": "sha256:c7d2c1a2134e8d3064e471316abd7e5d1b0a01cd14e8dff44ed6c6a2e02837c4",
           "hashScope": "file",
           "key": "doc:generated/manifest.json"
         },
@@ -2753,7 +2753,7 @@
           "key": "code:src/cli.mjs#sha256"
         },
         {
-          "contentHash": "sha256:1ab03988fe8b53b5e7908aa2dbbd162ca947591b0e162dc28da6f9a13d6a7d31",
+          "contentHash": "sha256:c7d2c1a2134e8d3064e471316abd7e5d1b0a01cd14e8dff44ed6c6a2e02837c4",
           "hashScope": "file",
           "key": "model:generated/manifest.json"
         },
@@ -3810,12 +3810,12 @@
           "key": "code:src/projection-filesystem.mjs#renewProjectionLockLease"
         },
         {
-          "contentHash": "sha256:4001c32d233e985aa409971e07c7ee7f96d0c56be722a753309bd64b232d37fb",
+          "contentHash": "sha256:916eaa6b50a72d24e11101976bd02b4cb355360284f338fbdbd0a544ee6d2d0b",
           "hashScope": "file",
           "key": "doc:generated/examples/dspec.provenance.json"
         },
         {
-          "contentHash": "sha256:29eb1662e765fbf016ff1a9182ce2e1cadc30d48bf72685c5c14326f4b07b1ca",
+          "contentHash": "sha256:477bf497b3b32ce9f9a455021e6c7ecb33641d7ddc6426ab147e1c4b42bbb543",
           "hashScope": "file",
           "key": "doc:generated/examples/en/dspec.md"
         },
@@ -3825,7 +3825,7 @@
           "key": "doc:generated/examples/en/sample-webapp-2026.md"
         },
         {
-          "contentHash": "sha256:3a4cb2bbef55da6e2bd301845b4c3a040ff293fa4deb526be6279f53434430b2",
+          "contentHash": "sha256:00d5093cbecc626fb0712b1978f4b8664a39d10ee4cf60b855d12bd454c435e1",
           "hashScope": "file",
           "key": "doc:generated/examples/ja/dspec.md"
         },
@@ -5050,7 +5050,7 @@
     {
       "checks": [
         {
-          "contentHash": "sha256:f2780fe73e58995b7b1d18109830fbd97c290f0059dee1e04e1eb1684869f9c8",
+          "contentHash": "sha256:f3a5dee0d265cac0c3614d2d0c7dca84815f01a03bfcb7ba7014097f761497a9",
           "hashScope": "file",
           "key": "pkl:examples/dspec.pkl"
         }

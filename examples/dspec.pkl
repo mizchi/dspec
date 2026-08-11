@@ -1649,7 +1649,7 @@ model: d.Model = new {
         d.codeRef("src/core/assurance-evidence.mjs", "verifyAssuranceEvidenceManifest")
         d.codeRef("src/cli.mjs", "createAssuranceEvidenceManifest")
         d.codeRef("src/cli.mjs", "assuranceEvidenceVerificationReport")
-        d.codeRef("src/cli.mjs", "runEvidenceCommand")
+        d.codeRef("src/commands/evidence.mjs", "runEvidenceCommand")
         d.codeRef("src/cli.mjs", "validateCheckTargetAssuranceDeclarations")
         d.modelRef("fixtures/typed-ast.pkl")
         d.modelRef("fixtures/assurance-formal-unsupported.pkl")

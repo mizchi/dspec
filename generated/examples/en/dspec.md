@@ -484,7 +484,7 @@ Formal assurance is verified by a manifest binding execution results to Clause/b
 - implementation: code src/core/assurance-evidence.mjs#verifyAssuranceEvidenceManifest
 - implementation: code src/cli.mjs#createAssuranceEvidenceManifest
 - implementation: code src/cli.mjs#assuranceEvidenceVerificationReport
-- implementation: code src/cli.mjs#runEvidenceCommand
+- implementation: code src/commands/evidence.mjs#runEvidenceCommand
 - implementation: code src/cli.mjs#validateCheckTargetAssuranceDeclarations
 - implementation: model fixtures/typed-ast.pkl
 - implementation: model fixtures/assurance-formal-unsupported.pkl
