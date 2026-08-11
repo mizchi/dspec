@@ -11,9 +11,9 @@
     "name": "dspec/lean",
     "version": "1.0"
   },
-  "generatedAt": "2026-08-10T00:00:00Z",
+  "generatedAt": "2026-08-10T17:39:34.127Z",
   "model": {
-    "digest": "sha256:a0ac4c1d8260da379b3dae215b6fe26e569e018a34cc9199f4d9f5d5fcc778f5",
+    "digest": "sha256:c2ef949cdb3297c4c7b8b6493c222aca7549b3fbaf031c97b30369094566edc9",
     "id": "dspec-self",
     "version": "0.1.0"
   },

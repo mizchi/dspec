@@ -1209,8 +1209,8 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 - must: `dbSchemaImportsCreateTables(schema, dbModel)`
 - check: node test/cli.test.mjs#imports SQL schema as DB model JSON [reference]
 - check: node test/cli.test.mjs#imports SQL schema as a deterministic Pkl fragment [reference]
-- implementation: code src/cli.mjs#importDbSchema
-- implementation: code src/cli.mjs#emitDbSchemaPkl
+- implementation: code src/core/db-schema-import.mjs#importDbSchema
+- implementation: code src/core/db-schema-import.mjs#emitDbSchemaPkl
 - implementation: model fixtures/db-schema.sql
 
 #### Review

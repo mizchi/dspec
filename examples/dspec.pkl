@@ -3030,12 +3030,12 @@ model: d.Model = new {
       implementedBy {
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/db-schema-import.mjs"
           symbol = "importDbSchema"
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/db-schema-import.mjs"
           symbol = "emitDbSchemaPkl"
         }
         new d.ImplementationRef {
