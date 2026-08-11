@@ -92,6 +92,10 @@ import {
   intentSemanticBindings,
   validateIntentSemanticBindings,
 } from "./core/intent-semantic-binding-validation.mjs";
+import {
+  intentScenarios,
+  validateIntentScenarios,
+} from "./core/intent-scenario-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1878,10 +1882,6 @@ function constructionAuthorities(intent) {
   return list(intent?.constructionAuthorities);
 }
 
-function intentScenarios(intent) {
-  return list(intent?.scenarios);
-}
-
 function intentRefinements(process) {
   return list(process?.refinements);
 }
@@ -2168,43 +2168,7 @@ function validateIntentModel(errors, model) {
     }
   }
 
-  for (const scenario of scenarios) {
-    if (!stateIds.has(scenario.initialState)) {
-      errors.push(`unknown intent scenario initial state: ${scenario.id} -> ${scenario.initialState}`);
-    }
-    if (!stateIds.has(scenario.expectedState)) {
-      errors.push(`unknown intent scenario expected state: ${scenario.id} -> ${scenario.expectedState}`);
-    }
-    const steps = list(scenario.steps);
-    if (steps.length === 0) {
-      errors.push(`intent scenario has no steps: ${scenario.id}`);
-      continue;
-    }
-
-    let currentState = scenario.initialState;
-    for (const [index, step] of steps.entries()) {
-      const process = processesById.get(step.process);
-      const outcome = outcomesById.get(step.outcome);
-      const context = `${scenario.id}[${index}]`;
-      if (!process) {
-        errors.push(`unknown intent scenario process: ${context} -> ${step.process}`);
-      }
-      if (!outcome) {
-        errors.push(`unknown intent scenario outcome: ${context} -> ${step.outcome}`);
-      }
-      if (!process || !outcome) continue;
-      if (process.input !== currentState) {
-        errors.push(`intent scenario input state mismatch: ${context} expected ${currentState}, process accepts ${process.input}`);
-      }
-      if (!list(process.outcomes).includes(outcome.id)) {
-        errors.push(`intent scenario outcome is not declared by process: ${context} -> ${outcome.id}`);
-      }
-      currentState = outcome.state;
-    }
-    if (currentState !== scenario.expectedState) {
-      errors.push(`intent scenario expected state mismatch: ${scenario.id} expected ${scenario.expectedState}, actual ${currentState}`);
-    }
-  }
+  errors.push(...validateIntentScenarios(model.vocabulary, processes, outcomes, scenarios));
 }
 
 function validateDomainPacks(errors, model) {
