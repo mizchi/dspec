@@ -1887,7 +1887,7 @@ i18n contract とレビュー済み translation lock は必須 locale、glossary
 - implementation: code src/core/i18n-contract-validation.mjs#validateI18nContract
 - implementation: code src/core/i18n-contract-validation.mjs#walkLocalizedTexts
 - implementation: code src/core/translation-lock.mjs#translationCheck
-- implementation: code src/cli.mjs#runTranslation
+- implementation: code src/commands/translation.mjs#runTranslationCommand
 - implementation: model fixtures/i18n-contract.pkl
 - implementation: model fixtures/i18n-contract-missing-label.pkl
 - implementation: model fixtures/i18n-contract-glossary-mismatch.pkl

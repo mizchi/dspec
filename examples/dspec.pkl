@@ -1098,7 +1098,7 @@ model: d.Model = new {
         d.codeRef("src/core/i18n-contract-validation.mjs", "validateI18nContract")
         d.codeRef("src/core/i18n-contract-validation.mjs", "walkLocalizedTexts")
         d.codeRef("src/core/translation-lock.mjs", "translationCheck")
-        d.codeRef("src/cli.mjs", "runTranslation")
+        d.codeRef("src/commands/translation.mjs", "runTranslationCommand")
         d.modelRef("fixtures/i18n-contract.pkl")
         d.modelRef("fixtures/i18n-contract-missing-label.pkl")
         d.modelRef("fixtures/i18n-contract-glossary-mismatch.pkl")
