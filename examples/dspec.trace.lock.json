@@ -3090,7 +3090,7 @@
           "key": "code:src/cli.mjs#intentProjection"
         },
         {
-          "contentHash": "sha256:26383d33444399787e17d6caf0a2abe573be356361d356dfbe1712da009ef3a4",
+          "contentHash": "sha256:b19ffa5db901b08b3498d8b13ca96881fd0e380f0b67c9e8d9c7670cde87389c",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#validateIntentModel"
         }
@@ -3134,7 +3134,7 @@
           "key": "code:src/cli.mjs#intentGraphReport"
         },
         {
-          "contentHash": "sha256:26383d33444399787e17d6caf0a2abe573be356361d356dfbe1712da009ef3a4",
+          "contentHash": "sha256:b19ffa5db901b08b3498d8b13ca96881fd0e380f0b67c9e8d9c7670cde87389c",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#validateIntentModel"
         }
