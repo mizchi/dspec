@@ -11,9 +11,9 @@
     "name": "dspec/quint",
     "version": "1.0"
   },
-  "generatedAt": "2026-08-11T08:48:58.800Z",
+  "generatedAt": "2026-08-11T09:07:21.134Z",
   "model": {
-    "digest": "sha256:4e6126a89c3914c11604ea8da113db2abd722c40796972735a14e0b185adb0e0",
+    "digest": "sha256:249fb185bf37674b0a4edc6c704785c66c442f82ff0bed34f2e29347164c1e98",
     "id": "dspec-self",
     "version": "0.1.0"
   },

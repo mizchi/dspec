@@ -86,6 +86,7 @@ import { intentCapabilities, intentOutcomes } from "./core/intent-outcome-valida
 import { intentProcesses } from "./core/intent-process-validation.mjs";
 import { intentRefinements } from "./core/intent-refinement-validation.mjs";
 import { intentPattern, validateIntentModel } from "./core/intent-model-validation.mjs";
+import { domainPacks, validateDomainPacks } from "./core/domain-pack-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1815,10 +1816,6 @@ function validateProjections(errors, model) {
   errors.push(...validateProjectionContracts(model));
 }
 
-function domainPacks(model) {
-  return list(model.domainPacks);
-}
-
 function i18nContract(model) {
   return model.i18n ?? { requiredLocales: [], glossary: [] };
 }
@@ -1849,28 +1846,6 @@ function walkLocalizedTexts(value, path, visit, seen = new Set()) {
 
   for (const [key, child] of Object.entries(value)) {
     walkLocalizedTexts(child, `${path}.${key}`, visit, seen);
-  }
-}
-
-function validateDomainPacks(errors, model) {
-  const packs = domainPacks(model);
-  checkUnique(errors, "domain pack id", packs);
-
-  for (const pack of packs) {
-    const helperIds = new Set();
-    for (const helper of list(pack.helpers)) {
-      if (helperIds.has(helper.id)) {
-        errors.push(`duplicate domain pack helper id: ${pack.id}.${helper.id}`);
-      }
-      helperIds.add(helper.id);
-
-      if (helper.returns === "rule" && !helper.emitsTypedAst) {
-        errors.push(`domain pack rule helper must emit typed ast: ${pack.id}.${helper.id}`);
-      }
-      if (helper.emitsTypedAst && list(helper.predicates).length === 0) {
-        errors.push(`domain pack typed ast helper has no predicates: ${pack.id}.${helper.id}`);
-      }
-    }
   }
 }
 
@@ -2020,7 +1995,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
   errors.push(...validateDomainModel(model));
   errors.push(...validateIntentModel(model));
   if (list(intentPattern(model)?.tests).length > 0) errors.push(...validateProtocolTests(model));
-  validateDomainPacks(errors, model);
+  errors.push(...validateDomainPacks(model));
   validateI18nContract(errors, model);
   validateProjections(errors, model);
   errors.push(...validateConformanceModel(model));

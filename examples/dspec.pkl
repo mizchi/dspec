@@ -924,7 +924,7 @@ model: d.Model = new {
         d.codeRef("dspec/domains/WebApp.pkl", "route")
         d.codeRef("dspec/domains/WebApp.pkl", "routeUsesSchema")
         d.codeRef("dspec/domains/WebApp.pkl", "workflowHasGate")
-        d.codeRef("src/cli.mjs", "validateDomainPacks")
+        d.codeRef("src/core/domain-pack-validation.mjs", "validateDomainPacks")
         d.codeRef("src/cli.mjs", "validateDomainPackRefs")
         d.modelRef("fixtures/domain-pack-model.pkl")
         d.modelRef("fixtures/webapp-domain-pack-model.pkl")

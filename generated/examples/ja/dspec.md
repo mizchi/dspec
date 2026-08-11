@@ -1413,7 +1413,7 @@ domain preset pack は Core IR に展開される authoring layer として提�
 - implementation: code dspec/domains/WebApp.pkl#route
 - implementation: code dspec/domains/WebApp.pkl#routeUsesSchema
 - implementation: code dspec/domains/WebApp.pkl#workflowHasGate
-- implementation: code src/cli.mjs#validateDomainPacks
+- implementation: code src/core/domain-pack-validation.mjs#validateDomainPacks
 - implementation: code src/cli.mjs#validateDomainPackRefs
 - implementation: model fixtures/domain-pack-model.pkl
 - implementation: model fixtures/webapp-domain-pack-model.pkl
