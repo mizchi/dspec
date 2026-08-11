@@ -141,10 +141,9 @@ import { runTraceCommand } from "./commands/trace.mjs";
 import { runTranslationCommand } from "./commands/translation.mjs";
 import { runInitCommand } from "./commands/init.mjs";
 import { runLockCommand } from "./commands/lock.mjs";
+import { runScaffoldCommand as runScaffoldCommandModule } from "./commands/scaffold.mjs";
 import {
   pklImportPath,
-  resolveSchemaModulePath,
-  schemaImportFromModel,
   schemaLockReport,
 } from "./commands/schema-lock.mjs";
 import { appProfileObservedFixtureStep as appProfileObservedFixtureStepModule } from "./commands/app-profile-observed-fixture.mjs";
@@ -290,24 +289,6 @@ function generatedUsage() {
   return `usage:
   dspec generated check [--json] [--root <dir>] <model.pkl>
   dspec generated unlock [--json] [--force] [--root <dir>]
-`;
-}
-
-function scaffoldUsage() {
-  return `usage:
-  dspec scaffold rule [--json] [--force] [--output <rule.pkl>] [--kind <kind>] [--term <id>] [--implementation <path#symbol>] [--test <path#anchor>] <model.pkl> <rule-id>
-
-Emit a typed draft Rule fragment. The source model supplies its Schema.pkl import
-and vocabulary; the command never edits the source model automatically.
-
-Options:
-  --json                           Emit the scaffold report as JSON.
-  --force                          Replace an existing output file.
-  --output <rule.pkl>              Write the Pkl fragment instead of stdout.
-  --kind <kind>                    Rule kind (default: invariant).
-  --term <id>                      Refer to an existing vocabulary term; repeatable.
-  --implementation <path#symbol>  Add a code implementation reference.
-  --test <path#anchor>             Add a linked Node test check target.
 `;
 }
 
@@ -2116,76 +2097,6 @@ function parseExplainArgs(args) {
   return { file, json, markdown, lockFile, requireLock };
 }
 
-const SCAFFOLD_RULE_KINDS = new Set([
-  "decision",
-  "invariant",
-  "transition",
-  "obligation",
-  "permission",
-  "prohibition",
-  "exception",
-  "witness",
-  "example",
-  "non_goal",
-  "equivalence",
-]);
-
-function parseScaffoldRuleReference(value, option) {
-  const { path, anchor } = splitRef(value);
-  if (!path || !anchor) {
-    throw new CommandError(`${option} must use path#symbol-or-anchor: ${value}\n`);
-  }
-  return { path, anchor };
-}
-
-function parseScaffoldRuleArgs(args) {
-  let json = false;
-  let force = false;
-  let outputFile = null;
-  let kind = "invariant";
-  const terms = [];
-  let implementation = null;
-  let test = null;
-  const positional = [];
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-    } else if (arg === "--force") {
-      force = true;
-    } else if (arg === "--output") {
-      outputFile = args[index + 1] ?? "";
-      index += 1;
-    } else if (arg === "--kind") {
-      kind = args[index + 1] ?? "";
-      index += 1;
-    } else if (arg === "--term") {
-      terms.push(args[index + 1] ?? "");
-      index += 1;
-    } else if (arg === "--implementation") {
-      implementation = parseScaffoldRuleReference(args[index + 1] ?? "", "--implementation");
-      index += 1;
-    } else if (arg === "--test") {
-      test = parseScaffoldRuleReference(args[index + 1] ?? "", "--test");
-      index += 1;
-    } else if (!arg.startsWith("-")) {
-      positional.push(arg);
-    } else {
-      throw new CommandError(scaffoldUsage());
-    }
-  }
-
-  const [modelFile, ruleId] = positional;
-  if (positional.length !== 2 || !modelFile || !ruleId || !SCAFFOLD_RULE_KINDS.has(kind)) {
-    throw new CommandError(scaffoldUsage());
-  }
-  if (!terms.every(Boolean) || (outputFile !== null && (!outputFile || outputFile.startsWith("-")))) {
-    throw new CommandError(scaffoldUsage());
-  }
-  return { modelFile, ruleId, json, force, outputFile, kind, terms, implementation, test };
-}
-
 function parseConformanceArgs(args) {
   let json = false;
   let markdown = false;
@@ -3985,89 +3896,15 @@ function runTranslation(args) {
   });
 }
 
-function scaffoldRuleDocument({ modelFile, outputFile = null, ruleId, kind, terms, implementation, test }) {
-  const model = loadModel(modelFile);
-  const vocabulary = new Set(list(model.vocabulary).map((term) => term.id));
-  for (const term of terms) {
-    if (!vocabulary.has(term)) throw new CommandError(`unknown vocabulary term: ${term}\n`);
-  }
-  const modelSchemaImport = schemaImportFromModel(modelFile);
-  const schemaFile = resolveSchemaModulePath(modelFile, modelSchemaImport);
-  const schemaImportPath = outputFile ? pklImportPath(outputFile, schemaFile) : modelSchemaImport;
-  const lines = [
-    `import ${pklString(schemaImportPath)} as d`,
-    "",
-    "rule: d.Rule = new {",
-    `  id = ${pklString(ruleId)}`,
-    `  kind = ${pklString(kind)}`,
-    `  text = d.text(${pklString(`${ruleId} を満たす`)}, ${pklString(`${ruleId} holds`)})`,
-  ];
-  if (terms.length > 0) {
-    lines.push("  terms {");
-    for (const term of terms) lines.push(`    ${pklString(term)}`);
-    lines.push("  }");
-  }
-  lines.push('  reviewStatus = "draft"');
-  if (test) {
-    lines.push("  checks {", `    d.nodeCheck(${pklString(`${test.path}#${test.anchor}`)})`, "  }");
-  }
-  if (implementation) {
-    lines.push(
-      "  implementedBy {",
-      `    d.codeRef(${pklString(implementation.path)}, ${pklString(implementation.anchor)})`,
-      "  }",
-    );
-  }
-  lines.push("}");
-  return {
-    model: modelReport(model),
-    schemaImportPath,
-    source: `${lines.join("\n")}\n`,
-  };
-}
-
-function writeScaffoldedRule(outputFile, source, force = false) {
-  const path = resolve(outputFile);
-  if (existsSync(path) && !force) {
-    throw new CommandError(`refusing to overwrite existing rule scaffold: ${outputFile}; use --force\n`);
-  }
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, source);
-  return { path: outputFile, bytes: Buffer.byteLength(source, "utf8") };
-}
-
 function runScaffoldCommand(args) {
-  const [subcommand, ...rest] = args;
-  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
-    process.stdout.write(scaffoldUsage());
-    return;
-  }
-  if (subcommand !== "rule") {
-    throw new CommandError(`unknown scaffold subcommand: ${subcommand}\n${scaffoldUsage()}`);
-  }
-  if (hasHelpFlag(rest)) {
-    process.stdout.write(scaffoldUsage());
-    return;
-  }
-  const options = parseScaffoldRuleArgs(rest);
-  const scaffold = scaffoldRuleDocument(options);
-  const output = options.outputFile ? writeScaffoldedRule(options.outputFile, scaffold.source, options.force) : null;
-  const report = {
-    status: "pass",
-    model: scaffold.model,
-    rule: { id: options.ruleId, kind: options.kind, terms: options.terms },
-    output,
-    ...(options.json || output ? { source: scaffold.source } : {}),
-  };
-  if (options.json) {
-    process.stdout.write(stableJson(report));
-    return;
-  }
-  if (output) {
-    process.stdout.write(`ok: wrote draft rule scaffold ${output.path}\n`);
-    return;
-  }
-  process.stdout.write(scaffold.source);
+  return runScaffoldCommandModule(args, {
+    loadModel,
+    modelReport,
+    stableJson,
+    write(value) {
+      process.stdout.write(value);
+    },
+  });
 }
 
 function scaffoldAppProfile(args = {}) {
