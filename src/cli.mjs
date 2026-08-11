@@ -144,6 +144,10 @@ import { runLockCommand } from "./commands/lock.mjs";
 import { runScaffoldCommand as runScaffoldCommandModule } from "./commands/scaffold.mjs";
 import { runEvidenceCommand as runEvidenceCommandModule } from "./commands/evidence.mjs";
 import {
+  runGenerateCommand as runGenerateCommandModule,
+  runGeneratedCommand as runGeneratedCommandModule,
+} from "./commands/projection.mjs";
+import {
   pklImportPath,
   schemaLockReport,
 } from "./commands/schema-lock.mjs";
@@ -275,13 +279,6 @@ Typical flow:
   dspec spec-change compat --json before.pkl after.pkl
   dspec spec-change scaffold --output review.pkl before.pkl after.pkl
   dspec spec-change review --json review.pkl
-`;
-}
-
-function generatedUsage() {
-  return `usage:
-  dspec generated check [--json] [--root <dir>] <model.pkl>
-  dspec generated unlock [--json] [--force] [--root <dir>]
 `;
 }
 
@@ -2558,75 +2555,6 @@ function parseExternalHoldoutArgs(args) {
     throw new CommandError(usage());
   }
   return { file, json, markdown };
-}
-
-function parseProjectionArgs(args, usageText = usage(), { allowGenerationOptions = false } = {}) {
-  let file = null;
-  let dryRun = false;
-  let generatedAt = null;
-  let json = false;
-  let root = ".";
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--dry-run" && allowGenerationOptions) {
-      dryRun = true;
-      continue;
-    }
-    if (arg === "--generated-at" && allowGenerationOptions) {
-      generatedAt = args[index + 1];
-      if (!generatedAt) throw new CommandError(usageText);
-      if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(generatedAt)) {
-        throw new CommandError(`invalid --generated-at: ${generatedAt}`);
-      }
-      index += 1;
-      continue;
-    }
-    if (arg === "--root") {
-      root = args[index + 1];
-      if (!root) throw new CommandError(usageText);
-      index += 1;
-      continue;
-    }
-    if (!file) {
-      file = arg;
-      continue;
-    }
-    throw new CommandError(`unexpected argument: ${arg}\n${usageText}`);
-  }
-
-  if (!file) throw new CommandError(usageText);
-  return { file, dryRun, generatedAt, json, root };
-}
-
-function parseProjectionUnlockArgs(args, usageText = generatedUsage()) {
-  let force = false;
-  let json = false;
-  let root = ".";
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--force") {
-      force = true;
-      continue;
-    }
-    if (arg === "--root") {
-      root = args[index + 1];
-      if (!root) throw new CommandError(usageText);
-      index += 1;
-      continue;
-    }
-    throw new CommandError(`unexpected argument: ${arg}\n${usageText}`);
-  }
-  return { force, json, root };
 }
 
 function parseImpactArgs(args) {
@@ -14967,73 +14895,29 @@ function runEvidenceCommand(args) {
   });
 }
 
+function projectionCommandContext() {
+  return {
+    generateUsage: topLevelCommandHelp(topLevelCommand("generate")),
+    now: () => new Date().toISOString(),
+    loadModel,
+    generateProjectionArtifacts,
+    generatedProjectionReport,
+    recoverProjectionLock,
+    renderGeneratedProjectionReport,
+    assertReportOk,
+    stableJson,
+    write(value) {
+      process.stdout.write(value);
+    },
+  };
+}
+
 function runGenerateCommand(args) {
-  const options = parseProjectionArgs(
-    args,
-    topLevelCommandHelp(topLevelCommand("generate")),
-    { allowGenerationOptions: true },
-  );
-  const model = loadModel(options.file);
-  const report = generateProjectionArtifacts(model, {
-    dryRun: options.dryRun,
-    generatedAt: options.generatedAt ?? new Date().toISOString(),
-    root: options.root,
-  });
-  if (options.json) {
-    process.stdout.write(stableJson(report));
-    assertReportOk(report);
-    return;
-  }
-  const rendered = renderGeneratedProjectionReport(report, "generate");
-  if (report.status === "fail") throw new CommandError(rendered);
-  process.stdout.write(rendered);
+  return runGenerateCommandModule(args, projectionCommandContext());
 }
 
 function runGeneratedCommand(args) {
-  const [subcommand, ...rest] = args;
-  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
-    process.stdout.write(generatedUsage());
-    return;
-  }
-  if (!["check", "unlock"].includes(subcommand)) {
-    throw new CommandError(`unknown generated subcommand: ${subcommand}\n${generatedUsage()}`);
-  }
-  if (hasHelpFlag(rest)) {
-    process.stdout.write(generatedUsage());
-    return;
-  }
-  if (subcommand === "unlock") {
-    const options = parseProjectionUnlockArgs(rest);
-    let report;
-    try {
-      report = recoverProjectionLock(options.root, { force: options.force });
-    } catch (error) {
-      throw new CommandError(`${error.message}\n`);
-    }
-    if (options.json) {
-      process.stdout.write(stableJson(report));
-      return;
-    }
-    if (report.status === "absent") {
-      process.stdout.write("ok: no Projection generation lock\n");
-      return;
-    }
-    process.stdout.write(
-      `ok: recovered Projection generation lock (${report.previous.liveness}, lease ${report.previous.lease.status}${report.forced ? ", forced" : ""})\n`,
-    );
-    return;
-  }
-  const options = parseProjectionArgs(rest, generatedUsage());
-  const model = loadModel(options.file);
-  const report = generatedProjectionReport(model, { root: options.root });
-  if (options.json) {
-    process.stdout.write(stableJson(report));
-    assertReportOk(report);
-    return;
-  }
-  const rendered = renderGeneratedProjectionReport(report, "check");
-  if (report.status === "fail") throw new CommandError(rendered);
-  process.stdout.write(rendered);
+  return runGeneratedCommandModule(args, projectionCommandContext());
 }
 
 function emit(target, model, locale) {
