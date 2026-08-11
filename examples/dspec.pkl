@@ -1095,8 +1095,8 @@ model: d.Model = new {
       implementedBy {
         d.codeRef("dspec/Schema.pkl", "I18nContract")
         d.codeRef("dspec/Schema.pkl", "I18nGlossaryEntry")
-        d.codeRef("src/cli.mjs", "validateI18nContract")
-        d.codeRef("src/cli.mjs", "walkLocalizedTexts")
+        d.codeRef("src/core/i18n-contract-validation.mjs", "validateI18nContract")
+        d.codeRef("src/core/i18n-contract-validation.mjs", "walkLocalizedTexts")
         d.codeRef("src/core/translation-lock.mjs", "translationCheck")
         d.codeRef("src/cli.mjs", "runTranslation")
         d.modelRef("fixtures/i18n-contract.pkl")

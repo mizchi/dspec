@@ -87,6 +87,7 @@ import { intentProcesses } from "./core/intent-process-validation.mjs";
 import { intentRefinements } from "./core/intent-refinement-validation.mjs";
 import { intentPattern, validateIntentModel } from "./core/intent-model-validation.mjs";
 import { domainPacks, validateDomainPacks } from "./core/domain-pack-validation.mjs";
+import { validateI18nContract } from "./core/i18n-contract-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1816,89 +1817,6 @@ function validateProjections(errors, model) {
   errors.push(...validateProjectionContracts(model));
 }
 
-function i18nContract(model) {
-  return model.i18n ?? { requiredLocales: [], glossary: [] };
-}
-
-function isLocalizedText(value) {
-  return Boolean(value)
-    && typeof value === "object"
-    && typeof value.default === "string"
-    && value.labels
-    && typeof value.labels === "object"
-    && !Array.isArray(value.labels);
-}
-
-function walkLocalizedTexts(value, path, visit, seen = new Set()) {
-  if (!value || typeof value !== "object") return;
-  if (seen.has(value)) return;
-  seen.add(value);
-
-  if (isLocalizedText(value)) {
-    visit(value, path);
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((child, index) => walkLocalizedTexts(child, `${path}[${index}]`, visit, seen));
-    return;
-  }
-
-  for (const [key, child] of Object.entries(value)) {
-    walkLocalizedTexts(child, `${path}.${key}`, visit, seen);
-  }
-}
-
-function validateI18nContract(errors, model) {
-  const locales = new Set(list(model.locales));
-  const contract = i18nContract(model);
-  const requiredLocales = list(contract.requiredLocales);
-
-  for (const locale of requiredLocales) {
-    if (!locales.has(locale)) {
-      errors.push(`i18n required locale is not listed in locales: ${locale}`);
-    }
-  }
-
-  if (requiredLocales.length > 0) {
-    walkLocalizedTexts(model, "model", (localized, path) => {
-      for (const locale of requiredLocales) {
-        if (!Object.hasOwn(localized.labels ?? {}, locale)) {
-          errors.push(`missing localized label: ${path}.labels.${locale}`);
-        }
-      }
-    });
-  }
-
-  const termsById = new Map(list(model.vocabulary).map((term) => [term.id, term]));
-  const glossaryTerms = new Set();
-  for (const entry of list(contract.glossary)) {
-    if (glossaryTerms.has(entry.term)) {
-      errors.push(`duplicate i18n glossary term: ${entry.term}`);
-    }
-    glossaryTerms.add(entry.term);
-
-    const term = termsById.get(entry.term);
-    if (!term) {
-      errors.push(`unknown i18n glossary term: ${entry.term}`);
-      continue;
-    }
-
-    for (const [locale, expected] of Object.entries(entry.labels ?? {})) {
-      if (!locales.has(locale)) {
-        errors.push(`i18n glossary locale is not listed in locales: ${entry.term}.${locale}`);
-      }
-
-      const actual = term.text?.labels?.[locale] ?? null;
-      if (actual !== expected) {
-        errors.push(
-          `i18n glossary label mismatch: ${entry.term}.${locale} expected ${JSON.stringify(expected)}, actual ${JSON.stringify(actual)}`,
-        );
-      }
-    }
-  }
-}
-
 function ruleClauseSelectors(rule) {
   const selectors = [];
   for (const field of ["when", "must", "mustNot"]) {
@@ -1996,7 +1914,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
   errors.push(...validateIntentModel(model));
   if (list(intentPattern(model)?.tests).length > 0) errors.push(...validateProtocolTests(model));
   errors.push(...validateDomainPacks(model));
-  validateI18nContract(errors, model);
+  errors.push(...validateI18nContract(model));
   validateProjections(errors, model);
   errors.push(...validateConformanceModel(model));
 

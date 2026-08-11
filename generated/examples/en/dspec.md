@@ -1884,8 +1884,8 @@ The i18n contract and reviewed translation lock detect required-locale, glossary
 - check: node test/translation-lock-core.test.mjs#reports source, translation, and glossary changes independently [reference]
 - implementation: code dspec/Schema.pkl#I18nContract
 - implementation: code dspec/Schema.pkl#I18nGlossaryEntry
-- implementation: code src/cli.mjs#validateI18nContract
-- implementation: code src/cli.mjs#walkLocalizedTexts
+- implementation: code src/core/i18n-contract-validation.mjs#validateI18nContract
+- implementation: code src/core/i18n-contract-validation.mjs#walkLocalizedTexts
 - implementation: code src/core/translation-lock.mjs#translationCheck
 - implementation: code src/cli.mjs#runTranslation
 - implementation: model fixtures/i18n-contract.pkl
