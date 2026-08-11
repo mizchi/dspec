@@ -73,6 +73,10 @@ import {
   runtimeTelemetry,
   validateRuntimeModel,
 } from "./core/runtime-model-validation.mjs";
+import {
+  validateIntentDataContract,
+  validateIntentFieldBindings,
+} from "./core/intent-data-contract-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1897,66 +1901,6 @@ function checkUniqueIdentifiers(errors, label, identifiers) {
   }
 }
 
-function intentAllowedValueMatchesType(field, value) {
-  if (field.type === "string") return true;
-  if (field.type === "integer") return /^-?\d+$/.test(value);
-  if (field.type === "boolean") return value === "true" || value === "false";
-  return /^[a-zA-Z0-9][a-zA-Z0-9_.\-/]*$/.test(value);
-}
-
-function validateIntentDataContract(errors, owner, contract) {
-  if (!contract) return;
-  const fields = list(contract.fields);
-  checkUnique(errors, `intent contract field id in ${owner}`, fields);
-  for (const field of fields) {
-    checkUniqueIdentifiers(errors, `intent contract allowed value in ${owner}.${field.id}`, list(field.allowedValues));
-    if ((field.minimum !== null && field.minimum !== undefined) || (field.maximum !== null && field.maximum !== undefined)) {
-      if (field.type !== "integer") {
-        errors.push(`intent contract range requires integer field: ${owner}.${field.id}`);
-      }
-      if (field.minimum !== null && field.minimum !== undefined && field.maximum !== null && field.maximum !== undefined && field.minimum > field.maximum) {
-        errors.push(`intent contract minimum exceeds maximum: ${owner}.${field.id}`);
-      }
-    }
-    if (field.pattern) {
-      if (!["string", "identifier"].includes(field.type)) {
-        errors.push(`intent contract pattern requires string field: ${owner}.${field.id}`);
-      }
-      try {
-        new RegExp(field.pattern);
-      } catch {
-        errors.push(`invalid intent contract pattern: ${owner}.${field.id}`);
-      }
-    }
-    for (const value of list(field.allowedValues)) {
-      if (!intentAllowedValueMatchesType(field, value)) {
-        errors.push(`intent contract allowed value has wrong type: ${owner}.${field.id} -> ${value}`);
-      }
-    }
-  }
-  list(contract.clauses).forEach((clause, index) => {
-    validateExprAst(errors, `${owner} clauses[${index}]`, clause.ast);
-  });
-}
-
-function validateIntentFieldBindings(errors, owner, contract, bindings) {
-  const fields = new Map(list(contract?.fields).map((field) => [field.id, field]));
-  const contractFields = list(bindings).map((binding) => binding.contractField);
-  const implementationFields = list(bindings).map((binding) => binding.implementationField);
-  checkUniqueIdentifiers(errors, `intent refinement contract field in ${owner}`, contractFields);
-  checkUniqueIdentifiers(errors, `intent refinement implementation field in ${owner}`, implementationFields);
-  for (const binding of list(bindings)) {
-    if (!fields.has(binding.contractField)) {
-      errors.push(`unknown intent refinement contract field: ${owner} -> ${binding.contractField}`);
-    }
-  }
-  for (const field of fields.values()) {
-    if (field.required !== false && !contractFields.includes(field.id)) {
-      errors.push(`intent refinement missing required field binding: ${owner} -> ${field.id}`);
-    }
-  }
-}
-
 function validateIntentModel(errors, model) {
   const intent = intentPattern(model);
   if (!intent) return;
@@ -2000,14 +1944,14 @@ function validateIntentModel(errors, model) {
       errors.push(`duplicate intent outcome state: ${outcome.state}`);
     }
     outcomeStates.add(outcome.state);
-    validateIntentDataContract(errors, `${outcome.id} output`, outcome.outputContract);
+    errors.push(...validateIntentDataContract(`${outcome.id} output`, outcome.outputContract));
     const effects = list(outcome.effects);
     checkUnique(errors, `intent outcome effect id in ${outcome.id}`, effects);
     for (const effect of effects) {
       if (!capabilityIds.has(effect.capability)) {
         errors.push(`unknown intent outcome effect capability: ${outcome.id}.${effect.id} -> ${effect.capability}`);
       }
-      validateIntentDataContract(errors, `${outcome.id} effect ${effect.id} output`, effect.outputContract);
+      errors.push(...validateIntentDataContract(`${outcome.id} effect ${effect.id} output`, effect.outputContract));
     }
   }
 
@@ -2212,7 +2156,7 @@ function validateIntentModel(errors, model) {
     if (!stateIds.has(process.input)) {
       errors.push(`unknown intent process input state: ${process.id} -> ${process.input}`);
     }
-    validateIntentDataContract(errors, `${process.id} input`, process.inputContract);
+    errors.push(...validateIntentDataContract(`${process.id} input`, process.inputContract));
     const execution = process.execution;
     if (execution && (!Number.isInteger(execution.maxInFlight) || execution.maxInFlight < 1)) {
       errors.push(`intent execution maxInFlight must be a positive integer: ${process.id}`);
@@ -2340,7 +2284,7 @@ function validateIntentModel(errors, model) {
       if (refinement.transaction && !dbTransactionIds.has(refinement.transaction.dbTransaction)) {
         errors.push(`unknown intent transaction refinement DB transaction: ${process.id}.${refinement.id} -> ${refinement.transaction.dbTransaction}`);
       }
-      validateIntentFieldBindings(errors, `${process.id}.${refinement.id} input`, process.inputContract, refinement.inputBindings);
+      errors.push(...validateIntentFieldBindings(`${process.id}.${refinement.id} input`, process.inputContract, refinement.inputBindings));
       const bindingsByOutcome = new Map();
       checkUniqueIdentifiers(errors, `intent refinement outcome binding in ${process.id}.${refinement.id}`, list(refinement.outcomeBindings).map((binding) => binding.outcome));
       for (const binding of list(refinement.outcomeBindings)) {
@@ -2350,7 +2294,7 @@ function validateIntentModel(errors, model) {
         }
         bindingsByOutcome.set(binding.outcome, binding);
         const outcome = outcomesById.get(binding.outcome);
-        validateIntentFieldBindings(errors, `${process.id}.${refinement.id} outcome ${binding.outcome}`, outcome?.outputContract, binding.fields);
+        errors.push(...validateIntentFieldBindings(`${process.id}.${refinement.id} outcome ${binding.outcome}`, outcome?.outputContract, binding.fields));
         const outcomeEffects = list(outcome?.effects);
         const effectBindings = list(binding.effectBindings);
         checkUniqueIdentifiers(errors, `intent refinement effect binding in ${process.id}.${refinement.id} outcome ${binding.outcome}`, effectBindings.map((effectBinding) => effectBinding.effect));
@@ -2362,7 +2306,7 @@ function validateIntentModel(errors, model) {
             continue;
           }
           effectBindingsById.set(effect.id, effectBinding);
-          validateIntentFieldBindings(errors, `${process.id}.${refinement.id} outcome ${binding.outcome} effect ${effect.id}`, effect.outputContract, effectBinding.fields);
+          errors.push(...validateIntentFieldBindings(`${process.id}.${refinement.id} outcome ${binding.outcome} effect ${effect.id}`, effect.outputContract, effectBinding.fields));
         }
         for (const effect of outcomeEffects) {
           if (list(effect.outputContract?.fields).some((field) => field.required !== false) && !effectBindingsById.has(effect.id)) {

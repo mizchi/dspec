@@ -2647,12 +2647,12 @@
       "id": "DSPEC-EXPR-TYPED-AST",
       "implementations": [
         {
-          "contentHash": "sha256:963d7a65620f35c5c0d78aa6e5b6c221b41ec3428a64d0f189307c0afc1da02e",
+          "contentHash": "sha256:7c3a7b3951710ff245e5f4e149ff5513d11399f506acace9d26f80526158f680",
           "hashScope": "symbol-text",
           "key": "code:src/core/clause-ast.mjs#CLAUSE_AST_SEMANTICS_VERSION"
         },
         {
-          "contentHash": "sha256:f8557a5ebdfe93a33d5d869c155f2ace38f498c421c28552bbf146703c3a1a52",
+          "contentHash": "sha256:3402046a9861442d322c2e2d219f99c4e584971a14a82f51e5f379218d70550c",
           "hashScope": "symbol-text",
           "key": "code:src/core/clause-ast.mjs#evaluateClauseAst"
         },
@@ -3090,7 +3090,7 @@
           "key": "code:src/cli.mjs#intentProjection"
         },
         {
-          "contentHash": "sha256:15702fa24c78c921c464f1910dfa9e242a407b0532fc5b47e4a29163e5ed826e",
+          "contentHash": "sha256:55a5c7d8cbe462c8548ce0e23e949131a712a3d8b8c26e9af3b947ea2170a1b5",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#validateIntentModel"
         }
@@ -3134,7 +3134,7 @@
           "key": "code:src/cli.mjs#intentGraphReport"
         },
         {
-          "contentHash": "sha256:15702fa24c78c921c464f1910dfa9e242a407b0532fc5b47e4a29163e5ed826e",
+          "contentHash": "sha256:55a5c7d8cbe462c8548ce0e23e949131a712a3d8b8c26e9af3b947ea2170a1b5",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#validateIntentModel"
         }
@@ -3979,7 +3979,7 @@
       "id": "DSPEC-PACKAGE-RELEASE",
       "implementations": [
         {
-          "contentHash": "sha256:963d7a65620f35c5c0d78aa6e5b6c221b41ec3428a64d0f189307c0afc1da02e",
+          "contentHash": "sha256:7c3a7b3951710ff245e5f4e149ff5513d11399f506acace9d26f80526158f680",
           "hashScope": "symbol-text",
           "key": "code:src/core/clause-ast.mjs#CLAUSE_AST_SEMANTICS_VERSION"
         },
