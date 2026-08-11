@@ -3777,7 +3777,7 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/release-model-validation.mjs"
           symbol = "validateReleaseModel"
         }
         new d.ImplementationRef {

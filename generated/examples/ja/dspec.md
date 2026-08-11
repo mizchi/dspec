@@ -2717,7 +2717,7 @@ Release safety は typed pattern として記述され、health gate・rollback�
 - check: node test/cli.test.mjs#normalizes Release safety counterexamples to source steps [reference]
 - check: node test/cli.test.mjs#keeps generated Release safety checks load-bearing [reference]
 - implementation: model dspec/Schema.pkl#ReleaseModel
-- implementation: code src/cli.mjs#validateReleaseModel
+- implementation: code src/core/release-model-validation.mjs#validateReleaseModel
 - implementation: code src/cli.mjs#releaseProjection
 - implementation: code src/cli.mjs#propertyReleaseProductionStepsHaveHealthGate
 - implementation: code src/cli.mjs#propertyReleaseTrafficShiftsHaveRollback

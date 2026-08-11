@@ -48,6 +48,16 @@ import {
   dataStores,
   validateDataModel,
 } from "./core/data-model-validation.mjs";
+import {
+  releaseEnvironments,
+  releaseGates,
+  releaseMigrations,
+  releasePattern,
+  releaseRollbacks,
+  releaseServices,
+  releaseSteps,
+  validateReleaseModel,
+} from "./core/release-model-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1765,10 +1775,6 @@ function validateClauseAsts(errors, rule, fieldName) {
   });
 }
 
-function releasePattern(model) {
-  return model.patterns?.release ?? null;
-}
-
 function runtimePattern(model) {
   return model.patterns?.runtime ?? null;
 }
@@ -1824,30 +1830,6 @@ function walkLocalizedTexts(value, path, visit, seen = new Set()) {
   for (const [key, child] of Object.entries(value)) {
     walkLocalizedTexts(child, `${path}.${key}`, visit, seen);
   }
-}
-
-function releaseServices(release) {
-  return list(release?.services);
-}
-
-function releaseEnvironments(release) {
-  return list(release?.environments);
-}
-
-function releaseGates(release) {
-  return list(release?.gates);
-}
-
-function releaseRollbacks(release) {
-  return list(release?.rollbacks);
-}
-
-function releaseMigrations(release) {
-  return list(release?.migrations);
-}
-
-function releaseSteps(release) {
-  return list(release?.steps);
 }
 
 function runtimeServices(runtime) {
@@ -1945,75 +1927,6 @@ function checkUniqueIdentifiers(errors, label, identifiers) {
       errors.push(`duplicate ${label}: ${identifier}`);
     }
     seen.add(identifier);
-  }
-}
-
-function validateReleaseModel(errors, model) {
-  const release = releasePattern(model);
-  if (!release) return;
-
-  const services = releaseServices(release);
-  const environments = releaseEnvironments(release);
-  const gates = releaseGates(release);
-  const rollbacks = releaseRollbacks(release);
-  const migrations = releaseMigrations(release);
-  const steps = releaseSteps(release);
-  checkUnique(errors, "release service id", services);
-  checkUnique(errors, "release environment id", environments);
-  checkUnique(errors, "release gate id", gates);
-  checkUnique(errors, "release rollback id", rollbacks);
-  checkUnique(errors, "release migration id", migrations);
-  checkUnique(errors, "release step id", steps);
-
-  const serviceIds = new Set(services.map((service) => service.id));
-  const environmentIds = new Set(environments.map((environment) => environment.id));
-  const gateIds = new Set(gates.map((gate) => gate.id));
-  const rollbacksById = new Map(rollbacks.map((rollback) => [rollback.id, rollback]));
-  const migrationsById = new Map(migrations.map((migration) => [migration.id, migration]));
-
-  for (const rollback of rollbacks) {
-    if (!serviceIds.has(rollback.service)) {
-      errors.push(`unknown release rollback service: ${rollback.id} -> ${rollback.service}`);
-    }
-  }
-
-  for (const migration of migrations) {
-    if (!serviceIds.has(migration.service)) {
-      errors.push(`unknown release migration service: ${migration.id} -> ${migration.service}`);
-    }
-  }
-
-  for (const step of steps) {
-    if (!serviceIds.has(step.service)) {
-      errors.push(`unknown release step service: ${step.id} -> ${step.service}`);
-    }
-    if (!environmentIds.has(step.environment)) {
-      errors.push(`unknown release step environment: ${step.id} -> ${step.environment}`);
-    }
-    if (step.trafficPercent < 0 || step.trafficPercent > 100) {
-      errors.push(`release step traffic percent out of range: ${step.id} -> ${step.trafficPercent}`);
-    }
-    for (const gateId of list(step.gates)) {
-      if (!gateIds.has(gateId)) {
-        errors.push(`unknown release step gate: ${step.id} -> ${gateId}`);
-      }
-    }
-    if (step.rollback) {
-      const rollback = rollbacksById.get(step.rollback);
-      if (!rollback) {
-        errors.push(`unknown release step rollback: ${step.id} -> ${step.rollback}`);
-      } else if (rollback.service !== step.service) {
-        errors.push(`release step rollback service mismatch: ${step.id} -> ${step.rollback}`);
-      }
-    }
-    if (step.migration) {
-      const migration = migrationsById.get(step.migration);
-      if (!migration) {
-        errors.push(`unknown release step migration: ${step.id} -> ${step.migration}`);
-      } else if (migration.service !== step.service) {
-        errors.push(`release step migration service mismatch: ${step.id} -> ${step.migration}`);
-      }
-    }
   }
 }
 
@@ -2878,7 +2791,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
   errors.push(...validateDbModel(model));
   errors.push(...validateCloudModel(model));
   errors.push(...validateDataModel(model));
-  validateReleaseModel(errors, model);
+  errors.push(...validateReleaseModel(model));
   validateRuntimeModel(errors, model);
   errors.push(...validateDomainModel(model));
   validateIntentModel(errors, model);
