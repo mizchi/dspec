@@ -74,9 +74,6 @@ import {
   validateRuntimeModel,
 } from "./core/runtime-model-validation.mjs";
 import {
-  validateIntentFieldBindings,
-} from "./core/intent-data-contract-validation.mjs";
-import {
   intentAssuranceTasks,
   intentClaims,
   intentGoals,
@@ -108,6 +105,11 @@ import {
   intentProcesses,
   validateIntentProcess,
 } from "./core/intent-process-validation.mjs";
+import {
+  createIntentRefinementValidationState,
+  intentRefinements,
+  validateIntentRefinements,
+} from "./core/intent-refinement-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1878,20 +1880,6 @@ function walkLocalizedTexts(value, path, visit, seen = new Set()) {
   }
 }
 
-function intentRefinements(process) {
-  return list(process?.refinements);
-}
-
-function checkUniqueIdentifiers(errors, label, identifiers) {
-  const seen = new Set();
-  for (const identifier of identifiers) {
-    if (seen.has(identifier)) {
-      errors.push(`duplicate ${label}: ${identifier}`);
-    }
-    seen.add(identifier);
-  }
-}
-
 function validateIntentModel(errors, model) {
   const intent = intentPattern(model);
   if (!intent) return;
@@ -1917,10 +1905,6 @@ function validateIntentModel(errors, model) {
   checkUnique(errors, "intent semantic binding id", semanticBindings);
   checkUnique(errors, "intent scenario id", scenarios);
 
-  const dbTransactionIds = new Set(dbTransactions(dbPattern(model)).map((transaction) => transaction.id));
-  const outcomesById = new Map(outcomes.map((outcome) => [outcome.id, outcome]));
-  const refinementIds = new Set();
-
   errors.push(...validateIntentOutcomes(model.vocabulary, capabilities, outcomes));
 
   errors.push(...validateIntentAccessPolicyReferences(processes, model.vocabulary, accessPolicies));
@@ -1935,74 +1919,15 @@ function validateIntentModel(errors, model) {
   ));
   errors.push(...validateIntentAccessPolicyPrecedence(accessPolicies));
 
+  const refinementValidationState = createIntentRefinementValidationState();
   for (const process of processes) {
     errors.push(...validateIntentProcess(process, model.vocabulary, capabilities, outcomes));
-    const declaredOutcomes = list(process.outcomes);
-    const refinements = intentRefinements(process);
-    checkUnique(errors, `intent refinement id in ${process.id}`, refinements);
-    for (const refinement of refinements) {
-      if (refinementIds.has(refinement.id)) {
-        errors.push(`duplicate intent refinement id: ${refinement.id}`);
-      }
-      refinementIds.add(refinement.id);
-      if (refinement.kind === "http-route" && !refinement.http) {
-        errors.push(`intent HTTP refinement requires endpoint: ${process.id}.${refinement.id}`);
-      }
-      if (refinement.kind !== "http-route" && refinement.http) {
-        errors.push(`intent refinement HTTP endpoint requires http-route kind: ${process.id}.${refinement.id}`);
-      }
-      if (refinement.kind === "grpc-method" && !refinement.grpc) {
-        errors.push(`intent gRPC refinement requires endpoint: ${process.id}.${refinement.id}`);
-      }
-      if (refinement.kind !== "grpc-method" && refinement.grpc) {
-        errors.push(`intent refinement gRPC endpoint requires grpc-method kind: ${process.id}.${refinement.id}`);
-      }
-      if (refinement.kind === "transaction" && !refinement.transaction) {
-        errors.push(`intent transaction refinement requires endpoint: ${process.id}.${refinement.id}`);
-      }
-      if (refinement.kind !== "transaction" && refinement.transaction) {
-        errors.push(`intent refinement transaction endpoint requires transaction kind: ${process.id}.${refinement.id}`);
-      }
-      if (refinement.transaction && !dbTransactionIds.has(refinement.transaction.dbTransaction)) {
-        errors.push(`unknown intent transaction refinement DB transaction: ${process.id}.${refinement.id} -> ${refinement.transaction.dbTransaction}`);
-      }
-      errors.push(...validateIntentFieldBindings(`${process.id}.${refinement.id} input`, process.inputContract, refinement.inputBindings));
-      const bindingsByOutcome = new Map();
-      checkUniqueIdentifiers(errors, `intent refinement outcome binding in ${process.id}.${refinement.id}`, list(refinement.outcomeBindings).map((binding) => binding.outcome));
-      for (const binding of list(refinement.outcomeBindings)) {
-        if (!declaredOutcomes.includes(binding.outcome)) {
-          errors.push(`unknown intent refinement outcome: ${process.id}.${refinement.id} -> ${binding.outcome}`);
-          continue;
-        }
-        bindingsByOutcome.set(binding.outcome, binding);
-        const outcome = outcomesById.get(binding.outcome);
-        errors.push(...validateIntentFieldBindings(`${process.id}.${refinement.id} outcome ${binding.outcome}`, outcome?.outputContract, binding.fields));
-        const outcomeEffects = list(outcome?.effects);
-        const effectBindings = list(binding.effectBindings);
-        checkUniqueIdentifiers(errors, `intent refinement effect binding in ${process.id}.${refinement.id} outcome ${binding.outcome}`, effectBindings.map((effectBinding) => effectBinding.effect));
-        const effectBindingsById = new Map();
-        for (const effectBinding of effectBindings) {
-          const effect = outcomeEffects.find((candidate) => candidate.id === effectBinding.effect);
-          if (!effect) {
-            errors.push(`unknown intent refinement outcome effect: ${process.id}.${refinement.id}.${binding.outcome} -> ${effectBinding.effect}`);
-            continue;
-          }
-          effectBindingsById.set(effect.id, effectBinding);
-          errors.push(...validateIntentFieldBindings(`${process.id}.${refinement.id} outcome ${binding.outcome} effect ${effect.id}`, effect.outputContract, effectBinding.fields));
-        }
-        for (const effect of outcomeEffects) {
-          if (list(effect.outputContract?.fields).some((field) => field.required !== false) && !effectBindingsById.has(effect.id)) {
-            errors.push(`intent refinement missing effect binding: ${process.id}.${refinement.id}.${binding.outcome} -> ${effect.id}`);
-          }
-        }
-      }
-      for (const outcomeId of declaredOutcomes) {
-        const outcome = outcomesById.get(outcomeId);
-        if (list(outcome?.outputContract?.fields).some((field) => field.required !== false) && !bindingsByOutcome.has(outcomeId)) {
-          errors.push(`intent refinement missing outcome binding: ${process.id}.${refinement.id} -> ${outcomeId}`);
-        }
-      }
-    }
+    errors.push(...validateIntentRefinements(
+      process,
+      outcomes,
+      dbTransactions(dbPattern(model)),
+      refinementValidationState,
+    ));
   }
 
   errors.push(...validateIntentConstructionAuthorities(processes, outcomes, authorities));
