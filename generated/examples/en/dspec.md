@@ -1047,7 +1047,7 @@ Data governance is authored as a typed pattern and projects encryption, deletion
 - check: node test/cli.test.mjs#normalizes Data governance counterexamples to source records [reference]
 - check: node test/cli.test.mjs#keeps generated Data governance checks load-bearing [reference]
 - implementation: model dspec/Schema.pkl#DataModel
-- implementation: code src/cli.mjs#validateDataModel
+- implementation: code src/core/data-model-validation.mjs#validateDataModel
 - implementation: code src/cli.mjs#dataProjection
 - implementation: code src/cli.mjs#propertyDataSensitivePlacementsEncrypted
 - implementation: code src/cli.mjs#propertyDataPersonalPlacementsSupportDeletion

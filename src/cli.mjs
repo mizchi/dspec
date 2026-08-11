@@ -39,6 +39,15 @@ import {
   cloudZones,
   validateCloudModel,
 } from "./core/cloud-model-validation.mjs";
+import {
+  dataFlows,
+  dataPattern,
+  dataPlacements,
+  dataPolicies,
+  dataSets,
+  dataStores,
+  validateDataModel,
+} from "./core/data-model-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1756,10 +1765,6 @@ function validateClauseAsts(errors, rule, fieldName) {
   });
 }
 
-function dataPattern(model) {
-  return model.patterns?.data ?? null;
-}
-
 function releasePattern(model) {
   return model.patterns?.release ?? null;
 }
@@ -1819,26 +1824,6 @@ function walkLocalizedTexts(value, path, visit, seen = new Set()) {
   for (const [key, child] of Object.entries(value)) {
     walkLocalizedTexts(child, `${path}.${key}`, visit, seen);
   }
-}
-
-function dataPolicies(data) {
-  return list(data?.policies);
-}
-
-function dataSets(data) {
-  return list(data?.datasets);
-}
-
-function dataStores(data) {
-  return list(data?.stores);
-}
-
-function dataPlacements(data) {
-  return list(data?.placements);
-}
-
-function dataFlows(data) {
-  return list(data?.flows);
 }
 
 function releaseServices(release) {
@@ -1960,66 +1945,6 @@ function checkUniqueIdentifiers(errors, label, identifiers) {
       errors.push(`duplicate ${label}: ${identifier}`);
     }
     seen.add(identifier);
-  }
-}
-
-function validateDataModel(errors, model) {
-  const data = dataPattern(model);
-  if (!data) return;
-
-  const policies = dataPolicies(data);
-  const datasets = dataSets(data);
-  const stores = dataStores(data);
-  const placements = dataPlacements(data);
-  const flows = dataFlows(data);
-  checkUnique(errors, "data policy id", policies);
-  checkUnique(errors, "data set id", datasets);
-  checkUnique(errors, "data store id", stores);
-  checkUnique(errors, "data placement id", placements);
-  checkUnique(errors, "data flow id", flows);
-
-  const policyClassifications = new Set();
-  for (const policy of policies) {
-    if (policyClassifications.has(policy.classification)) {
-      errors.push(`duplicate data policy classification: ${policy.classification}`);
-    }
-    policyClassifications.add(policy.classification);
-    if (policy.maxRetentionDays !== null && policy.maxRetentionDays !== undefined && policy.maxRetentionDays < 0) {
-      errors.push(`negative data policy max retention days: ${policy.id}`);
-    }
-  }
-
-  const datasetIds = new Set(datasets.map((dataset) => dataset.id));
-  const storeIds = new Set(stores.map((store) => store.id));
-
-  for (const dataset of datasets) {
-    if (!policyClassifications.has(dataset.classification)) {
-      errors.push(`missing data policy for classification: ${dataset.id} -> ${dataset.classification}`);
-    }
-    if (dataset.retentionDays !== null && dataset.retentionDays !== undefined && dataset.retentionDays < 0) {
-      errors.push(`negative data set retention days: ${dataset.id}`);
-    }
-  }
-
-  for (const placement of placements) {
-    if (!datasetIds.has(placement.dataset)) {
-      errors.push(`unknown data placement dataset: ${placement.id} -> ${placement.dataset}`);
-    }
-    if (!storeIds.has(placement.store)) {
-      errors.push(`unknown data placement store: ${placement.id} -> ${placement.store}`);
-    }
-  }
-
-  for (const flow of flows) {
-    if (!datasetIds.has(flow.dataset)) {
-      errors.push(`unknown data flow dataset: ${flow.id} -> ${flow.dataset}`);
-    }
-    if (!storeIds.has(flow.from)) {
-      errors.push(`unknown data flow source store: ${flow.id} -> ${flow.from}`);
-    }
-    if (!storeIds.has(flow.to)) {
-      errors.push(`unknown data flow target store: ${flow.id} -> ${flow.to}`);
-    }
   }
 }
 
@@ -2952,7 +2877,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
 
   errors.push(...validateDbModel(model));
   errors.push(...validateCloudModel(model));
-  validateDataModel(errors, model);
+  errors.push(...validateDataModel(model));
   validateReleaseModel(errors, model);
   validateRuntimeModel(errors, model);
   errors.push(...validateDomainModel(model));
