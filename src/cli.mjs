@@ -100,6 +100,11 @@ import {
   intentConstructionAuthorities,
   validateIntentConstructionAuthorities,
 } from "./core/intent-construction-authority-validation.mjs";
+import {
+  intentCapabilities,
+  intentOutcomes,
+  validateIntentOutcomes,
+} from "./core/intent-outcome-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1870,14 +1875,6 @@ function walkLocalizedTexts(value, path, visit, seen = new Set()) {
   }
 }
 
-function intentCapabilities(intent) {
-  return list(intent?.capabilities);
-}
-
-function intentOutcomes(intent) {
-  return list(intent?.outcomes);
-}
-
 function intentProcesses(intent) {
   return list(intent?.processes);
 }
@@ -1925,27 +1922,9 @@ function validateIntentModel(errors, model) {
   const capabilityIds = new Set(capabilities.map((capability) => capability.id));
   const dbTransactionIds = new Set(dbTransactions(dbPattern(model)).map((transaction) => transaction.id));
   const outcomesById = new Map(outcomes.map((outcome) => [outcome.id, outcome]));
-  const outcomeStates = new Set();
   const refinementIds = new Set();
 
-  for (const outcome of outcomes) {
-    if (!stateIds.has(outcome.state)) {
-      errors.push(`unknown intent outcome state: ${outcome.id} -> ${outcome.state}`);
-    }
-    if (outcomeStates.has(outcome.state)) {
-      errors.push(`duplicate intent outcome state: ${outcome.state}`);
-    }
-    outcomeStates.add(outcome.state);
-    errors.push(...validateIntentDataContract(`${outcome.id} output`, outcome.outputContract));
-    const effects = list(outcome.effects);
-    checkUnique(errors, `intent outcome effect id in ${outcome.id}`, effects);
-    for (const effect of effects) {
-      if (!capabilityIds.has(effect.capability)) {
-        errors.push(`unknown intent outcome effect capability: ${outcome.id}.${effect.id} -> ${effect.capability}`);
-      }
-      errors.push(...validateIntentDataContract(`${outcome.id} effect ${effect.id} output`, effect.outputContract));
-    }
-  }
+  errors.push(...validateIntentOutcomes(model.vocabulary, capabilities, outcomes));
 
   errors.push(...validateIntentAccessPolicyReferences(processes, model.vocabulary, accessPolicies));
 
