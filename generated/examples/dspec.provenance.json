@@ -1,14 +1,14 @@
 {
   "artifacts": [
     {
-      "bytes": 176543,
-      "digest": "sha256:0b9c7f31c4b731bf22891184872095aa5ab09b50fdbceb7b13eb9f69f0910e6f",
+      "bytes": 176683,
+      "digest": "sha256:fe71f621ead82cf26c11c6965631ac8fc253799d202e2a18ae51fe787ae72cd3",
       "locale": "en",
       "path": "generated/examples/en/dspec.md"
     },
     {
-      "bytes": 176831,
-      "digest": "sha256:2decf8b9558e4bd12212cc35d3dec1951f527e54172aaaf73b9192927f9f2217",
+      "bytes": 176971,
+      "digest": "sha256:1ea45386d70aa77c993b0599ffa5de989641a725fc1fc9559c1d9c1760491b67",
       "locale": "ja",
       "path": "generated/examples/ja/dspec.md"
     }
@@ -17,9 +17,9 @@
     "name": "dspec/markdown",
     "version": "1.0"
   },
-  "generatedAt": "2026-08-11T09:15:10.906Z",
+  "generatedAt": "2026-08-11T09:23:59.153Z",
   "model": {
-    "digest": "sha256:7de2755ff8aad8804f39ecf41f87e35ce2bbc0e786b788f91800051e7ff65150",
+    "digest": "sha256:8568754daaae3240084acde645f8f08ba98b25207a8c7b36c377b6b45af153f6",
     "id": "dspec-self",
     "version": "0.1.0"
   },

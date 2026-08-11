@@ -713,8 +713,8 @@ CheckTarget は保証の種類と証拠を明示し、coverage は必要な保�
 - check: node test/cli.test.mjs#rejects direct must and mustNot contradictions [reference]
 - check: node test/cli.test.mjs#rejects typed AST must and mustNot contradictions [reference]
 - implementation: code src/cli.mjs#validate
-- implementation: code src/cli.mjs#clauseIdentity
-- implementation: code src/cli.mjs#exprAstKey
+- implementation: code src/core/model-structure-validation.mjs#clauseIdentity
+- implementation: code src/core/model-structure-validation.mjs#exprAstKey
 - implementation: model fixtures/typed-ast-contradiction.pkl
 
 #### Review
@@ -785,7 +785,7 @@ check/drift/coverage/domain-coverage/reconcile/reverse/app-profile は機械可�
 - term: `concept.stable_id`
 - mustNot: `duplicate_id.accepted`
 - check: node test/cli.test.mjs#rejects duplicate rule ids [reference]
-- implementation: code src/cli.mjs#checkUnique
+- implementation: code src/core/model-structure-validation.mjs#checkUnique
 
 #### Review
 
@@ -942,8 +942,8 @@ clause-level coverage を要求する rule は各 clause を支える CheckTarge
 - check: node test/cli.test.mjs#rejects invalid clause coverage selectors [reference]
 - implementation: code dspec/Schema.pkl#CheckTarget
 - implementation: code dspec/Schema.pkl#Rule
-- implementation: code src/cli.mjs#ruleClauseSelectors
-- implementation: code src/cli.mjs#validateCheckTargetCoverageSelectors
+- implementation: code src/core/model-structure-validation.mjs#ruleClauseSelectors
+- implementation: code src/core/model-structure-validation.mjs#validateCheckTargetCoverageSelectors
 - implementation: code src/cli.mjs#validateCoverage
 - implementation: model fixtures/coverage-clause-covered.pkl
 - implementation: model fixtures/coverage-clause-missing.pkl

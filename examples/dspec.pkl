@@ -1133,7 +1133,7 @@ model: d.Model = new {
       implementedBy {
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/model-structure-validation.mjs"
           symbol = "checkUnique"
         }
       }
@@ -1260,8 +1260,8 @@ model: d.Model = new {
       }
       implementedBy {
         d.codeRef("src/cli.mjs", "validate")
-        d.codeRef("src/cli.mjs", "clauseIdentity")
-        d.codeRef("src/cli.mjs", "exprAstKey")
+        d.codeRef("src/core/model-structure-validation.mjs", "clauseIdentity")
+        d.codeRef("src/core/model-structure-validation.mjs", "exprAstKey")
         d.modelRef("fixtures/typed-ast-contradiction.pkl")
       }
     }
@@ -1467,8 +1467,8 @@ model: d.Model = new {
       implementedBy {
         d.codeRef("dspec/Schema.pkl", "CheckTarget")
         d.codeRef("dspec/Schema.pkl", "Rule")
-        d.codeRef("src/cli.mjs", "ruleClauseSelectors")
-        d.codeRef("src/cli.mjs", "validateCheckTargetCoverageSelectors")
+        d.codeRef("src/core/model-structure-validation.mjs", "ruleClauseSelectors")
+        d.codeRef("src/core/model-structure-validation.mjs", "validateCheckTargetCoverageSelectors")
         d.codeRef("src/cli.mjs", "validateCoverage")
         d.modelRef("fixtures/coverage-clause-covered.pkl")
         d.modelRef("fixtures/coverage-clause-missing.pkl")

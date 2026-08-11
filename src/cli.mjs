@@ -8,8 +8,12 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   CLAUSE_AST_SEMANTICS_VERSION,
-  validateClauseAst,
 } from "./core/clause-ast.mjs";
+import {
+  clauseIdentity,
+  ruleClauseSelectors,
+  validateModelStructure,
+} from "./core/model-structure-validation.mjs";
 import {
   DbSchemaImportError,
   emitDbSchemaPkl,
@@ -1704,34 +1708,6 @@ function clauseExpr(clause) {
   return clause.ast ? exprToText(clause.ast) : clause.expr;
 }
 
-function exprAstKey(ast) {
-  if (!ast) return null;
-  const args = list(ast.args).join(",");
-  const children = list(ast.children).map(exprAstKey).join(",");
-  if (ast.op === "atom") return `atom:${ast.name}(${args})`;
-  if (ast.op === "eq" || ast.op === "neq") return `${ast.op}(${args})`;
-  if (ast.op === "not") return `not(${children})`;
-  if (ast.op === "and" || ast.op === "or") return `${ast.op}(${children})`;
-  if (ast.op === "implies") return `implies(${children})`;
-  if (ast.op === "exists" || ast.op === "forall") return `${ast.op}:${ast.name}(${children})`;
-  return JSON.stringify(stableObject(ast));
-}
-
-function clauseIdentity(clause) {
-  return clause.ast ? exprAstKey(clause.ast) : clause.expr;
-}
-
-function checkUnique(errors, label, items) {
-  const seen = new Set();
-  for (const item of items) {
-    if (!item?.id) continue;
-    if (seen.has(item.id)) {
-      errors.push(`duplicate ${label}: ${item.id}`);
-    }
-    seen.add(item.id);
-  }
-}
-
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -1795,16 +1771,6 @@ function activeApprovedRules(model) {
   return list(model.rules).filter((rule) => rule.reviewStatus === "approved" && !rule.deprecated);
 }
 
-function validateExprAst(errors, context, ast) {
-  errors.push(...validateClauseAst(ast, { context }));
-}
-
-function validateClauseAsts(errors, rule, fieldName) {
-  list(rule[fieldName]).forEach((clause, index) => {
-    validateExprAst(errors, `${rule.id} ${fieldName}[${index}]`, clause.ast);
-  });
-}
-
 function domainPattern(model) {
   return model.patterns?.domain ?? null;
 }
@@ -1817,93 +1783,19 @@ function validateProjections(errors, model) {
   errors.push(...validateProjectionContracts(model));
 }
 
-function ruleClauseSelectors(rule) {
-  const selectors = [];
-  for (const field of ["when", "must", "mustNot"]) {
-    list(rule[field]).forEach((_clause, index) => {
-      selectors.push(`${field}[${index}]`);
-    });
-  }
-  return selectors;
-}
-
-function validateCheckTargetCoverageSelectors(errors, rule) {
-  const known = new Set(ruleClauseSelectors(rule));
-  for (const target of list(rule.checks)) {
-    for (const selector of list(target.covers)) {
-      if (!known.has(selector)) {
-        errors.push(`unknown check target covered clause: ${rule.id} -> ${selector}`);
-      }
-    }
-  }
-}
-
 function validate(model, { requireFormalEvidence = false } = {}) {
-  const errors = [];
-  const terms = list(model.vocabulary);
-  const rules = list(model.rules);
-  const decisions = list(model.decisions);
-
-  checkUnique(errors, "term id", terms);
-  checkUnique(errors, "rule id", rules);
-  checkUnique(errors, "decision id", decisions);
-
-  const termIds = new Set(terms.map((term) => term.id));
-  const ruleIds = new Set(rules.map((rule) => rule.id));
-  const locales = new Set(list(model.locales));
-
-  if (model.clauseAstSemanticsVersion !== CLAUSE_AST_SEMANTICS_VERSION) {
-    errors.push(`unsupported Clause.ast semantics version: ${model.clauseAstSemanticsVersion}`);
-  }
-
-  if (!locales.has(model.primaryLocale)) {
-    errors.push(`primary locale is not listed in locales: ${model.primaryLocale}`);
-  }
-
-  for (const term of terms) {
-    for (const valueId of list(term.values)) {
-      if (!termIds.has(valueId)) {
-        errors.push(`unknown term value reference: ${term.id} -> ${valueId}`);
-      }
-    }
-    for (const supersededId of list(term.supersedes)) {
-      if (!termIds.has(supersededId)) {
-        errors.push(`unknown superseded term reference: ${term.id} -> ${supersededId}`);
-      }
-    }
-  }
-
-  for (const rule of rules) {
-    for (const termId of list(rule.terms)) {
-      if (!termIds.has(termId)) {
-        errors.push(`unknown term reference: ${rule.id} -> ${termId}`);
-      }
-    }
-    for (const exceptionId of list(rule.exceptions)) {
-      if (!ruleIds.has(exceptionId)) {
-        errors.push(`unknown exception reference: ${rule.id} -> ${exceptionId}`);
-      }
-    }
-
-    const must = new Set(list(rule.must).map(clauseIdentity));
-    for (const clause of list(rule.mustNot)) {
-      const identity = clauseIdentity(clause);
-      if (must.has(identity)) {
-        errors.push(`rule has both must and mustNot: ${rule.id} -> ${identity}`);
-      }
-    }
-
-    validateClauseAsts(errors, rule, "when");
-    validateClauseAsts(errors, rule, "must");
-    validateClauseAsts(errors, rule, "mustNot");
-    validateCheckTargetCoverageSelectors(errors, rule);
-    validateCheckTargetAssuranceDeclarations(errors, model, rule, { requireFormalEvidence });
-
-    const verificationCount = list(rule.checks).length + list(rule.implementedBy).length;
-    if (rule.reviewStatus === "approved" && !rule.deprecated && verificationCount === 0) {
-      errors.push(`approved rule has no verification target: ${rule.id}`);
-    }
-  }
+  const errors = validateModelStructure(model, {
+    validateRuleAfterStructure(rule) {
+      const ruleErrors = [];
+      validateCheckTargetAssuranceDeclarations(
+        ruleErrors,
+        model,
+        rule,
+        { requireFormalEvidence },
+      );
+      return ruleErrors;
+    },
+  });
 
   errors.push(...validateDbModel(model));
   errors.push(...validateCloudModel(model));
