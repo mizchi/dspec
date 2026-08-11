@@ -1119,7 +1119,7 @@ DB migration mapping は preserve scope と from/to table に接地している
 - check: node test/cli.test.mjs#normalizes DB migration mapping expression counterexamples to source mappings [reference]
 - check: node test/cli.test.mjs#keeps generated DB migration mapping expression checks load-bearing [reference]
 - implementation: model dspec/Schema.pkl#DbMapping
-- implementation: code src/cli.mjs#validateDbModel
+- implementation: code src/core/db-model-validation.mjs#validateDbModel
 - implementation: code src/cli.mjs#dbExprMentionsTable
 - implementation: code src/cli.mjs#propertyDbMigrationMappingExpressionsMentionTables
 - implementation: model fixtures/db-model-invalid-mapping-preserve.pkl
@@ -1183,7 +1183,7 @@ DB schema、transaction、invariant は typed pattern として記述され、ba
 - check: node test/cli.test.mjs#emits DB model pattern into backend projections [reference]
 - check: node test/cli.test.mjs#keeps generated DB invariant checks load-bearing [reference]
 - implementation: model dspec/Schema.pkl#DbModel
-- implementation: code src/cli.mjs#validateDbModel
+- implementation: code src/core/db-model-validation.mjs#validateDbModel
 - implementation: code src/cli.mjs#dbProjection
 - implementation: model fixtures/db-model.pkl
 - implementation: model fixtures/db-model-missing-preserve.pkl

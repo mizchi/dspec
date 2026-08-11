@@ -11,9 +11,9 @@
     "name": "dspec/alloy",
     "version": "1.0"
   },
-  "generatedAt": "2026-08-10T17:39:34.127Z",
+  "generatedAt": "2026-08-11T04:24:21.937Z",
   "model": {
-    "digest": "sha256:c2ef949cdb3297c4c7b8b6493c222aca7549b3fbaf031c97b30369094566edc9",
+    "digest": "sha256:bbbb69f1410199d43ab5a940bd677c9ebfa0f96432193a71c2de71922b6234a2",
     "id": "dspec-self",
     "version": "0.1.0"
   },

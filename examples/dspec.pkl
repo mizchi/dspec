@@ -2967,7 +2967,7 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/db-model-validation.mjs"
           symbol = "validateDbModel"
         }
         new d.ImplementationRef {
@@ -3345,7 +3345,7 @@ model: d.Model = new {
         }
         new d.ImplementationRef {
           kind = "code"
-          path = "src/cli.mjs"
+          path = "src/core/db-model-validation.mjs"
           symbol = "validateDbModel"
         }
         new d.ImplementationRef {

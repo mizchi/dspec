@@ -19,6 +19,18 @@ import {
   splitSqlTopLevel,
   stripSqlComments,
 } from "./core/db-schema-import.mjs";
+import {
+  dbColumnIds,
+  dbColumnRefParts,
+  dbInvariantMap,
+  dbInvariants,
+  dbMigrations,
+  dbPattern,
+  dbTableMap,
+  dbTables,
+  dbTransactions,
+  validateDbModel,
+} from "./core/db-model-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1736,10 +1748,6 @@ function validateClauseAsts(errors, rule, fieldName) {
   });
 }
 
-function dbPattern(model) {
-  return model.patterns?.db ?? null;
-}
-
 function cloudPattern(model) {
   return model.patterns?.cloud ?? null;
 }
@@ -1807,22 +1815,6 @@ function walkLocalizedTexts(value, path, visit, seen = new Set()) {
   for (const [key, child] of Object.entries(value)) {
     walkLocalizedTexts(child, `${path}.${key}`, visit, seen);
   }
-}
-
-function dbTables(db) {
-  return list(db?.tables);
-}
-
-function dbInvariants(db) {
-  return list(db?.invariants);
-}
-
-function dbTransactions(db) {
-  return list(db?.transactions);
-}
-
-function dbMigrations(db) {
-  return list(db?.migrations);
 }
 
 function cloudZones(cloud) {
@@ -1980,132 +1972,6 @@ function checkUniqueIdentifiers(errors, label, identifiers) {
       errors.push(`duplicate ${label}: ${identifier}`);
     }
     seen.add(identifier);
-  }
-}
-
-function dbColumnRefParts(ref) {
-  const parts = String(ref).split(".");
-  return parts.length === 2 ? { tableId: parts[0], columnId: parts[1] } : null;
-}
-
-function dbTableMap(db) {
-  return new Map(dbTables(db).map((table) => [table.id, table]));
-}
-
-function dbInvariantMap(db) {
-  return new Map(dbInvariants(db).map((invariant) => [invariant.id, invariant]));
-}
-
-function dbColumnIds(table) {
-  return new Set(list(table.columns).map((column) => column.id));
-}
-
-function validateDbColumnRef(errors, db, context, ref) {
-  const parts = dbColumnRefParts(ref);
-  if (!parts) {
-    errors.push(`invalid db column reference: ${context} -> ${ref}`);
-    return;
-  }
-  const table = dbTableMap(db).get(parts.tableId);
-  if (!table) {
-    errors.push(`unknown db column reference table: ${context} -> ${ref}`);
-    return;
-  }
-  if (!dbColumnIds(table).has(parts.columnId)) {
-    errors.push(`unknown db column reference column: ${context} -> ${ref}`);
-  }
-}
-
-function validateDbModel(errors, model) {
-  const db = dbPattern(model);
-  if (!db) return;
-
-  const tables = dbTables(db);
-  const invariants = dbInvariants(db);
-  const transactions = dbTransactions(db);
-  const migrations = dbMigrations(db);
-  checkUnique(errors, "db table id", tables);
-  checkUnique(errors, "db invariant id", invariants);
-  checkUnique(errors, "db transaction id", transactions);
-  checkUnique(errors, "db migration id", migrations);
-
-  const tableIds = new Set(tables.map((table) => table.id));
-  const invariantIds = new Set(invariants.map((invariant) => invariant.id));
-
-  for (const table of tables) {
-    checkUnique(errors, `db column id in ${table.id}`, list(table.columns));
-    const columnIds = dbColumnIds(table);
-    for (const columnId of list(table.primaryKey)) {
-      if (!columnIds.has(columnId)) {
-        errors.push(`unknown db primary key column: ${table.id} -> ${columnId}`);
-      }
-    }
-    if (table.tenantColumn && !columnIds.has(table.tenantColumn)) {
-      errors.push(`unknown db tenant column: ${table.id} -> ${table.tenantColumn}`);
-    }
-    for (const column of list(table.columns)) {
-      if (column.references) {
-        validateDbColumnRef(errors, db, `${table.id}.${column.id}`, column.references);
-      }
-    }
-  }
-
-  for (const invariant of invariants) {
-    for (const tableId of list(invariant.tables)) {
-      if (!tableIds.has(tableId)) {
-        errors.push(`unknown db invariant table: ${invariant.id} -> ${tableId}`);
-      }
-    }
-  }
-
-  for (const transaction of transactions) {
-    for (const tableId of list(transaction.reads)) {
-      if (!tableIds.has(tableId)) {
-        errors.push(`unknown db transaction read table: ${transaction.id} -> ${tableId}`);
-      }
-    }
-    for (const tableId of list(transaction.writes)) {
-      if (!tableIds.has(tableId)) {
-        errors.push(`unknown db transaction write table: ${transaction.id} -> ${tableId}`);
-      }
-    }
-    for (const invariantId of list(transaction.preserves)) {
-      if (!invariantIds.has(invariantId)) {
-        errors.push(`unknown db transaction invariant: ${transaction.id} -> ${invariantId}`);
-      }
-    }
-    if (transaction.idempotencyKey) {
-      validateDbColumnRef(errors, db, `${transaction.id}.idempotencyKey`, transaction.idempotencyKey);
-    }
-  }
-
-  for (const migration of migrations) {
-    checkUnique(errors, `db migration mapping id in ${migration.id}`, list(migration.mappings));
-    for (const tableId of list(migration.fromTables)) {
-      if (!tableIds.has(tableId)) {
-        errors.push(`unknown db migration source table: ${migration.id} -> ${tableId}`);
-      }
-    }
-    for (const tableId of list(migration.toTables)) {
-      if (!tableIds.has(tableId)) {
-        errors.push(`unknown db migration target table: ${migration.id} -> ${tableId}`);
-      }
-    }
-    for (const invariantId of list(migration.preserves)) {
-      if (!invariantIds.has(invariantId)) {
-        errors.push(`unknown db migration invariant: ${migration.id} -> ${invariantId}`);
-      }
-    }
-    for (const mapping of list(migration.mappings)) {
-      const preservedInvariantIds = new Set(list(migration.preserves));
-      for (const invariantId of list(mapping.invariants)) {
-        if (!invariantIds.has(invariantId)) {
-          errors.push(`unknown db migration mapping invariant: ${migration.id}.${mapping.id} -> ${invariantId}`);
-        } else if (!preservedInvariantIds.has(invariantId)) {
-          errors.push(`db migration mapping invariant is not preserved: ${migration.id}.${mapping.id} -> ${invariantId}`);
-        }
-      }
-    }
   }
 }
 
@@ -3140,7 +3006,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
     }
   }
 
-  validateDbModel(errors, model);
+  errors.push(...validateDbModel(model));
   validateCloudModel(errors, model);
   validateDataModel(errors, model);
   validateReleaseModel(errors, model);
