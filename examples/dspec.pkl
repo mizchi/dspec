@@ -2443,7 +2443,7 @@ model: d.Model = new {
         d.codeRef("src/cli.mjs", "scaffoldAppProfile")
         d.codeRef("src/cli.mjs", "scaffoldAppProfileDiffReport")
         d.codeRef("src/cli.mjs", "scaffoldAppProfileApplyReport")
-        d.codeRef("src/cli.mjs", "pklImportPath")
+        d.codeRef("src/commands/schema-lock.mjs", "pklImportPath")
         d.codeRef("src/cli.mjs", "appProfileEvaluationReport")
         d.codeRef("src/cli.mjs", "appProfileEvaluationSuiteReport")
         d.codeRef("src/cli.mjs", "evaluateAppProfileScenario")

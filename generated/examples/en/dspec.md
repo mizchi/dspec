@@ -328,7 +328,7 @@ App profiles bundle real-app dogfood verification gates as typed Pkl configurati
 - implementation: code src/cli.mjs#scaffoldAppProfile
 - implementation: code src/cli.mjs#scaffoldAppProfileDiffReport
 - implementation: code src/cli.mjs#scaffoldAppProfileApplyReport
-- implementation: code src/cli.mjs#pklImportPath
+- implementation: code src/commands/schema-lock.mjs#pklImportPath
 - implementation: code src/cli.mjs#appProfileEvaluationReport
 - implementation: code src/cli.mjs#appProfileEvaluationSuiteReport
 - implementation: code src/cli.mjs#evaluateAppProfileScenario
