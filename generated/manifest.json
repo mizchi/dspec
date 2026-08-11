@@ -9,12 +9,12 @@
       "sha256": "9eb7eba6f33c69bd95bec3fa26e6568aa9f6f002facf692a6944082026666e39"
     },
     "markdown": {
-      "bytes": 176680,
-      "sha256": "f209fa256a08f63396585b3cc51675ce9b3bba97c37172f951d895e844c4e1b5"
+      "bytes": 176755,
+      "sha256": "73e4bf868ffe1835bbda76a27da77a991766f38263046f3d3876e78211261da8"
     },
     "quickcheck": {
-      "bytes": 222898,
-      "sha256": "8833a98461dc8daa72449e679df963abdae04cf87fd8e3839d4ffdf3acb9a062"
+      "bytes": 222923,
+      "sha256": "540fa70ed3320c05287fe2ebff04c24d08aed9f3649c3d35f844e2bfe48d8f69"
     },
     "quint": {
       "bytes": 79574,

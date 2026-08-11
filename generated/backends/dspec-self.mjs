@@ -7093,7 +7093,7 @@ export const intentModel = {
           "kind": "function",
           "implementation": {
             "kind": "code",
-            "path": "src/cli.mjs",
+            "path": "src/core/intent-model-validation.mjs",
             "symbol": "validateIntentModel"
           },
           "http": null,

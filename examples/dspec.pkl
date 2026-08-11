@@ -6784,7 +6784,7 @@ model: d.Model = new {
         d.codeRef("dspec/Schema.pkl", "IntentModel")
         d.codeRef("dspec/Schema.pkl", "Process")
         d.codeRef("dspec/Schema.pkl", "ConstructionAuthority")
-        d.codeRef("src/cli.mjs", "validateIntentModel")
+        d.codeRef("src/core/intent-model-validation.mjs", "validateIntentModel")
         d.codeRef("src/cli.mjs", "intentProjection")
       }
       rationale =
@@ -6953,7 +6953,7 @@ model: d.Model = new {
         d.codeRef("dspec/schema/Claims.pkl", "IntentClaim")
         d.codeRef("dspec/schema/Claims.pkl", "IntentAssuranceTask")
         d.codeRef("dspec/schema/Claims.pkl", "IntentSemanticBinding")
-        d.codeRef("src/cli.mjs", "validateIntentModel")
+        d.codeRef("src/core/intent-model-validation.mjs", "validateIntentModel")
         d.codeRef("src/cli.mjs", "intentGraphReport")
       }
       rationale =
@@ -7050,13 +7050,13 @@ model: d.Model = new {
             }
           }
           implementedBy {
-            d.codeRef("src/cli.mjs", "validateIntentModel")
+            d.codeRef("src/core/intent-model-validation.mjs", "validateIntentModel")
           }
           refinements {
             new d.IntentRefinement {
               id = "intent.validate-model-cli"
               kind = "function"
-              implementation = d.codeRef("src/cli.mjs", "validateIntentModel")
+              implementation = d.codeRef("src/core/intent-model-validation.mjs", "validateIntentModel")
               inputBindings {
                 new d.IntentFieldBinding { contractField = "modelId"; implementationField = "model.id" }
                 new d.IntentFieldBinding { contractField = "modelVersion"; implementationField = "model.version" }

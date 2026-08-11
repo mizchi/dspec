@@ -99,7 +99,7 @@ model: d.Model = new {
           implementedBy {
             new d.ImplementationRef {
               kind = "code"
-              path = "src/cli.mjs"
+              path = "src/core/intent-model-validation.mjs"
               symbol = "validateIntentModel"
             }
           }

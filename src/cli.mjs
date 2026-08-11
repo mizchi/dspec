@@ -77,39 +77,15 @@ import {
   intentAssuranceTasks,
   intentClaims,
   intentGoals,
-  validateIntentGoalClaimAssurance,
 } from "./core/intent-assurance-validation.mjs";
-import {
-  intentAccessPolicies,
-  validateIntentAccessPolicyPrecedence,
-  validateIntentAccessPolicyReferences,
-} from "./core/intent-access-policy-validation.mjs";
-import {
-  intentSemanticBindings,
-  validateIntentSemanticBindings,
-} from "./core/intent-semantic-binding-validation.mjs";
-import {
-  intentScenarios,
-  validateIntentScenarios,
-} from "./core/intent-scenario-validation.mjs";
-import {
-  intentConstructionAuthorities,
-  validateIntentConstructionAuthorities,
-} from "./core/intent-construction-authority-validation.mjs";
-import {
-  intentCapabilities,
-  intentOutcomes,
-  validateIntentOutcomes,
-} from "./core/intent-outcome-validation.mjs";
-import {
-  intentProcesses,
-  validateIntentProcess,
-} from "./core/intent-process-validation.mjs";
-import {
-  createIntentRefinementValidationState,
-  intentRefinements,
-  validateIntentRefinements,
-} from "./core/intent-refinement-validation.mjs";
+import { intentAccessPolicies } from "./core/intent-access-policy-validation.mjs";
+import { intentSemanticBindings } from "./core/intent-semantic-binding-validation.mjs";
+import { intentScenarios } from "./core/intent-scenario-validation.mjs";
+import { intentConstructionAuthorities } from "./core/intent-construction-authority-validation.mjs";
+import { intentCapabilities, intentOutcomes } from "./core/intent-outcome-validation.mjs";
+import { intentProcesses } from "./core/intent-process-validation.mjs";
+import { intentRefinements } from "./core/intent-refinement-validation.mjs";
+import { intentPattern, validateIntentModel } from "./core/intent-model-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1831,10 +1807,6 @@ function domainPattern(model) {
   return model.patterns?.domain ?? null;
 }
 
-function intentPattern(model) {
-  return model.patterns?.intent ?? null;
-}
-
 function projections(model) {
   return list(model.projections);
 }
@@ -1878,61 +1850,6 @@ function walkLocalizedTexts(value, path, visit, seen = new Set()) {
   for (const [key, child] of Object.entries(value)) {
     walkLocalizedTexts(child, `${path}.${key}`, visit, seen);
   }
-}
-
-function validateIntentModel(errors, model) {
-  const intent = intentPattern(model);
-  if (!intent) return;
-
-  const capabilities = intentCapabilities(intent);
-  const outcomes = intentOutcomes(intent);
-  const processes = intentProcesses(intent);
-  const authorities = intentConstructionAuthorities(intent);
-  const accessPolicies = intentAccessPolicies(intent);
-  const goals = intentGoals(intent);
-  const claims = intentClaims(intent);
-  const assuranceTasks = intentAssuranceTasks(intent);
-  const semanticBindings = intentSemanticBindings(intent);
-  const scenarios = intentScenarios(intent);
-  checkUnique(errors, "intent capability id", capabilities);
-  checkUnique(errors, "intent outcome id", outcomes);
-  checkUnique(errors, "intent process id", processes);
-  checkUnique(errors, "construction authority id", authorities);
-  checkUnique(errors, "intent access policy id", accessPolicies);
-  checkUnique(errors, "intent goal id", goals);
-  checkUnique(errors, "intent claim id", claims);
-  checkUnique(errors, "intent assurance task id", assuranceTasks);
-  checkUnique(errors, "intent semantic binding id", semanticBindings);
-  checkUnique(errors, "intent scenario id", scenarios);
-
-  errors.push(...validateIntentOutcomes(model.vocabulary, capabilities, outcomes));
-
-  errors.push(...validateIntentAccessPolicyReferences(processes, model.vocabulary, accessPolicies));
-
-  errors.push(...validateIntentGoalClaimAssurance(processes, goals, claims, assuranceTasks));
-
-  errors.push(...validateIntentSemanticBindings(
-    processes,
-    claims,
-    cloudNodes(cloudPattern(model)),
-    semanticBindings,
-  ));
-  errors.push(...validateIntentAccessPolicyPrecedence(accessPolicies));
-
-  const refinementValidationState = createIntentRefinementValidationState();
-  for (const process of processes) {
-    errors.push(...validateIntentProcess(process, model.vocabulary, capabilities, outcomes));
-    errors.push(...validateIntentRefinements(
-      process,
-      outcomes,
-      dbTransactions(dbPattern(model)),
-      refinementValidationState,
-    ));
-  }
-
-  errors.push(...validateIntentConstructionAuthorities(processes, outcomes, authorities));
-
-  errors.push(...validateIntentScenarios(model.vocabulary, processes, outcomes, scenarios));
 }
 
 function validateDomainPacks(errors, model) {
@@ -2101,7 +2018,7 @@ function validate(model, { requireFormalEvidence = false } = {}) {
   errors.push(...validateReleaseModel(model));
   errors.push(...validateRuntimeModel(model));
   errors.push(...validateDomainModel(model));
-  validateIntentModel(errors, model);
+  errors.push(...validateIntentModel(model));
   if (list(intentPattern(model)?.tests).length > 0) errors.push(...validateProtocolTests(model));
   validateDomainPacks(errors, model);
   validateI18nContract(errors, model);

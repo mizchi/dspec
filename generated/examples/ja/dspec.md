@@ -1965,7 +1965,7 @@ Intent process は宣言済み Capability と ConstructionAuthority を通る Ou
 - implementation: code dspec/Schema.pkl#IntentModel
 - implementation: code dspec/Schema.pkl#Process
 - implementation: code dspec/Schema.pkl#ConstructionAuthority
-- implementation: code src/cli.mjs#validateIntentModel
+- implementation: code src/core/intent-model-validation.mjs#validateIntentModel
 - implementation: code src/cli.mjs#intentProjection
 - rationale: Souther の closed construction path を、実装言語ではなく型付き Intent として取り込む。
 
@@ -1998,7 +1998,7 @@ Intent の Goal は Claim、保証タスク、実装 semantic binding まで追�
 - implementation: code dspec/schema/Claims.pkl#IntentClaim
 - implementation: code dspec/schema/Claims.pkl#IntentAssuranceTask
 - implementation: code dspec/schema/Claims.pkl#IntentSemanticBinding
-- implementation: code src/cli.mjs#validateIntentModel
+- implementation: code src/core/intent-model-validation.mjs#validateIntentModel
 - implementation: code src/cli.mjs#intentGraphReport
 - rationale: 自然言語の目的を独立した正しさの根拠にせず、Claim ごとの決定的な検証・実装接続へ分解して drift を検出する。
 
@@ -3635,7 +3635,7 @@ Intent model を検証して受理する
 - constructs: `outcome.intent-model-accepted`
 - transition: `state.intent-model-authored` -> `state.intent-model-accepted`
 - refinement: `intent.validate-model-cli` (function)
-  - implementation: code src/cli.mjs#validateIntentModel
+  - implementation: code src/core/intent-model-validation.mjs#validateIntentModel
   - input binding: `modelId` -> `model.id`
   - input binding: `modelVersion` -> `model.version`
   - output binding outcome.intent-model-accepted: `validationReport` -> `validation.report`
