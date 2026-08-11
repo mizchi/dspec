@@ -96,6 +96,10 @@ import {
   intentScenarios,
   validateIntentScenarios,
 } from "./core/intent-scenario-validation.mjs";
+import {
+  intentConstructionAuthorities,
+  validateIntentConstructionAuthorities,
+} from "./core/intent-construction-authority-validation.mjs";
 import { quintServerEndpoint, quintVerifyArgs, renderQuintModel } from "./core/quint.mjs";
 import {
   conformanceReport,
@@ -1878,10 +1882,6 @@ function intentProcesses(intent) {
   return list(intent?.processes);
 }
 
-function constructionAuthorities(intent) {
-  return list(intent?.constructionAuthorities);
-}
-
 function intentRefinements(process) {
   return list(process?.refinements);
 }
@@ -1903,7 +1903,7 @@ function validateIntentModel(errors, model) {
   const capabilities = intentCapabilities(intent);
   const outcomes = intentOutcomes(intent);
   const processes = intentProcesses(intent);
-  const authorities = constructionAuthorities(intent);
+  const authorities = intentConstructionAuthorities(intent);
   const accessPolicies = intentAccessPolicies(intent);
   const goals = intentGoals(intent);
   const claims = intentClaims(intent);
@@ -1925,7 +1925,6 @@ function validateIntentModel(errors, model) {
   const capabilityIds = new Set(capabilities.map((capability) => capability.id));
   const dbTransactionIds = new Set(dbTransactions(dbPattern(model)).map((transaction) => transaction.id));
   const outcomesById = new Map(outcomes.map((outcome) => [outcome.id, outcome]));
-  const processesById = new Map(processes.map((process) => [process.id, process]));
   const outcomeStates = new Set();
   const refinementIds = new Set();
 
@@ -2131,42 +2130,7 @@ function validateIntentModel(errors, model) {
     }
   }
 
-  const authorityPairs = new Set();
-  const authorityPairsByOutcome = new Map();
-  for (const authority of authorities) {
-    const process = processesById.get(authority.process);
-    const outcome = outcomesById.get(authority.outcome);
-    if (!process) {
-      errors.push(`unknown construction authority process: ${authority.id} -> ${authority.process}`);
-    }
-    if (!outcome) {
-      errors.push(`unknown construction authority outcome: ${authority.id} -> ${authority.outcome}`);
-    }
-    const pair = `${authority.process}\u0000${authority.outcome}`;
-    if (authorityPairs.has(pair)) {
-      errors.push(`duplicate construction authority: ${authority.process} -> ${authority.outcome}`);
-    }
-    authorityPairs.add(pair);
-    if (process && outcome && !list(process.constructs).includes(outcome.id)) {
-      errors.push(`construction authority is not declared by process: ${authority.id} -> ${authority.outcome}`);
-    }
-    if (outcome) {
-      authorityPairsByOutcome.set(outcome.id, (authorityPairsByOutcome.get(outcome.id) ?? 0) + 1);
-    }
-  }
-
-  for (const process of processes) {
-    for (const outcomeId of list(process.constructs)) {
-      if (!authorityPairs.has(`${process.id}\u0000${outcomeId}`)) {
-        errors.push(`intent process construction has no authority: ${process.id} -> ${outcomeId}`);
-      }
-    }
-  }
-  for (const outcome of outcomes) {
-    if (!authorityPairsByOutcome.has(outcome.id)) {
-      errors.push(`intent outcome has no construction authority: ${outcome.id}`);
-    }
-  }
+  errors.push(...validateIntentConstructionAuthorities(processes, outcomes, authorities));
 
   errors.push(...validateIntentScenarios(model.vocabulary, processes, outcomes, scenarios));
 }
@@ -9235,11 +9199,11 @@ function emitSourceMapObject(model, requestedLocale) {
             artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.processes.${process.id}.refinements.${refinement.id}`, refinementSource));
           });
       });
-    constructionAuthorities(intent)
+    intentConstructionAuthorities(intent)
       .slice()
       .sort(byId)
       .forEach((authority) => {
-        const authorityIndex = constructionAuthorities(intent).findIndex((candidate) => candidate.id === authority.id);
+        const authorityIndex = intentConstructionAuthorities(intent).findIndex((candidate) => candidate.id === authority.id);
         const source = constructionAuthoritySource(authority, authorityIndex);
         artifacts.markdown.push(generatedEntry(`markdown.intent.constructionAuthorities.${authority.id}`, source));
         artifacts.quickcheck.push(generatedEntry(`quickcheck.intent.constructionAuthorities.${authority.id}`, source));
@@ -10315,7 +10279,7 @@ function render(model, requestedLocale) {
       }
       lines.push("");
     }
-    for (const authority of constructionAuthorities(intent).sort(byId)) {
+    for (const authority of intentConstructionAuthorities(intent).sort(byId)) {
       lines.push(`### Construction Authority ${authority.id}`);
       lines.push("");
       if (authority.text) {
@@ -11052,7 +11016,7 @@ function emitMarkdown(model, requestedLocale) {
       }
       lines.push("");
     }
-    for (const authority of constructionAuthorities(intent).sort(byId)) {
+    for (const authority of intentConstructionAuthorities(intent).sort(byId)) {
       lines.push(`### Construction Authority ${authority.id}`);
       lines.push("");
       if (authority.text) {
@@ -11896,7 +11860,7 @@ function intentProjection(model) {
           .sort((left, right) => `${left.from}\u0000${left.to}`.localeCompare(`${right.from}\u0000${right.to}`)),
         refinements: intentRefinements(process).slice().sort(byId).map(intentRefinementProjection),
       })),
-    constructionAuthorities: constructionAuthorities(intent)
+    constructionAuthorities: intentConstructionAuthorities(intent)
       .slice()
       .sort(byId)
       .map((authority) => ({ id: authority.id, process: authority.process, outcome: authority.outcome })),
@@ -13747,7 +13711,7 @@ function emitAlloy(model) {
     for (const process of intentProcesses(intent).sort(byId)) {
       lines.push(`one sig ${intentName("IP", process.id)} extends IntentProcess {}`);
     }
-    for (const authority of constructionAuthorities(intent).sort(byId)) {
+    for (const authority of intentConstructionAuthorities(intent).sort(byId)) {
       lines.push(`one sig ${intentName("ICA", authority.id)} extends ConstructionAuthority {}`);
     }
     for (const scenario of intentScenarios(intent).sort(byId)) {
@@ -13757,7 +13721,7 @@ function emitAlloy(model) {
     const capabilitySet = intentCapabilities(intent).map((capability) => intentName("IC", capability.id));
     const outcomeSet = intentOutcomes(intent).map((outcome) => intentName("IO", outcome.id));
     const processSet = intentProcesses(intent).map((process) => intentName("IP", process.id));
-    const authoritySet = constructionAuthorities(intent).map((authority) => intentName("ICA", authority.id));
+    const authoritySet = intentConstructionAuthorities(intent).map((authority) => intentName("ICA", authority.id));
     const scenarioSet = intentScenarios(intent).map((scenario) => intentName("ISC", scenario.id));
     const processOutcomePairs = intentProcesses(intent).flatMap((process) =>
       list(process.outcomes).map((outcomeId) => `${intentName("IP", process.id)} -> ${intentName("IO", outcomeId)}`),
@@ -13765,7 +13729,7 @@ function emitAlloy(model) {
     const processConstructPairs = intentProcesses(intent).flatMap((process) =>
       list(process.constructs).map((outcomeId) => `${intentName("IP", process.id)} -> ${intentName("IO", outcomeId)}`),
     );
-    const authorisedConstructionPairs = constructionAuthorities(intent).map(
+    const authorisedConstructionPairs = intentConstructionAuthorities(intent).map(
       (authority) => `${intentName("IP", authority.process)} -> ${intentName("IO", authority.outcome)}`,
     );
 
@@ -14911,7 +14875,7 @@ function domainCoverageElements(model) {
         elements.push(domainCoverageElement("intent.effect", `${outcome.id}/effect/${effect.id}`, `model.patterns.intent.outcomes[${outcomeIndex}].effects[${effectIndex}]`));
       });
     });
-    constructionAuthorities(intent).forEach((authority, index) => elements.push(domainCoverageElement("intent.constructionAuthority", authority.id, `model.patterns.intent.constructionAuthorities[${index}]`)));
+    intentConstructionAuthorities(intent).forEach((authority, index) => elements.push(domainCoverageElement("intent.constructionAuthority", authority.id, `model.patterns.intent.constructionAuthorities[${index}]`)));
     intentGoals(intent).forEach((goal, index) => elements.push(domainCoverageElement("intent.goal", goal.id, `model.patterns.intent.goals[${index}]`)));
     intentClaims(intent).forEach((claim, index) => elements.push(domainCoverageElement("intent.claim", claim.id, `model.patterns.intent.claims[${index}]`)));
     intentAssuranceTasks(intent).forEach((task, index) => elements.push(domainCoverageElement("intent.assuranceTask", task.id, `model.patterns.intent.assuranceTasks[${index}]`)));

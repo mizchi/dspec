@@ -2192,7 +2192,7 @@
       "id": "DSPEC-DOMAIN-COVERAGE-ORACLE",
       "implementations": [
         {
-          "contentHash": "sha256:cad38e8f114ca1a81ec1251165ab26112f5d1bd044b5d6af389f393a850e3a64",
+          "contentHash": "sha256:f5ef67ddf97a9c55faf797c798be7b965724ae89bb02b2d54c0a5dfb7e9893c5",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#domainCoverageElements"
         },
@@ -2531,7 +2531,7 @@
       "id": "DSPEC-EMIT-MARKDOWN",
       "implementations": [
         {
-          "contentHash": "sha256:b20d192a68fb06155a5ac654fa5934b9ef365579cd1cb7882c73adb4a7607c87",
+          "contentHash": "sha256:3f7b102e495ba6661ace1974e5d50dd46228df3ebfe5e82d22279fca8f87e798",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#emitMarkdown"
         }
@@ -2893,7 +2893,7 @@
       "id": "DSPEC-I18N-RENDER",
       "implementations": [
         {
-          "contentHash": "sha256:e2f68353fc850dc4c9d636e95d01b8ab3a389ac168d9e0225262bfdaad96a98e",
+          "contentHash": "sha256:7ff3bc17b96b3653b33a3b4134f466320475200582988a6ab185081019cb6536",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#render"
         }
@@ -3085,12 +3085,12 @@
           "key": "code:dspec/Schema.pkl#Process"
         },
         {
-          "contentHash": "sha256:74cf8b505f096a3c0b2e0d535e490a6d06b446fde41e443c2a29084002cc61ba",
+          "contentHash": "sha256:55f672f2dc1e5140e483e25c5a65258dac88bc8975a1d236ede3c71e9c22e5fa",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#intentProjection"
         },
         {
-          "contentHash": "sha256:13f9330110b799041bf6314013c785f12ba919809af1558e239212bef557fd29",
+          "contentHash": "sha256:260fcf430045e18618937793eaaa8a9ecf72a4df59662feab37fc6dfa9066ee5",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#validateIntentModel"
         }
@@ -3134,7 +3134,7 @@
           "key": "code:src/cli.mjs#intentGraphReport"
         },
         {
-          "contentHash": "sha256:13f9330110b799041bf6314013c785f12ba919809af1558e239212bef557fd29",
+          "contentHash": "sha256:260fcf430045e18618937793eaaa8a9ecf72a4df59662feab37fc6dfa9066ee5",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#validateIntentModel"
         }
@@ -5095,7 +5095,7 @@
           "key": "code:src/cli.mjs#emitSourceMap"
         },
         {
-          "contentHash": "sha256:d7874eae8d8388734ed909f6c6af6bc228c11e64aedc2ede1aed9309b0a5bd12",
+          "contentHash": "sha256:099608191df9cb24271c02ce57889224d4f660169820269ac3bc4f8f5c7205cc",
           "hashScope": "symbol-text",
           "key": "code:src/cli.mjs#emitSourceMapObject"
         },
