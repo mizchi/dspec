@@ -147,6 +147,7 @@ import {
   runGenerateCommand as runGenerateCommandModule,
   runGeneratedCommand as runGeneratedCommandModule,
 } from "./commands/projection.mjs";
+import { runSpecChangeCommand as runSpecChangeCommandModule } from "./commands/spec-change.mjs";
 import {
   pklImportPath,
   schemaLockReport,
@@ -269,19 +270,6 @@ function topLevelCommandHelp(command) {
   return registryTopLevelCommandHelp(command);
 }
 
-function specChangeUsage() {
-  return `usage:
-  dspec spec-change compat [--json|--markdown] <before.pkl> <after.pkl>
-  dspec spec-change scaffold [--json|--pkl] [--id <id>] [--output <review.pkl>] <before.pkl> <after.pkl>
-  dspec spec-change review [--json|--markdown] <review.pkl>
-
-Typical flow:
-  dspec spec-change compat --json before.pkl after.pkl
-  dspec spec-change scaffold --output review.pkl before.pkl after.pkl
-  dspec spec-change review --json review.pkl
-`;
-}
-
 function explainUsage() {
   return `usage:
   dspec explain [--json|--markdown] [--lock <lock.json>] [--require-lock] <model.pkl>
@@ -341,18 +329,6 @@ function runGraphCommand(args) {
       process.stdout.write(value);
     },
   });
-}
-
-function specChangeCompatUsage() {
-  return `usage:
-  dspec spec-change compat [--json|--markdown] <before.pkl> <after.pkl>
-
-Compare before/after spec models and classify the compatibility change.
-
-Options:
-  --json      Emit the compatibility report as JSON.
-  --markdown  Emit a human-readable Markdown review report.
-`;
 }
 
 function runDailyDrift(args) {
@@ -1238,41 +1214,6 @@ async function runIntentCommand(args) {
     errors,
   };
   writeIntentCommandReportModule(report, options, renderIntentTraceMarkdownModule, `ok: ${model.id} intent refinement exercise (${exercise.summary.executedRefinements} cases)\n`, intentOutputContext());
-}
-
-function specChangeReviewUsage() {
-  return `usage:
-  dspec spec-change review [--json|--markdown] <review.pkl>
-
-Run a typed SpecChangeReview Pkl plan as one spec-change gate.
-
-Options:
-  --json      Emit the review report as JSON.
-  --markdown  Emit a human-readable Markdown review report.
-`;
-}
-
-function scaffoldSpecChangeReviewUsage() {
-  return `usage:
-  dspec spec-change scaffold [--json|--pkl] [--id <id>] [--output <review.pkl>] <before.pkl> <after.pkl>
-
-Generate a typed SpecChangeReview Pkl draft from before/after models.
-
-Options:
-  --json                 Emit the scaffold report as JSON.
-  --pkl                  Emit the Pkl draft. This is the default without --output.
-  --id <id>              Override the generated review id.
-  --output <review.pkl>  Write the draft to a file. Schema and model paths are resolved relative to this destination.
-
-Examples:
-  dspec spec-change scaffold fixtures/compat-before.pkl fixtures/compat-narrowing-after.pkl
-  dspec spec-change scaffold --output fixtures/my-review.pkl fixtures/before.pkl fixtures/after.pkl
-  dspec spec-change scaffold --json fixtures/compat-before.pkl fixtures/compat-breaking-after.pkl
-
-For breaking changes, the draft declares the default breaking evidence policy
-and leaves evidence empty so spec-change review can force migration,
-deprecation, rollout, and owner-approval evidence before approval.
-`;
 }
 
 function evalPklJson(file) {
@@ -2575,52 +2516,6 @@ function parseImpactArgs(args) {
   return { beforeFile: files[0], afterFile: files[1], json };
 }
 
-function parseSpecCompatibilityArgs(args, usageText = usage()) {
-  let json = false;
-  let markdown = false;
-  const files = [];
-
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    files.push(arg);
-  }
-
-  if (files.length !== 2 || (json && markdown)) {
-    throw new CommandError(usageText);
-  }
-  return { beforeFile: files[0], afterFile: files[1], json, markdown };
-}
-
-function parseSpecChangeReviewArgs(args, usageText = usage()) {
-  let json = false;
-  let markdown = false;
-  const files = [];
-
-  for (const arg of args) {
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--markdown") {
-      markdown = true;
-      continue;
-    }
-    files.push(arg);
-  }
-
-  if (files.length !== 1 || (json && markdown)) {
-    throw new CommandError(usageText);
-  }
-  return { file: files[0], json, markdown };
-}
-
 function parseSpecReadingEvalArgs(args) {
   let json = false;
   let markdown = false;
@@ -2756,44 +2651,6 @@ function parseSpecReadingMetamorphicArgs(args) {
     throw new CommandError(usage());
   }
   return { file, json, markdown, locale };
-}
-
-function parseScaffoldSpecChangeReviewArgs(args, usageText = usage()) {
-  let id = null;
-  let json = false;
-  let pkl = false;
-  let outputFile = null;
-  const files = [];
-
-  for (let index = 0; index < args.length; index += 1) {
-    const arg = args[index];
-    if (arg === "--json") {
-      json = true;
-      continue;
-    }
-    if (arg === "--pkl") {
-      pkl = true;
-      continue;
-    }
-    if (arg === "--id") {
-      id = args[index + 1];
-      index += 1;
-      if (!id) throw new CommandError("--id requires a review id\n");
-      continue;
-    }
-    if (arg === "--output") {
-      outputFile = args[index + 1];
-      index += 1;
-      if (!outputFile) throw new CommandError("--output requires a review path\n");
-      continue;
-    }
-    files.push(arg);
-  }
-
-  if (files.length !== 2 || (json && pkl)) {
-    throw new CommandError(usageText);
-  }
-  return { beforeFile: files[0], afterFile: files[1], id, json, outputFile };
 }
 
 function parseVerifyRuntimeEvidenceArgs(args) {
@@ -14763,107 +14620,26 @@ function hasHelpFlag(args) {
   return args.includes("--help") || args.includes("-h");
 }
 
-function runSpecCompatibility(args, { usageText = usage() } = {}) {
-  if (hasHelpFlag(args)) {
-    process.stdout.write(usageText);
-    return;
-  }
-  const { beforeFile, afterFile, json, markdown } = parseSpecCompatibilityArgs(args, usageText);
-  const beforeModel = loadModel(beforeFile);
-  const afterModel = loadModel(afterFile);
-  const report = specCompatibilityReport(beforeModel, afterModel);
-  if (json) {
-    process.stdout.write(stableJson(report));
-    assertReportOk(report);
-    return;
-  }
-  if (markdown) {
-    process.stdout.write(renderSpecCompatibilityMarkdownReport(report));
-    assertReportOk(report);
-    return;
-  }
-  process.stdout.write(renderSpecCompatibilityReport(report));
-  assertReportOk(report);
-}
-
-function runSpecChangeReview(args, { usageText = usage() } = {}) {
-  if (hasHelpFlag(args)) {
-    process.stdout.write(usageText);
-    return;
-  }
-  const { file, json, markdown } = parseSpecChangeReviewArgs(args, usageText);
-  const review = loadSpecChangeReview(file);
-  const report = specChangeReviewReport(review, file);
-  if (json) {
-    process.stdout.write(stableJson(report));
-    assertReportOk(report);
-    return;
-  }
-  if (markdown) {
-    const rendered = renderSpecChangeReviewMarkdownReport(report);
-    if (report.status === "fail") {
-      throw new CommandError(rendered);
-    }
-    process.stdout.write(rendered);
-    return;
-  }
-  const rendered = renderSpecChangeReviewReport(report);
-  if (report.status === "fail") {
-    throw new CommandError(rendered);
-  }
-  process.stdout.write(rendered);
-}
-
-function runSpecChangeScaffold(args, { usageText = scaffoldSpecChangeReviewUsage() } = {}) {
-  if (hasHelpFlag(args)) {
-    process.stdout.write(usageText);
-    return;
-  }
-  const { beforeFile, afterFile, id, json, outputFile } = parseScaffoldSpecChangeReviewArgs(args, usageText);
-  const beforeModel = loadModel(beforeFile);
-  const afterModel = loadModel(afterFile);
-  const report = specChangeReviewScaffoldReport({ beforeFile, afterFile, beforeModel, afterModel, id });
-  if (outputFile) {
-    assertReportOk(report);
-    const outputDraft = specChangeReviewDraftForOutput(report.draft, outputFile);
-    const output = writeSpecChangeReviewScaffold(outputFile, outputDraft);
-    const outputReport = { ...report, draft: outputDraft, output };
-    if (json) {
-      process.stdout.write(stableJson(outputReport));
-      return;
-    }
-    process.stdout.write(`ok: wrote spec change review scaffold ${output.path}\n`);
-    process.stdout.write(`next: dspec spec-change review --json ${output.path}\n`);
-    return;
-  }
-  if (json) {
-    process.stdout.write(stableJson(report));
-    assertReportOk(report);
-    return;
-  }
-  assertReportOk(report);
-  process.stdout.write(renderSpecChangeReviewDraftPkl(report.draft));
-}
-
 function runSpecChangeCommand(args) {
-  const [subcommand, ...rest] = args;
-  if (!subcommand || subcommand === "help" || subcommand === "--help" || subcommand === "-h") {
-    process.stdout.write(specChangeUsage());
-    return;
-  }
-  if (subcommand === "compat") {
-    runSpecCompatibility(rest, { usageText: specChangeCompatUsage() });
-    return;
-  }
-  if (subcommand === "review") {
-    runSpecChangeReview(rest, { usageText: specChangeReviewUsage() });
-    return;
-  }
-  if (subcommand === "scaffold") {
-    runSpecChangeScaffold(rest, { usageText: scaffoldSpecChangeReviewUsage() });
-    return;
-  }
-  throw new CommandError(`unknown spec-change subcommand: ${subcommand}\n${specChangeUsage()}`);
+  return runSpecChangeCommandModule(args, {
+    loadModel,
+    specCompatibilityReport,
+    renderSpecCompatibilityMarkdownReport,
+    renderSpecCompatibilityReport,
+    loadSpecChangeReview,
+    specChangeReviewReport,
+    renderSpecChangeReviewMarkdownReport,
+    renderSpecChangeReviewReport,
+    specChangeReviewScaffoldReport,
+    specChangeReviewDraftForOutput,
+    writeSpecChangeReviewScaffold,
+    renderSpecChangeReviewDraftPkl,
+    assertReportOk,
+    stableJson,
+    write(value) {
+      process.stdout.write(value);
+    },
+  });
 }
 
 function assertModelCoverage(model) {

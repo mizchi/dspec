@@ -1245,7 +1245,7 @@ CLI examples in README/docs/Taskfile are grounded in the public CLI surface
 - implementation: code src/cli.mjs#topLevelCommandRegistry
 - implementation: code src/cli.mjs#topLevelCommandHelp
 - implementation: code src/cli.mjs#usage
-- implementation: code src/cli.mjs#specChangeUsage
+- implementation: code src/commands/spec-change.mjs#specChangeUsage
 - implementation: code test/cli.test.mjs#documentedCliInvocations
 - implementation: code test/cli.test.mjs#documentedCliHelpSmokeArgs
 - implementation: code test/cli.test.mjs#appendFencedDspecInvocations
@@ -3132,9 +3132,9 @@ Spec change review verifies check, impact, compatibility classification, and cov
 - implementation: code dspec/Schema.pkl#SpecChangeReview
 - implementation: code dspec/Schema.pkl#SpecChangeEvidence
 - implementation: code src/cli.mjs#loadSpecChangeReview
-- implementation: code src/cli.mjs#parseSpecChangeReviewArgs
-- implementation: code src/cli.mjs#specChangeReviewUsage
-- implementation: code src/cli.mjs#runSpecChangeReview
+- implementation: code src/commands/spec-change.mjs#parseSpecChangeReviewArgs
+- implementation: code src/commands/spec-change.mjs#specChangeReviewUsage
+- implementation: code src/commands/spec-change.mjs#runSpecChangeReview
 - implementation: code src/cli.mjs#specChangeReviewReport
 - implementation: code src/cli.mjs#specChangeBreakingPolicyStep
 - implementation: code src/cli.mjs#specChangeEvidenceRefStep
@@ -3204,13 +3204,13 @@ Spec change review scaffold deterministically generates a review Pkl draft from 
 - check: node test/cli.test.mjs#renders spec-change subcommand help [reference]
 - check: node test/cli.test.mjs#renders spec-change subcommand usage for argument errors [reference]
 - check: node test/cli.test.mjs#rejects removed legacy spec-change command names [reference]
-- implementation: code src/cli.mjs#parseScaffoldSpecChangeReviewArgs
+- implementation: code src/commands/spec-change.mjs#parseScaffoldSpecChangeReviewArgs
 - implementation: code src/cli.mjs#usage
 - implementation: code src/cli.mjs#run
-- implementation: code src/cli.mjs#specChangeUsage
-- implementation: code src/cli.mjs#runSpecChangeCommand
-- implementation: code src/cli.mjs#runSpecChangeScaffold
-- implementation: code src/cli.mjs#scaffoldSpecChangeReviewUsage
+- implementation: code src/commands/spec-change.mjs#specChangeUsage
+- implementation: code src/commands/spec-change.mjs#runSpecChangeCommand
+- implementation: code src/commands/spec-change.mjs#runSpecChangeScaffold
+- implementation: code src/commands/spec-change.mjs#scaffoldSpecChangeReviewUsage
 - implementation: code src/cli.mjs#specChangeReviewScaffoldReport
 - implementation: code src/cli.mjs#specChangeReviewDraftId
 - implementation: code src/cli.mjs#specChangeReviewExecutionRoot
@@ -3265,9 +3265,9 @@ The spec compatibility classifier classifies before/after specs as compatible, b
 - check: node test/cli.test.mjs#keeps spec compatibility JSON report fixture in sync [reference]
 - check: node test/cli.test.mjs#classifies spec compatibility through spec-change subcommands [reference]
 - implementation: code dspec/Schema.pkl#SpecCompatibility
-- implementation: code src/cli.mjs#parseSpecCompatibilityArgs
-- implementation: code src/cli.mjs#specChangeCompatUsage
-- implementation: code src/cli.mjs#runSpecCompatibility
+- implementation: code src/commands/spec-change.mjs#parseSpecCompatibilityArgs
+- implementation: code src/commands/spec-change.mjs#specChangeCompatUsage
+- implementation: code src/commands/spec-change.mjs#runSpecCompatibility
 - implementation: code src/cli.mjs#specCompatibilityReport
 - implementation: code src/cli.mjs#classifyTermChange
 - implementation: code src/cli.mjs#classifyRuleChange
