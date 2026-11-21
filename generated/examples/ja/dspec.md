@@ -8,7 +8,7 @@
 
 - approvedRules: `79`
 - automatedCheckTargets: `356`
-- implementationRefs: `737`
+- implementationRefs: `735`
 - projections: `7`
 - domainElements: `21`
 - runtimeEvidenceRecords: `0`
@@ -2394,9 +2394,7 @@ v0.1 package は公開 API、互換性、OIDC release 手順を明示する
 - check: node test/release.test.mjs#defines explicit release and compatibility policy [reference]
 - check: node test/release.test.mjs#publishes through npm OIDC without a long-lived token [reference]
 - implementation: model package.json
-- implementation: model release-please-config.json
-- implementation: model .release-please-manifest.json
-- implementation: model .github/workflows/release-please.yml
+- implementation: model cliff.toml
 - implementation: model .github/workflows/publish.yml
 - implementation: model docs/versioning.md
 - implementation: model docs/releasing.md
@@ -2408,7 +2406,7 @@ v0.1 package は公開 API、互換性、OIDC release 手順を明示する
 - source: model.rules[30]
 - coverage: rule
 - automatedChecks: 3
-- implementationRefs: 9
+- implementationRefs: 7
 - selector: DSPEC-PACKAGE-RELEASE.must[0]
 - selector: DSPEC-PACKAGE-RELEASE.must[1]
 - selector: DSPEC-PACKAGE-RELEASE.must[2]

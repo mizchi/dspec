@@ -9,8 +9,8 @@
       "sha256": "9eb7eba6f33c69bd95bec3fa26e6568aa9f6f002facf692a6944082026666e39"
     },
     "markdown": {
-      "bytes": 176477,
-      "sha256": "09e2e15e2a66ef241fe11114ecb4247b06d0991e644bf82611f59db596b4ac1d"
+      "bytes": 176346,
+      "sha256": "c32230eb71a2f6a1b1a38847a8a89abcef56b57a0318b6240a562df7e178a3ba"
     },
     "quickcheck": {
       "bytes": 222898,
@@ -21,8 +21,8 @@
       "sha256": "795fb8241704eeb8d7c9a8af0e41ea5c93cace9b70452a3e8d56b2e5592b2766"
     },
     "sourceMap": {
-      "bytes": 1494905,
-      "sha256": "d8715d30d07d98791973f8bdc84aaf33adc2c78a5cb4b38d95841195beff4fdc"
+      "bytes": 1493767,
+      "sha256": "ff63b39bcb44c729c971bc597eb0294b216db2a4585bb429db1c146858f1cf0c"
     }
   },
   "locale": "ja",

@@ -2734,9 +2734,7 @@ model: d.Model = new {
       }
       implementedBy {
         d.modelRef("package.json")
-        d.modelRef("release-please-config.json")
-        d.modelRef(".release-please-manifest.json")
-        d.modelRef(".github/workflows/release-please.yml")
+        d.modelRef("cliff.toml")
         d.modelRef(".github/workflows/publish.yml")
         d.modelRef("docs/versioning.md")
         d.modelRef("docs/releasing.md")

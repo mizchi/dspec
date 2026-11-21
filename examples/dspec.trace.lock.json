@@ -771,7 +771,7 @@
           "key": "model:fixtures/sample-webapp-profile.pkl"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -993,12 +993,12 @@
           "key": "doc:generated/backends/DSpecSelf.lean"
         },
         {
-          "contentHash": "sha256:9c0b91af57dbc35291a73d3991e156afc82034a11551e4c368f82a89c03576cf",
+          "contentHash": "sha256:06b1eb5ff4288c9eaab1521a4ef055ef322408e11ab77150ee782e8177173cae",
           "hashScope": "file",
           "key": "doc:generated/manifest.json"
         },
         {
-          "contentHash": "sha256:c77ab7286391aca44157ee273b84216b384e50f347040123a45870ed2a7523e3",
+          "contentHash": "sha256:98c77b91223408c306a74b470444185d937ce58d4d0c7a34c0f5a77d43b6605e",
           "hashScope": "file",
           "key": "doc:generated/source-map.json"
         }
@@ -1057,7 +1057,7 @@
           "key": "model:fixtures/typed-ast.pkl"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -1259,7 +1259,7 @@
           "key": "node:test/cli.test.mjs#emits coverage JSON reports"
         },
         {
-          "contentHash": "sha256:a63ace11fd15f7315f861141ddd231ec0d728202ed560d7da2b77a3743a1352b",
+          "contentHash": "sha256:f7bd96a4c86adfc770b394e5cc4891ec1cfc7a7efb8e21963a0a02082be7c40a",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#emits drift JSON reports"
         },
@@ -2139,7 +2139,7 @@
           "key": "model:README.md"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -2158,7 +2158,7 @@
       "id": "DSPEC-DOGFOOD-TASK",
       "implementations": [
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -2695,7 +2695,7 @@
           "key": "node:test/cli.test.mjs#runs generated Alloy through analyzer when available"
         },
         {
-          "contentHash": "sha256:05051c2dd1baf31f276081469ede254020507966c6627cad381e4ee86e125af9",
+          "contentHash": "sha256:e259f97068cb0f88fc7c987c8bca970ed7e2e2d58ba7078be159567d0346a5ee",
           "hashScope": "symbol-text",
           "key": "node:test/cli.test.mjs#validates generated Alloy syntax"
         }
@@ -2753,12 +2753,12 @@
           "key": "code:src/cli.mjs#sha256"
         },
         {
-          "contentHash": "sha256:9c0b91af57dbc35291a73d3991e156afc82034a11551e4c368f82a89c03576cf",
+          "contentHash": "sha256:06b1eb5ff4288c9eaab1521a4ef055ef322408e11ab77150ee782e8177173cae",
           "hashScope": "file",
           "key": "model:generated/manifest.json"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -3397,7 +3397,7 @@
           "key": "model:fixtures/reports/domain-coverage-sample-webapp.json"
         },
         {
-          "contentHash": "sha256:224f1767978f5a499a7d88720c6cb197d53d219a87a3d92db7361b550fa5ffa7",
+          "contentHash": "sha256:537ebd8220fb345c4ca3a4e3e7d3ca3ef1d3d4b7ff67f7491370176cb6d2f022",
           "hashScope": "file",
           "key": "model:fixtures/reports/drift-dspec.json"
         },
@@ -3507,7 +3507,7 @@
           "key": "model:fixtures/reports/spec-reading-eval-suite.json"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -3810,12 +3810,12 @@
           "key": "code:src/projection-filesystem.mjs#renewProjectionLockLease"
         },
         {
-          "contentHash": "sha256:db8cd36513b564281951b0baf541cdec3ac91396e53a625e7adc996f2f8dff4e",
+          "contentHash": "sha256:4f13f764709c4f75fc7dea34a051c5ab1ba833c0807baa67127fbe37dde85a03",
           "hashScope": "file",
           "key": "doc:generated/examples/dspec.provenance.json"
         },
         {
-          "contentHash": "sha256:693b2e6c555d437222a19df2c398309019ea82876ab28026a87387bf84b1b513",
+          "contentHash": "sha256:f2959bdb0ca31e66239e1aa263472ff916e9a88688d92226364e158d50a42aaa",
           "hashScope": "file",
           "key": "doc:generated/examples/en/dspec.md"
         },
@@ -3825,7 +3825,7 @@
           "key": "doc:generated/examples/en/sample-webapp-2026.md"
         },
         {
-          "contentHash": "sha256:09e2e15e2a66ef241fe11114ecb4247b06d0991e644bf82611f59db596b4ac1d",
+          "contentHash": "sha256:c32230eb71a2f6a1b1a38847a8a89abcef56b57a0318b6240a562df7e178a3ba",
           "hashScope": "file",
           "key": "doc:generated/examples/ja/dspec.md"
         },
@@ -3906,7 +3906,7 @@
           "key": "runtime:.github/workflows/check.yml"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -3950,7 +3950,7 @@
           "key": "model:flake.nix"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -3960,7 +3960,7 @@
     {
       "checks": [
         {
-          "contentHash": "sha256:136437e0fa68c9fb8dcfe0a89c226a83ec49c531337eb6d71930cb0b8afb04ca",
+          "contentHash": "sha256:2a9b6baef58104865db00fe3d424c206260854a4dbb4d9a131416b10b5ba6344",
           "hashScope": "symbol-text",
           "key": "node:test/release.test.mjs#defines explicit release and compatibility policy"
         },
@@ -3970,7 +3970,7 @@
           "key": "node:test/release.test.mjs#defines the v0.1 public package boundary"
         },
         {
-          "contentHash": "sha256:6c4ce212f3c8d1bcbb9f90607e7ce8f8b00ebdfdc5d04cec082029c96f1b8674",
+          "contentHash": "sha256:fbe7aff0a38e51e5665ea159d400c1256eaed0e9817dd4b11897bd2b001f50bb",
           "hashScope": "symbol-text",
           "key": "node:test/release.test.mjs#publishes through npm OIDC without a long-lived token"
         }
@@ -3984,22 +3984,17 @@
           "key": "code:src/core/clause-ast.mjs#CLAUSE_AST_SEMANTICS_VERSION"
         },
         {
-          "contentHash": "sha256:3fb0257910fcebf5863a1862cc8fcd215d387cc8b353d3302e51afbef15edb9c",
+          "contentHash": "sha256:d8f7db7dc314dbf86de1cfc4444e0a6e2895bfd0d84fa68aa55fecac7c6e2351",
           "hashScope": "file",
           "key": "model:.github/workflows/publish.yml"
         },
         {
-          "contentHash": "sha256:1204facf0d2be655061c9953a9238ca21f493597d7a54b70607ae58fd3e85493",
+          "contentHash": "sha256:17a94e4e25a2b637cdd79cd4f29d4cc075ed957ec5f8296c88f2a34b224db049",
           "hashScope": "file",
-          "key": "model:.github/workflows/release-please.yml"
+          "key": "model:cliff.toml"
         },
         {
-          "contentHash": "sha256:b9c66e0126774ab9fa34536f15972438356e7035724a2c0f0ca3b125967e6399",
-          "hashScope": "file",
-          "key": "model:.release-please-manifest.json"
-        },
-        {
-          "contentHash": "sha256:a0036b92026819f395ae28a4c99ffeb285b4ede9e4f9442f1c0c4a158649ccde",
+          "contentHash": "sha256:48aa78e02a518e9bc1e1dafffdfa90d09e4547604c13b202cd3697cc6e6b9b9f",
           "hashScope": "file",
           "key": "model:docs/releasing.md"
         },
@@ -4017,11 +4012,6 @@
           "contentHash": "sha256:57add50e34d27bbbb72aec6791416f7c11eb0e1a9316942768f42ba07af5ffb6",
           "hashScope": "file",
           "key": "model:package.json"
-        },
-        {
-          "contentHash": "sha256:0e391850c0377ddff47c827ad39085e33717a5539c0c48c8638bf723cc4cfa15",
-          "hashScope": "file",
-          "key": "model:release-please-config.json"
         }
       ],
       "tests": []
@@ -4216,7 +4206,7 @@
           "key": "model:fixtures/sample-webapp-profile.pkl"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -5050,7 +5040,7 @@
     {
       "checks": [
         {
-          "contentHash": "sha256:6c5cd7ae8dd21ee5f2cdc055e5ab432710b3c5b9236d48741abc0612db5821fd",
+          "contentHash": "sha256:ed4b072157a145cba9786cf3c958d63cc17256487715e0c13bc47c4173eced9e",
           "hashScope": "file",
           "key": "pkl:examples/dspec.pkl"
         }
@@ -5100,7 +5090,7 @@
           "key": "code:src/cli.mjs#emitSourceMapObject"
         },
         {
-          "contentHash": "sha256:c77ab7286391aca44157ee273b84216b384e50f347040123a45870ed2a7523e3",
+          "contentHash": "sha256:98c77b91223408c306a74b470444185d937ce58d4d0c7a34c0f5a77d43b6605e",
           "hashScope": "file",
           "key": "doc:generated/source-map.json"
         }
@@ -5463,7 +5453,7 @@
           "key": "model:fixtures/spec-change-scaffold-narrowing.pkl"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
@@ -6089,7 +6079,7 @@
           "key": "model:fixtures/spec-reading-eval-suite.pkl"
         },
         {
-          "contentHash": "sha256:04d5eb21ed3fa8e4cc35858e4ea49064d8850b2a45e8c9ad8a8ddd0251485245",
+          "contentHash": "sha256:c29971c75e0c9dfc8c11c989945a22a7bb3cab15c5531ff642f1edc3d44f79e7",
           "hashScope": "file",
           "key": "runtime:Taskfile.pkl"
         }
