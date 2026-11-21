@@ -22221,24 +22221,6 @@
         }
       },
       {
-        "generated": "markdown.rule.DSPEC-PACKAGE-RELEASE.implementedBy[7]",
-        "source": {
-          "index": 7,
-          "kind": "implementationRef",
-          "path": "model.rules[30].implementedBy[7]",
-          "ruleId": "DSPEC-PACKAGE-RELEASE"
-        }
-      },
-      {
-        "generated": "markdown.rule.DSPEC-PACKAGE-RELEASE.implementedBy[8]",
-        "source": {
-          "index": 8,
-          "kind": "implementationRef",
-          "path": "model.rules[30].implementedBy[8]",
-          "ruleId": "DSPEC-PACKAGE-RELEASE"
-        }
-      },
-      {
         "generated": "markdown.rule.DSPEC-PRODUCT-POSITIONING",
         "source": {
           "kind": "rule",
@@ -35864,24 +35846,6 @@
           "index": 6,
           "kind": "implementationRef",
           "path": "model.rules[30].implementedBy[6]",
-          "ruleId": "DSPEC-PACKAGE-RELEASE"
-        }
-      },
-      {
-        "generated": "quickcheck.rules.DSPEC-PACKAGE-RELEASE.implementedBy[7]",
-        "source": {
-          "index": 7,
-          "kind": "implementationRef",
-          "path": "model.rules[30].implementedBy[7]",
-          "ruleId": "DSPEC-PACKAGE-RELEASE"
-        }
-      },
-      {
-        "generated": "quickcheck.rules.DSPEC-PACKAGE-RELEASE.implementedBy[8]",
-        "source": {
-          "index": 8,
-          "kind": "implementationRef",
-          "path": "model.rules[30].implementedBy[8]",
           "ruleId": "DSPEC-PACKAGE-RELEASE"
         }
       },

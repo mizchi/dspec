@@ -5680,7 +5680,7 @@ profile: d.AppProfile = new {
     const report = JSON.parse(result.stdout);
     assert.equal(report.status, "pass");
     assert.deepEqual(report.model, { id: "dspec-self", version: "0.1.0" });
-    assert.equal(report.references, 1124);
+    assert.equal(report.references, 1122);
     assert.deepEqual(report.assurance.rules, { satisfied: 79, total: 79 });
     assert.deepEqual(report.errors, []);
   });

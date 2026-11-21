@@ -46,28 +46,56 @@ test("defines the v0.1 public package boundary", () => {
 
 test("defines explicit release and compatibility policy", () => {
   assert.match(read("docs/versioning.md"), /Clause\.ast semantics `1\.0`/);
-  assert.match(read("docs/releasing.md"), /Trusted Publisher/);
-  assert.equal(JSON.parse(read(".release-please-manifest.json"))["."], "0.0.0");
-  assert.equal(JSON.parse(read("release-please-config.json")).packages["."]["release-type"], "node");
+  const releasing = read("docs/releasing.md");
+  assert.match(releasing, /Trusted Publisher/);
+  assert.match(releasing, /npm trust github @mizchi\/dspec --repo mizchi\/dspec --file publish\.yml --allow-publish/);
+  assert.match(releasing, /npm version <version> --no-git-tag-version/);
+  assert.match(releasing, /npx -y git-cliff@2\.14\.2 --tag v<version> -o CHANGELOG\.md/);
+  assert.match(releasing, /git tag v<version>/);
+  assert.match(releasing, /git push origin main v<version>/);
+  assert.doesNotMatch(releasing, /release-please/i);
+  for (const retired of ["release-please-config.json", ".release-please-manifest.json", ".github/workflows/release-please.yml"]) {
+    assert.equal(existsSync(retired), false, `${retired} belongs to the retired release-please flow`);
+  }
+  assert.match(read("cliff.toml"), /tag_pattern = "\^v\[0-9\]"/);
   assert.match(read("PklProject"), /version = npmPackage\.version/);
 });
 
 test("publishes through npm OIDC without a long-lived token", () => {
   const publish = read(".github/workflows/publish.yml");
-  const releasePlease = read(".github/workflows/release-please.yml");
 
-  assert.match(publish, /id-token: write/);
+  assert.match(publish, /^on:\n  push:\n    tags: \["v\*"\]\n\n/m);
+  assert.doesNotMatch(publish, /^  (release|workflow_dispatch|pull_request):/m);
+  assert.match(publish, /    permissions:\n      contents: write[^\n]*\n      id-token: write/);
   assert.match(publish, /actions\/setup-node@[a-f0-9]{40} # v6\.4\.0/);
   assert.match(publish, /node-version: "24"/);
+  assert.match(publish, /registry-url: "https:\/\/registry\.npmjs\.org"/);
   assert.match(publish, /mizchi\/pkfire@[a-f0-9]{40} # v0\.11\.0/);
   assert.match(publish, /pkl-version: 0\.31\.1/);
   assert.match(publish, /pkl project package --skip-publish-check --output-path dist\/pkl/);
   assert.match(publish, /gh release create pkl --title "Pkl package index" --prerelease/);
   assert.match(publish, /gh release upload pkl dist\/pkl\/\* --clobber/);
-  assert.match(publish, /npm publish/);
-  assert.doesNotMatch(publish, /NPM_TOKEN|NODE_AUTH_TOKEN/);
-  assert.match(releasePlease, /googleapis\/release-please-action@[a-f0-9]{40} # v5\.0\.0/);
-  assert.match(releasePlease, /workflow_dispatch/);
+  assert.match(publish, /npm install -g npm@11/);
+  assert.match(publish, /\*-\*\) npm publish --tag next ;;/);
+  assert.match(publish, /gh release create "\$GITHUB_REF_NAME" [^\n]*--notes-file notes\.md/);
+  assert.match(publish, /gh release create "\$GITHUB_REF_NAME" [^\n]*--generate-notes/);
+  assert.doesNotMatch(publish, /NPM_TOKEN|NODE_AUTH_TOKEN|secrets\.|create-github-app-token|release-please/);
+  for (const line of publish.split("\n").filter((line) => /^\s*(- )?uses: /.test(line))) {
+    assert.match(line, /uses: [\w./-]+@[a-f0-9]{40} # v\d+\.\d+\.\d+$/, `action is not pinned by commit: ${line.trim()}`);
+  }
+
+  const order = [
+    'if [ "v$version" != "$GITHUB_REF_NAME" ]; then',
+    "pnpm run typecheck",
+    "pnpm test",
+    "pnpm run package:smoke",
+    "pkl project package",
+    "npm install -g npm@11",
+    "npm publish",
+    'gh release create "$GITHUB_REF_NAME"',
+  ].map((needle) => [needle, publish.indexOf(needle)]);
+  for (const [needle, index] of order) assert.notEqual(index, -1, `missing publish step: ${needle}`);
+  assert.deepEqual(order, order.toSorted((left, right) => left[1] - right[1]), "validation precedes npm publish, which precedes the GitHub release");
 });
 
 test("tracks release inputs and reviews the package in the fast gate", () => {
@@ -75,7 +103,9 @@ test("tracks release inputs and reviews the package in the fast gate", () => {
 
   assert.match(taskfile, /local projectMetadata: Listing<String>/);
   assert.match(taskfile, /"docs\/\*\*\/\*\.md"/);
-  assert.match(taskfile, /"\.release-please-manifest\.json"/);
+  assert.match(taskfile, /"cliff\.toml"/);
+  assert.match(taskfile, /"CHANGELOG\.md"/);
+  assert.doesNotMatch(taskfile, /release-please/);
   assert.match(taskfile, /name = "package:review"/);
   assert.match(taskfile, /name = "checker:conformance"/);
   assert.match(taskfile, /npm pack --dry-run --json >\/dev\/null/);

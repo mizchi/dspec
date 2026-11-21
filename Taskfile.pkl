@@ -79,8 +79,8 @@ local projectMetadata: Listing<String> = new {
   "README.md"
   "LICENSE"
   "pnpm-lock.yaml"
-  ".release-please-manifest.json"
-  "release-please-config.json"
+  "cliff.toml"
+  "CHANGELOG.md"
   "docs/**/*.md"
 }
 

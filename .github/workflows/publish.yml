@@ -1,16 +1,19 @@
 name: publish
 
+# Pushing a v<version> tag publishes that version. npm trusts this workflow by
+# filename, so renaming it requires registering the trusted publisher again:
+#   npm trust github @mizchi/dspec --repo mizchi/dspec --file publish.yml --allow-publish -y
+# There is no npm token: npm authenticates through OIDC and attaches provenance.
 on:
-  release:
-    types: [published]
-
-permissions:
-  contents: write
-  id-token: write
+  push:
+    tags: ["v*"]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # GitHub releases (the tag release and the pkl package index)
+      id-token: write # npm trusted publishing (OIDC)
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
@@ -29,6 +32,14 @@ jobs:
           version: v0.11.0
           pkl-version: 0.31.1
 
+      - name: Tag matches package.json version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::package.json is $version, tag is $GITHUB_REF_NAME"
+            exit 1
+          fi
+
       - run: pnpm install --frozen-lockfile
       - run: pnpm run typecheck
       - run: pnpm test
@@ -40,4 +51,27 @@ jobs:
       - run: gh release upload pkl dist/pkl/* --clobber
         env:
           GH_TOKEN: ${{ github.token }}
-      - run: npm publish
+
+      # Trusted publishing needs npm >= 11.5.1.
+      - run: npm install -g npm@11
+      - name: Publish to npm
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          case "$version" in
+            *-*) npm publish --tag next ;;
+            *) npm publish ;;
+          esac
+
+      - name: GitHub release from the changelog
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          prerelease=""
+          case "$version" in *-*) prerelease="--prerelease" ;; esac
+          awk -v h="## $version" '$0 == h || index($0, h" ") == 1 { on = 1; next } on && /^## / { exit } on' CHANGELOG.md > notes.md 2>/dev/null || true
+          if grep -q '[^[:space:]]' notes.md; then
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md $prerelease
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes $prerelease
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
